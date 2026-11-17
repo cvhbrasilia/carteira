@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Controle de qualidade CVH</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#5F130F;--nok:#A83D3D}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 14px 90px}
+.topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.topo h1{margin:0;font-size:22px;color:var(--vinho);letter-spacing:-.01em}
+.topo h1 small{display:block;font-size:12px;font-weight:500;color:var(--tinta2);letter-spacing:0}
+.bts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:0;border-radius:10px;padding:9px 14px;background:var(--vinho);color:#fff;font-weight:600}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5}
+.periodo{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}
+.periodo button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--tinta2)}
+.periodo button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.periodo select{border:1px solid var(--areia2);border-radius:999px;padding:5px 10px;font:inherit;font-size:13px;background:#fff;color:var(--tinta2)}
+.abas{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--areia2);margin-bottom:14px;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas button{border:0;background:none;padding:9px 12px;font-weight:600;color:var(--tinta2);border-bottom:3px solid transparent;white-space:nowrap}
+.abas button.on{color:var(--vinho);border-color:var(--vinho)}
+.cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
+.cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
+.cx .sub{margin:0 0 10px;font-size:13px;color:var(--tinta2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:900px){.g3,.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+@media (max-width:520px){.g4{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
+.g4>*,.g2>*,.g3>*{min-width:0}.kpi .tx{min-width:0}
+.kpi{background:#fff;border-radius:14px;padding:12px 12px 10px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left;display:flex;gap:10px;align-items:center;width:100%}
+.kpi:hover{box-shadow:0 2px 12px rgba(95,19,15,.16)}
+.kpi .tx b{display:block;font-size:15px;color:var(--vinho)}
+.kpi .tx span{display:block;font-size:12px;color:var(--tinta2)}
+.kpi .tx i{display:block;font-style:normal;font-size:11px;color:var(--verm);font-weight:600;margin-top:2px}
+.anel{flex:0 0 auto}
+.mapa{width:100%;border-collapse:separate;border-spacing:3px;font-size:13px}
+.mapa th{font-weight:600;color:var(--tinta2);font-size:12px;text-align:center;padding:2px 4px}
+.mapa th.it{text-align:left}
+.mapa td.it{white-space:nowrap;padding-right:8px}
+.mapa td.it button{border:0;background:none;padding:0;color:var(--tinta);text-align:left;font-weight:500}
+.mapa td.it button small{color:var(--tinta2);font-weight:400}
+.mapa td.c{border-radius:8px;text-align:center;padding:7px 4px;min-width:62px;font-weight:700;cursor:pointer}
+.mapa td.c small{display:block;font-weight:400;font-size:10.5px;opacity:.85}
+.mapa td.vz{background:#f6f1ec;color:#b9aaa0;font-weight:400;cursor:default}
+.mapa-sc{overflow-x:auto}
+.leg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--tinta2);margin-top:8px}
+.leg span{display:inline-flex;align-items:center;gap:5px}
+.leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.alertas{display:flex;flex-direction:column;gap:8px}
+.al{border-left:4px solid var(--verm);background:#fbf3f1;border-radius:8px;padding:8px 10px;font-size:13.5px}
+.al.inf{border-color:var(--cara);background:#faf5ef}
+.al b{color:var(--vinho)}
+.al button{border:0;background:none;color:var(--verm);font-weight:600;padding:0;margin-left:4px;text-decoration:underline}
+.graf{width:100%;height:auto;display:block;overflow:visible;max-width:820px;margin:0 auto}
+.graf text{font-size:11px;fill:var(--tinta2);font-family:inherit}
+.graf .pt{cursor:pointer;transition:r .12s}
+.graf .pt:hover{stroke:#000;stroke-width:1.5}
+.cab-it{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cab-it .info{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:2px 10px;font-size:12px;color:var(--vinho);font-weight:600}
+.num-g{font-size:28px;font-weight:700;color:var(--vinho);line-height:1}
+.num-g small{font-size:13px;color:var(--tinta2);font-weight:500}
+.tab{width:100%;border-collapse:collapse;font-size:13px}
+.tab th{text-align:left;color:var(--tinta2);font-weight:600;font-size:12px;border-bottom:1px solid var(--areia2);padding:6px 6px}
+.tab td{border-bottom:1px solid #f1e9e1;padding:6px 6px;vertical-align:top}
+.tab tr.cl{cursor:pointer}
+.tab tr.cl:hover td{background:#fcf8f4}
+.tab-sc{overflow-x:auto}
+.st{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:600;white-space:nowrap}
+.st.ok{background:#f1e6e4;color:var(--vinho)}
+.st.no{background:var(--verm);color:#fff}
+.st.nd{background:#f3eee9;color:#9b8b82;font-weight:500}
+.st.inf{background:#f6efe6;color:#8a6a43}
+.chip{display:inline-block;border-radius:6px;background:var(--areia);color:var(--vinho);font-size:12px;font-weight:700;padding:1px 6px}
+/* gaveta */
+.veu{position:fixed;inset:0;background:rgba(43,35,32,.35);z-index:40;display:none}
+.veu.on{display:block}
+.gaveta{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--papel);z-index:41;transform:translateX(105%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.18)}
+.gaveta.on{transform:none}
+.ex-sug,.ex-fil{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;align-items:center}.ex-fil b{font-size:12px;color:var(--tinta2);margin-right:4px}.ex-sug button,.ex-fil button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--tinta2)}.ex-sug button.on,.ex-fil button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}.ex-sel{margin-bottom:6px}.ex-leit{font-size:14.5px;margin:8px 0 2px;color:var(--tinta)}.ex-leit b{color:var(--vinho)}.ex-bol summary{cursor:pointer;font-size:13px;color:var(--vinho);font-weight:600;margin:4px 0}
+.pl-cx{padding:12px}.pl-sc{overflow:auto;max-height:70vh;border:1px solid var(--areia2);border-radius:10px}
+table.pl{border-collapse:separate;border-spacing:0;font-size:12.5px;min-width:100%}
+table.pl th,table.pl td{border-right:1px solid #EFE6DD;border-bottom:1px solid #EFE6DD;padding:4px 6px;text-align:center;white-space:nowrap}
+table.pl th.pg{background:var(--vinho);color:#fff;font-size:11px;letter-spacing:.06em;text-transform:uppercase;position:sticky;top:0;z-index:2}
+table.pl th.pg.calc{background:var(--verm)}
+table.pl th.ph{background:var(--areia);color:var(--vinho);font-size:11.5px;white-space:normal;min-width:84px;max-width:120px;position:sticky;top:26px;z-index:2;vertical-align:bottom}
+table.pl td.pc{background:#F7F2EC;color:var(--vinho);font-weight:600}
+table.pl td.pl{background:#FBF8F4}
+table.pl td.ruim{background:var(--verm)!important;color:#fff}
+table.pl td.falta{background:#FFF6D9}
+table.pl td.kST{background:#F6E7E5}table.pl th.ph.kST{background:#E9C7C2;box-shadow:inset 0 4px 0 #A83D3D}table.pl td.kCP{background:#F8EEDF}table.pl th.ph.kCP{background:#ECD5B4;box-shadow:inset 0 4px 0 #C49A6C}table.pl td.kPFC{background:#F3EFE6}table.pl th.ph.kPFC{background:#E2D6C2;box-shadow:inset 0 4px 0 #C6B098}table.pl td.kCH{background:#F2E2E0}table.pl th.ph.kCH{background:#DDB8B3;box-shadow:inset 0 4px 0 #5F130F}table.pl td.kDOA{background:#EFEBE8}table.pl th.ph.kDOA{background:#DCD3CC;box-shadow:inset 0 4px 0 #6b5a52}table.pl td.falta.kST,table.pl td.falta.kCP,table.pl td.falta.kPFC,table.pl td.falta.kCH,table.pl td.falta.kDOA{background:#FFF6D9}table.pl td.ruim{background:var(--verm)!important;color:#fff}
+table.pl td.pf .pcel{font-style:italic;color:#6b5a52}
+table.pl td.nr{background:#F4F1EE}table.pl td.nr .pcel::placeholder{color:#b3a59c;font-style:italic;font-size:11px}table.pl td.nr select.pcel{color:#9b8b82;font-style:italic}
+table.pl tr td:nth-child(2),table.pl tr th.ph:nth-child(2){position:sticky;left:0;background:#fff;z-index:1;font-weight:700}
+table.pl tr.pr td{background:var(--areia);color:var(--vinho);font-weight:700;font-size:11.5px;white-space:normal}
+table.pl tr.pr.ref td{background:#fff}
+.pcel{border:1px solid transparent;background:transparent;border-radius:6px;padding:3px 4px;font-size:12.5px;width:74px;text-align:center}
+.pcel.larga{width:200px;text-align:left}.pcel[type=date]{width:128px}
+select.pcel{width:96px}
+.pcel:focus{border-color:var(--cara);background:#fff;outline:none}
+.pcel.salvando{opacity:.5}.pcel.salvo{box-shadow:inset 0 0 0 1px #5F130F}.pcel.erro{box-shadow:inset 0 0 0 2px #A83D3D}
+.volta-lote{position:fixed;right:16px;bottom:16px;z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.gaveta header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--areia2);background:#fff}
+.gaveta header b{flex:1;font-size:16px;color:var(--vinho)}
+.gaveta header button{border:0;background:var(--areia);border-radius:8px;width:34px;height:34px;font-size:18px;color:var(--vinho)}
+.gaveta .corpo{overflow-y:auto;padding:14px;flex:1}
+.gaveta h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho);margin:16px 0 6px}
+.gaveta p{margin:0 0 8px;font-size:14px}
+.formula{background:#fff;border:1px dashed var(--bege);border-radius:10px;padding:8px 10px;font-size:13.5px;margin:6px 0 10px}
+.formula b{color:var(--vinho)}
+.refs{font-size:12.5px;color:var(--tinta2);padding-left:18px;margin:4px 0}
+.refs li{margin-bottom:5px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:9px 10px}
+.grade .larga{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:var(--tinta2)}
+input,select,textarea{font:inherit;font-size:15px;color:var(--tinta);border:1px solid var(--areia2);border-radius:10px;padding:8px 10px;background:#fff;width:100%;min-width:0}
+.vals{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 8px;font-size:12.5px}
+.vals span{display:flex;justify-content:space-between;border-bottom:1px dotted #eadfd6;padding:2px 0}
+.vals span b{font-weight:600}
+.vals span.al1 b{color:var(--verm)}
+.gaveta .vals{grid-template-columns:repeat(3,1fr)}@media (max-width:520px){.vals,.gaveta .vals{grid-template-columns:repeat(2,1fr)}}
+.res{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.res .r{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fff;border-radius:10px;padding:8px 10px;border:1px solid #f0e7df}
+.res .r .n{font-size:13.5px}
+.res .r .n small{display:block;color:var(--tinta2);font-size:11.5px}
+.res .r .v{text-align:right;font-weight:700;color:var(--vinho);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:92%;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.vazio{padding:28px 14px;text-align:center;color:var(--tinta2)}
+.fluxo text{font-family:inherit}
+.fluxo .nd{cursor:pointer}
+.fluxo .nd:hover rect,.fluxo .nd:hover path.cp{filter:brightness(.96)}
+.nota{font-size:12.5px;color:var(--tinta2);margin:6px 0 0}
+.carregando{padding:60px 10px;text-align:center;color:var(--tinta2)}
+.lote td input{padding:5px 6px;font-size:13px;width:78px}
+.lote td select{padding:5px 6px;font-size:13px}
+@media print{.bts,.periodo,.abas,.veu,.gaveta{display:none!important}.cx{box-shadow:none;border:1px solid #ddd;break-inside:avoid}body{background:#fff}}
+</style></head><body>
+<div class="wrap" id="app"><div class="carregando">Carregando o controle de qualidade…</div></div>
+<div class="veu" id="veu"></div>
+<aside class="gaveta" id="gaveta" aria-hidden="true"><header><b id="gvT"></b><button type="button" id="gvX" aria-label="Fechar">×</button></header><div class="corpo" id="gvC"></div></aside>
+<input type="file" id="arqPdf" accept="application/pdf" multiple hidden>
+<button class="btn volta-lote" id="voltaLote" data-a="voltalote" hidden></button>
+<script>
+"use strict";
+const CTX = window.CVH_CTX || {};
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = (v) => { if (v == null || v === "") return null; const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : null; };
+const fmt = (v, c) => v == null || !isFinite(v) ? "–" : v.toLocaleString("pt-BR", { minimumFractionDigits: c == null ? 1 : c, maximumFractionDigits: c == null ? 1 : c });
+const br = (d) => d ? d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(0, 4) : "";
+const brc = (d) => d ? d.slice(8, 10) + "/" + d.slice(5, 7) : "";
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const mesTxt = (m) => MESES[+m.slice(5, 7) - 1] + "/" + m.slice(2, 4);
+const hojeISO = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const ponte = (metodo, ...args) => {
+  let f = null; try { f = window.parent.CVH_PONTE; } catch (e) { f = null; }
+  if (typeof f !== "function") return Promise.reject(new Error("Abra o controle de qualidade pelo Painel CVH."));
+  // a resposta vem de outra janela (o painel): vira texto e é remontada aqui, para não misturar objetos das duas janelas (o Safari se perde com isso)
+  const copia = (r) => { try { return r == null ? r : JSON.parse(JSON.stringify(r)); } catch (e) { return r; } };
+  return new Promise((ok, erro) => { try { Promise.resolve(f(metodo, JSON.parse(JSON.stringify(args)))).then((r) => ok(copia(r)), (e) => erro(new Error((e && e.message) || String(e)))); } catch (e) { erro(e); } });
+};
+const qc = (fn, ...a) => ponte("qc", fn, ...a);
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 3500); }
+
+/* ── estado ── */
+const S = { P: null, padrao: null, regs: [], sag: [], sagP: {}, admin: !!CTX.admin, aba: "geral", periodo: "tudo", mes: "", doa: CTX.doacoes || [] };
+const COMP = {
+  ST: { n: "Sangue total", c: "#A83D3D" }, CH: { n: "Concentrado de hemácias", c: "#5F130F" }, CHD: { n: "CH desleucocitado", c: "#5F130F" },
+  PFC: { n: "Plasma fresco congelado", c: "#C49A6C" }, PC: { n: "Plasma comum", c: "#C6B098" }, PIC: { n: "Plasma isento de crioprecipitado", c: "#C6B098" },
+  CP: { n: "Concentrado de plaquetas", c: "#C49A6C" }, CRIO: { n: "Crioprecipitado", c: "#C6B098" }, DOA: { n: "Hemograma do doador", c: "#8E2B27" }
+};
+const doacaoDe = (b) => S.doa.find((d) => d.numero === b) || null;
+const sagDe = (b) => S.sag.find((x) => x.bolsa === b) || null;
+const regsDa = (b) => S.regs.filter((r) => r.bolsa === b);
+const regDe = (b, c) => regsDa(b).filter((r) => r.componente === c).sort((x, y) => y.data.localeCompare(x.data))[0] || null;
+
+/* ── volume da bolsa ── */
+// CH: peso do CH com a bolsa (antes do SAG) menos a tara, dividido pela densidade, mais o SAG adicionado (peso final menos peso antes)
+function volume(r) {
+  const d = r.dados || {}, P = S.P, c = r.componente;
+  if (num(d.volume) != null) return { v: num(d.volume), como: "volume informado" };
+  if (c === "CH" || c === "CHD") {
+    const s = sagDe(r.bolsa), pc = num(d.pesoAntesSag) != null ? num(d.pesoAntesSag) : s && num(s.pesoCH), pf = num(d.peso) != null ? num(d.peso) : s && num(s.pesoFinal);
+    if (pc != null && pf != null) return { v: (pc - P.taraCH) / P.densCH + (pf - pc) / P.densSAG, como: "peso antes do SAG " + fmt(pc) + " g e depois " + fmt(pf) + " g (tara " + fmt(P.taraCH, 0) + " g)" };
+    if (pf != null) return { v: (pf - P.taraCH) / P.densCH, como: "peso " + fmt(pf) + " g, tara " + fmt(P.taraCH, 0) + " g, densidade " + fmt(P.densCH, 2) };
+    return null;
+  }
+  if (c === "CP") { const p = num(d.peso); return p == null ? null : { v: (p - P.taraCP) / P.densCP, como: "peso " + fmt(p, 0) + " g, tara " + fmt(P.taraCP, 0) + " g, densidade " + fmt(P.densCP, 2) }; }
+  if (c === "ST") {
+    const p = num(d.peso); if (p != null && P.taraST > 0) return { v: (p - P.taraST) / P.densST, como: "peso " + fmt(p, 0) + " g" };
+    const doa = doacaoDe(r.bolsa), col = num(d.volumeColetado) != null ? num(d.volumeColetado) : doa && num(doa.volume);
+    return col == null ? null : { v: col + P.anticoagulante, como: fmt(col, 0) + " mL coletados + " + fmt(P.anticoagulante, 0) + " mL de anticoagulante" };
+  }
+  const p = num(d.peso); return p == null ? null : { v: (p - P.taraPL) / P.densPL, como: "peso " + fmt(p, 0) + " g, tara " + fmt(P.taraPL, 0) + " g, densidade " + fmt(P.densPL, 2) };
+}
+const hm = (r, k) => { const h = (r && r.dados && r.dados.hemo) || {}; return num(h[k]); };
+// hematócrito do CH: o micro-hematócrito vale mais que o do ProCyte, quando existe
+function htCH(r) {
+  const d = r.dados || {}, s = sagDe(r.bolsa), mi = num(d.microHt) != null ? num(d.microHt) : s && num(s.htFinalMicro);
+  if (mi != null) return { v: mi, como: "micro-hematócrito", pro: hm(r, "HCT") };
+  const p = hm(r, "HCT"); return p == null ? null : { v: p, como: "ProCyte One", pro: p };
+}
+/* ── itens do controle de qualidade (Tabela 4, ABVHMT 2024) ── */
+const T4 = "Tabela 4 das Recomendações de Boas Práticas para Serviços de Hemoterapia Veterinária (ABVHMT, 2024)";
+const ITENS = [
+  { id: "ch_ht", comp: ["CH", "CHD"], nome: "Hematócrito", un: "%",
+    ref: (r) => r.dados.solucao === "CPDA-1" ? fmt(S.P.chCpdaMin, 0) + " a " + fmt(S.P.chCpdaMax, 0) + "% (CPDA-1)" : fmt(S.P.chHtMin, 0) + " a " + fmt(S.P.chHtMax, 0) + "% (solução aditiva)",
+    av(r) { const h = htCH(r); if (!h) return null; const cp = r.dados.solucao === "CPDA-1", mn = cp ? S.P.chCpdaMin : S.P.chHtMin, mx = cp ? S.P.chCpdaMax : S.P.chHtMax;
+      return { v: h.v, ok: h.v >= mn && h.v <= mx, dir: h.v < mn ? "abaixo" : h.v > mx ? "acima" : "", txt: fmt(h.v) + "%", det: h.como + (h.como !== "ProCyte One" && h.pro != null ? " (ProCyte " + fmt(h.pro) + "%)" : "") }; },
+    exp: { oq: "Fração do volume da bolsa ocupada pelas hemácias depois do fracionamento e da adição da solução aditiva.", pq: "Hematócrito alto demais deixa a bolsa viscosa, dificulta a infusão e indica SAG insuficiente. Baixo demais indica plasma residual em excesso ou SAG demais, e cada mL rende menos hemácias.", como: "O micro-hematócrito (centrífuga) é o método de referência e é usado quando foi lançado. Sem ele vale o do ProCyte One, que é calculado (número de hemácias × VCM) e sofre com qualquer mudança no tamanho das hemácias.", fonte: T4 } },
+  { id: "ch_hb", comp: ["CH", "CHD"], nome: "Hemoglobina por unidade", un: "g",
+    ref: (r) => "maior que " + fmt(r.componente === "CHD" ? S.P.chdHbMin : S.P.chHbMin, 0) + " g por unidade",
+    av(r) { const hb = hm(r, "HGB"), vo = volume(r); if (hb == null || !vo) return null; const v = hb * vo.v / 100, mn = r.componente === "CHD" ? S.P.chdHbMin : S.P.chHbMin;
+      return { v, ok: v > mn, dir: v <= mn ? "abaixo" : "", txt: fmt(v) + " g", det: "Hb " + fmt(hb) + " g/dL × " + fmt(vo.v, 0) + " mL ÷ 100 · volume pelo " + vo.como }; },
+    exp: { oq: "Quantidade total de hemoglobina dentro da bolsa, que é o que de fato vai para o receptor.", pq: "É a medida da dose. Duas bolsas com o mesmo hematócrito podem ter quantidades bem diferentes de hemoglobina, se o volume for diferente.", como: "Hemoglobina do hemograma da bolsa (g/dL) multiplicada pelo volume da bolsa (mL) e dividida por 100. O volume sai do peso: peso menos a tara da bolsa, dividido pela densidade do CH, mais o SAG adicionado.", formula: "Hb (g/unidade) = Hb (g/dL) × volume (mL) ÷ 100", fonte: T4 } },
+  { id: "ch_hem", comp: ["CH", "CHD"], nome: "Grau de hemólise", un: "%",
+    ref: () => "menor que " + fmt(S.P.hemoliseMax, 1) + "% da massa eritrocitária",
+    av(r) { const d = r.dados, hl = num(d.hbLivre), hb = hm(r, "HGB"), h = htCH(r); if (hl == null || hb == null || !h) return null; const v = (100 - h.v) * hl / hb;
+      return { v, ok: v < S.P.hemoliseMax, dir: v >= S.P.hemoliseMax ? "acima" : "", txt: fmt(v, 2) + "%", det: "(100 − " + fmt(h.v) + ") × " + fmt(hl, 3) + " ÷ " + fmt(hb) }; },
+    exp: { oq: "Porcentagem da hemoglobina que saiu de dentro das hemácias e está livre no sobrenadante.", pq: "Mostra a lesão de armazenamento. Hemólise alta reduz o rendimento da transfusão e aumenta o risco de reação.", como: "Medir a hemoglobina livre no sobrenadante (centrifugar uma alíquota da bolsa e ler o sobrenadante em aparelho de hemoglobina baixa, como o HemoCue Plasma/Low Hb, ou por espectrofotometria). Fazer no último dia de armazenamento ou no dia do uso.", formula: "Hemólise (%) = (100 − Ht) × Hb livre (g/dL) ÷ Hb total (g/dL)", fonte: T4 + ". Ferreira et al., 2018 (cães) e Blasi Brugué et al., 2018 (gatos) usam o limite de 1% do FDA." } },
+  { id: "ch_mic", comp: ["CH", "CHD"], nome: "Microbiológico", un: "", ref: () => "negativo",
+    av: (r) => microAv(r), exp: { oq: "Cultura da bolsa.", pq: "Contaminação bacteriana é a complicação transfusional mais grave e evitável.", como: "Amostra de 10% da produção ou 1 unidade por mês, o que for maior. Todo resultado positivo deve ser rastreado.", fonte: T4 } },
+  { id: "cp_vol", comp: ["CP"], nome: "Volume", un: "mL", ref: () => fmt(S.P.cpVolMin, 0) + " a " + fmt(S.P.cpVolMax, 0) + " mL",
+    av(r) { const vo = volume(r); if (!vo) return null; return { v: vo.v, ok: vo.v >= S.P.cpVolMin && vo.v <= S.P.cpVolMax, dir: vo.v < S.P.cpVolMin ? "abaixo" : vo.v > S.P.cpVolMax ? "acima" : "", txt: fmt(vo.v, 0) + " mL", det: vo.como }; },
+    exp: { oq: "Volume de plasma em que as plaquetas ficam suspensas.", pq: "Pouco plasma acidifica o CP (o pH cai) e prejudica as plaquetas. Plasma demais dilui a dose.", como: "Pesar a bolsa e descontar a tara.", formula: "Volume (mL) = (peso − tara) ÷ densidade", fonte: T4 } },
+  { id: "cp_plq", comp: ["CP"], nome: "Plaquetas por unidade", un: "×10¹⁰",
+    ref: () => "maior que " + fmt(S.P.cpPlqMin, 1) + " × 10¹⁰ por unidade",
+    av(r) { const p = hm(r, "PLQ"), vo = volume(r); if (p == null) return null; const vv = vo ? vo.v : volMedio("CP"); if (vv == null) return null; const v = p * vv / 1e4;
+      return { v, ok: v > S.P.cpPlqMin, dir: v <= S.P.cpPlqMin ? "abaixo" : "", txt: fmt(v, 1) + " × 10¹⁰", det: fmt(p, 0) + " mil/µL × " + fmt(vv, 0) + " mL" + (vo ? "" : " (volume médio, a bolsa não foi pesada)"), est: !vo, alto: v > S.P.cpPlqReduz }; },
+    exp: { oq: "Número total de plaquetas dentro da bolsa.", pq: "É a dose do CP. A contagem por µL sozinha engana, porque depende do volume da bolsa.", como: "Contagem do ProCyte (mil/µL) multiplicada pelo volume da bolsa. Agregados plaquetários não são contados pelo aparelho e derrubam o resultado, por isso o asterisco do ProCyte pede conferência em lâmina. Acima de " + "7,0 × 10¹⁰ a Tabela 4 manda reduzir a validade para 3 dias.", formula: "Plaquetas por unidade = PLQ (mil/µL) × 1.000 × volume (mL) × 1.000", fonte: T4 + ". Na tabela o valor aparece como 10¹⁰/µL; pela ordem de grandeza ele se refere à unidade inteira." } },
+  { id: "cp_ph", comp: ["CP"], nome: "pH", un: "", ref: () => "maior ou igual a " + fmt(S.P.cpPhMin, 1),
+    av(r) { const v = num(r.dados.ph); if (v == null) return null; return { v, ok: v >= S.P.cpPhMin, dir: v < S.P.cpPhMin ? "abaixo" : "", txt: fmt(v, 1), det: r.dados.phMetodo || "" }; },
+    exp: { oq: "Acidez do CP no fim do armazenamento.", pq: "Abaixo de 6,2 as plaquetas mudam de forma de modo irreversível e perdem a viabilidade.", como: "Fita ou pHmetro, na data de validade ou no dia do uso.", fonte: T4 + ". O formulário de validação do CVH usa maior que 6,5." } },
+  { id: "cp_sw", comp: ["CP"], nome: "Swirling", un: "", ref: () => "escore " + fmt(S.P.swMin, 0) + " ou mais (0 a 3)",
+    av(r) { const s = String(r.dados.swirling || "").toLowerCase(); if (!s || s === "nr") return null;
+      const e = /^[0-3]$/.test(s) ? +s : /presente/.test(s) ? null : /ausente/.test(s) ? 0 : null;
+      if (e == null) return { v: 1, ok: true, dir: "", txt: "presente", det: "registro antigo, sem escore" };
+      const ok = e >= S.P.swMin; return { v: e, ok, dir: ok ? "" : "abaixo", txt: "escore " + e }; },
+    exp: { oq: "Redemoinho perolado que aparece ao olhar a bolsa contra a luz enquanto ela é movimentada devagar.", pq: "Só plaquetas em forma de disco refletem a luz assim. Sem swirling as plaquetas estão ativadas ou mortas, e o pH costuma estar baixo.", como: "Escore visual. 3, aspecto muito heterogêneo em toda a bolsa, com bom contraste e definição. 2, heterogêneo em toda a bolsa, com contraste e definição. 1, pouco heterogêneo, com pouco contraste em alguns locais. 0, ausência de swirling, e a bolsa é descartada.", fonte: T4 + " (swirling > 2). Escore do Manual para controle da qualidade do sangue total e hemocomponentes (RedSang, 2011)." } },
+  { id: "cp_leu", comp: ["CP"], nome: "Leucócitos residuais", un: "×10⁸", ref: () => "menor que " + fmt(S.P.cpLeucMax, 1) + " × 10⁸ por unidade",
+    av(r) { const w = hm(r, "WBC"), vo = volume(r); if (w == null || !vo) return null; const v = w * vo.v / 100; return { v, ok: v < S.P.cpLeucMax, dir: v >= S.P.cpLeucMax ? "acima" : "", txt: fmt(v, 2) + " × 10⁸", det: fmt(w, 2) + " mil/µL × " + fmt(vo.v, 0) + " mL" }; },
+    exp: { oq: "Leucócitos que sobraram no CP.", pq: "Leucócitos liberam citocinas no armazenamento e estão ligados a reação febril e aloimunização.", como: "Contagem de leucócitos do ProCyte multiplicada pelo volume.", fonte: "Manual para controle da qualidade do sangue total e hemocomponentes (RedSang, 2011), Quadro 8, e formulário de validação do CVH (FORM.0048). Não faz parte da Tabela 4." } },
+  { id: "cp_mic", comp: ["CP"], nome: "Microbiológico", un: "", ref: () => "negativo", av: (r) => microAv(r),
+    exp: { oq: "Cultura da bolsa.", pq: "O CP fica em temperatura ambiente, o que favorece crescimento bacteriano.", como: "A Tabela 4 recomenda cultura em 50% da produção de CP, e obrigatória quando o doador não foi tricotomizado.", fonte: T4 } },
+  { id: "st_tempo", comp: ["ST"], nome: "Tempo de coleta", un: "min", ref: () => "até " + fmt(S.P.stTempoMax, 0) + " min (ideal até 12)",
+    av(r) { const d = doacaoDe(r.bolsa), v = num(r.dados.duracao) != null ? num(r.dados.duracao) : d ? num(d.tempo) : null; if (v == null) return null; return { v, ok: v <= S.P.stTempoMax, dir: v > S.P.stTempoMax ? "acima" : "", txt: fmt(v, 0) + " min", det: v > 12 && v <= S.P.stTempoMax ? "dentro do limite, acima do ideal de 12 min" : "" }; },
+    exp: { oq: "Tempo entre a punção e o fim da coleta da bolsa.", pq: "Coleta demorada ativa a coagulação e as plaquetas dentro da bolsa, forma microcoágulos e piora o CP e o plasma.", como: "Cronometrado na coleta e anotado na ficha de doação.", fonte: "Recomendações de Boas Práticas da ABVHMT, Art. 45, §3º (até 15 minutos, ideal até 12)." } },
+  { id: "st_vol", comp: ["ST"], nome: "Volume coletado", un: "mL", ref: () => fmt(S.P.stVolMin, 0) + " a " + fmt(S.P.stVolMax, 0) + " mL",
+    av(r) { const d = doacaoDe(r.bolsa), v = num(r.dados.volumeColetado) != null ? num(r.dados.volumeColetado) : d ? num(d.volume) : null; if (v == null) return null; const ok = v >= S.P.stVolMin && v <= S.P.stVolMax; return { v, ok, dir: v < S.P.stVolMin ? "abaixo" : v > S.P.stVolMax ? "acima" : "", txt: fmt(v, 0) + " mL" }; },
+    exp: { oq: "Volume de sangue colhido na bolsa, sem contar o anticoagulante.", pq: "Fora da faixa a proporção entre sangue e anticoagulante muda. Pouco sangue deixa citrato em excesso e muito sangue coagula na bolsa.", como: "Pela balança da coleta ou pelo peso: peso da bolsa cheia menos a bolsa com anticoagulante, dividido por 1,053.", formula: "Volume (mL) = (peso cheio − peso vazio com anticoagulante) ÷ 1,053", fonte: "Manual para controle da qualidade do sangue total e hemocomponentes (RedSang, 2011), Quadro 1, 450 mL ± 10%. A Tabela 4 da ABVHMT não traz critério de volume para o sangue total." } },
+  { id: "pl_vol", comp: ["PFC", "PC", "PIC", "CRIO"], nome: "Volume", un: "mL",
+    ref: (r) => r.componente === "CRIO" ? fmt(S.P.crioVolMin, 0) + " a " + fmt(S.P.crioVolMax, 0) + " mL" : "maior que " + fmt(r.componente === "PIC" ? S.P.picVolMin : r.componente === "PC" ? S.P.pcVolMin : S.P.pfcVolMin, 0) + " mL",
+    av(r) { const vo = volume(r); if (!vo) return null; const c = r.componente, v = vo.v;
+      const ok = c === "CRIO" ? v >= S.P.crioVolMin && v <= S.P.crioVolMax : v > (c === "PIC" ? S.P.picVolMin : c === "PC" ? S.P.pcVolMin : S.P.pfcVolMin);
+      return { v, ok, dir: ok ? "" : "abaixo", txt: fmt(v, 0) + " mL", det: vo.como }; },
+    exp: { oq: "Volume de plasma na bolsa.", pq: "Define a dose de fatores de coagulação e proteínas.", como: "Pesar e descontar a tara. Deve ser avaliado em todas as unidades.", formula: "Volume (mL) = (peso − tara) ÷ densidade", fonte: T4 } },
+  { id: "pfc_hem", comp: ["PFC"], nome: "Hemácias residuais", un: "×10⁶/mL", ref: () => "menor que " + fmt(S.P.pfcHemMax, 1) + " × 10⁶/mL",
+    av(r) { const e = hm(r, "RBC"); if (e == null) return null; const v = e * 1000; // M/µL × 1000 = 10⁶/mL
+      const lim = e === 0; return { v, ok: v < S.P.pfcHemMax || lim, dir: v >= S.P.pfcHemMax && !lim ? "acima" : "", txt: lim ? "0 (abaixo da leitura)" : fmt(v, 0) + " × 10⁶/mL", det: fmt(e, 2) + " milhões/µL no ProCyte" + (lim ? ". O ProCyte arredonda para 0,00 abaixo de 5 × 10⁶/mL" : "") }; },
+    exp: { oq: "Hemácias que ficaram no plasma.", pq: "Hemácias no plasma podem sensibilizar o receptor e, depois do congelamento, liberam hemoglobina livre.", como: "Contagem antes do congelamento. O ProCyte mostra 0,01 milhão/µL como menor valor, que já é 10 × 10⁶/mL. Por isso 0,00 confirma o critério e 0,01 já fica acima dele.", formula: "Hemácias (10⁶/mL) = RBC (milhões/µL) × 1.000", fonte: T4 } },
+  { id: "pl_cor", comp: ["PFC", "PC", "PIC", "CRIO"], nome: "Coloração", un: "", ref: () => "límpido, sem hemácias",
+    av(r) { const a = String(r.dados.aspecto || "").toLowerCase(); if (!a || a === "nr") return null; const ok = /l[ií]mpid/.test(a) && !/lip|turv|averm|hem/.test(a); return { v: ok ? 1 : 0, ok, dir: ok ? "" : "acima", txt: r.dados.aspecto }; },
+    exp: { oq: "Aspecto visual do plasma.", pq: "Plasma lipêmico, turvo ou avermelhado deve ser descartado.", como: "Inspeção visual de todas as unidades.", fonte: T4 } }
+];
+function microAv(r) { const m = String(r.dados.micro || "").toLowerCase(); if (!m || m === "nr") return null; const ok = /neg/.test(m); return { v: ok ? 0 : 1, ok, dir: ok ? "" : "acima", txt: ok ? "negativo" : "positivo" }; }
+function volMedio(c) { const l = S.regs.filter((r) => r.componente === c).map((r) => { const d = r.dados || {}; return num(d.volume) != null || num(d.peso) != null ? volume(r) : null; }).filter(Boolean).map((x) => x.v); return l.length ? l.reduce((a, b) => a + b, 0) / l.length : null; }
+const itemPor = (id) => ITENS.find((i) => i.id === id);
+function avaliar(r) { return ITENS.filter((i) => i.comp.includes(r.componente)).map((i) => ({ item: i, a: i.av(r) })); }
+/* ── período ── */
+function noPeriodo(d) {
+  if (S.periodo === "tudo") return true;
+  if (S.periodo === "mes") return d.slice(0, 7) === (S.mes || hojeISO().slice(0, 7));
+  const n = S.periodo === "3m" ? 3 : 12, h = new Date(); h.setDate(1); h.setMonth(h.getMonth() - n + 1);
+  return d >= h.toISOString().slice(0, 7) + "-01";
+}
+const regsP = () => S.regs.filter((r) => noPeriodo(r.data));
+const meses = () => [...new Set(S.regs.map((r) => r.data.slice(0, 7)))].sort();
+function conformidade(lista, id) {
+  const it = itemPor(id), av = lista.filter((r) => it.comp.includes(r.componente)).map((r) => ({ r, a: it.av(r) })).filter((x) => x.a && x.a.ok != null && !x.a.est);
+  const ok = av.filter((x) => x.a.ok).length; return { n: av.length, ok, pct: av.length ? 100 * ok / av.length : null, lista: av };
+}
+/* ── rendimento do fracionamento (sangue total → CH e CP) ── */
+function rendimento(b) {
+  const st = regDe(b, "ST"), ch = regDe(b, "CH") || regDe(b, "CHD"), cp = regDe(b, "CP"), o = { bolsa: b };
+  if (!st) return o;
+  const vs = volume(st); o.vst = vs;
+  if (vs && hm(st, "HGB") != null) o.hbST = hm(st, "HGB") * vs.v / 100;
+  if (vs && hm(st, "PLQ") != null) o.plqST = hm(st, "PLQ") * vs.v / 1e4;
+  if (ch) { const vc = volume(ch); if (vc && hm(ch, "HGB") != null) { o.hbCH = hm(ch, "HGB") * vc.v / 100; if (o.hbST) o.recHb = 100 * o.hbCH / o.hbST; } }
+  if (cp) { const vp = volume(cp); if (vp && hm(cp, "PLQ") != null) { o.plqCP = hm(cp, "PLQ") * vp.v / 1e4; if (o.plqST) o.recPlq = 100 * o.plqCP / o.plqST; } }
+  return o;
+}
+/* ── achados: o que merece atenção, além dos critérios da Tabela 4 ── */
+function achados(lista) {
+  const A = [], P = S.P;
+  lista.forEach((r) => {
+    const d = r.dados || {}, al = d.alerta || [];
+    if (r.componente === "ST") {
+      const ht = hm(r, "HCT"), doa = doacaoDe(r.bolsa), dh = regDe(r.bolsa, "DOA"), htd = num(d.htColeta) != null ? num(d.htColeta) : dh && hm(dh, "HCT") != null ? hm(dh, "HCT") : doa && num(doa.ht), col = num(d.volumeColetado) != null ? num(d.volumeColetado) : doa && num(doa.volume);
+      if (ht != null && ht < 25) A.push({ n: 2, r, t: "Sangue total da bolsa " + r.bolsa + " com hematócrito de " + fmt(ht) + "%", d: ht < 2 ? "Com hematócrito zero isso não é sangue total. Ou o PDF é de CP ou PFC e entrou como ST (abra a bolsa e troque o hemocomponente), ou a amostra foi tirada só do plasma." : "Valor incompatível com sangue total. A amostra provavelmente foi tirada sem homogeneizar a bolsa (só plasma). Repetir depois de inverter a bolsa várias vezes." });
+      else if (ht != null && htd != null) { const esp = htd * (col || 450) / ((col || 450) + P.anticoagulante); if (Math.abs(ht - esp) > 8) A.push({ n: 1, r, t: "Sangue total da bolsa " + r.bolsa + " com hematócrito diferente do esperado", d: "Bolsa " + fmt(ht) + "% e esperado " + fmt(esp) + "% (doador " + fmt(htd) + "% diluído pelo anticoagulante). Conferir a homogeneização da amostra." }); }
+    }
+    if (r.componente === "CP") {
+      const p = hm(r, "PLQ"); if (al.includes("PLQ") && p != null) A.push({ n: 1, r, t: "CP " + r.bolsa + " com contagem de plaquetas marcada pelo ProCyte", d: "O asterisco pede conferência por lâmina ou dot plot. Agregados plaquetários derrubam a contagem e fazem a bolsa parecer pobre em plaquetas." });
+      if (num(d.plqFormulario) != null && p != null && Math.abs(num(d.plqFormulario) - p) > 20) A.push({ n: 1, r, t: "CP " + r.bolsa + " com duas contagens diferentes", d: "PDF do ProCyte " + fmt(p, 0) + " mil/µL e formulário de validação " + fmt(num(d.plqFormulario), 0) + " mil/µL. Vale anotar qual contagem é a definitiva." });
+      const a = itemPor("cp_plq").av(r); if (a && a.alto) A.push({ n: 1, r, t: "CP " + r.bolsa + " com mais de " + fmt(P.cpPlqReduz, 1) + " × 10¹⁰ plaquetas", d: "A Tabela 4 manda reduzir a validade dessa bolsa para 3 dias." });
+    }
+    if (r.componente === "CH" || r.componente === "CHD") { const R = rendimento(r.bolsa); if (R.recHb != null && R.recHb > 100) A.push({ n: 1, r, t: "Bolsa " + r.bolsa + " com mais hemoglobina no CH do que no sangue total (" + fmt(R.recHb, 0) + "%)", d: "Fisicamente impossível. Indica erro de medida, em geral hemoglobina superestimada pelo ProCyte no CH muito concentrado ou volume do sangue total maior que o considerado (" + (R.vst ? fmt(R.vst.v, 0) + " mL" : "sem volume") + ")." }); }
+    if ((r.componente === "CH" || r.componente === "CHD") && htCH(r)) { const h = htCH(r); if (h.como !== "ProCyte One" && h.pro != null && Math.abs(h.pro - h.v) > 5) A.push({ n: 0, r, t: "CH " + r.bolsa + " com diferença entre ProCyte e micro-hematócrito", d: "ProCyte " + fmt(h.pro) + "% e micro-hematócrito " + fmt(h.v) + "% (" + (h.pro > h.v ? "+" : "") + fmt(h.pro - h.v) + " pontos). O controle usa o micro-hematócrito." }); }
+  });
+  return A.sort((a, b) => b.n - a.n);
+}
+/* ── gráficos em SVG (cores só da paleta do CVH) ── */
+function anel(pct, tam) {
+  const t = tam || 64, r = t / 2 - 6, c = 2 * Math.PI * r, p = pct == null ? 0 : Math.max(0, Math.min(100, pct)), ok = pct != null && pct >= S.P.conformidade;
+  const m = (S.P.conformidade / 100) * 2 * Math.PI - Math.PI / 2, mx = t / 2 + Math.cos(m) * (r + 4.5), my = t / 2 + Math.sin(m) * (r + 4.5), mx2 = t / 2 + Math.cos(m) * (r - 4.5), my2 = t / 2 + Math.sin(m) * (r - 4.5);
+  return `<svg class="anel" width="${t}" height="${t}" viewBox="0 0 ${t} ${t}" role="img" aria-label="${pct == null ? "sem dados" : fmt(pct, 0) + "% conforme"}"><circle cx="${t / 2}" cy="${t / 2}" r="${r}" fill="none" stroke="#EEE5DB" stroke-width="8"/>` +
+    (pct == null ? "" : `<circle cx="${t / 2}" cy="${t / 2}" r="${r}" fill="none" stroke="${ok ? "#5F130F" : "#A83D3D"}" stroke-width="8" stroke-dasharray="${c * p / 100} ${c}" transform="rotate(-90 ${t / 2} ${t / 2})" stroke-linecap="round"/>`) +
+    `<line x1="${mx}" y1="${my}" x2="${mx2}" y2="${my2}" stroke="#fff" stroke-width="3"/><text x="${t / 2}" y="${t / 2 + 5}" text-anchor="middle" font-size="${t > 60 ? 15 : 12}" font-weight="700" fill="${pct == null ? "#b9aaa0" : ok ? "#5F130F" : "#A83D3D"}">${pct == null ? "–" : fmt(pct, 0) + "%"}</text></svg>`;
+}
+// pontos no tempo, um por bolsa, com a faixa de referência sombreada. Clique no ponto abre a bolsa.
+function grafPontos(pts, o) {
+  const W = 640, H = o.h || 220, ml = 46, mr = 12, mt = 14, mb = 34;
+  if (!pts.length) return '<p class="vazio">Sem dados no período.</p>';
+  const vs = pts.map((p) => p.v).concat([o.min, o.max].filter((x) => x != null));
+  let lo = Math.min(...vs), hi = Math.max(...vs); const pad = (hi - lo) * 0.12 || Math.abs(hi) * 0.1 || 1; lo = o.zero ? Math.min(0, lo) : lo - pad; hi += pad;
+  const n = pts.length, X = (i) => ml + (n === 1 ? (W - ml - mr) / 2 : (i * (W - ml - mr)) / (n - 1)), Y = (v) => mt + (H - mt - mb) * (1 - (v - lo) / (hi - lo));
+  let s = `<svg class="graf" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.titulo || "")}">`;
+  const b1 = o.min != null ? o.min : lo, b2 = o.max != null ? o.max : hi;
+  if (o.min != null || o.max != null) s += `<rect x="${ml}" y="${Y(Math.min(b2, hi))}" width="${W - ml - mr}" height="${Math.max(0, Y(Math.max(b1, lo)) - Y(Math.min(b2, hi)))}" fill="#EEE5DB" opacity=".75"/>`;
+  [o.min, o.max].forEach((v) => { if (v != null && v >= lo && v <= hi) s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#C49A6C" stroke-dasharray="4 3"/><text x="${W - mr}" y="${Y(v) - 3}" text-anchor="end">${fmt(v, o.cas == null ? 1 : o.cas)}</text>`; });
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; s += `<text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, o.casEixo == null ? (hi - lo > 20 ? 0 : 1) : o.casEixo)}</text><line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#f1e9e1"/>`; }
+  if (o.linha && n > 1) s += `<polyline fill="none" stroke="#C6B098" stroke-width="1.2" points="${pts.map((p, i) => X(i) + "," + Y(p.v)).join(" ")}"/>`;
+  const passo = Math.max(1, Math.ceil(n / 12));
+  pts.forEach((p, i) => {
+    const ok = p.ok, cor = ok === false ? "#A83D3D" : ok ? "#5F130F" : "#C6B098";
+    s += `<g class="pt-g"><title>${esc(p.tt)}</title>` + (ok === false ? `<rect class="pt" data-bolsa="${esc(p.bolsa)}" x="${X(i) - 6}" y="${Y(p.v) - 6}" width="12" height="12" transform="rotate(45 ${X(i)} ${Y(p.v)})" fill="${cor}"/>` : `<circle class="pt" data-bolsa="${esc(p.bolsa)}" cx="${X(i)}" cy="${Y(p.v)}" r="6.5" fill="${p.est ? "#fff" : cor}" stroke="${cor}" stroke-width="${p.est ? 2 : 0}"/>`) + "</g>";
+    if (i % passo === 0) s += `<text x="${X(i)}" y="${H - 18}" text-anchor="middle">${esc(p.bolsa)}</text><text x="${X(i)}" y="${H - 5}" text-anchor="middle" font-size="9.5">${brc(p.data)}</text>`;
+  });
+  return s + "</svg>";
+}
+// antes e depois por bolsa (ex. VCM do sangue total e do CH)
+function grafPar(pares, o) {
+  const W = 640, H = 240, ml = 50, mr = 50, mt = 20, mb = 26;
+  if (!pares.length) return '<p class="vazio">Sem pares para comparar.</p>';
+  const vs = pares.flatMap((p) => [p.a, p.b]); let lo = Math.min(...vs), hi = Math.max(...vs); const pad = (hi - lo) * 0.15 || 1; lo -= pad; hi += pad;
+  const Y = (v) => mt + (H - mt - mb) * (1 - (v - lo) / (hi - lo)), xa = ml + 80, xb = W - mr - 80;
+  let s = `<svg class="graf" viewBox="0 0 ${W} ${H}"><text x="${xa}" y="${H - 6}" text-anchor="middle" font-weight="600">${esc(o.a)}</text><text x="${xb}" y="${H - 6}" text-anchor="middle" font-weight="600">${esc(o.b)}</text>`;
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#f1e9e1"/><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 1)}</text>`; }
+  pares.forEach((p) => { const sob = p.b - p.a > 0.5, des = p.b - p.a < -0.5, cor = sob ? "#A83D3D" : des ? "#C49A6C" : "#5F130F";
+    s += `<g><title>${esc("Bolsa " + p.bolsa + " · " + fmt(p.a) + " → " + fmt(p.b) + " " + (o.un || ""))}</title><line x1="${xa}" y1="${Y(p.a)}" x2="${xb}" y2="${Y(p.b)}" stroke="${cor}" stroke-width="1.6" opacity=".8"/><circle class="pt" data-bolsa="${esc(p.bolsa)}" cx="${xa}" cy="${Y(p.a)}" r="5" fill="${cor}"/><circle class="pt" data-bolsa="${esc(p.bolsa)}" cx="${xb}" cy="${Y(p.b)}" r="5" fill="${cor}"/><text x="${xb + 9}" y="${Y(p.b) + 4}" font-size="10">${esc(p.bolsa)}</text></g>`; });
+  return s + "</svg>";
+}
+// barras horizontais (rendimento por bolsa)
+function grafBarras(l, o) {
+  if (!l.length) return '<p class="vazio">Sem dados suficientes.</p>';
+  const W = 640, lh = 26, H = l.length * lh + 30, ml = 64, mr = 60, mx = Math.max(o.max || 0, ...l.map((x) => x.v)) * 1.05, X = (v) => ml + (W - ml - mr) * v / mx;
+  let s = `<svg class="graf" viewBox="0 0 ${W} ${H}">`;
+  (o.marcas || []).forEach((m) => { s += `<line x1="${X(m.v)}" x2="${X(m.v)}" y1="4" y2="${H - 22}" stroke="#C49A6C" stroke-dasharray="4 3"/><text x="${X(m.v)}" y="${H - 8}" text-anchor="middle">${esc(m.t)}</text>`; });
+  l.forEach((x, i) => { const y = 6 + i * lh; s += `<g><title>${esc(x.tt || "")}</title><text x="${ml - 8}" y="${y + 15}" text-anchor="end">${esc(x.bolsa)}</text><rect class="pt" data-bolsa="${esc(x.bolsa)}" x="${ml}" y="${y + 3}" width="${Math.max(2, X(x.v) - ml)}" height="16" rx="4" fill="${x.cor || "#5F130F"}"/><text x="${X(x.v) + 6}" y="${y + 15}" font-weight="600" fill="#2b2320">${esc(x.txt)}</text></g>`; });
+  return s + "</svg>";
+}
+// bolsa desenhada, para as explicações (cheia até a fração indicada)
+function bolsaSvg(tipo, frac, rot) {
+  const cor = tipo === "CH" ? "#A83D3D" : tipo === "CP" ? "#E3CFA6" : tipo === "ST" ? "#8E2B27" : "#E8D9B8", f = Math.max(0.05, Math.min(1, frac || 0.7));
+  const yTopo = 30 + (1 - f) * 90;
+  return `<svg width="92" height="150" viewBox="0 0 92 150" aria-hidden="true"><path d="M46 2v14" stroke="#C6B098" stroke-width="3"/><path d="M18 18h56a8 8 0 0 1 8 8v96a20 20 0 0 1-20 20H30a20 20 0 0 1-20-20V26a8 8 0 0 1 8-8z" fill="#fff" stroke="#C6B098" stroke-width="2.5"/>` +
+    `<clipPath id="cl${tipo}"><path d="M18 18h56a8 8 0 0 1 8 8v96a20 20 0 0 1-20 20H30a20 20 0 0 1-20-20V26a8 8 0 0 1 8-8z"/></clipPath><rect x="8" y="${yTopo}" width="80" height="140" fill="${cor}" clip-path="url(#cl${tipo})"/>` +
+    (tipo === "CP" ? '<path d="M28 90c10-14 26 6 36-8M26 110c12-10 24 8 40-6" stroke="#C49A6C" stroke-width="2" fill="none" opacity=".8"/>' : "") +
+    (rot ? `<text x="46" y="${Math.min(128, yTopo + 22)}" text-anchor="middle" font-size="13" font-weight="700" fill="${tipo === "CH" || tipo === "ST" ? "#fff" : "#5F130F"}">${esc(rot)}</text>` : "") + "</svg>";
+}
+// dispersão simples (x contra y), com linha de referência no eixo y
+function grafDisp(l, o) {
+  const W = 640, H = 260, ml = 50, mr = 14, mt = 12, mb = 40, xs = l.map((p) => p.x), ys = l.map((p) => p.y).concat(o.linhaY != null ? [o.linhaY] : []);
+  const x0 = Math.min(...xs) * 0.9, x1 = Math.max(...xs) * 1.05, y1 = Math.max(...ys) * 1.1, X = (v) => ml + (W - ml - mr) * (v - x0) / (x1 - x0 || 1), Y = (v) => mt + (H - mt - mb) * (1 - v / (y1 || 1));
+  let s = `<svg class="graf" viewBox="0 0 ${W} ${H}">`;
+  for (let k = 0; k <= 4; k++) { const v = y1 * k / 4; s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#f1e9e1"/><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, 1)}</text>`; const vx = x0 + (x1 - x0) * k / 4; s += `<text x="${X(vx)}" y="${H - 22}" text-anchor="middle">${fmt(vx, 0)}</text>`; }
+  if (o.linhaY != null) s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(o.linhaY)}" y2="${Y(o.linhaY)}" stroke="#C49A6C" stroke-dasharray="4 3"/><text x="${W - mr}" y="${Y(o.linhaY) - 4}" text-anchor="end">mínimo ${fmt(o.linhaY, 1)}</text>`;
+  s += `<text x="${(ml + W - mr) / 2}" y="${H - 4}" text-anchor="middle" font-weight="600">${esc(o.x)}</text><text x="12" y="${mt + 4}" font-weight="600">${esc(o.y)}</text>`;
+  l.forEach((p) => { const cor = p.ok ? "#5F130F" : "#A83D3D"; s += `<g><title>Bolsa ${esc(p.bolsa)} · doador ${fmt(p.x, 0)} mil/µL · CP ${fmt(p.y, 1)} × 10¹⁰${p.doador ? "" : " (sangue total)"}</title><circle class="pt" data-bolsa="${esc(p.bolsa)}" cx="${X(p.x)}" cy="${Y(p.y)}" r="6.5" fill="${p.doador ? cor : "#fff"}" stroke="${cor}" stroke-width="2"/></g>`; });
+  return s + "</svg>";
+}
+/* ── telas ── */
+const ABAS = [["geral", "Visão geral"], ["explorar", "Explorar"], ["ch", "Hemácias"], ["cp", "Plaquetas"], ["plasma", "Plasma"], ["rend", "Rendimento"], ["sag", "SAG e VCM"], ["bolsas", "Bolsas"], ["planilhas", "Planilhas"], ["refs", "Referências"]];
+function pintar() {
+  const ms = meses();
+  $("#app").innerHTML = `<div class="topo"><h1>Controle de qualidade<small>Hemocomponentes conferidos com a Tabela 4 da ABVHMT · ${S.regs.length} análises em ${new Set(S.regs.map((r) => r.bolsa)).size} bolsas</small></h1>
+    <div class="bts"><button class="btn" data-a="pdfs">Ler PDFs do ProCyte</button><button class="btn sec" data-a="novo">Lançar à mão</button>${S.admin ? '<button class="btn sec" data-a="params">Parâmetros</button>' : ""}<button class="btn sec" data-a="imprimir">Imprimir</button></div></div>
+    <div class="periodo">${[["tudo", "Tudo"], ["mes", "Mês"], ["3m", "Últimos 3 meses"], ["12m", "Últimos 12 meses"]].map(([k, t]) => `<button data-a="per" data-v="${k}" class="${S.periodo === k ? "on" : ""}">${t}</button>`).join("")}
+    ${S.periodo === "mes" ? `<select id="selMes">${ms.slice().reverse().map((m) => `<option value="${m}"${m === (S.mes || ms[ms.length - 1]) ? " selected" : ""}>${mesTxt(m)}</option>`).join("")}</select>` : ""}</div>
+    <nav class="abas">${ABAS.map(([k, t]) => `<button data-a="aba" data-v="${k}" class="${S.aba === k ? "on" : ""}">${t}</button>`).join("")}</nav><div id="conteudo"></div>`;
+  const sm = $("#selMes"); if (sm) { if (!S.mes) S.mes = sm.value; sm.onchange = () => { S.mes = sm.value; pintarAba(); }; }
+  pintarAba();
+}
+// o botão do topo do painel pergunta aqui antes de sair: gaveta aberta fecha, aba diferente da visão geral volta para ela
+window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "geral") { S.aba = "geral"; pintar(); window.scrollTo(0, 0); return true; } return false; };
+function avisarAba() { ponte("qcAba", S.aba).catch(() => {}); }
+function pintarAba() { avisarAba(); const f = { geral: telaGeral, ch: () => telaComp(["CH", "CHD"]), cp: () => telaComp(["CP"]), plasma: () => telaComp(["PFC", "PC", "PIC", "CRIO"]), rend: telaRend, sag: telaSag, bolsas: telaBolsas, refs: telaRefs, explorar: telaExplorar, planilhas: telaPlanilhas }[S.aba]; $("#conteudo").innerHTML = f(); }
+const cartao = (t, sub, corpo, extra) => `<section class="cx">${extra ? '<div class="cab-it"><h2>' + t + "</h2>" + extra + "</div>" : "<h2>" + t + "</h2>"}${sub ? '<p class="sub">' + sub + "</p>" : ""}${corpo}</section>`;
+const statusA = (a) => !a ? '<span class="st nd">não avaliado</span>' : a.ok === true ? '<span class="st ok">✓ conforme</span>' : '<span class="st no">' + (a.dir === "acima" ? "▲ acima" : "▼ abaixo") + "</span>";
+function confComp(lista, comps) { let n = 0, ok = 0; ITENS.filter((i) => i.comp.some((c) => comps.includes(c))).forEach((i) => { const c = conformidade(lista.filter((r) => comps.includes(r.componente)), i.id); n += c.n; ok += c.ok; }); return { n, ok, pct: n ? 100 * ok / n : null }; }
+
+function telaGeral() {
+  const L = regsP(); if (!S.regs.length) return '<div class="cx vazio">Nenhuma análise ainda. Use “Ler PDFs do ProCyte” para começar.</div>';
+  const grupos = [["ch", "Concentrado de hemácias", ["CH", "CHD"]], ["cp", "Concentrado de plaquetas", ["CP"]], ["plasma", "Plasma", ["PFC", "PC", "PIC", "CRIO"]]];
+  const kp = grupos.map(([k, t, cs]) => { const c = confComp(L, cs), nb = new Set(L.filter((r) => cs.includes(r.componente)).map((r) => r.bolsa)).size;
+    return `<button class="kpi" data-a="aba" data-v="${k}">${anel(c.pct, 66)}<span class="tx"><b>${t}</b><span>${nb} ${nb === 1 ? "bolsa" : "bolsas"} · ${c.n} itens avaliados</span>${c.pct != null && c.pct < S.P.conformidade ? "<i>abaixo dos " + fmt(S.P.conformidade, 0) + "% exigidos</i>" : ""}</span></button>`; });
+  const rs = [...new Set(L.map((r) => r.bolsa))].map(rendimento), mh = media(rs.map((x) => x.recHb)), mp = media(rs.map((x) => x.recPlq));
+  kp.push(`<button class="kpi" data-a="aba" data-v="rend">${anel(mh, 66)}<span class="tx"><b>Rendimento</b><span>Hemoglobina do sangue total que chegou ao CH${mp != null ? " · plaquetas no CP " + fmt(mp, 0) + "%" : ""}</span></span></button>`);
+  return `<div class="g4" style="margin-bottom:14px">${kp.join("")}</div>` + cartao("Mapa de conformidade", "Cada célula é a porcentagem de bolsas dentro do critério naquele mês. A Tabela 4 exige " + fmt(S.P.conformidade, 0) + "% ou mais. Toque numa célula ou num item para entender.", mapa()) +
+    cartao("Do sangue total aos hemocomponentes", "Médias do período. Toque em cada parte para ver como é calculado.", fluxo(L)) +
+    `<div class="g2">${cartao("Pontos de atenção", "", listaAchados(achados(L)))}${cartao("Amostragem", "A Tabela 4 pede controle de qualidade em pelo menos " + fmt(S.P.amostragem, 0) + "% da produção ou 1 unidade por mês, o que for maior. A produção do mês é contada pelas doações registradas.", amostragem())}</div>`;
+}
+const media = (l) => { const v = l.filter((x) => x != null && isFinite(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+function mapa() {
+  const ms = meses().filter((m) => S.periodo === "tudo" || S.regs.some((r) => r.data.slice(0, 7) === m && noPeriodo(r.data))).slice(-8);
+  const linhas = ITENS.map((it) => { const cels = ms.map((m) => { const c = conformidade(S.regs.filter((r) => r.data.slice(0, 7) === m), it.id); if (!c.n) return '<td class="c vz">–</td>';
+      const ok = c.pct >= S.P.conformidade, a = 0.18 + 0.82 * (c.pct / 100); return `<td class="c" data-a="cel" data-item="${it.id}" data-mes="${m}" style="background:${ok ? "rgba(95,19,15," + a + ")" : "rgba(168,61,61," + (0.25 + 0.75 * (1 - c.pct / 100)) + ")"};color:${ok && a < 0.5 ? "#5F130F" : "#fff"}">${ok ? "" : "▼ "}${fmt(c.pct, 0)}%<small>${c.ok} de ${c.n}</small></td>`; });
+    if (cels.every((c) => c.indexOf(" vz") > 0)) return "";
+    return `<tr><td class="it"><button data-a="exp" data-item="${it.id}">${["PFC", "PC", "PIC", "CRIO"].includes(it.comp[0]) ? "Plasma" : it.comp[0]} · ${it.nome} <small>ⓘ</small></button></td>${cels.join("")}</tr>`; }).join("");
+  return `<div class="mapa-sc"><table class="mapa"><tr><th class="it">Item</th>${ms.map((m) => "<th>" + mesTxt(m) + "</th>").join("")}</tr>${linhas || '<tr><td class="vazio" colspan="9">Nenhum item com critério avaliado ainda. Lance peso, pH e os demais dados nas bolsas.</td></tr>'}</table></div>
+    <div class="leg"><span><i style="background:#5F130F"></i>conforme (≥ ${fmt(S.P.conformidade, 0)}%)</span><span><i style="background:#A83D3D"></i>▼ abaixo de ${fmt(S.P.conformidade, 0)}%</span><span><i style="background:#f6f1ec"></i>sem avaliação</span></div>`;
+}
+function listaAchados(A) { if (!A.length) return '<p class="nota">Nada fora do esperado no período.</p>'; return '<div class="alertas">' + A.slice(0, 10).map((a) => `<div class="al${a.n ? "" : " inf"}"><b>${esc(a.t)}</b><br>${esc(a.d)}<button data-a="bolsa" data-v="${esc(a.r.bolsa)}">abrir bolsa</button></div>`).join("") + (A.length > 10 ? `<p class="nota">E mais ${A.length - 10}.</p>` : "") + "</div>"; }
+function amostragem() {
+  const ms = meses().slice(-6); if (!ms.length) return "";
+  return '<div class="tab-sc"><table class="tab"><tr><th>Mês</th><th>Doações</th><th>CH avaliados</th><th>CP avaliados</th><th>Situação</th></tr>' + ms.map((m) => {
+    const nd = S.doa.filter((d) => (d.data || "").slice(0, 7) === m && !d.naoColetado).length, ch = new Set(S.regs.filter((r) => r.data.slice(0, 7) === m && (r.componente === "CH" || r.componente === "CHD")).map((r) => r.bolsa)).size, cp = new Set(S.regs.filter((r) => r.data.slice(0, 7) === m && r.componente === "CP").map((r) => r.bolsa)).size;
+    const exig = Math.max(1, Math.ceil(nd * S.P.amostragem / 100)), ok = ch >= exig;
+    return `<tr><td>${mesTxt(m)}</td><td>${nd || "–"}</td><td>${ch}</td><td>${cp}</td><td>${ok ? '<span class="st ok">✓ ' + (nd ? fmt(100 * ch / nd, 0) + "%" : "ok") + "</span>" : '<span class="st no">faltam ' + (exig - ch) + "</span>"}</td></tr>`; }).join("") + "</table></div>";
+}
+function fluxo(L) {
+  const bs = [...new Set(L.map((r) => r.bolsa))], R = bs.map(rendimento);
+  const ch = L.filter((r) => r.componente === "CH" || r.componente === "CHD"), cp = L.filter((r) => r.componente === "CP"), pl = L.filter((r) => ["PFC", "PC", "PIC"].includes(r.componente)), st = L.filter((r) => r.componente === "ST");
+  const hbCH = media(ch.map((r) => { const a = itemPor("ch_hb").av(r); return a && a.v; })), htc = media(ch.map((r) => { const h = htCH(r); return h && h.v; })), plqU = media(cp.map((r) => { const a = itemPor("cp_plq").av(r); return a && !a.est ? a.v : null; }));
+  const vpl = media(pl.map((r) => { const v = volume(r); return v && v.v; })), hbST = media(R.map((x) => x.hbST)), recHb = media(R.map((x) => x.recHb)), recP = media(R.map((x) => x.recPlq)), htST = media(st.map((r) => hm(r, "HCT")).filter((v) => v != null && v > 25));
+  const nd = (x, y, w, h, tit, l1, l2, cor, k) => `<g class="nd" data-a="exp" data-item="${k}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#fff" stroke="${cor}" stroke-width="2"/><text x="${x + w / 2}" y="${y + 22}" text-anchor="middle" font-size="13" font-weight="700" fill="#5F130F">${tit}</text><text x="${x + w / 2}" y="${y + 42}" text-anchor="middle" font-size="12" fill="#2b2320">${l1}</text><text x="${x + w / 2}" y="${y + 60}" text-anchor="middle" font-size="11" fill="#6b5a52">${l2}</text></g>`;
+  const seta = (x1, y1, x2, y2, t) => `<path d="M${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2 - 6} ${y2}" fill="none" stroke="#C6B098" stroke-width="2"/><path d="M${x2 - 8} ${y2 - 5} L${x2} ${y2} L${x2 - 8} ${y2 + 5}" fill="none" stroke="#C6B098" stroke-width="2"/>${t ? `<text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 6}" text-anchor="middle" font-size="11" font-weight="700" fill="#A83D3D">${t}</text>` : ""}`;
+  return `<svg class="graf fluxo" viewBox="0 0 640 230">${seta(150, 115, 250, 50, recHb != null ? fmt(recHb, 0) + "% da Hb" : "")}${seta(150, 115, 250, 180, "")}${seta(410, 180, 480, 120, recP != null ? fmt(recP, 0) + "% das plaq." : "")}${seta(410, 180, 480, 200, "")}
+    ${nd(10, 80, 140, 72, "Sangue total", htST != null ? "Ht médio " + fmt(htST) + "%" : st.length + " bolsas", hbST != null ? fmt(hbST, 0) + " g de Hb por bolsa" : "", "#8E2B27", "rend_hb")}
+    ${nd(250, 14, 160, 72, "Concentrado de hemácias", htc != null ? "Ht " + fmt(htc) + "%" : ch.length + " bolsas", hbCH != null ? fmt(hbCH, 0) + " g de Hb por unidade" : "", "#5F130F", "ch_hb")}
+    ${nd(250, 144, 160, 72, "Plasma rico em plaquetas", "centrifugação leve", "", "#C6B098", "rend_plq")}
+    ${nd(480, 84, 150, 72, "Concentrado de plaquetas", plqU != null ? fmt(plqU, 1) + " × 10¹⁰" : cp.length + " bolsas", "plaquetas por unidade", "#C49A6C", "cp_plq")}
+    ${nd(480, 164, 150, 60, "Plasma", vpl != null ? fmt(vpl, 0) + " mL" : pl.length + " bolsas", "", "#C6B098", "pl_vol")}</svg>`;
+}
+function telaComp(comps) {
+  const L = regsP().filter((r) => comps.includes(r.componente)).sort((a, b) => (a.data + a.bolsa).localeCompare(b.data + b.bolsa));
+  if (!L.length) return '<div class="cx vazio">Nenhuma análise de ' + comps.map((c) => COMP[c].n.toLowerCase()).join(", ") + ' no período.</div>';
+  const its = ITENS.filter((i) => i.comp.some((c) => comps.includes(c)));
+  let h = '<div class="g2">';
+  its.forEach((it) => {
+    const c = conformidade(L, it.id), pts = c.lista.map((x) => ({ v: x.a.v, ok: x.a.ok, bolsa: x.r.bolsa, data: x.r.data, est: x.a.est, tt: x.r.bolsa + " · " + br(x.r.data) + " · " + x.a.txt + (x.a.det ? " · " + x.a.det : "") }));
+    const r0 = L.find((r) => it.comp.includes(r.componente)) || L[0], lims = limites(it, r0);
+    const corpo = c.n ? `<div style="display:flex;gap:14px;align-items:center;margin-bottom:6px">${anel(c.pct, 58)}<div><div class="num-g">${c.ok}<small> de ${c.n} conformes</small></div><div class="nota">Critério ${esc(it.ref(r0))}</div></div></div>` + (it.id === "cp_sw" || it.id.endsWith("_mic") || it.id === "pl_cor" ? listaSimples(c.lista, true) : grafPontos(pts, Object.assign({ titulo: it.nome }, lims)))
+      : `<p class="nota">Ainda sem dado para este item. Critério ${esc(it.ref(r0))}.</p>` + dicaFalta(it);
+    h += cartao(it.nome, "", corpo, `<button class="info" data-a="exp" data-item="${it.id}">Entenda</button>`);
+  });
+  h += "</div>";
+  if (comps.includes("CP")) h += overnight(L);
+  if (comps.includes("CH")) h += cartao("Índices das hemácias no CH", "Valores do ProCyte em cada bolsa. Servem de base para acompanhar a lesão de armazenamento.", grafPontos(L.filter((r) => hm(r, "VCM") != null).map((r) => ({ v: hm(r, "VCM"), ok: null, bolsa: r.bolsa, data: r.data, tt: r.bolsa + " · VCM " + fmt(hm(r, "VCM")) + " fL · CHCM " + fmt(hm(r, "CHCM")) + " g/dL" })), { titulo: "VCM", linha: true }) + '<p class="nota">VCM (fL) por bolsa.</p>');
+  return h + tabelaLista(L);
+}
+// só os cartões dos itens de um hemocomponente (usado no sangue total, dentro de Rendimento)
+function telaItens(comps) { const h = telaComp(comps), i = h.indexOf("</div>" + '<section class="cx"><h2>Análises do período'); return i > 0 ? h.slice(0, i + 6) : h; }
+function limites(it, r) {
+  const P = S.P, sol = r && r.dados.solucao === "CPDA-1";
+  return { ch_ht: { min: sol ? P.chCpdaMin : P.chHtMin, max: sol ? P.chCpdaMax : P.chHtMax }, ch_hb: { min: r && r.componente === "CHD" ? P.chdHbMin : P.chHbMin, zero: true }, ch_hem: { max: P.hemoliseMax, zero: true, cas: 1 }, cp_vol: { min: P.cpVolMin, max: P.cpVolMax, cas: 0 }, cp_plq: { min: P.cpPlqMin, zero: true },
+    cp_ph: { min: P.cpPhMin }, st_tempo: { max: P.stTempoMax, zero: true, cas: 0 }, st_vol: { min: P.stVolMin, max: P.stVolMax, cas: 0 }, cp_leu: { max: P.cpLeucMax, zero: true, casEixo: 2 }, pl_vol: r && r.componente === "CRIO" ? { min: P.crioVolMin, max: P.crioVolMax } : { min: r && r.componente === "PIC" ? P.picVolMin : P.pfcVolMin, cas: 0 }, pfc_hem: { max: P.pfcHemMax, zero: true, cas: 0 } }[it.id] || {};
+}
+function dicaFalta(it) {
+  const t = { ch_hem: "Lance a hemoglobina livre do sobrenadante na bolsa.", ch_mic: "Lance o resultado da cultura na bolsa.", cp_mic: "Lance o resultado da cultura na bolsa.", cp_ph: "Lance o pH na bolsa.", cp_sw: "Marque o swirling na bolsa.", pl_cor: "Lance o aspecto do plasma na bolsa.", pl_vol: "Lance o peso da bolsa de plasma.", cp_vol: "Lance o peso do CP.", ch_hb: "Lance o peso do CH ou use a calculadora de SAG." }[it.id];
+  return t ? '<p class="nota">' + t + "</p>" : "";
+}
+function listaSimples(l, resumo) { if (resumo && l.length > 4 && l.every((x) => x.a.ok)) return '<p class="nota">Todas as ' + l.length + " bolsas dentro do critério.</p>"; if (resumo && l.length > 4) l = l.filter((x) => !x.a.ok); return '<div class="res">' + l.map((x) => `<div class="r" data-a="bolsa" data-v="${esc(x.r.bolsa)}"><span class="n">Bolsa ${esc(x.r.bolsa)}<small>${br(x.r.data)}</small></span><span class="v">${esc(x.a.txt)} ${statusA(x.a)}</span></div>`).join("") + "</div>"; }
+function overnight(L) {
+  const g = (v) => L.filter((r) => (r.dados.overnight || "") === v).map((r) => ({ r, a: itemPor("cp_plq").av(r) })).filter((x) => x.a);
+  const s = g("sim"), n = g("não"); if (!s.length || !n.length) return "";
+  const ms = media(s.map((x) => x.a.v)), mn = media(n.map((x) => x.a.v));
+  return cartao("Descanso overnight antes de separar as plaquetas", "Plaquetas por unidade nas bolsas que ficaram em repouso de um dia para o outro e nas que foram processadas no mesmo dia.",
+    grafBarras([{ bolsa: "com", v: ms, txt: fmt(ms, 1) + " × 10¹⁰ (" + s.length + " bolsas)", cor: "#5F130F" }, { bolsa: "sem", v: mn, txt: fmt(mn, 1) + " × 10¹⁰ (" + n.length + " bolsas)", cor: "#A83D3D" }], { marcas: [{ v: S.P.cpPlqMin, t: "mínimo " + fmt(S.P.cpPlqMin, 1) }] }) +
+    '<p class="nota">Comparação descritiva, sem teste estatístico. Outras diferenças entre as bolsas também influenciam o resultado.</p>');
+}
+function tabelaLista(L) {
+  return cartao("Análises do período", "Toque numa linha para abrir a bolsa.", '<div class="tab-sc"><table class="tab"><tr><th>Bolsa</th><th>Data</th><th>Componente</th><th>Itens</th></tr>' + L.slice().reverse().map((r) => {
+    const av = avaliar(r).filter((x) => x.a); return `<tr class="cl" data-a="bolsa" data-v="${esc(r.bolsa)}"><td><b>${esc(r.bolsa)}</b></td><td>${br(r.data)}</td><td>${esc(r.componente)}</td><td>${av.map((x) => `<span class="st ${x.a.ok ? "ok" : "no"}" title="${esc(x.item.nome + " " + x.a.txt)}">${esc(x.item.nome)} ${esc(x.a.txt)}</span>`).join(" ") || '<span class="st nd">sem itens lançados</span>'}</td></tr>`; }).join("") + "</table></div>");
+}
+function telaRend() {
+  const bs = [...new Set(regsP().map((r) => r.bolsa))].sort(), R = bs.map(rendimento);
+  const hb = R.filter((x) => x.recHb != null).map((x) => ({ bolsa: x.bolsa, v: x.recHb, txt: fmt(x.recHb, 0) + "%", tt: "Bolsa " + x.bolsa + " · " + fmt(x.hbCH, 0) + " g no CH de " + fmt(x.hbST, 0) + " g no sangue total", cor: x.recHb < 70 ? "#A83D3D" : "#5F130F" }));
+  const pq = R.filter((x) => x.recPlq != null).map((x) => ({ bolsa: x.bolsa, v: x.recPlq, txt: fmt(x.recPlq, 0) + "% (" + fmt(x.plqCP, 1) + " × 10¹⁰)", tt: "Bolsa " + x.bolsa + " · " + fmt(x.plqCP, 1) + " de " + fmt(x.plqST, 1) + " × 10¹⁰", cor: x.recPlq < 50 ? "#A83D3D" : "#C49A6C" }));
+  const st = regsP().filter((r) => r.componente === "ST").sort((a, b) => a.data.localeCompare(b.data));
+  const dp = bs.map((b) => { const d = regDe(b, "DOA") || regDe(b, "ST"), c = regDe(b, "CP"), a = c && itemPor("cp_plq").av(c); return d && a && !a.est && hm(d, "PLQ") != null ? { bolsa: b, x: hm(d, "PLQ"), y: a.v, ok: a.ok, doador: !!regDe(b, "DOA") } : null; }).filter(Boolean);
+  return (regsP().some((r) => r.componente === "ST") ? telaItens(["ST"]) : "") + cartao("Hemoglobina recuperada no CH", "Quanto da hemoglobina do sangue total chegou ao concentrado de hemácias. O que falta ficou no plasma, no CP e nas perdas do processo.", grafBarras(hb, { max: 100, marcas: [{ v: 100, t: "100%" }] }) + (hb.some((x) => x.v > 100) ? '<p class="nota">Barra passando de 100% é erro de medida, porque o CH não pode ter mais hemoglobina que o sangue total de onde saiu. Quando o ProCyte dá hematócrito acima do micro-hematócrito no CH, a hemoglobina tende a vir superestimada junto (veja a aba SAG e VCM).</p>' : ""), '<button class="info" data-a="exp" data-item="rend_hb">Entenda</button>') +
+    cartao("Plaquetas recuperadas no CP", "Quanto das plaquetas do sangue total chegou ao concentrado de plaquetas.", grafBarras(pq, { max: 100, marcas: [{ v: 100, t: "100%" }] }) + (pq.length ? "" : '<p class="nota">Precisa do hemograma do sangue total, do volume coletado e do peso do CP.</p>'), '<button class="info" data-a="exp" data-item="rend_plq">Entenda</button>') +
+    (dp.length >= 3 ? cartao("Plaquetas do doador e dose do CP", "Cada ponto é uma bolsa. Mostra quanto da dose do CP depende da contagem de plaquetas de quem doou. Quando não há hemograma do doador, entra o do sangue total.", grafDisp(dp, { x: "Plaquetas do doador (mil/µL)", y: "CP (× 10¹⁰ por unidade)", linhaY: S.P.cpPlqMin })) : "") +
+    cartao("Sangue total", "Hematócrito da bolsa comparado com o do doador. A bolsa fica um pouco mais diluída por causa do anticoagulante.", grafPontos(st.filter((r) => hm(r, "HCT") != null).map((r) => { const doa = doacaoDe(r.bolsa), htd = num(r.dados.htColeta) != null ? num(r.dados.htColeta) : doa && num(doa.ht);
+      return { v: hm(r, "HCT"), ok: hm(r, "HCT") < 25 ? false : null, bolsa: r.bolsa, data: r.data, tt: r.bolsa + " · bolsa " + fmt(hm(r, "HCT")) + "%" + (htd != null ? " · doador " + fmt(htd) + "%" : "") }; }), { titulo: "Hematócrito do sangue total", linha: true }) + '<p class="nota">Losango vermelho é amostra com hematócrito incompatível com sangue total.</p>');
+}
+function telaSag() {
+  const pares = [...new Set(S.regs.map((r) => r.bolsa))].map((b) => { const st = regDe(b, "ST"), ch = regDe(b, "CH"); return st && ch && hm(st, "VCM") != null && hm(ch, "VCM") != null && hm(st, "HCT") > 25 ? { bolsa: b, a: hm(st, "VCM"), b: hm(ch, "VCM") } : null; }).filter(Boolean);
+  const dif = pares.map((p) => p.b - p.a), md = media(dif);
+  const pm = S.sag.filter((x) => num(x.htFinalMicro) != null && num(x.htFinalProcyte) != null).sort((a, b) => (a.data + a.bolsa).localeCompare(b.data + b.bolsa));
+  const bars = pm.map((x) => { const d = num(x.htFinalProcyte) - num(x.htFinalMicro); return { bolsa: x.bolsa, d }; });
+  const W = 640, H = Math.max(80, bars.length * 24 + 30), mx = Math.max(10, ...bars.map((b) => Math.abs(b.d))) * 1.1, X0 = W / 2, X = (v) => X0 + (W / 2 - 70) * v / mx;
+  let g = `<svg class="graf" viewBox="0 0 ${W} ${H}"><line x1="${X0}" x2="${X0}" y1="0" y2="${H - 20}" stroke="#2b2320"/><text x="${X(-mx * 0.6)}" y="${H - 5}" text-anchor="middle">ProCyte menor</text><text x="${X(mx * 0.6)}" y="${H - 5}" text-anchor="middle">ProCyte maior</text>`;
+  bars.forEach((b, i) => { const y = 4 + i * 24; g += `<g><title>Bolsa ${esc(b.bolsa)} · ${(b.d > 0 ? "+" : "") + fmt(b.d)} pontos</title><text x="40" y="${y + 14}">${esc(b.bolsa)}</text><rect class="pt" data-bolsa="${esc(b.bolsa)}" x="${Math.min(X0, X(b.d))}" y="${y + 2}" width="${Math.abs(X(b.d) - X0)}" height="15" rx="3" fill="${b.d > 0 ? "#A83D3D" : "#C49A6C"}"/><text x="${b.d > 0 ? X(b.d) + 5 : X(b.d) - 5}" y="${y + 14}" text-anchor="${b.d > 0 ? "start" : "end"}" font-weight="600" fill="#2b2320">${(b.d > 0 ? "+" : "") + fmt(b.d)}</text></g>`; });
+  g += "</svg>";
+  return cartao("VCM do sangue total e do CH com SAG", "Mesma bolsa antes e depois do fracionamento. Linha subindo em vermelho é aumento de VCM." + (md != null ? " Diferença média de " + (md > 0 ? "+" : "") + fmt(md, 2) + " fL em " + pares.length + " bolsas." : ""), grafPar(pares, { a: "Sangue total", b: "CH com SAG", un: "fL" }), '<button class="info" data-a="exp" data-item="sag_vcm">Entenda</button>') +
+    cartao("Hematócrito do CH com SAG, ProCyte menos micro-hematócrito", "Dados da calculadora de SAG. O micro-hematócrito é opcional e entra quando for medido.", pm.length ? g : '<p class="nota">Ainda sem bolsas com os dois hematócritos.</p>', '<button class="info" data-a="exp" data-item="sag_ht">Entenda</button>');
+}
+function telaBolsas() {
+  const dataB = (b) => { const d = doacaoDe(b); return d && d.data ? d.data : regsDa(b).map((r) => r.data).sort()[0] || ""; };
+  const bs = [...new Set(regsP().map((r) => r.bolsa))].sort((a, b) => dataB(b).localeCompare(dataB(a)) || b.localeCompare(a)); if (!bs.length) return '<div class="cx vazio">Nenhuma bolsa no período.</div>';
+  return cartao("Bolsas", "Cada linha é uma doação, da coleta mais recente para a mais antiga. Toque para ver e lançar os dados de cada hemocomponente.", '<div class="tab-sc"><table class="tab"><tr><th>Bolsa</th><th>Doador</th><th>Coleta</th><th>Hemocomponentes</th></tr>' + bs.map((b) => {
+    const doa = doacaoDe(b), rr = regsDa(b);
+    const cs = ["DOA", "ST", "CH", "CHD", "CP", "PFC", "PC", "PIC", "CRIO"].filter((c) => rr.some((r) => r.componente === c)).map((c) => { const av = avaliar(regDe(b, c)).filter((x) => x.a), no = av.filter((x) => !x.a.ok).length; return `<span class="st ${!av.length ? "nd" : no ? "no" : "ok"}">${c === "DOA" ? "Doador" : c}${av.length ? (no ? " ▼" + no : " ✓") : ""}</span>`; }).join(" ");
+    return `<tr class="cl" data-a="bolsa" data-v="${esc(b)}"><td><b>${esc(b)}</b></td><td>${esc(doa ? doa.nome : "")}</td><td>${br(dataB(b))}</td><td>${cs}</td></tr>`; }).join("") + "</table></div>");
+}
+const REFS = [
+  "ABVHMT. Recomendações de Boas Práticas para Serviços de Hemoterapia Veterinária. Capítulo VII, Controle de qualidade do sangue e hemocomponentes, Tabela 4. 2024.",
+  "Yakymchuk IM. Effect of storage conditions and duration of erythrocyte mass and whole blood of dogs on mean erythrocyte volume and erythrocyte hemolysis. Scientific Messenger of LNU of Veterinary Medicine and Biotechnologies, 2024. O VCM aumentou de forma gradual no armazenamento, mais no sangue total que no CH. A hemólise passou de 1% no 14º dia no sangue total e no 28º dia no CH.",
+  "Bujok J, Wajman E, Trochanowska-Pauk N, Walski T. Evaluation of selected hematological, biochemical and oxidative stress parameters in stored canine CPDA-1 whole blood. BMC Vet Res. 2022;18:255. doi:10.1186/s12917-022-03353-x. O VCM caiu na primeira semana (desidratação das hemácias) e depois subiu até o fim do armazenamento.",
+  "Ekiz EE, Arslan M, Akyazı İ, Uygur EE, Gültekin Gİ, Özcan M. The effects of prestorage leukoreduction and storage duration on the in vitro quality of canine packed red blood cells. Turk J Vet Anim Sci. 2012;36(6):711-717. doi:10.3906/vet-1110-25. CH canino em SAGM por 42 dias, com e sem filtro de leucócitos.",
+  "Ferreira RRF, Graça RMC, Cardoso IM, Gopegui RR, de Matos AJF. In vitro hemolysis of stored units of canine packed red blood cells. J Vet Emerg Crit Care. 2018. doi:10.1111/vec.12770. 180 bolsas de CH canino em solução aditiva com manitol.",
+  "Blasi Brugué C, Ferreira RRF, Mesa Sanchez I, Graça RMC, Cardoso IM, de Matos AJF, Ruiz de Gopegui R. In vitro quality control analysis after processing and during storage of feline packed red blood cells units. BMC Vet Res. 2018;14:141. doi:10.1186/s12917-018-1458-4. CH felino em SAGM. 13,88% das bolsas passaram de 1% de hemólise até 28 dias.",
+  "Livshits L, Bilu T, Peretz S, et al. Back to the “gold standard”: how precise is hematocrit detection today? Mediterr J Hematol Infect Dis. 2022. O hematócrito dos analisadores é calculado (hemácias × VCM) e não concorda bem com o micro-hematócrito quando o volume das hemácias muda.",
+  "Shin SW, Kim M, Shin C, et al. Understanding the biochemical impact of leukoreduction on canine pRBC storage. Front Vet Sci. 2025;12:1563532."
+];
+function telaRefs() { return cartao("Referências", "Base dos critérios e das explicações deste módulo.", '<ol class="refs">' + REFS.map((r) => "<li>" + esc(r) + "</li>").join("") + "</ol>") +
+  cartao("Sobre o VCM e o SAG", "", '<p class="nota">Não encontrei trabalho em cães ou gatos que meça o VCM logo depois da adição do SAG. Os estudos acompanham o VCM ao longo do armazenamento (Bujok 2022, Yakymchuk 2024, Ekiz 2012). A queda do VCM na primeira semana e o aumento depois aparecem tanto no sangue total em CPDA-1 quanto no CH. A aba SAG e VCM mostra os dados do próprio CVH, que podem virar essa referência.</p>'); }
+/* ── gaveta lateral: explicações e bolsas ── */
+function abrirGaveta(t, h) { const v = $("#voltaLote"); if (v) v.hidden = true; $("#gvT").textContent = t; $("#gvC").innerHTML = h; $("#gvC").scrollTop = 0; $("#gaveta").classList.add("on"); $("#veu").classList.add("on"); $("#gaveta").setAttribute("aria-hidden", "false"); }
+function fecharGaveta() { if (typeof lerLote === "function" && LOTE.length && $("#gvT").textContent === "Conferência dos PDFs") lerLote(); $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); $("#gaveta").setAttribute("aria-hidden", "true"); const v = $("#voltaLote"); if (v) { v.hidden = !LOTE.length; v.textContent = "Voltar à conferência dos PDFs (" + LOTE.length + ")"; } }
+const EXTRA = {
+  rend_hb: { nome: "Hemoglobina recuperada no CH", tipo: "CH", exp: { oq: "Porcentagem da hemoglobina do sangue total que ficou no concentrado de hemácias.", pq: "Mostra a eficiência do fracionamento. Perda grande indica hemácias indo para o plasma ou para o CP, ou volume mal medido.", como: "Hemoglobina total do sangue total (Hb da bolsa × volume coletado mais o anticoagulante) comparada com a hemoglobina total do CH.", formula: "Recuperação (%) = Hb total do CH ÷ Hb total do sangue total × 100", fonte: "Indicador de processo do CVH, não faz parte da Tabela 4." } },
+  rend_plq: { nome: "Plaquetas recuperadas no CP", tipo: "CP", exp: { oq: "Porcentagem das plaquetas do sangue total que chegou ao concentrado de plaquetas.", pq: "É o melhor indicador para ajustar a centrifugação (força, tempo, temperatura) e o descanso antes da separação.", como: "Plaquetas totais do sangue total comparadas com as plaquetas totais do CP. Depende do volume coletado, do hemograma do sangue total e do peso do CP.", formula: "Recuperação (%) = plaquetas do CP ÷ plaquetas do sangue total × 100", fonte: "Indicador de processo do CVH, não faz parte da Tabela 4." } },
+  sag_vcm: { nome: "VCM e solução aditiva", tipo: "CH", exp: { oq: "Comparação do volume médio das hemácias no sangue total e no CH com SAG da mesma bolsa.", pq: "Se o SAG mudasse o tamanho das hemácias, o hematócrito calculado pelo ProCyte (hemácias × VCM) mudaria junto, sem mudar a quantidade real de hemácias.", como: "VCM do ProCyte no sangue total e no CH. Nos estudos em cães o VCM cai na primeira semana e sobe depois, ao longo do armazenamento (Bujok 2022, Yakymchuk 2024).", fonte: "Bujok et al., 2022; Yakymchuk, 2024; Ekiz et al., 2012." } },
+  sag_ht: { nome: "ProCyte e micro-hematócrito no CH", tipo: "CH", exp: { oq: "Diferença entre o hematócrito do ProCyte e o micro-hematócrito na mesma bolsa de CH com SAG.", pq: "O ProCyte calcula o hematócrito (número de hemácias × VCM). O micro-hematócrito mede direto na centrífuga. Em hematócritos altos e com hemácias em solução aditiva os dois podem se afastar bastante.", como: "Os dois valores vêm da calculadora de SAG. Diferença constante sugere viés do método. Diferença que muda de sinal entre lotes sugere problema de amostragem (homogeneização) ou de tempo entre a coleta da amostra e a leitura.", fonte: "Livshits et al., 2022. O micro-hematócrito é o método de referência (ICSH)." } }
+};
+function explicar(id, mes) {
+  const it = itemPor(id), x = it || EXTRA[id]; if (!x) return; const e = x.exp, comp = it ? it.comp[0] : x.tipo;
+  let h = `<div style="display:flex;gap:14px;align-items:center">${bolsaSvg(comp === "CHD" ? "CH" : ["PFC", "PC", "PIC", "CRIO"].includes(comp) ? "PL" : comp, comp === "CH" ? 0.65 : comp === "CP" ? 0.35 : 0.75, comp === "CH" ? "Ht" : comp === "CP" ? "PLQ" : "")}<div><b style="color:#5F130F">${esc(COMP[comp] ? COMP[comp].n : "")}</b>${it ? '<p class="nota">Critério ' + esc(it.ref({ componente: comp, dados: {} })) + "</p>" : ""}</div></div>`;
+  h += "<h3>O que é</h3><p>" + esc(e.oq) + "</p><h3>Por que importa</h3><p>" + esc(e.pq) + "</p><h3>Como é medido</h3><p>" + esc(e.como) + "</p>" + (e.formula ? '<div class="formula"><b>' + esc(e.formula) + "</b></div>" : "") + '<h3>Fonte</h3><p class="nota">' + esc(e.fonte) + "</p>";
+  if (it) { const L = (mes ? S.regs.filter((r) => r.data.slice(0, 7) === mes) : regsP()), c = conformidade(L, id);
+    h += "<h3>" + (mes ? "Bolsas de " + mesTxt(mes) : "Bolsas do período") + "</h3>" + (c.n ? listaSimples(c.lista) : '<p class="nota">Nenhuma bolsa com este item.</p>'); }
+  abrirGaveta(it ? (["PFC", "PC", "PIC", "CRIO"].includes(comp) ? "Plasma" : comp) + " · " + it.nome : x.nome, h);
+}
+const CAMPOS = {
+  comum: [["peso", "Peso da bolsa (g)", "num"], ["volume", "Volume (mL), se medido direto", "num"]],
+  CH: [["solucao", "Solução", ["SAG", "CPDA-1"]], ["pesoAntesSag", "Peso antes do SAG (g)", "num"], ["microHt", "Micro-hematócrito (%)", "num"], ["hbLivre", "Hb livre no sobrenadante (g/dL)", "num"], ["micro", "Microbiológico", ["", "Negativo", "Positivo"]]],
+  CP: [["ph", "pH", "num"], ["swirling", "Swirling (escore)", ["", "3", "2", "1", "0"]], ["overnight", "Overnight antes de separar", ["", "sim", "não"]], ["agitador", "Horas no agitador", "num"], ["validade", "Validade", "date"], ["micro", "Microbiológico", ["", "Negativo", "Positivo"]]],
+  PL: [["aspecto", "Aspecto", ["", "Límpido", "Lipêmico", "Turvo", "Avermelhado"]]],
+  ST: [["volumeColetado", "Volume coletado (mL)", "num"], ["htColeta", "Ht do doador na coleta (%)", "num"], ["duracao", "Tempo de coleta (min)", "num"]]
+};
+CAMPOS.CHD = CAMPOS.CH;
+const camposDe = (c) => (c === "ST" ? [] : CAMPOS.comum).concat(CAMPOS[c] || (["PFC", "PC", "PIC", "CRIO"].includes(c) ? CAMPOS.PL : [])).concat([["obs", "Observações", "txt"]]);
+function campoH(k, rot, tp, v, pre) {
+  const id = pre + k; v = v == null ? "" : v;
+  if (Array.isArray(tp)) return `<label>${rot}<select id="${id}">${tp.map((o) => `<option value="${esc(o)}"${String(v) === o ? " selected" : ""}>${o || "–"}</option>`).join("")}</select></label>`;
+  if (tp === "txt") return `<label class="larga">${rot}<input id="${id}" value="${esc(v)}" maxlength="300"></label>`;
+  return `<label>${rot}<input id="${id}" ${tp === "date" ? 'type="date"' : 'inputmode="decimal"'} value="${esc(tp === "num" && v !== "" ? String(v).replace(".", ",") : v)}"></label>`;
+}
+const VALS = [["RBC", "Hemácias", "M/µL", 2], ["HCT", "HCT", "%", 1], ["HGB", "HGB", "g/dL", 1], ["VCM", "VCM", "fL", 1], ["CHCM", "CHCM", "g/dL", 1], ["RDW", "RDW", "%", 1], ["WBC", "Leucócitos", "mil/µL", 2], ["PLQ", "Plaquetas", "mil/µL", 0], ["VPM", "VPM", "fL", 1], ["PCT", "PCT", "%", 2], ["NEU", "Neutrófilos", "mil/µL", 2], ["LYM", "Linfócitos", "mil/µL", 2]];
+function abrirBolsa(b) {
+  const doa = doacaoDe(b), rr = regsDa(b).sort((x, y) => ["DOA", "ST", "CH", "CHD", "PFC", "PC", "PIC", "CP", "CRIO"].indexOf(x.componente) - ["DOA", "ST", "CH", "CHD", "PFC", "PC", "PIC", "CP", "CRIO"].indexOf(y.componente) || x.data.localeCompare(y.data)), R = rendimento(b), s = sagDe(b);
+  let h = doa ? `<p><b>${esc(doa.nome)}</b>${doa.raca ? " · " + esc(doa.raca) : ""} · coleta em ${br(doa.data)}${doa.volume ? " · " + esc(doa.volume) + " mL" : ""}${doa.tempo && doa.tempo !== "NC" ? " em " + esc(doa.tempo) + " min" : ""}${doa.ht ? " · Ht do doador " + esc(doa.ht) + "%" : ""}</p>${doa.plasma ? '<p class="nota">Plasma descrito na ficha como ' + esc(doa.plasma) + "</p>" : ""}` : '<p class="nota">Doação sem ficha no painel com este número.</p>';
+  if (R.recHb != null || R.recPlq != null) h += '<div class="res">' + (R.recHb != null ? `<div class="r" data-a="exp" data-item="rend_hb"><span class="n">Hemoglobina recuperada no CH<small>${fmt(R.hbCH, 0)} g de ${fmt(R.hbST, 0)} g</small></span><span class="v">${fmt(R.recHb, 0)}%</span></div>` : "") + (R.recPlq != null ? `<div class="r" data-a="exp" data-item="rend_plq"><span class="n">Plaquetas recuperadas no CP<small>${fmt(R.plqCP, 1)} de ${fmt(R.plqST, 1)} × 10¹⁰</small></span><span class="v">${fmt(R.recPlq, 0)}%</span></div>` : "") + "</div>";
+  if (s) h += `<p class="nota">Na calculadora de SAG, CH com ${fmt(num(s.pesoCH))} g antes e ${fmt(num(s.pesoFinal))} g depois do SAG${num(s.htFinalMicro) != null ? ", micro-hematócrito final de " + fmt(num(s.htFinalMicro)) + "%" : ""}.</p>`;
+  rr.forEach((r) => {
+    const d = r.dados || {}, al = d.alerta || [], av = avaliar(r), pre = "f" + r.id + "_";
+    h += `<h3>${esc(COMP[r.componente].n)} · ${br(r.data)}${d.hora ? " " + esc(d.hora) : ""}</h3>`;
+    h += '<div class="res">' + av.map((x) => `<div class="r" data-a="exp" data-item="${x.item.id}"><span class="n">${esc(x.item.nome)}<small>${x.a ? esc(x.a.det || "") : esc(x.item.ref(r))}</small></span><span class="v">${x.a ? esc(x.a.txt) + " " : ""}${statusA(x.a)}</span></div>`).join("") + "</div>";
+    const hv = VALS.filter(([k]) => d.hemo && d.hemo[k] != null);
+    if (hv.length) h += `<p class="nota">${esc(d.equip || "Hemograma")}${d.origem ? " · " + esc(d.origem) : ""}${al.length ? " · em vermelho os valores marcados com asterisco" : ""}</p><div class="vals">` + hv.map(([k, n, u, c]) => `<span class="${al.includes(k) ? "al1" : ""}">${n}<b>${fmt(d.hemo[k], c)} ${u}</b></span>`).join("") + "</div>";
+    if (num(d.plqFormulario) != null) h += `<p class="nota">No formulário de validação a contagem anotada foi ${fmt(num(d.plqFormulario), 0)} mil/µL.</p>`;
+    h += `<div class="grade" style="margin-top:10px"><label>Hemocomponente<select id="${pre}comp">${Object.keys(COMP).map((c) => `<option value="${c}"${c === r.componente ? " selected" : ""}>${c === "DOA" ? "Hemograma do doador" : c + " · " + COMP[c].n}</option>`).join("")}</select></label>${campoH("data", "Data da análise", "date", r.data, pre)}${camposDe(r.componente).map(([k, rot, tp]) => campoH(k, rot, tp, d[k], pre)).join("")}</div>
+      <div class="bts" style="margin-top:8px"><button class="btn peq" data-a="salvar" data-v="${r.id}">Salvar</button>${d.pdf ? `<button class="btn sec peq" data-a="verpdf" data-v="${esc(d.pdf.id)}">PDF do ProCyte</button>` : ""}<button class="btn sec peq" data-a="apagar" data-v="${r.id}">Apagar</button></div>`;
+  });
+  h += `<h3>Adicionar</h3><div class="bts"><button class="btn sec peq" data-a="novo" data-v="${esc(b)}">Lançar outro hemocomponente desta bolsa</button></div>`;
+  abrirGaveta("Bolsa " + b, h);
+}
+function lerForm(pre, comp, base) {
+  const d = Object.assign({}, base || {});
+  camposDe(comp).forEach(([k, , tp]) => { const el = $("#" + pre + k); if (!el) return; const v = el.value.trim(); if (tp === "num") { const n = num(v); if (n == null) delete d[k]; else d[k] = n; } else if (v) d[k] = v; else delete d[k]; });
+  return d;
+}
+async function salvarReg(id) {
+  const r = S.regs.find((x) => x.id === id); if (!r) return; const pre = "f" + id + "_", comp = ($("#" + pre + "comp") || {}).value || r.componente, dados = lerForm(pre, r.componente, r.dados), data = $("#" + pre + "data").value || r.data;
+  try { const n = await qc("qcSalvar", { id, bolsa: r.bolsa, componente: comp, data, dados }); Object.assign(r, n); toast("Salvo."); abrirBolsa(r.bolsa); pintarAba(); } catch (e) { toast(e.message, 6000); }
+}
+async function apagarReg(id) {
+  const r = S.regs.find((x) => x.id === id); if (!r || !confirm("Apagar a análise de " + r.componente + " da bolsa " + r.bolsa + "?")) return;
+  try { await qc("qcExcluir", id); S.regs = S.regs.filter((x) => x.id !== id); toast("Análise apagada."); regsDa(r.bolsa).length ? abrirBolsa(r.bolsa) : fecharGaveta(); pintar(); } catch (e) { toast(e.message, 6000); }
+}
+function novoManual(b) {
+  const pre = "nv_";
+  const h = `<div class="grade"><label>Bolsa (número da doação)<input id="nv_bolsa" value="${esc(b || "")}" placeholder="ex. 573-8"></label><label>Hemocomponente<select id="nv_comp">${Object.keys(COMP).map((c) => `<option value="${c}">${c} · ${COMP[c].n}</option>`).join("")}</select></label>${campoH("data", "Data da análise", "date", hojeISO(), pre)}</div>
+    <h3>Hemograma (opcional)</h3><div class="grade">${[["HCT", "HCT (%)"], ["HGB", "HGB (g/dL)"], ["RBC", "Hemácias (M/µL)"], ["VCM", "VCM (fL)"], ["PLQ", "Plaquetas (mil/µL)"], ["WBC", "Leucócitos (mil/µL)"]].map(([k, t]) => campoH("h" + k, t, "num", "", pre)).join("")}</div>
+    <h3>Dados da bolsa</h3><div id="nvCampos" class="grade"></div><div class="bts" style="margin-top:10px"><button class="btn" data-a="salvarnovo">Salvar</button></div>`;
+  abrirGaveta("Lançar análise", h);
+  const pc = () => { $("#nvCampos").innerHTML = camposDe($("#nv_comp").value).map(([k, rot, tp]) => campoH(k, rot, tp, "", pre)).join(""); };
+  $("#nv_comp").onchange = pc; pc();
+}
+async function salvarNovo() {
+  const pre = "nv_", bolsa = $("#nv_bolsa").value.trim(), comp = $("#nv_comp").value, data = $("#nv_data").value || hojeISO();
+  if (!/^\d{2,5}-\d$/.test(bolsa) && !confirm("O número “" + bolsa + "” não parece um número de doação (ex. 573-8). Salvar assim mesmo?")) return;
+  const dados = lerForm(pre, comp, {}), hemo = {}; ["HCT", "HGB", "RBC", "VCM", "PLQ", "WBC"].forEach((k) => { const n = num($("#nv_h" + k).value); if (n != null) hemo[k] = n; }); if (Object.keys(hemo).length) { dados.hemo = hemo; dados.equip = "lançado à mão"; }
+  try { const n = await qc("qcSalvar", { bolsa, componente: comp, data, dados }); const i = S.regs.findIndex((x) => x.id === n.id); if (i >= 0) S.regs[i] = n; else S.regs.push(n); toast("Análise salva."); abrirBolsa(bolsa); pintar(); } catch (e) { toast(e.message, 6000); }
+}
+/* ── leitura dos PDFs do ProCyte One ── */
+const MES_N = { janeiro: 1, fevereiro: 2, "março": 3, marco: 3, abril: 4, maio: 5, junho: 6, julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12 };
+const ROT = { "Eritrócitos": "RBC", HCT: "HCT", HGB: "HGB", MCV: "VCM", MCH: "HCM", MCHC: "CHCM", RDW: "RDW", "%RETIC": "pRETIC", RETIC: "RETIC", "Leucócitos": "WBC", "%NEU": "pNEU", "%LYM": "pLYM", "%MONO": "pMONO", "%EOS": "pEOS", "%BASO": "pBASO", NEU: "NEU", LYM: "LYM", MONO: "MONO", EOS: "EOS", BASO: "BASO", PLQ: "PLQ", VPM: "VPM", PDW: "PDW", PCT: "PCT" };
+async function textoPdf(buf) {
+  if (!window.pdfjsLib) throw new Error("O leitor de PDF não carregou. Confira a internet e abra o módulo de novo.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  // cada PDF é fechado logo depois da leitura: com centenas de arquivos, documento aberto esgota a memória do navegador
+  const tarefa = pdfjsLib.getDocument({ data: buf }), pdf = await tarefa.promise, linhas = [];
+  try {
+  for (let p = 1; p <= Math.min(pdf.numPages, 3); p++) {
+    const pg = await pdf.getPage(p), tc = await pg.getTextContent(), g = {}; pg.cleanup();
+    tc.items.forEach((i) => { if (!i.str.trim()) return; const y = Math.round(i.transform[5] / 3) * 3; (g[y] = g[y] || []).push(i); });
+    Object.keys(g).map(Number).sort((a, b) => b - a).forEach((y) => linhas.push(g[y].sort((a, b) => a.transform[4] - b.transform[4]).map((i) => i.str.trim()).join(" ")));
+  }
+  } finally { try { await tarefa.destroy(); } catch (_) {} }
+  return linhas;
+}
+// o campo Cliente (ou o nome do arquivo) diz o hemocomponente: sigla ou nome por extenso
+function compTexto(t) {
+  // só códigos exatos (CP, ST, CH-C-SG…) ou o nome por extenso: nome de pessoa como "Chris" ou "Stella" não vira hemocomponente
+  const c = String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z]/g, "");
+  if (/^CRIO(PRECIPITADO)?$/.test(c)) return "CRIO";
+  if (/^CP$|^CONCENTRADODEPLAQUETAS?$|^PLAQUETAS?$/.test(c)) return "CP";
+  if (/^PIC$|^PLASMAISENTO/.test(c)) return "PIC";
+  if (/^PFC$|^PLASMAFRESCO|^PLASMA$/.test(c)) return "PFC";
+  if (/^PC$|^PLASMACOMUM$/.test(c)) return "PC";
+  if (/^ST$|^SANGUETOTAL$/.test(c)) return "ST";
+  if (/^CHD$|^CHDESLEUC/.test(c)) return "CHD";
+  if (/^CH(C?SA?G|COMSAG)?$|^CONCENTRADODEHEMACIAS$|^HEMACIAS$/.test(c)) return "CH";
+  return "";
+}
+function compDe(cli, nome) {
+  const c = compTexto(cli); if (c) return c;
+  const f = String(nome || "").toUpperCase(), m = f.match(/^(PFC|PIC|PC|CP|CRIO|CHD|CH|ST)[^A-Z]/); if (m) return m[1];
+  const w = f.match(/(PLAQUETAS?|PLASMA FRESCO|PLASMA|SANGUE TOTAL|HEM[AÁ]CIAS|CRIO)/); return w ? compTexto(w[1]) : "";
+}
+function lerProcyte(linhas, nome) {
+  const t = linhas.join("\n"), o = { arquivo: nome, hemo: {}, alerta: [] };
+  const cli = t.match(/Cliente:\s*(.+?)(?=\s*\(|\s+Sexo:|\s{2,}|\n|$)/m), pac = t.match(/Nome do paciente:\s*(.+?)(?:\s{2,}|\s+Peso:|\n)/), bol = (pac ? pac[1] : "").match(/(\d{2,5}-\d)/) || String(nome).match(/(\d{2,5}-\d)/);
+  const dt = t.match(/ProCyte[^(]*\((\d{1,2}) de (\S+) de (\d{4})\s+(\d{1,2}:\d{2})\)/i);
+  o.componente = compDe(cli && cli[1], nome); o.bolsa = bol ? bol[1] : ""; o.pacTxt = pac ? pac[1].trim() : ""; o.cliente = cli ? cli[1] : "";
+  // hemograma de bolsa: o campo Cliente traz o hemocomponente (CP, CH, ST, PFC…) ou o paciente se chama "BOLSA nº". Hemograma de doador fica de fora.
+  o.ehBolsa = !!o.bolsa && (!!compDe(o.cliente, "") || /^BOLSA\b/i.test(o.pacTxt));
+  if (dt) { o.data = dt[3] + "-" + String(MES_N[dt[2].toLowerCase()] || 1).padStart(2, "0") + "-" + dt[1].padStart(2, "0"); o.hora = dt[4]; }
+  o.equip = /ProCyte One/i.test(t) ? "ProCyte One" : /ProCyte Dx/i.test(t) ? "ProCyte Dx" : "IDEXX";
+  linhas.forEach((l) => { const m = l.match(/^(Eritrócitos|HCT|HGB|MCV|MCH|MCHC|RDW|%RETIC|RETIC|Leucócitos|%NEU|%LYM|%MONO|%EOS|%BASO|NEU|LYM|MONO|EOS|BASO|PLQ|VPM|PDW|PCT)\s+([*<>]?)\s*(-?[\d.,]+|--\.--)/);
+    if (!m || m[3].indexOf("--") >= 0) return; const k = ROT[m[1]]; o.hemo[k] = parseFloat(m[3].replace(/\./g, "").replace(",", ".")); if (m[2]) o.alerta.push(k); });
+  return o;
+}
+let LOTE = [];
+const sinal = (o) => JSON.stringify([o.hemo.HCT, o.hemo.HGB, o.hemo.PLQ, o.hemo.WBC, o.hemo.RBC]);
+const semAc = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const diasEntre = (a, b) => Math.abs((new Date(a + "T12:00") - new Date(b + "T12:00")) / 864e5);
+// hemograma de doador: liga à doação pelo número (573-8) ou pelo nome do animal com a data da coleta (até 1 dia de diferença)
+function doacaoDoHemograma(o) {
+  if (o.bolsa) { const d = doacaoDe(o.bolsa); if (d) return { d, como: "número " + o.bolsa }; }
+  if (!o.data) return null;
+  const txt = " " + semAc(o.pacTxt + " " + o.arquivo).replace(/[^a-z0-9]+/g, " ") + " ";
+  const c = S.doa.filter((d) => d.nome && d.data && diasEntre(d.data, o.data) <= 1 && txt.indexOf(" " + semAc(d.nome).replace(/[^a-z0-9]+/g, " ").trim() + " ") >= 0);
+  return c.length === 1 ? { d: c[0], como: "nome " + c[0].nome + " e data" } : null;
+}
+// sem identificação clara: sugere o tipo pelos valores
+function incoerente(o) { const ht = o.hemo.HCT; if (ht == null) return false; return (["ST", "CH", "CHD"].includes(o.componente) && ht < 2) || (["CP", "PFC", "PC", "PIC", "CRIO"].includes(o.componente) && ht > 15); }
+function sugerirTipo(h) { const ht = h.HCT, p = h.PLQ; if (ht != null && ht < 2) return p != null && p > 300 ? "CP" : "PFC"; if (ht != null && ht >= 55) return "CH"; return "DOA"; }
+async function lerArquivos(fs) {
+  LOTE = []; abrirGaveta("Lendo os PDFs", '<p class="nota" id="lendo">Lendo 0 de ' + fs.length + "…</p>");
+  const vistos = {};
+  for (let k = 0; k < fs.length; k++) {
+    const f = fs[k]; const el = $("#lendo"); if (el) el.textContent = "Lendo " + (k + 1) + " de " + fs.length + "…";
+    let o;
+    try { if (f.size > 3e6) throw new Error("grande"); o = lerProcyte(await Promise.race([textoPdf(new Uint8Array(await f.arrayBuffer())), new Promise((_, n) => setTimeout(() => n(new Error("tempo")), 15000))]), f.name); o.file = f; } catch (e) { o = { arquivo: f.name, hemo: {}, alerta: [] }; }
+    if (!Object.keys(o.hemo).length) o.grupo = "fora_naoprocyte";
+    else {
+      if (!o.ehBolsa) {
+        const l = doacaoDoHemograma(o);
+        if (l) { o.componente = "DOA"; o.bolsa = l.d.numero; o.doador = l.d.nome; o.ligado = l.como; }
+        // número da doação no nome e valores de sangue de animal (não de bolsa): hemograma do doador, mesmo sem a doação no painel
+        else if (o.bolsa && sugerirTipo(o.hemo) === "DOA" && /[a-z]{2,}\s+[a-z]{2,}/i.test(o.cliente + " " + o.pacTxt)) { o.componente = "DOA"; o.ligado = "número " + o.bolsa + " no nome"; }
+      }
+      const ch = o.bolsa + "|" + o.componente + "|" + o.data + "|" + sinal(o), ant = o.bolsa ? S.regs.find((r) => r.bolsa === o.bolsa && r.componente === o.componente && r.data === o.data) : null;
+      if (vistos[ch]) o.grupo = "fora_repetido";
+      else if (ant && JSON.stringify([hm(ant, "HCT"), hm(ant, "HGB"), hm(ant, "PLQ"), hm(ant, "WBC"), hm(ant, "RBC")]) === sinal(o)) o.grupo = "ja";
+      else if (o.ehBolsa && incoerente(o)) { o.aviso = "O PDF diz " + o.componente + ", mas os valores parecem de " + sugerirTipo(o.hemo).replace("DOA", "sangue total ou doador"); o.componente = sugerirTipo(o.hemo) === "DOA" ? "ST" : sugerirTipo(o.hemo); o.grupo = "conferir"; }
+      else if (o.ehBolsa) o.grupo = "bolsa";
+      else if (o.componente === "DOA") o.grupo = "doador";
+      else if (o.bolsa) { o.grupo = "conferir"; o.componente = sugerirTipo(o.hemo); }
+      else o.grupo = "fora_doador";
+      if (ant && o.grupo !== "ja" && o.grupo !== "fora_repetido") o.atualiza = true;
+      // o mesmo PDF já salvo com outro hemocomponente (ex. CP que entrou como ST): corrige o registro antigo
+      const errado = !ant && o.bolsa && S.regs.find((r) => r.bolsa === o.bolsa && r.data === o.data && r.componente !== o.componente && r.dados && r.dados.arquivo === o.arquivo);
+      if (errado && (o.grupo === "bolsa" || o.grupo === "conferir")) { o.corrige = errado.id; o.aviso = "Estava salvo como " + errado.componente + ". Ao salvar, passa a ser " + o.componente + "."; o.grupo = "corrige"; }
+      vistos[ch] = 1;
+    }
+    o.usar = o.grupo === "bolsa" || o.grupo === "doador" || o.grupo === "corrige";
+    if (k % 25 === 24) await new Promise((ok) => setTimeout(ok, 30));
+    LOTE.push(o);
+  }
+  S.loteAberto = { conferir: true }; pintarLote();
+}
+const GRUPOS = [
+  ["corrige", "Correções de tipo", "PDFs que já tinham sido salvos com o hemocomponente errado. Ao salvar, a análise antiga é corrigida, sem duplicar."],
+  ["bolsa", "Análises de bolsas para salvar", "Hemogramas de bolsas (ST, CH, CP, PFC) que ainda não estão no sistema."],
+  ["doador", "Hemogramas de doadores ligados à doação", "Hemograma do doador no dia da coleta, reconhecido pelo número da doação ou pelo nome e pela data. Entra junto da bolsa e ajuda a avaliar o rendimento."],
+  ["conferir", "Para conferir", "Têm número de doação, mas não dá para saber se é bolsa ou doador. O tipo sugerido vem dos valores. Marque os que forem de bolsa e confira o tipo."],
+  ["ja", "Já estavam no sistema", "Mesmo hemograma, da mesma bolsa e da mesma data. Não precisa fazer nada."],
+  ["fora_doador", "Hemogramas de doadores sem doação identificada", "Sem número de doação e sem doação com o mesmo nome e data. Ficam de fora."],
+  ["fora_naoprocyte", "Não são hemogramas do ProCyte", "Laudos de outros laboratórios, termos, carteiras e outros PDFs. Ficam de fora."],
+  ["fora_repetido", "Arquivos repetidos nesta seleção", "O mesmo hemograma selecionado mais de uma vez. Fica só um."]
+];
+function pintarLote() {
+  const op = (v) => Object.keys(COMP).map((c) => `<option value="${c}"${c === v ? " selected" : ""}>${c === "DOA" ? "Doador" : c}</option>`).join("");
+  const edit = (g) => ["bolsa", "doador", "conferir", "corrige"].includes(g);
+  const linha = (o, i) => `<tr><td>${edit(o.grupo) ? `<input type="checkbox" id="lu${i}"${o.usar ? " checked" : ""}>` : ""}</td><td style="max-width:170px;font-size:11.5px;word-break:break-all">${esc(o.arquivo)}${o.doador ? '<br><b>' + esc(o.doador) + "</b> · " + esc(o.ligado) : doacaoDe(o.bolsa) ? "<br><b>" + esc(doacaoDe(o.bolsa).nome) + "</b>" : ""}${o.atualiza ? ' <span class="st inf">atualiza</span>' : ""}${o.aviso ? '<br><span class="st inf" style="white-space:normal">' + esc(o.aviso) + "</span>" : ""}</td>` +
+    (edit(o.grupo) ? `<td><input id="lb${i}" value="${esc(o.bolsa || "")}"></td><td><select id="lc${i}">${op(o.componente || "ST")}</select></td><td><input id="ld${i}" type="date" value="${esc(o.data || hojeISO())}" style="width:130px"></td><td><input id="lp${i}" inputmode="decimal" placeholder="g"></td>` : `<td colspan="4" style="font-size:12px;color:#6b5a52">${esc([o.bolsa, o.componente === "DOA" ? "doador" : o.componente, o.data ? br(o.data) : ""].filter(Boolean).join(" · "))}</td>`) +
+    `<td style="font-size:12px">${Object.keys(o.hemo).length ? "HCT " + fmt(o.hemo.HCT) + " · HGB " + fmt(o.hemo.HGB) + " · PLQ " + fmt(o.hemo.PLQ, 0) : ""}</td></tr>`;
+  const marcadas = LOTE.filter((o) => o.usar), nb = new Set(marcadas.map((o) => o.bolsa)).size;
+  let h = `<div class="res" style="margin-bottom:10px"><div class="r"><span class="n"><b>${LOTE.length} PDFs lidos. Só os marcados são salvos.</b><small>${marcadas.length} ${marcadas.length === 1 ? "análise marcada" : "análises marcadas"}, de ${nb} ${nb === 1 ? "doação" : "doações"}. Os outros ${LOTE.length - marcadas.length} não entram. Cada grupo está em ordem de data, da mais recente para a mais antiga.</small></span><span class="v"><button class="btn peq" data-a="salvarlote"${marcadas.length ? "" : " disabled"}>Salvar as ${marcadas.length} marcadas</button></span></div></div>`;
+  GRUPOS.forEach(([g, t, d]) => {
+    const l = LOTE.map((o, i) => ({ o, i })).filter((x) => x.o.grupo === g).sort((a, b) => String(b.o.data || "").localeCompare(String(a.o.data || "")) || String(b.o.bolsa || "").localeCompare(String(a.o.bolsa || "")) || String(a.o.componente || "").localeCompare(String(b.o.componente || ""))); if (!l.length) return;
+    const aberto = S.loteAberto[g] || ((g === "bolsa" || g === "doador" || g === "corrige") && l.length <= 40);
+    h += `<section class="cx" style="padding:10px 12px;margin-bottom:10px"><div class="cab-it"><h2>${t} <span class="chip">${l.length}</span></h2><button class="info" data-a="lotegrupo" data-v="${g}">${aberto ? "Esconder" : "Ver"}</button></div><p class="sub" style="margin:4px 0 0">${d}</p>` +
+      (aberto ? `<div class="tab-sc" style="margin-top:8px"><table class="tab lote"><tr><th></th><th>PDF</th>${edit(g) ? "<th>Bolsa</th><th>Tipo</th><th>Data</th><th>Peso</th>" : '<th colspan="4">Bolsa, tipo e data</th>'}<th>Valores</th></tr>${l.map((x) => linha(x.o, x.i)).join("")}</table></div>` : "") + "</section>";
+  });
+  h += '<label style="flex-direction:row;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" id="lotePdf" style="width:auto"> Guardar também uma cópia de cada PDF no Drive do CVH</label><p class="nota">Opcional. Os dados entram sem isso. A cópia só serve para abrir o PDF original pela bolsa depois, e deixa o salvamento bem mais lento.</p><p class="nota" id="loteSt"></p>';
+  abrirGaveta("Conferência dos PDFs", h);
+}
+// guarda o que já foi marcado ou editado antes de redesenhar a lista
+function lerLote() { LOTE.forEach((o, i) => { const u = $("#lu" + i); if (u) o.usar = u.checked; const b = $("#lb" + i); if (b) o.bolsa = b.value.trim(); const c = $("#lc" + i); if (c) o.componente = c.value; const d = $("#ld" + i); if (d) o.data = d.value; const p = $("#lp" + i); if (p) o.peso = p.value; }); }
+const b64De = (u8) => { let t = ""; for (let i = 0; i < u8.length; i += 0x8000) t += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(t); };
+async function salvarLote(bt) {
+  lerLote(); const sel = LOTE.filter((o) => o.usar && o.bolsa);
+  if (!sel.length) return toast("Nenhuma análise marcada.");
+  bt.disabled = true; const pdfs = $("#lotePdf").checked, st = $("#loteSt"), lista = [];
+  for (let k = 0; k < sel.length; k++) {
+    const o = sel[k], bolsa = o.bolsa, comp = o.componente, data = o.data || hojeISO(), peso = num(o.peso);
+    const ant = (o.corrige && S.regs.find((r) => r.id === o.corrige)) || S.regs.find((r) => r.bolsa === bolsa && r.componente === comp && r.data === data), dados = Object.assign({}, ant ? ant.dados : {}, { hora: o.hora || "", equip: o.equip, hemo: o.hemo, alerta: o.alerta, arquivo: o.arquivo });
+    if (peso != null) dados.peso = peso;
+    if (pdfs && o.file) { st.textContent = "Guardando o PDF " + (k + 1) + " de " + sel.length + "…"; try { dados.pdf = await qc("qcSalvarPdf", o.arquivo, b64De(new Uint8Array(await o.file.arrayBuffer()))); } catch (_) {} }
+    lista.push({ id: ant ? ant.id : "", bolsa, componente: comp, data, dados });
+  }
+  let n = 0;
+  for (let k = 0; k < lista.length; k += 25) {
+    st.textContent = "Salvando " + Math.min(k + 25, lista.length) + " de " + lista.length + "…";
+    try { const rs = await qc("qcSalvarLote", lista.slice(k, k + 25)); rs.forEach((r) => { const j = S.regs.findIndex((x) => x.id === r.id); if (j >= 0) S.regs[j] = r; else S.regs.push(r); }); n += rs.length; } catch (e) { toast(e.message, 7000); break; }
+  }
+    // resumo que fica na tela até ser fechado
+  const porTipo = {}; lista.slice(0, n).forEach((x) => { porTipo[x.componente] = (porTipo[x.componente] || 0) + 1; });
+  const resto = {}; LOTE.filter((o) => !o.usar || !o.bolsa).forEach((o) => { const g = (GRUPOS.find((x) => x[0] === o.grupo) || [0, "Não marcados"])[1]; resto[g] = (resto[g] || 0) + 1; });
+  const tot = LOTE.length; LOTE = []; pintar();
+  abrirGaveta("Importação concluída", `<div class="res"><div class="r"><span class="n"><b>${n} ${n === 1 ? "análise salva" : "análises salvas"}</b><small>de ${new Set(lista.slice(0, n).map((x) => x.bolsa)).size} doações</small></span><span class="v">${Object.keys(porTipo).map((c) => '<span class="chip">' + (c === "DOA" ? "Doador" : c) + " " + porTipo[c] + "</span>").join(" ")}</span></div></div>` +
+    `<h3>Não entraram</h3><div class="res">${Object.keys(resto).map((g) => `<div class="r"><span class="n">${esc(g)}</span><span class="v">${resto[g]}</span></div>`).join("") || '<p class="nota">Nenhum.</p>'}</div>` +
+    `<p class="nota">Dos ${tot} PDFs lidos, ${n} viraram análises. O controle de qualidade agora tem ${S.regs.length} análises em ${new Set(S.regs.map((r) => r.bolsa)).size} bolsas.</p><div class="bts" style="margin-top:10px"><button class="btn" data-a="fechargv">Ver o controle de qualidade</button></div>`);
+}
+async function verPdf(id, bt) {
+  bt.disabled = true; try { const r = await qc("qcLerPdf", id), u8 = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0)), url = URL.createObjectURL(new Blob([u8], { type: "application/pdf" })); const a = document.createElement("a"); a.href = url; a.download = r.nome || "procyte.pdf"; a.target = "_blank"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); } catch (e) { toast(e.message, 6000); } bt.disabled = false;
+}
+/* ── Explorar: o usuário escolhe dois parâmetros (e um agrupamento) e vê as bolsas juntas ── */
+const vH = (c, k) => (b) => { const r = regDe(b, c); return r ? hm(r, k) : null; };
+const vD = (c, k) => (b) => { const r = regDe(b, c); return r ? num(r.dados[k]) : null; };
+const vA = (c, id) => (b) => { const r = regDe(b, c) || (c === "CH" ? regDe(b, "CHD") : null); if (!r) return null; const a = itemPor(id).av(r); return a && !a.est ? a.v : null; };
+const vV = (c) => (b) => { const r = regDe(b, c) || (c === "CH" ? regDe(b, "CHD") : null); if (!r) return null; const v = volume(r); return v ? v.v : null; };
+const dataColeta = (b) => { const d = doacaoDe(b); return d && d.data ? d.data : regsDa(b).map((r) => r.data).sort()[0] || ""; };
+const VARS = [
+  ["Doação", [
+    ["mes", "Mês da coleta", "", "cat", (b) => { const d = dataColeta(b); return d ? d.slice(0, 7) : null; }],
+    ["data", "Data da coleta", "", "data", (b) => dataColeta(b) || null],
+    ["volCol", "Volume coletado", "mL", "num", (b) => { const r = regDe(b, "ST"), d = doacaoDe(b); return r && num(r.dados.volumeColetado) != null ? num(r.dados.volumeColetado) : d ? num(d.volume) : null; }],
+    ["tempo", "Tempo de coleta", "min", "num", (b) => { const r = regDe(b, "ST"), d = doacaoDe(b); return r && num(r.dados.duracao) != null ? num(r.dados.duracao) : d ? num(d.tempo) : null; }]]],
+  ["Doador", [["doaHt", "Ht do doador, Hemochromax", "%", "num", (b) => { const s = regDe(b, "ST"), d = doacaoDe(b); return s && num(s.dados.htColeta) != null ? num(s.dados.htColeta) : d ? num(d.ht) : null; }],
+    ["doaHb", "Hb do doador, Hemochromax", "g/dL", "num", (b) => { const d = doacaoDe(b); return d ? num(d.hb) : null; }],
+    ["doaHtP", "Ht do doador, ProCyte", "%", "num", vH("DOA", "HCT")],
+    ["doaPlq", "Plaquetas do doador", "mil/µL", "num", vH("DOA", "PLQ")], ["doaWbc", "Leucócitos do doador", "mil/µL", "num", vH("DOA", "WBC")]]],
+  ["Sangue total", [["stHt", "Ht do ST", "%", "num", vH("ST", "HCT")], ["stHb", "Hb do ST", "g/dL", "num", vH("ST", "HGB")], ["stVcm", "VCM do ST", "fL", "num", vH("ST", "VCM")], ["stPlq", "Plaquetas do ST", "mil/µL", "num", vH("ST", "PLQ")], ["stWbc", "Leucócitos do ST", "mil/µL", "num", vH("ST", "WBC")]]],
+  ["Concentrado de hemácias", [["chHt", "Ht do CH (usado no controle)", "%", "num", (b) => { const r = regDe(b, "CH") || regDe(b, "CHD"), h = r && htCH(r); return h ? h.v : null; }],
+    ["chHtP", "Ht do CH no ProCyte", "%", "num", vH("CH", "HCT")], ["chMicro", "Micro-hematócrito do CH", "%", "num", (b) => { const r = regDe(b, "CH"), s = sagDe(b); return r && num(r.dados.microHt) != null ? num(r.dados.microHt) : s ? num(s.htFinalMicro) : null; }],
+    ["chHb", "Hb por unidade", "g", "num", vA("CH", "ch_hb")], ["chVol", "Volume do CH", "mL", "num", vV("CH")], ["chVcm", "VCM do CH", "fL", "num", vH("CH", "VCM")], ["chChcm", "CHCM do CH", "g/dL", "num", vH("CH", "CHCM")],
+    ["chSag", "SAG adicionado", "mL", "num", (b) => { const s = sagDe(b); return s && num(s.pesoFinal) != null && num(s.pesoCH) != null ? num(s.pesoFinal) - num(s.pesoCH) : null; }],
+    ["chHem", "Hemólise do CH", "%", "num", vA("CH", "ch_hem")], ["recHb", "Hb recuperada no CH", "%", "num", (b) => rendimento(b).recHb],
+    ["chSol", "Solução do CH", "", "cat", (b) => { const r = regDe(b, "CH") || regDe(b, "CHD"); return r ? r.dados.solucao || "SAG" : null; }]]],
+  ["Concentrado de plaquetas", [["cpVol", "Volume do CP", "mL", "num", vV("CP")], ["cpPlqC", "Plaquetas do CP", "mil/µL", "num", vH("CP", "PLQ")], ["cpPlq", "Plaquetas por unidade", "× 10¹⁰", "num", vA("CP", "cp_plq")],
+    ["cpPh", "pH do CP", "", "num", vD("CP", "ph")], ["cpLeu", "Leucócitos residuais do CP", "× 10⁸", "num", vA("CP", "cp_leu")], ["cpVpm", "VPM do CP", "fL", "num", vH("CP", "VPM")], ["cpAgit", "Horas no agitador", "h", "num", vD("CP", "agitador")],
+    ["recPlq", "Plaquetas recuperadas no CP", "%", "num", (b) => rendimento(b).recPlq],
+    ["cpOver", "Overnight antes de separar", "", "cat", (b) => { const r = regDe(b, "CP"); return r && r.dados.overnight ? r.dados.overnight : null; }],
+    ["cpSw", "Swirling", "", "cat", (b) => { const r = regDe(b, "CP"); return r && r.dados.swirling ? r.dados.swirling : null; }],
+    ["cpAlerta", "Contagem do CP com asterisco", "", "cat", (b) => { const r = regDe(b, "CP"); return r && hm(r, "PLQ") != null ? ((r.dados.alerta || []).includes("PLQ") ? "com asterisco" : "sem asterisco") : null; }]]],
+  ["Plasma", [["pfVol", "Volume do PFC", "mL", "num", vV("PFC")], ["pfHem", "Hemácias residuais do PFC", "× 10⁶/mL", "num", vA("PFC", "pfc_hem")], ["pfPlq", "Plaquetas residuais do PFC", "mil/µL", "num", vH("PFC", "PLQ")], ["pfWbc", "Leucócitos residuais do PFC", "mil/µL", "num", vH("PFC", "WBC")]]]
+];
+const VAR = {}; VARS.forEach(([g, l]) => l.forEach(([id, nome, un, tipo, f]) => { VAR[id] = { id, nome, un, tipo, f, g }; }));
+const SUGESTOES = [["Volume do CP e pH", "cpVol", "cpPh", ""], ["Overnight e plaquetas por unidade", "cpOver", "cpPlq", ""], ["Plaquetas do doador e do CP", "doaPlq", "cpPlq", "cpOver"], ["Volume do CP e plaquetas por unidade", "cpVol", "cpPlq", "cpOver"],
+  ["ProCyte e micro-hematócrito do CH", "chMicro", "chHtP", "mes"], ["VCM do ST e do CH", "stVcm", "chVcm", ""], ["Tempo de coleta e plaquetas recuperadas", "tempo", "recPlq", ""], ["Plaquetas do CP ao longo do tempo", "data", "cpPlq", "cpOver"], ["Asterisco do ProCyte e plaquetas do CP", "cpAlerta", "cpPlqC", ""]];
+S.ex = S.ex || { x: "cpVol", y: "cpPh", g: "", meses: [], fora: {} };
+const opVar = (sel, vazio, soCat) => (vazio ? `<option value="">${vazio}</option>` : "") + VARS.map(([g, l]) => [g, soCat ? l.filter((x) => x[3] === "cat") : l]).filter(([, l]) => l.length).map(([g, l]) => `<optgroup label="${g}">${l.map(([id, n, un]) => `<option value="${id}"${id === sel ? " selected" : ""}>${n}${un ? " (" + un + ")" : ""}</option>`).join("")}</optgroup>`).join("");
+function telaExplorar() {
+  const E = S.ex, ms = meses();
+  const todas = [...new Set(regsP().map((r) => r.bolsa))].sort((a, b) => dataColeta(a).localeCompare(dataColeta(b)));
+  const bs = todas.filter((b) => !E.fora[b] && (!E.meses.length || E.meses.includes(dataColeta(b).slice(0, 7))));
+  let h = cartao("Explorar os dados", "Escolha dois parâmetros para ver as bolsas juntas. O terceiro campo separa os pontos em grupos (overnight, mês, swirling…). Toque num ponto para abrir a bolsa.",
+    `<div class="ex-sug">${SUGESTOES.map(([t, x, y, g], i) => `<button class="${E.x === x && E.y === y && E.g === g ? "on" : ""}" data-a="exsug" data-v="${i}">${t}</button>`).join("")}</div>
+    <div class="grade ex-sel"><label>Eixo horizontal<select id="exX">${opVar(E.x)}</select></label><label>Eixo vertical<select id="exY">${opVar(E.y, "nenhum, só a distribuição")}</select></label><label class="larga">Separar por<select id="exG">${opVar(E.g, "sem grupos", true)}</select></label></div>
+    <div class="ex-fil"><b>Meses</b>${ms.map((m) => `<button class="${E.meses.includes(m) ? "on" : ""}" data-a="exmes" data-v="${m}">${mesTxt(m)}</button>`).join("")}${E.meses.length ? '<button data-a="exmes" data-v="">todos</button>' : ""}</div>
+    <details class="ex-bol"><summary>Bolsas incluídas (${bs.length} de ${todas.length})</summary><div class="ex-fil">${todas.map((b) => `<button class="${E.fora[b] ? "" : "on"}" data-a="exbol" data-v="${esc(b)}">${esc(b)}</button>`).join("")}<button data-a="exbol" data-v="*">${Object.keys(E.fora).length ? "incluir todas" : "tirar todas"}</button></div></details>`);
+  return h + resultadoEx(bs);
+}
+const LIM_EX = () => ({ cpPlq: [S.P.cpPlqMin], cpVol: [S.P.cpVolMin, S.P.cpVolMax], cpPh: [S.P.cpPhMin], chHt: [S.P.chHtMin, S.P.chHtMax], chMicro: [S.P.chHtMin, S.P.chHtMax], chHtP: [S.P.chHtMin, S.P.chHtMax], chHb: [S.P.chHbMin], cpLeu: [S.P.cpLeucMax], pfVol: [S.P.pfcVolMin], pfHem: [S.P.pfcHemMax], chHem: [S.P.hemoliseMax] });
+const minus = (t) => /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1);
+const COR_G = ["#5F130F", "#C49A6C", "#A83D3D", "#8E2B27", "#C6B098", "#6b5a52"];
+function resultadoEx(bs) {
+  const E = S.ex, X = VAR[E.x], Y = VAR[E.y], G = VAR[E.g] && VAR[E.g].tipo === "cat" ? VAR[E.g] : null;
+  if (!X) return "";
+  const nr = (v) => v === "nr" ? null : v, pts = bs.map((b) => ({ bolsa: b, x: nr(X.f(b)), y: Y ? nr(Y.f(b)) : null, g: G ? nr(G.f(b)) : null, data: dataColeta(b) })).filter((p) => p.x != null && p.x !== "" && (!Y || (p.y != null && p.y !== "")));
+  const rot = (v) => v.nome + (v.un ? " (" + v.un + ")" : "");
+  if (!pts.length) return cartao("Resultado", "", '<p class="nota">Nenhuma bolsa tem os dois parâmetros. Troque um deles ou inclua mais meses.</p>');
+  const grupos = G ? [...new Set(pts.map((p) => p.g == null ? "sem dado" : String(p.g)))].sort() : [""], gReais = grupos.filter((x) => x !== "sem dado"), corDe = (g) => !G ? "#5F130F" : g == null ? "#D9CCBD" : ["#5F130F", "#C49A6C", "#A83D3D", "#6b5a52", "#8E2B27", "#C6B098"][Math.max(0, gReais.indexOf(String(g))) % 6];
+  const lg = G ? '<div class="leg">' + grupos.map((g) => `<span><i style="background:${corDe(g)}"></i>${esc(G.id === "mes" && g !== "sem dado" ? mesTxt(g) : g)}</span>`).join("") + "</div>" : "";
+  let graf = "", resumo = "";
+  if (X.tipo === "cat" && Y) {
+    const cats = [...new Set(pts.map((p) => String(p.x)))].sort(), ys = pts.map((p) => p.y), lo = Math.min(...ys), hi = Math.max(...ys), pad = (hi - lo) * 0.12 || 1, W = 640, Hh = 280, ml = 56, mb = 34, mt = 12;
+    const base = lo >= 0 && lo - pad < 0 ? lo : lo - pad, topo = hi + pad, Yp = (v) => mt + (Hh - mt - mb) * (1 - (v - base) / (topo - base)), cw = (W - ml - 10) / cats.length;
+    graf = `<svg class="graf" viewBox="0 0 ${W} ${Hh}">`;
+    for (let k = 0; k <= 4; k++) { const v = base + (topo - base) * k / 4; graf += `<line x1="${ml}" x2="${W - 10}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="#f1e9e1"/><text x="${ml - 6}" y="${Yp(v) + 4}" text-anchor="end">${fmt(v, hi - lo > 20 ? 0 : 1)}</text>`; }
+    (LIM_EX()[Y.id] || []).forEach((v) => { if (v >= base && v <= topo) graf += `<line x1="${ml}" x2="${W - 10}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="#A83D3D" stroke-dasharray="4 3"/><text x="${W - 10}" y="${Yp(v) - 4}" text-anchor="end" fill="#A83D3D">critério ${fmt(v, 1)}</text>`; });
+    cats.forEach((c, i) => { const l = pts.filter((p) => String(p.x) === c), cx = ml + cw * i + cw / 2, me = media(l.map((p) => p.y));
+      graf += `<rect x="${cx - cw * 0.3}" y="${Yp(me) - 1.5}" width="${cw * 0.6}" height="3" fill="#2b2320"/><text x="${cx}" y="${Hh - 14}" text-anchor="middle" font-weight="600">${esc(X.id === "mes" ? mesTxt(c) : c)}</text><text x="${cx}" y="${Hh - 2}" text-anchor="middle" font-size="10">n ${l.length} · média ${fmt(me, 1)}</text>`;
+      l.forEach((p, j) => { const jx = cx + ((j * 37) % 100 - 50) / 100 * cw * 0.5; graf += `<g><title>Bolsa ${esc(p.bolsa)} · ${fmt(p.y, 2)}${G ? " · " + esc(String(p.g)) : ""}</title><circle class="pt" data-bolsa="${esc(p.bolsa)}" cx="${jx}" cy="${Yp(p.y)}" r="6" fill="${corDe(p.g)}" opacity=".9"/></g>`; }); });
+    graf += "</svg>";
+    resumo = '<div class="tab-sc"><table class="tab"><tr><th>' + esc(X.nome) + "</th><th>Bolsas</th><th>Média</th><th>Mediana</th><th>Menor</th><th>Maior</th></tr>" + cats.map((c) => { const v = pts.filter((p) => String(p.x) === c).map((p) => p.y).sort((a, b) => a - b), md = v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+      return `<tr><td>${esc(X.id === "mes" ? mesTxt(c) : c)}</td><td>${v.length}</td><td>${fmt(media(v), 2)}</td><td>${fmt(md, 2)}</td><td>${fmt(v[0], 2)}</td><td>${fmt(v[v.length - 1], 2)}</td></tr>`; }).join("") + "</table></div>";
+  } else if (Y && Y.tipo === "num") {
+    const xd = X.tipo === "data", xs = pts.map((p) => xd ? new Date(p.x + "T12:00").getTime() : p.x), ys = pts.map((p) => p.y);
+    const W = 640, Hh = 300, ml = 56, mr = 14, mt = 12, mb = 42, x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), px = (x1 - x0) * 0.06 || 1, py = (y1 - y0) * 0.1 || 1, ya = y0 >= 0 && y0 - py < 0 ? 0 : y0 - py, xa = !xd && x0 >= 0 && x0 - px < 0 ? 0 : x0 - px;
+    const Xp = (v) => ml + (W - ml - mr) * (v - xa) / (x1 + px - xa), Yp = (v) => mt + (Hh - mt - mb) * (1 - (v - ya) / (y1 + py - ya));
+    graf = `<svg class="graf" viewBox="0 0 ${W} ${Hh}">`;
+    for (let k = 0; k <= 4; k++) { const vy = ya + (y1 + py - ya) * k / 4, vx = xa + (x1 + px - xa) * k / 4; graf += `<line x1="${ml}" x2="${W - mr}" y1="${Yp(vy)}" y2="${Yp(vy)}" stroke="#f1e9e1"/><text x="${ml - 6}" y="${Yp(vy) + 4}" text-anchor="end">${fmt(vy, y1 - y0 > 20 ? 0 : 1)}</text><text x="${Xp(vx)}" y="${Hh - 24}" text-anchor="middle">${xd ? brc(new Date(vx).toISOString().slice(0, 10)) : fmt(vx, x1 - x0 > 20 ? 0 : 1)}</text>`; }
+    (LIM_EX()[Y.id] || []).forEach((v) => { if (v >= ya && v <= y1 + py) graf += `<line x1="${ml}" x2="${W - mr}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="#A83D3D" stroke-dasharray="4 3"/><text x="${W - mr}" y="${Yp(v) - 4}" text-anchor="end" fill="#A83D3D">critério ${fmt(v, 1)}</text>`; });
+    // tendência linear e correlação, só quando os dois eixos são números
+    let r = null;
+    if (!xd && pts.length >= 4) { const mx = media(xs), my = media(ys), sxy = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0), sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0), syy = ys.reduce((a, y) => a + (y - my) ** 2, 0);
+      if (sxx && syy) { r = sxy / Math.sqrt(sxx * syy); const b1 = sxy / sxx, b0 = my - b1 * mx; if (Math.abs(r) >= 0.3) graf += `<line x1="${Xp(x0)}" y1="${Yp(b0 + b1 * x0)}" x2="${Xp(x1)}" y2="${Yp(b0 + b1 * x1)}" stroke="#C49A6C" stroke-width="2.5" stroke-dasharray="7 5"/><text x="${Xp(x1)}" y="${Yp(b0 + b1 * x1) - 8}" text-anchor="end" font-size="10.5" fill="#8a6a43">tendência</text>`; } }
+    if (xd) { const ord = pts.map((p, i) => ({ p, x: xs[i] })).sort((a, b) => a.x - b.x); graf += `<polyline fill="none" stroke="#C6B098" stroke-width="1.2" points="${ord.map((o) => Xp(o.x) + "," + Yp(o.p.y)).join(" ")}"/>`; }
+    pts.forEach((p, i) => { graf += `<g><title>Bolsa ${esc(p.bolsa)} · ${esc(X.nome)} ${xd ? br(p.x) : fmt(p.x, 2)} · ${esc(Y.nome)} ${fmt(p.y, 2)}${G ? " · " + esc(String(p.g)) : ""}</title><circle class="pt" data-bolsa="${esc(p.bolsa)}" cx="${Xp(xs[i])}" cy="${Yp(p.y)}" r="6.5" fill="${corDe(p.g)}" opacity=".9"/></g>`; });
+    if (pts.length <= 30) pts.forEach((p, i) => { graf += `<text x="${Xp(xs[i]) + 8}" y="${Yp(p.y) - 7}" font-size="9.5" fill="#6b5a52">${esc(p.bolsa)}</text>`; });
+    graf += `<text x="${(ml + W - mr) / 2}" y="${Hh - 4}" text-anchor="middle" font-weight="600">${esc(rot(X))}</text><text transform="translate(13 ${(mt + Hh - mb) / 2}) rotate(-90)" text-anchor="middle" font-weight="600">${esc(rot(Y))}</text></svg>`;
+    const a = r == null ? null : Math.abs(r), leitura = a == null ? "" : a < 0.3 ? "<b>Sem relação clara.</b> " + esc(Y.nome) + " não muda de forma consistente com " + esc(minus(X.nome)) + "." : (a < 0.6 ? "<b>Relação moderada.</b> " : "<b>Relação forte.</b> ") + "Quando " + esc(minus(X.nome)) + " aumenta, " + esc(minus(Y.nome)) + (r > 0 ? " tende a aumentar" : " tende a diminuir") + ". A linha tracejada mostra essa tendência.";
+    resumo = `<p class="ex-leit">${leitura || ""}</p><p class="nota">${pts.length} bolsas com os dois parâmetros.${r != null ? " Correlação de Pearson r = " + fmt(r, 2) + ". Com poucas bolsas, use como pista e não como conclusão." : !xd && new Set(xs).size === 1 ? " Todas têm o mesmo valor de " + minus(X.nome) + ", então não dá para medir a relação." : ""}</p>`;
+  } else {
+    const vs = pts.map((p) => typeof p.x === "number" ? p.x : null).filter((v) => v != null);
+    if (X.tipo === "num" && vs.length) { const l = pts.map((p) => ({ v: p.x, ok: null, bolsa: p.bolsa, data: p.data, tt: "Bolsa " + p.bolsa + " · " + fmt(p.x, 2) })).sort((a, b) => a.data.localeCompare(b.data)); graf = grafPontos(l, { titulo: X.nome, linha: true }); resumo = `<p class="nota">${vs.length} bolsas · média ${fmt(media(vs), 2)} · menor ${fmt(Math.min(...vs), 2)} · maior ${fmt(Math.max(...vs), 2)}</p>`; }
+    else { const c = {}; pts.forEach((p) => { c[p.x] = (c[p.x] || 0) + 1; }); graf = grafBarras(Object.keys(c).map((k) => ({ bolsa: X.id === "mes" ? mesTxt(k) : k, v: c[k], txt: c[k] + (c[k] === 1 ? " bolsa" : " bolsas") })), {}); }
+  }
+  const tabela = '<div class="tab-sc"><table class="tab"><tr><th>Bolsa</th><th>Coleta</th><th>' + esc(rot(X)) + "</th>" + (Y ? "<th>" + esc(rot(Y)) + "</th>" : "") + (G ? "<th>" + esc(G.nome) + "</th>" : "") + "</tr>" +
+    pts.slice().sort((a, b) => b.data.localeCompare(a.data)).map((p) => `<tr class="cl" data-a="bolsa" data-v="${esc(p.bolsa)}"><td><b>${esc(p.bolsa)}</b></td><td>${br(p.data)}</td><td>${X.tipo === "num" ? fmt(p.x, 2) : X.tipo === "data" ? br(p.x) : esc(X.id === "mes" ? mesTxt(p.x) : p.x)}</td>${Y ? `<td>${Y.tipo === "num" ? fmt(p.y, 2) : esc(p.y)}</td>` : ""}${G ? `<td>${esc(p.g == null ? "–" : G.id === "mes" ? mesTxt(p.g) : p.g)}</td>` : ""}</tr>`).join("") + "</table></div>";
+  return cartao(Y ? esc(X.nome) + " × " + esc(Y.nome) : esc(X.nome), "", graf + lg + resumo, '<button class="info" data-a="excsv">Baixar planilha</button>') + cartao("Bolsas do gráfico", "Toque numa linha para abrir a bolsa.", tabela);
+}
+function csvEx() {
+  const E = S.ex, X = VAR[E.x], Y = VAR[E.y], G = VAR[E.g], todas = [...new Set(regsP().map((r) => r.bolsa))].filter((b) => !E.fora[b] && (!E.meses.length || E.meses.includes(dataColeta(b).slice(0, 7))));
+  const c = (v) => v == null ? "" : typeof v === "number" ? String(v).replace(".", ",") : '"' + String(v).replace(/"/g, '""') + '"';
+  const linhas = [["Bolsa", "Coleta", X.nome].concat(Y ? [Y.nome] : [], G ? [G.nome] : []).map(c).join(";")].concat(todas.map((b) => [b, br(dataColeta(b)), X.f(b)].concat(Y ? [Y.f(b)] : [], G ? [G.f(b)] : []).map(c).join(";")));
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + linhas.join("\n")], { type: "text/csv" })); a.download = "controle-de-qualidade.csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+document.addEventListener("change", (ev) => { const id = ev.target.id; if (id === "exX" || id === "exY" || id === "exG") { S.ex[{ exX: "x", exY: "y", exG: "g" }[id]] = ev.target.value; pintarAba(); } });
+/* ── Planilhas: validação do CP (FORM.0048) e estudo de SAG do CH, preenchidas pelos laudos e completadas aqui ── */
+function calcSagM(b) {
+  const p = S.sagP || {}, s = sagDe(b) || {}, peso = num(s.pesoCH), htM = num(s.htCH), ht = htM != null ? htM : num(p.htMedioCH), r = {};
+  if (peso == null || ht == null) return r;
+  r.volume = (peso - p.tara) / p.densidade; r.sagCalc = r.volume * (ht / p.htAlvo - 1); r.pesoEsperado = peso + r.sagCalc;
+  const pf = num(s.pesoFinal); if (pf != null) { r.sagAdic = pf - peso; r.dif = r.sagAdic - r.sagCalc; r.htPrevisto = ht * r.volume / (r.volume + r.sagAdic); }
+  const hf = num(s.htFinalMicro), hp = htFinalPro(b);
+  if (hf != null) { r.faixa = Math.abs(hf - p.htAlvo) <= p.faixaHt ? "Sim" : "Não"; if (r.htPrevisto != null) r.difHt = hf - r.htPrevisto; }
+  if (hf != null && hp != null) r.procMicro = hp - hf;
+  return r;
+}
+const htFinalPro = (b) => { const s = sagDe(b); if (s && num(s.htFinalProcyte) != null) return num(s.htFinalProcyte); const r = regDe(b, "CH"); return r ? hm(r, "HCT") : null; };
+const htDoaPro = (b) => { const s = sagDe(b); if (s && num(s.htDoadorProcyte) != null) return num(s.htDoadorProcyte); const r = regDe(b, "DOA"); return r ? hm(r, "HCT") : null; };
+const nn = (v) => v === "nr" ? "nr" : num(v);
+const stDado = (k) => (b) => { const r = regDe(b, "ST"); return r ? nn(r.dados[k]) : null; };
+const cpDado = (k) => (b) => { const r = regDe(b, "CP"); return r ? r.dados[k] : null; };
+const okA = (id, comp) => (b) => { const r = regDe(b, comp); const a = r && itemPor(id).av(r); return a && a.ok === false && !a.est; };
+const PL_CP = {
+  nome: "Validação do CP", titulo: "Dados para validação da produção de concentrado de plaquetas", sub: "FORM.0048. Critérios da Tabela 4 da ABVHMT (2024).", comp: "CP",
+  cols: [
+    { g: "Bolsa", c: "Nº", t: "dado", v: (b, i) => i + 1 }, { g: "Bolsa", c: "Doação", t: "dado", v: (b) => b },
+    { g: "Bolsa", c: "Data da análise", t: "dado", v: (b) => { const r = regDe(b, "CP"); return r ? br(r.data) : ""; } },
+    { g: "Bolsa", c: "Validade", t: "dado", v: cpDado("validade"), e: { a: "CP", k: "validade", tp: "date" }, x: (v) => v ? br(v) : "" },
+    { g: "Bolsa", c: "Peso (g)", t: "dado", v: (b) => nn(cpDado("peso")(b)), e: { a: "CP", k: "peso", tp: "num" } },
+    { g: "Bolsa", c: "pH", t: "dado", v: (b) => nn(cpDado("ph")(b)), e: { a: "CP", k: "ph", tp: "num" }, ruim: okA("cp_ph", "CP") },
+    { g: "Bolsa", c: "Swirling (escore 0 a 3)", t: "dado", v: cpDado("swirling"), e: { a: "CP", k: "swirling", tp: ["", "3", "2", "1", "0", "presente", "ausente"] }, ruim: okA("cp_sw", "CP") },
+    { g: "Bolsa", c: "Microbiológico", t: "dado", v: cpDado("micro"), e: { a: "CP", k: "micro", tp: ["", "Negativo", "Positivo"] }, ruim: okA("cp_mic", "CP") },
+    { g: "Bolsa", c: "Overnight", t: "dado", v: cpDado("overnight"), e: { a: "CP", k: "overnight", tp: ["", "sim", "não"] } },
+    { g: "Bolsa", c: "Horas no agitador", t: "dado", v: (b) => nn(cpDado("agitador")(b)), e: { a: "CP", k: "agitador", tp: "num" } },
+    { g: "Hemogramas (ProCyte)", c: "CP plaquetas (mil/µL)", k: "CP", t: "laudo", v: vH("CP", "PLQ"), e: { a: "CP", k: "hemo.PLQ", tp: "num" } },
+    { g: "Hemogramas (ProCyte)", c: "CP leucócitos (mil/µL)", k: "CP", t: "laudo", v: vH("CP", "WBC"), e: { a: "CP", k: "hemo.WBC", tp: "num" } },
+    { g: "Hemogramas (ProCyte)", c: "ST Ht (%)", k: "ST", t: "laudo", v: vH("ST", "HCT") }, { g: "Hemogramas (ProCyte)", c: "ST plaquetas (mil/µL)", k: "ST", t: "laudo", v: vH("ST", "PLQ") },
+    { g: "Hemogramas (ProCyte)", c: "ST leucócitos (mil/µL)", k: "ST", t: "laudo", v: vH("ST", "WBC") }, { g: "Hemogramas (ProCyte)", c: "PFC plaquetas (mil/µL)", k: "PFC", t: "laudo", v: vH("PFC", "PLQ") },
+    { g: "Hemogramas (ProCyte)", c: "PFC leucócitos (mil/µL)", k: "PFC", t: "laudo", v: vH("PFC", "WBC") },
+    // coleta: o que foi digitado aqui vale; se não, vem da ficha de doação (Ht e Hb do Hemochromax, tempo e volume)
+    { g: "Coleta", c: "Ht do doador, Hemochromax (%)", t: "dado", v: (b) => { const v = stDado("htColeta")(b), d = doacaoDe(b); return v != null ? v : d ? num(d.ht) : null; }, fonte: (b) => stDado("htColeta")(b) == null && doacaoDe(b) && num(doacaoDe(b).ht) != null, e: { a: "ST", k: "htColeta", tp: "num" } },
+    { g: "Coleta", c: "Tempo de coleta (min)", t: "dado", ruim: okA("st_tempo", "ST"), v: (b) => { const v = stDado("duracao")(b), d = doacaoDe(b); return v != null ? v : d ? num(d.tempo) : null; }, fonte: (b) => stDado("duracao")(b) == null && doacaoDe(b) && num(doacaoDe(b).tempo) != null, e: { a: "ST", k: "duracao", tp: "num" } },
+    { g: "Coleta", c: "Volume coletado (mL)", t: "dado", ruim: okA("st_vol", "ST"), v: (b) => { const v = stDado("volumeColetado")(b), d = doacaoDe(b); return v != null ? v : d ? num(d.volume) : null; }, fonte: (b) => stDado("volumeColetado")(b) == null && doacaoDe(b) && num(doacaoDe(b).volume) != null, e: { a: "ST", k: "volumeColetado", tp: "num" } },
+    { g: "Cálculo automático", c: "Volume (mL)", t: "calc", v: vV("CP"), d: 0, ruim: okA("cp_vol", "CP") },
+    { g: "Cálculo automático", c: "Plaquetas por unidade (× 10¹⁰)", t: "calc", v: vA("CP", "cp_plq"), d: 2, exp: { mult: 1e10, cab: "Nº plaquetas por unidade", fmt: "0.00E+00" }, ruim: okA("cp_plq", "CP") },
+    { g: "Cálculo automático", c: "Leucócitos residuais (× 10⁸)", t: "calc", v: vA("CP", "cp_leu"), d: 3, exp: { mult: 1e8, cab: "Leucócitos residuais por unidade", fmt: "0.00E+00" }, ruim: okA("cp_leu", "CP") },
+    { g: "Cálculo automático", c: "Plaquetas recuperadas (%)", t: "calc", v: (b) => rendimento(b).recPlq, d: 0 }
+  ],
+  rodape: () => { const L = regsP(), pc = (id) => { const c = conformidade(L, id); return c.n ? fmt(c.pct, 0) + "% (" + c.ok + "/" + c.n + ")" : ""; };
+    const conf = { pH: pc("cp_ph"), "Swirling (escore 0 a 3)": pc("cp_sw"), "Tempo de coleta (min)": pc("st_tempo"), "Volume coletado (mL)": pc("st_vol"), "Microbiológico": pc("cp_mic"), "Volume (mL)": pc("cp_vol"), "Plaquetas por unidade (× 10¹⁰)": pc("cp_plq"), "Leucócitos residuais (× 10⁸)": pc("cp_leu") };
+    const ref = { pH: "≥ " + fmt(S.P.cpPhMin, 1), "Swirling (escore 0 a 3)": "escore ≥ " + fmt(S.P.swMin, 0), "Tempo de coleta (min)": "≤ " + fmt(S.P.stTempoMax, 0), "Volume coletado (mL)": fmt(S.P.stVolMin, 0) + " a " + fmt(S.P.stVolMax, 0), "Microbiológico": "negativo", "Volume (mL)": fmt(S.P.cpVolMin, 0) + " a " + fmt(S.P.cpVolMax, 0), "Plaquetas por unidade (× 10¹⁰)": "> " + fmt(S.P.cpPlqMin, 1) + " × 10¹⁰", "Leucócitos residuais (× 10⁸)": "< " + fmt(S.P.cpLeucMax, 1) + " × 10⁸" };
+    return [PL_CP.cols.map((c, j) => j === 0 ? "% conformidade (meta ≥ " + fmt(S.P.conformidade, 0) + "%)" : conf[c.c] || ""), PL_CP.cols.map((c, j) => j === 0 ? "Valor de referência" : ref[c.c] || "")]; }
+};
+const PL_SAG = {
+  nome: "Estudo de SAG", titulo: "Estudo de ajuste da adição de SAG", sub: "SAG calculado pelo hematócrito do CH antes da adição. Colunas brancas são lançadas, as de areia são calculadas.", comp: "CH",
+  cols: [
+    { g: "Dados da bolsa", c: "Nº", t: "dado", v: (b, i) => i + 1 }, { g: "Dados da bolsa", c: "Bolsa", t: "dado", v: (b) => b },
+    { g: "Dados da bolsa", c: "Data da coleta", t: "dado", v: (b) => { const s = sagDe(b); return br((s && s.data) || dataColeta(b)); } },
+    { g: "Dados da bolsa", c: "Ht do doador, ProCyte (%)", k: "DOA", t: "dado", v: htDoaPro, e: { a: "SAG", k: "htDoadorProcyte", tp: "num" } },
+    { g: "Dados da bolsa", c: "Ht do doador, CITOPET (%)", t: "dado", v: (b) => { const s = sagDe(b); return s ? num(s.htDoadorCitopet) : null; }, e: { a: "SAG", k: "htDoadorCitopet", tp: "num" } },
+    { g: "Dados da bolsa", c: "Peso do CH com bolsa (g)", t: "dado", v: (b) => { const s = sagDe(b); return s ? num(s.pesoCH) : null; }, e: { a: "SAG", k: "pesoCH", tp: "num" } },
+    { g: "Dados da bolsa", c: "Ht do CH sem SAG, micro-Ht (%)", t: "dado", v: (b) => { const s = sagDe(b); return s ? num(s.htCH) : null; }, e: { a: "SAG", k: "htCH", tp: "num" } },
+    { g: "Dados da bolsa", c: "Peso final do CH com SAG (g)", t: "dado", v: (b) => { const s = sagDe(b); return s ? num(s.pesoFinal) : null; }, e: { a: "SAG", k: "pesoFinal", tp: "num" } },
+    { g: "Dados da bolsa", c: "Ht final, micro-Ht (%)", t: "dado", v: (b) => { const s = sagDe(b); return s ? num(s.htFinalMicro) : null; }, e: { a: "SAG", k: "htFinalMicro", tp: "num" } },
+    { g: "Dados da bolsa", c: "Ht final, ProCyte (%)", k: "CH", t: "laudo", v: htFinalPro, e: { a: "SAG", k: "htFinalProcyte", tp: "num" } },
+    { g: "Cálculo automático", c: "SAG calculado (mL)", t: "calc", v: (b) => calcSagM(b).sagCalc, d: 1 },
+    { g: "Cálculo automático", c: "Peso final esperado (g)", t: "calc", v: (b) => calcSagM(b).pesoEsperado, d: 1 },
+    { g: "Cálculo automático", c: "SAG adicionado (mL)", t: "calc", v: (b) => calcSagM(b).sagAdic, d: 1 },
+    { g: "Cálculo automático", c: "Adicionado − calculado (mL)", t: "calc", v: (b) => calcSagM(b).dif, d: 1, ruim: (b) => { const r = calcSagM(b); return r.dif != null && Math.abs(r.dif) > (S.sagP.tolSag || 2) && r.sagCalc <= (S.sagP.sagBolsa || 100); } },
+    { g: "Cálculo automático", c: "Ht final previsto (%)", t: "calc", v: (b) => calcSagM(b).htPrevisto, d: 1 },
+    { g: "Cálculo automático", c: "Ht micro − previsto (pontos)", t: "calc", v: (b) => calcSagM(b).difHt, d: 1 },
+    { g: "Cálculo automático", c: "ProCyte − micro-Ht (pontos)", t: "calc", v: (b) => calcSagM(b).procMicro, d: 1 },
+    { g: "Cálculo automático", c: "Hb por unidade (g)", t: "calc", v: vA("CH", "ch_hb"), d: 1, ruim: okA("ch_hb", "CH") },
+    { g: "Cálculo automático", c: "Ht na faixa ideal", t: "calc", v: (b) => calcSagM(b).faixa || "", ruim: (b) => calcSagM(b).faixa === "Não" },
+    { g: "", c: "Observações", t: "dado", v: (b) => { const s = sagDe(b); return s ? s.obs || "" : ""; }, e: { a: "SAG", k: "obs", tp: "txt" } }
+  ],
+  rodape: () => []
+};
+S.pl = S.pl || "cp";
+// cor de cada hemocomponente nas colunas, nos tons do CVH: fundo claro no corpo e faixa mais forte no título
+const COR_COMP = { ST: { f: "#F6E7E5", c: "#E9C7C2", l: "#A83D3D" }, CP: { f: "#F8EEDF", c: "#ECD5B4", l: "#C49A6C" }, PFC: { f: "#F3EFE6", c: "#E2D6C2", l: "#C6B098" }, CH: { f: "#F2E2E0", c: "#DDB8B3", l: "#5F130F" }, DOA: { f: "#EFEBE8", c: "#DCD3CC", l: "#6b5a52" } };
+// "não registrado": dado que nunca foi anotado (bolsas antigas). Antes da data de corte, célula vazia já conta assim.
+const NR_TXT = /^(nr|n\/r|-|–|nao|não|não registrado|nao registrado)$/i;
+const antesCorte = (b) => { const d = dataColeta(b) || (regDe(b, "CP") || regDe(b, "CH") || {}).data || ""; return !!(S.P.corte && d && d < S.P.corte); };
+const semDadoSag = (b, k) => { const s = sagDe(b); return !!(s && String(s.semDado || "").split(",").includes(k)); };
+function estadoCel(c, b, v) { if (!c.e) return ""; if (v === "nr" || (c.e.a === "SAG" && semDadoSag(b, c.e.k))) return "nr"; if (v == null || v === "") return antesCorte(b) ? "nr" : "falta"; return ""; }
+function bolsasPl(P) {
+  const L = regsP(), set = new Set(L.filter((r) => P.comp === "CP" ? r.componente === "CP" : (r.componente === "CH" || r.componente === "CHD")).map((r) => r.bolsa));
+  if (P.comp === "CH") S.sag.forEach((s) => { if (s.bolsa && noPeriodo(s.data || dataColeta(s.bolsa) || "2000-01-01")) set.add(s.bolsa); });
+  const dt = (b) => { const r = regDe(b, P.comp === "CP" ? "CP" : "CH"), s = sagDe(b); return (P.comp === "CH" && s && s.data) || dataColeta(b) || (r && r.data) || ""; };
+  return [...set].sort((a, b) => dt(a).localeCompare(dt(b)) || a.localeCompare(b));
+}
+const fmtCel = (c, v) => v == null || v === "" ? "" : typeof v === "number" ? (c.c === "Nº" ? String(v) : fmt(v, c.d != null ? c.d : Number.isInteger(v) ? 0 : 2)) : c.x ? c.x(v) : esc(v);
+function telaPlanilhas() {
+  const P = S.pl === "cp" ? PL_CP : PL_SAG, bs = bolsasPl(P);
+  const grupos = []; P.cols.forEach((c) => { const g = grupos[grupos.length - 1]; if (g && g.nome === c.g) g.n++; else grupos.push({ nome: c.g, n: 1, calc: c.t === "calc" }); });
+  const cel = (c, b, i) => {
+    const v0 = c.v(b, i), est = estadoCel(c, b, v0), v = v0 === "nr" ? "" : v0, ruim = c.ruim && c.ruim(b), cls = (c.t === "calc" ? "pc" : c.t === "laudo" ? "pl" : "pd") + (ruim ? " ruim" : "") + (est ? " " + est : "") + (c.fonte && c.fonte(b) ? " pf" : "") + (c.k ? " k" + c.k : "");
+    if (!c.e) return `<td class="${cls}">${fmtCel(c, v)}</td>`;
+    const id = 'data-b="' + esc(b) + '" data-k="' + c.e.k + '" data-alvo="' + c.e.a + '"';
+    const ph = est === "nr" ? ' placeholder="não registrado"' : "";
+    if (Array.isArray(c.e.tp)) return `<td class="${cls}"><select class="pcel" ${id}>${c.e.tp.map((o) => `<option value="${o}"${String(v || "") === o && !(o === "" && v0 === "nr") ? " selected" : ""}>${o || (est === "nr" ? "não registrado" : "")}</option>`).join("")}<option value="nr"${v0 === "nr" ? " selected" : ""}>não registrado</option></select></td>`;
+    if (c.e.tp === "date") return `<td class="${cls}"><input class="pcel" type="date" ${id} value="${esc(v || "")}"></td>`;
+    if (c.e.tp === "txt") return `<td class="${cls}"><input class="pcel larga" ${id} value="${esc(v || "")}"></td>`;
+    return `<td class="${cls}"><input class="pcel" inputmode="decimal" ${id}${ph} value="${v == null || v === "" ? "" : String(Math.round(v * 100) / 100).replace(".", ",")}"></td>`;
+  };
+  const rod = P.rodape();
+  return cartao("Planilhas", "Cada hemocomponente tem uma cor nas colunas dos hemogramas: ST em rosa, CP em caramelo, PFC em areia e CH em vinho claro. Preenchidas sozinhas com os laudos do ProCyte e, na coleta, com a ficha de doação (Ht do Hemochromax, tempo e volume), em itálico. Amarelo é dado faltando, digite direto na célula e ele é salvo na hora. Se o dado não existe, escolha \u201cnão registrado\u201d na lista ou digite nr. Bolsas coletadas antes de " + br(S.P.corte) + " já aparecem como não registrado, porque a anotação completa começou depois. Areia é calculado e vermelho está fora do critério.",
+      `<div class="ex-sug"><button class="${S.pl === "cp" ? "on" : ""}" data-a="pl" data-v="cp">Validação do CP (FORM.0048)</button><button class="${S.pl === "sag" ? "on" : ""}" data-a="pl" data-v="sag">Estudo de SAG do CH</button></div>
+      <div class="bts"><button class="btn" data-a="plgoogle">Atualizar a planilha do Google</button><button class="btn sec" data-a="plxlsx">Baixar para Excel ou Numbers</button>${S.plUrl ? `<a class="btn sec" href="${esc(S.plUrl)}" target="_blank" rel="noopener">Abrir a planilha do Google</a>` : ""}</div><p class="nota" id="plSt"></p>`) +
+    `<section class="cx pl-cx"><h2>${esc(P.titulo)}</h2><p class="sub">${esc(P.sub)} ${bs.length} bolsas no período.</p><div class="pl-sc"><table class="pl"><tr>${grupos.map((g) => `<th colspan="${g.n}" class="pg${g.calc ? " calc" : ""}">${esc(g.nome)}</th>`).join("")}</tr>` +
+    `<tr>${P.cols.map((c) => `<th class="ph${c.t === "calc" ? " calc" : ""}${c.k ? " k" + c.k : ""}">${esc(c.c)}</th>`).join("")}</tr>` +
+    bs.map((b, i) => `<tr>${P.cols.map((c) => cel(c, b, i)).join("")}</tr>`).join("") +
+    rod.map((l, k) => `<tr class="pr${k ? " ref" : ""}">${l.map((x) => `<td>${esc(x)}</td>`).join("")}</tr>`).join("") + "</table></div></section>";
+}
+const plTimers = {};
+async function salvarCelula(el) {
+  const b = el.dataset.b, k = el.dataset.k, alvo = el.dataset.alvo, raw = el.value.trim(), tipoNum = el.getAttribute("inputmode") === "decimal", nrv = raw === "nr" || NR_TXT.test(raw), val = nrv ? "nr" : tipoNum ? num(raw) : raw;
+  if (tipoNum && raw && !nrv && val == null) { el.classList.add("erro"); return toast("Valor inválido. Para dado que não existe, digite nr."); }
+  el.classList.remove("erro"); el.classList.add("salvando");
+  // salvamentos da mesma bolsa entram em fila: cada um parte do que o anterior já gravou, para um não apagar o outro
+  const chave = b + "|" + alvo, antes = plFila[chave] || Promise.resolve();
+  const pk = b + "|" + k + "|" + alvo; plPend[pk] = el.value;
+  const vez = antes.catch(() => {}).then(() => gravarCelula(el, b, k, alvo, val)).finally(() => { if (plPend[pk] === el.value) delete plPend[pk]; });
+  plFila[chave] = vez; vez.finally(() => { if (plFila[chave] === vez) delete plFila[chave]; });
+  return vez;
+}
+const plFila = {}, plPend = {};
+async function gravarCelula(el, b, k, alvo, val) {
+  try {
+    if (alvo === "SAG") { const s = sagDe(b), o = { bolsa: b, data: (s && s.data) || dataColeta(b) }, lista = String((s && s.semDado) || "").split(",").filter((x) => x && x !== k); if (val === "nr") lista.push(k); o.semDado = lista.join(","); o[k] = val == null || val === "nr" ? "" : val; const n = await qc("qcSagSalvar", o); const j = S.sag.findIndex((x) => x.bolsa === b); if (j >= 0) S.sag[j] = Object.assign(S.sag[j], n); else S.sag.push(n); }
+    else {
+      let r = regDe(b, alvo); const dados = Object.assign({}, r ? r.dados : {});
+      if (k.indexOf("hemo.") === 0) { dados.hemo = Object.assign({}, dados.hemo || {}); if (val == null || val === "") delete dados.hemo[k.slice(5)]; else dados.hemo[k.slice(5)] = val; }
+      else if (val == null || val === "") delete dados[k]; else dados[k] = val;
+      const n = await qc("qcSalvar", { id: r ? r.id : "", bolsa: b, componente: alvo, data: r ? r.data : (dataColeta(b) || hojeISO()), dados });
+      const j = S.regs.findIndex((x) => x.id === n.id); if (j >= 0) S.regs[j] = n; else S.regs.push(n);
+    }
+    el.classList.remove("salvando"); el.classList.add("salvo");
+    redesenharPl(el);
+  } catch (e) { el.classList.remove("salvando"); toast(e.message, 6000); }
+}
+// redesenha a planilha depois de salvar sem perder o lugar: mantém a rolagem e a célula em que a pessoa já está digitando
+function redesenharPl(salva) {
+  const f = document.activeElement, emEdicao = f && f !== salva && f.tagName === "INPUT" && f.classList.contains("pcel") ? { b: f.dataset.b, k: f.dataset.k, a: f.dataset.alvo, v: f.value, ini: f.selectionStart, fim: f.selectionEnd, mudou: f.value !== f.defaultValue } : null;
+  const y = window.scrollY, sc = document.querySelector(".pl-sc"), sl = sc ? sc.scrollLeft : 0, st = sc ? sc.scrollTop : 0;
+  try { pintarAba(); } catch (e) { toast("Salvo, mas a tela não atualizou (" + e.message + "). Troque de aba e volte.", 8000); return; }
+  const volta = () => { if (window.scrollY !== y) window.scrollTo(0, y); const s2 = document.querySelector(".pl-sc"); if (s2) { if (s2.scrollTop !== st) s2.scrollTop = st; if (s2.scrollLeft !== sl) s2.scrollLeft = sl; } };
+  volta();
+  // células que ainda estão na fila para salvar continuam mostrando o que foi digitado
+  document.querySelectorAll(".pcel").forEach((x) => { const pk = x.dataset.b + "|" + x.dataset.k + "|" + x.dataset.alvo; if (pk in plPend) { x.value = plPend[pk]; x.classList.add("salvando"); } });
+  if (emEdicao) {
+    const n = [...document.querySelectorAll(".pcel")].find((x) => x.dataset.b === emEdicao.b && x.dataset.k === emEdicao.k && x.dataset.alvo === emEdicao.a);
+    if (n) {
+      if (emEdicao.mudou) { n.value = emEdicao.v; n.dataset.pend = "1"; }
+      try { n.focus({ preventScroll: true }); } catch (e) { n.focus(); }
+      try { if (emEdicao.ini != null && n.setSelectionRange) n.setSelectionRange(emEdicao.ini, emEdicao.fim); } catch (e) { /* campo de data ou lista */ }
+    }
+  }
+  requestAnimationFrame(volta); setTimeout(volta, 80);
+}
+// o que a pessoa digitou enquanto a planilha se redesenhava também é salvo quando ela sai da célula
+document.addEventListener("focusout", (ev) => { const el = ev.target; if (el && el.dataset && el.dataset.pend && el.classList.contains("pcel")) { delete el.dataset.pend; if (el.value !== el.defaultValue) salvarCelula(el); } });
+function tabelaExport(P) {
+  const bs = bolsasPl(P), grupos = []; P.cols.forEach((c) => { const g = grupos[grupos.length - 1]; if (g && g.nome === c.g) g.n++; else grupos.push({ nome: c.g, n: 1, cor: c.t === "calc" ? "calc" : "" }); });
+  const linhas = [], ruins = [], faltas = [];
+  bs.forEach((b, i) => linhas.push(P.cols.map((c, j) => { let v = c.v(b, i); const est = estadoCel(c, b, v); if (c.ruim && c.ruim(b)) ruins.push([i, j]); if (est === "falta") faltas.push([i, j]); if (est === "nr") return "não registrado"; if (typeof v === "number" && c.c !== "Nº") v = Math.round(v * (c.d === 0 ? 1 : c.d === 3 ? 1000 : 100)) / (c.d === 0 ? 1 : c.d === 3 ? 1000 : 100); if (c.exp && typeof v === "number") v = Math.round(v * c.exp.mult); if (c.x && v) v = c.x(v); return v == null ? "" : v; })));
+  return { nome: P.nome, titulo: P.titulo, sub: P.sub, cab: P.cols.map((c) => c.exp ? c.exp.cab : c.c), formatos: P.cols.map((c) => c.exp ? c.exp.fmt : ""), tipos: P.cols.map((c) => c.t), grupos, linhas, ruins, faltas, rodape: P.rodape(), cores: P.cols.map((c) => c.k ? { fundo: COR_COMP[c.k].f, cab: COR_COMP[c.k].c } : null), legenda: "Branco é lançado, areia é calculado, vermelho está fora do critério e amarelo está faltando. Bolsas coletadas antes de " + br(S.P.corte) + " não tinham esses dados anotados.", larguras: P.cols.map((c) => c.c === "Observações" ? 220 : c.c === "Nº" ? 40 : 0) };
+}
+async function exportarPl(xlsx, bt) {
+  bt.disabled = true; const st = $("#plSt"); st.textContent = xlsx ? "Gerando o arquivo…" : "Atualizando a planilha do Google…";
+  try {
+    const r = await qc("qcPlanilha", [tabelaExport(PL_CP), tabelaExport(PL_SAG)], !!xlsx); S.plUrl = r.url;
+    if (xlsx && r.base64) { const u8 = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0)), a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([u8], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })); a.download = r.nome; document.body.appendChild(a); a.click(); a.remove(); }
+    pintarAba(); toast(xlsx ? "Arquivo baixado. A planilha do Google também foi atualizada." : "Planilha do Google atualizada.", 5000);
+  } catch (e) { st.textContent = e.message; bt.disabled = false; }
+}
+document.addEventListener("change", (ev) => { const el = ev.target; if (el.classList && el.classList.contains("pcel")) { delete el.dataset.pend; salvarCelula(el); } });
+/* ── parâmetros (administrador) ── */
+const ROT_P = { taraCH: "Tara da bolsa de CH com manguito (g)", densCH: "Densidade do CH (g/mL)", densSAG: "Densidade do SAG (g/mL)", taraCP: "Tara da bolsa de CP (g)", densCP: "Densidade do CP (g/mL)", taraPL: "Tara da bolsa de plasma (g)", densPL: "Densidade do plasma (g/mL)", taraST: "Tara da bolsa de sangue total (g), 0 usa o volume coletado", densST: "Densidade do sangue total (g/mL)", anticoagulante: "Anticoagulante na bolsa (mL)",
+  chHtMin: "CH com solução aditiva, Ht mínimo (%)", chHtMax: "CH com solução aditiva, Ht máximo (%)", chCpdaMin: "CH em CPDA-1, Ht mínimo (%)", chCpdaMax: "CH em CPDA-1, Ht máximo (%)", chHbMin: "CH, Hb mínima (g/unidade)", chdHbMin: "CH desleucocitado, Hb mínima (g/unidade)", hemoliseMax: "Hemólise máxima (%)",
+  cpVolMin: "CP, volume mínimo (mL)", cpVolMax: "CP, volume máximo (mL)", cpPlqMin: "CP, plaquetas mínimas (× 10¹⁰/unidade)", cpPlqReduz: "CP, acima disso validade de 3 dias (× 10¹⁰)", cpPhMin: "CP, pH mínimo", cpLeucMax: "CP, leucócitos máximos (× 10⁸/unidade)",
+  pfcVolMin: "PFC, volume mínimo (mL)", pcVolMin: "Plasma comum, volume mínimo (mL)", picVolMin: "PIC, volume mínimo (mL)", crioVolMin: "Crioprecipitado, volume mínimo (mL)", crioVolMax: "Crioprecipitado, volume máximo (mL)", pfcHemMax: "PFC, hemácias residuais máximas (× 10⁶/mL)", swMin: "Swirling, escore mínimo (0 a 3)", stTempoMax: "Sangue total, tempo máximo de coleta (min)", stVolMin: "Sangue total, volume coletado mínimo (mL)", stVolMax: "Sangue total, volume coletado máximo (mL)", conformidade: "Conformidade mínima exigida (%)", amostragem: "Amostragem mínima da produção (%)", corte: "Registros completos a partir de (coleta)" };
+function telaParams() {
+  abrirGaveta("Parâmetros", '<p class="nota">Os critérios vêm da Tabela 4 da ABVHMT. As taras e densidades vêm da calculadora de SAG e do formulário de validação do CP. Confira a tara da bolsa de plasma, que não constava nos formulários.</p><div class="grade">' +
+    Object.keys(ROT_P).map((k) => k === "corte" ? `<label>${ROT_P[k]}<input id="pp_corte" type="date" value="${esc(S.P.corte || "")}"></label>` : `<label>${ROT_P[k]}<input id="pp_${k}" inputmode="decimal" value="${String(S.P[k]).replace(".", ",")}"${S.P[k] !== S.padrao[k] ? ' style="border-color:#A83D3D"' : ""}></label>`).join("") + '</div><div class="bts" style="margin-top:10px"><button class="btn" data-a="salvarparams">Salvar</button><button class="btn sec" data-a="padrao">Voltar ao padrão</button></div>');
+}
+async function salvarParams(padrao) { const p = {}; Object.keys(ROT_P).forEach((k) => { p[k] = padrao ? S.padrao[k] : k === "corte" ? $("#pp_corte").value : num($("#pp_" + k).value); }); try { S.P = await qc("qcSalvarParametros", p); toast("Parâmetros salvos."); fecharGaveta(); pintar(); } catch (e) { toast(e.message, 6000); } }
+/* ── cliques ── */
+document.addEventListener("click", (ev) => {
+  const pt = ev.target.closest(".pt[data-bolsa]"); if (pt) { abrirBolsa(pt.getAttribute("data-bolsa")); return; }
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  if (a === "aba") { S.aba = v; pintar(); window.scrollTo(0, 0); }
+  else if (a === "per") { S.periodo = v; pintar(); }
+  else if (a === "exp" || a === "cel") explicar(b.dataset.item, b.dataset.mes);
+  else if (a === "bolsa") abrirBolsa(v);
+  else if (a === "salvar") salvarReg(v);
+  else if (a === "apagar") apagarReg(v);
+  else if (a === "novo") novoManual(v);
+  else if (a === "salvarnovo") salvarNovo();
+  else if (a === "pdfs") $("#arqPdf").click();
+  else if (a === "salvarlote") salvarLote(b);
+  else if (a === "lotegrupo") { lerLote(); S.loteAberto[v] = !(S.loteAberto[v] || ((v === "bolsa" || v === "doador") && LOTE.filter((o) => o.grupo === v).length <= 40)); pintarLote(); }
+  else if (a === "voltalote") pintarLote();
+  else if (a === "fechargv") fecharGaveta();
+  else if (a === "exsug") { const s = SUGESTOES[+v]; Object.assign(S.ex, { x: s[1], y: s[2], g: s[3] }); pintarAba(); }
+  else if (a === "exmes") { if (!v) S.ex.meses = []; else S.ex.meses = S.ex.meses.includes(v) ? S.ex.meses.filter((m) => m !== v) : S.ex.meses.concat(v); pintarAba(); }
+  else if (a === "exbol") { if (v === "*") { const t = [...new Set(regsP().map((r) => r.bolsa))]; S.ex.fora = Object.keys(S.ex.fora).length ? {} : Object.fromEntries(t.map((b) => [b, 1])); } else if (S.ex.fora[v]) delete S.ex.fora[v]; else S.ex.fora[v] = 1; const d = document.querySelector(".ex-bol"); const ab = d && d.open; pintarAba(); const d2 = document.querySelector(".ex-bol"); if (d2 && ab) d2.open = true; }
+  else if (a === "excsv") csvEx();
+  else if (a === "pl") { S.pl = v; pintarAba(); }
+  else if (a === "plgoogle") exportarPl(false, b);
+  else if (a === "plxlsx") exportarPl(true, b);
+  else if (a === "verpdf") verPdf(v, b);
+  else if (a === "params") telaParams();
+  else if (a === "salvarparams") salvarParams(false);
+  else if (a === "padrao") salvarParams(true);
+  else if (a === "imprimir") window.print();
+});
+$("#gvX").onclick = fecharGaveta; $("#veu").onclick = fecharGaveta;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharGaveta(); });
+$("#arqPdf").onchange = (e) => { const fs = [...e.target.files]; e.target.value = ""; if (fs.length) lerArquivos(fs); };
+/* ── dados iniciais: PDFs do ProCyte de 28/10 a 16/11/2026, formulário de validação do CP (FORM.0048) e a bolsa 573-8 do estudo de SAG ── */
+const SEMENTE = [{"bolsa":"544-4","componente":"CP","data":"2026-10-20","dados":{"hemo":{"PLQ":2053.0,"WBC":0.15},"origem":"formulário de validação","peso":79.0,"ph":7.0,"validade":"2026-10-24","swirling":"presente","overnight":"sim"}},{"bolsa":"544-4","componente":"ST","data":"2026-10-20","dados":{"hemo":{"HCT":47.8,"PLQ":440.0,"WBC":11.47},"origem":"formulário de validação","htColeta":52.8,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"545-2","componente":"CP","data":"2026-10-20","dados":{"hemo":{"PLQ":1456.0,"WBC":0.08},"origem":"formulário de validação","peso":97.0,"ph":7.0,"validade":"2026-10-24","swirling":"presente","overnight":"sim"}},{"bolsa":"545-2","componente":"ST","data":"2026-10-20","dados":{"hemo":{"HCT":38.4,"PLQ":361.0,"WBC":7.23},"origem":"formulário de validação","htColeta":48.9,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"546-0","componente":"CP","data":"2026-10-20","dados":{"hemo":{"PLQ":74.0,"WBC":0.11},"origem":"formulário de validação","peso":82.0,"ph":7.0,"validade":"2026-10-24","swirling":"presente","overnight":"não"}},{"bolsa":"546-0","componente":"ST","data":"2026-10-20","dados":{"hemo":{"HCT":47.8,"PLQ":444.0,"WBC":0.0},"origem":"formulário de validação","htColeta":53.4,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"547-9","componente":"CP","data":"2026-10-21","dados":{"hemo":{"PLQ":5.0,"WBC":0.07},"origem":"formulário de validação","peso":78.0,"ph":7.0,"validade":"2026-10-25","swirling":"presente","overnight":"não"}},{"bolsa":"547-9","componente":"PFC","data":"2026-10-21","dados":{"hemo":{"PLQ":0.0,"WBC":0.02},"origem":"formulário de validação"}},{"bolsa":"547-9","componente":"ST","data":"2026-10-21","dados":{"hemo":{"HCT":44.4,"PLQ":384.0,"WBC":0.0},"origem":"formulário de validação","htColeta":51.6,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"548-7","componente":"CP","data":"2026-10-21","dados":{"hemo":{"PLQ":6.0,"WBC":0.17},"origem":"formulário de validação","peso":78.0,"ph":7.0,"validade":"2026-10-25","swirling":"presente","overnight":"não"}},{"bolsa":"548-7","componente":"PFC","data":"2026-10-21","dados":{"hemo":{"PLQ":0.0,"WBC":0.05},"origem":"formulário de validação"}},{"bolsa":"548-7","componente":"ST","data":"2026-10-21","dados":{"hemo":{"HCT":45.8,"PLQ":410.0,"WBC":25.47},"origem":"formulário de validação","htColeta":50.7,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"551-7","componente":"CP","data":"2026-10-28","dados":{"hora":"13:28","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":10.4,"pRETIC":0.0,"RETIC":6.5,"WBC":0.44,"pNEU":17.1,"pLYM":75.9,"pMONO":2.9,"pEOS":3.5,"pBASO":0.5,"NEU":0.07,"LYM":0.33,"MONO":0.01,"EOS":0.02,"BASO":0.0,"PLQ":1231.0,"VPM":9.8,"PDW":6.5,"PCT":1.2},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO","PLQ","VPM","PDW","PCT"],"arquivo":"CP_BOLSA_551-7_20261028_132423_6476.pdf","peso":70.0,"ph":7.0,"validade":"2026-11-01","swirling":"presente","overnight":"sim"}},{"bolsa":"551-7","componente":"PFC","data":"2026-10-28","dados":{"hemo":{"PLQ":0.0,"WBC":0.5},"origem":"formulário de validação"}},{"bolsa":"551-7","componente":"ST","data":"2026-10-28","dados":{"hemo":{"HCT":50.2,"PLQ":281.0,"WBC":12.25},"origem":"formulário de validação","htColeta":55.8,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"552-5","componente":"CP","data":"2026-10-28","dados":{"hora":"13:38","equip":"ProCyte One","hemo":{"RBC":0.95,"pRETIC":0.3,"RETIC":2.8,"WBC":0.36,"pNEU":29.3,"pLYM":52.8,"pMONO":10.4,"pEOS":5.9,"pBASO":1.6,"NEU":0.11,"LYM":0.19,"MONO":0.04,"EOS":0.02,"BASO":0.01,"PLQ":19.0},"arquivo":"CP_BOLSA_552-5_20261028_133451_6477.pdf","peso":77.0,"ph":7.0,"validade":"2026-11-01","swirling":"presente","overnight":"sim","plqFormulario":160.0}},{"bolsa":"552-5","componente":"PFC","data":"2026-10-28","dados":{"hemo":{"PLQ":80.0,"WBC":0.31},"origem":"formulário de validação"}},{"bolsa":"552-5","componente":"ST","data":"2026-10-28","dados":{"hemo":{"HCT":43.5,"PLQ":304.0,"WBC":11.18},"origem":"formulário de validação","htColeta":51.3,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"553-3","componente":"CH","data":"2026-10-28","dados":{"hora":"14:34","equip":"ProCyte One","hemo":{"RBC":10.08,"HCT":71.6,"HGB":30.3,"VCM":71.0,"HCM":30.0,"CHCM":42.3,"RDW":20.3,"pRETIC":0.3,"RETIC":35.0,"PLQ":193.0,"VPM":10.8,"PDW":12.1,"PCT":0.21},"alerta":["HGB","HCM","CHCM"],"arquivo":"CH_BOLSA_553-3_20261028_142932_6479.pdf"}},{"bolsa":"553-3","componente":"CP","data":"2026-10-29","dados":{"hora":"13:31","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":59.8,"pRETIC":0.0,"RETIC":3.1,"WBC":0.14,"pNEU":8.2,"pLYM":81.1,"pMONO":6.6,"pEOS":2.5,"pBASO":1.6,"NEU":0.01,"LYM":0.12,"MONO":0.01,"EOS":0.0,"BASO":0.0,"PLQ":1157.0,"VPM":9.6,"PDW":6.3,"PCT":1.12},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","pMONO","MONO"],"arquivo":"CP_BOLSA_553-3_20261029_132751_6484.pdf","peso":81.0,"ph":7.0,"validade":"2026-11-02","swirling":"presente","overnight":"sim"}},{"bolsa":"553-3","componente":"PFC","data":"2026-10-28","dados":{"hora":"14:56","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":52.2,"pRETIC":0.0,"RETIC":6.2,"WBC":0.08,"pNEU":44.9,"pLYM":24.6,"pMONO":26.1,"pEOS":4.3,"pBASO":0.0,"NEU":0.04,"LYM":0.02,"MONO":0.02,"EOS":0.0,"BASO":0.0,"PLQ":65.0,"VPM":10.5,"PDW":12.6,"PCT":0.07},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO"],"arquivo":"PFC_BOLSA_553-3_20261028_145306_6480.pdf"}},{"bolsa":"553-3","componente":"ST","data":"2026-10-29","dados":{"hemo":{"HCT":42.2,"PLQ":305.0,"WBC":5.62},"origem":"formulário de validação","htColeta":49.8,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"554-1","componente":"CH","data":"2026-10-29","dados":{"hora":"15:19","equip":"ProCyte One","hemo":{"RBC":11.28,"HCT":74.3,"HGB":26.4,"VCM":65.9,"HCM":23.4,"CHCM":35.6,"RDW":18.9,"pRETIC":0.6,"RETIC":63.5,"WBC":11.74,"pNEU":59.2,"pLYM":21.5,"pMONO":8.5,"pEOS":9.0,"pBASO":1.8,"NEU":6.95,"LYM":2.52,"MONO":1.0,"EOS":1.06,"BASO":0.21,"PLQ":195.0,"VPM":9.5,"PDW":11.6,"PCT":0.19},"arquivo":"CH-C-SG_BOLSA_554-1_20261029_151428_6488.pdf"}},{"bolsa":"554-1","componente":"CP","data":"2026-10-30","dados":{"hora":"13:47","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":16.3,"pRETIC":0.0,"RETIC":6.7,"WBC":0.5,"pNEU":35.0,"pLYM":49.8,"pMONO":6.8,"pEOS":8.4,"pBASO":0.0,"NEU":0.18,"LYM":0.25,"MONO":0.03,"EOS":0.04,"BASO":0.0,"PLQ":1962.0,"VPM":8.8,"PDW":6.8,"PCT":1.73},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","MONO","BASO"],"arquivo":"CP_BOLSA_554-1_20261030_134318_6493.pdf","peso":73.0,"ph":8.0,"validade":"2026-11-03","swirling":"presente","overnight":"sim"}},{"bolsa":"554-1","componente":"PFC","data":"2026-10-29","dados":{"hora":"15:48","equip":"ProCyte One","hemo":{"RBC":0.0,"pRETIC":0.0,"RETIC":1.1,"WBC":0.05,"pNEU":11.6,"pLYM":65.1,"pMONO":11.6,"pEOS":9.3,"pBASO":2.3,"NEU":0.01,"LYM":0.03,"MONO":0.01,"EOS":0.0,"BASO":0.0,"PLQ":2.0,"PDW":0.6},"alerta":["RBC","pMONO","MONO","PLQ","PDW"],"arquivo":"PFC_BOLSA_554-1_20261029_154416_6489.pdf"}},{"bolsa":"554-1","componente":"ST","data":"2026-10-29","dados":{"hora":"12:28","equip":"ProCyte One","hemo":{"RBC":7.47,"HCT":49.3,"HGB":16.8,"VCM":66.0,"HCM":22.5,"CHCM":34.0,"RDW":15.6,"pRETIC":0.5,"RETIC":39.1,"WBC":7.18,"pNEU":58.4,"pLYM":19.5,"pMONO":9.5,"pEOS":12.3,"pBASO":0.2,"NEU":4.19,"LYM":1.4,"MONO":0.68,"EOS":0.88,"BASO":0.02,"PLQ":304.0,"VPM":9.3,"PDW":8.7,"PCT":0.28},"arquivo":"ST_BOLSA_554-1_20261029_122319_6483.pdf","htColeta":55.8,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"555-0","componente":"CH","data":"2026-10-30","dados":{"hora":"16:19","equip":"ProCyte One","hemo":{"RBC":11.33,"HCT":72.2,"HGB":25.0,"VCM":63.8,"HCM":22.0,"CHCM":34.6,"RDW":20.2,"pRETIC":0.2,"RETIC":24.7,"WBC":12.48,"pNEU":61.8,"pLYM":21.0,"pMONO":14.7,"pEOS":2.5,"pBASO":0.0,"NEU":7.71,"LYM":2.62,"MONO":1.84,"EOS":0.31,"BASO":0.0,"PLQ":144.0,"VPM":13.8,"PDW":19.7,"PCT":0.2},"alerta":["PLQ","PDW","PCT"],"arquivo":"CH_BOLSA_555-0_20261030_161452_6497.pdf"}},{"bolsa":"555-0","componente":"CP","data":"2026-10-31","dados":{"hora":"14:42","equip":"ProCyte One","hemo":{"RBC":0.19,"pRETIC":2.9,"RETIC":5.5,"WBC":0.19,"pNEU":34.4,"pLYM":55.8,"pMONO":4.9,"pEOS":4.3,"pBASO":0.6,"NEU":0.07,"LYM":0.11,"MONO":0.01,"EOS":0.01,"BASO":0.0,"PLQ":16.0,"PDW":3.6},"alerta":["RBC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO"],"arquivo":"CP_BOLSA_555-0_20261031_143649_6501.pdf","peso":86.0,"ph":7.0,"validade":"2026-11-04","swirling":"presente","overnight":"sim","plqFormulario":231.0}},{"bolsa":"555-0","componente":"PFC","data":"2026-10-30","dados":{"hora":"16:50","equip":"ProCyte One","hemo":{"RBC":0.0,"pRETIC":0.0,"RETIC":0.1,"WBC":0.03,"pNEU":21.7,"pLYM":56.5,"pMONO":13.0,"pEOS":8.7,"pBASO":0.0,"NEU":0.01,"LYM":0.02,"MONO":0.0,"EOS":0.0,"BASO":0.0,"PLQ":0.0},"alerta":["RBC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO"],"arquivo":"PFC_BOLSA_555-0_20261030_164648_6500.pdf"}},{"bolsa":"555-0","componente":"ST","data":"2026-10-30","dados":{"hora":"14:00","equip":"ProCyte One","hemo":{"RBC":6.72,"HCT":42.8,"HGB":15.2,"VCM":63.7,"HCM":22.6,"CHCM":35.5,"RDW":15.8,"pRETIC":0.2,"RETIC":13.7,"WBC":7.7,"pNEU":66.8,"pLYM":15.2,"pMONO":12.1,"pEOS":5.6,"pBASO":0.2,"NEU":5.14,"LYM":1.17,"MONO":0.93,"EOS":0.43,"BASO":0.02,"PLQ":253.0,"VPM":13.4,"PDW":18.3,"PCT":0.34},"arquivo":"ST_BOLSA_555-0_20261030_135627_6494.pdf","htColeta":51.3,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"556-8","componente":"CH","data":"2026-10-30","dados":{"hora":"16:31","equip":"ProCyte One","hemo":{"RBC":11.63,"HCT":73.9,"HGB":25.6,"VCM":63.5,"HCM":22.0,"CHCM":34.6,"RDW":19.9,"pRETIC":0.5,"RETIC":57.7,"WBC":16.02,"pNEU":72.9,"pLYM":11.1,"pMONO":10.5,"pEOS":5.5,"pBASO":0.0,"NEU":11.68,"LYM":1.78,"MONO":1.68,"EOS":0.87,"BASO":0.0,"PLQ":125.0,"VPM":12.0,"PDW":16.3,"PCT":0.15},"arquivo":"CH_C-SAG_BOLSA_556-8_20261030_162713_6498.pdf"}},{"bolsa":"556-8","componente":"CP","data":"2026-10-31","dados":{"hora":"14:54","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":4.9,"pRETIC":0.0,"RETIC":16.5,"WBC":0.56,"pNEU":21.3,"pLYM":59.3,"pMONO":11.5,"pEOS":7.7,"pBASO":0.2,"NEU":0.12,"LYM":0.33,"MONO":0.06,"EOS":0.04,"BASO":0.0,"PLQ":351.0,"VPM":8.9,"PDW":5.1,"PCT":0.31},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","pMONO","MONO","PLQ","VPM","PDW","PCT"],"arquivo":"CP_BOLSA_556-8_20261031_144521_6502.pdf","peso":89.0,"ph":7.0,"validade":"2026-11-04","swirling":"presente","overnight":"sim","plqFormulario":520.0}},{"bolsa":"556-8","componente":"PFC","data":"2026-10-30","dados":{"hora":"16:43","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":60.1,"pRETIC":0.0,"RETIC":13.0,"WBC":0.1,"pNEU":47.6,"pLYM":36.6,"pMONO":3.7,"pEOS":7.3,"pBASO":4.9,"NEU":0.05,"LYM":0.04,"MONO":0.0,"EOS":0.01,"BASO":0.0,"PLQ":44.0,"PDW":19.6},"alerta":["RBC","HCT","VCM"],"arquivo":"PFC_BOLSA_556-8_20261030_164006_6499.pdf"}},{"bolsa":"556-8","componente":"ST","data":"2026-10-30","dados":{"hora":"14:12","equip":"ProCyte One","hemo":{"RBC":8.6,"HCT":54.8,"HGB":19.2,"VCM":63.7,"HCM":22.3,"CHCM":35.0,"RDW":17.6,"pRETIC":0.4,"RETIC":37.5,"WBC":12.77,"pNEU":73.1,"pLYM":10.5,"pMONO":10.3,"pEOS":6.1,"pBASO":0.1,"NEU":9.34,"LYM":1.34,"MONO":1.32,"EOS":0.78,"BASO":0.01,"PLQ":283.0,"VPM":12.0,"PDW":15.9,"PCT":0.34},"arquivo":"ST_BOLSA_556-8_20261030_140749_6495.pdf","htColeta":54.0,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"557-6","componente":"CH","data":"2026-11-03","dados":{"hora":"15:23","equip":"ProCyte One","hemo":{"RBC":11.36,"HCT":72.3,"HGB":24.8,"VCM":63.7,"HCM":21.8,"CHCM":34.3,"RDW":21.9,"pRETIC":0.3,"RETIC":31.8,"WBC":12.28,"pNEU":68.1,"pLYM":15.2,"pMONO":11.0,"pEOS":5.6,"pBASO":0.1,"NEU":8.36,"LYM":1.87,"MONO":1.36,"EOS":0.68,"BASO":0.01,"PLQ":167.0,"VPM":11.5,"PDW":12.4,"PCT":0.19},"arquivo":"CH_BOLSA_557-6_20261103_151830_6513.pdf"}},{"bolsa":"557-6","componente":"CP","data":"2026-11-04","dados":{"hemo":{},"origem":"formulário de validação","peso":94.0,"validade":"2026-11-07","swirling":"presente","overnight":"sim"}},{"bolsa":"557-6","componente":"PFC","data":"2026-11-03","dados":{"hora":"16:05","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":2.8,"pRETIC":0.0,"RETIC":1.0,"WBC":0.06,"pNEU":50.0,"pLYM":27.8,"pMONO":3.7,"pEOS":14.8,"pBASO":3.7,"NEU":0.03,"LYM":0.02,"MONO":0.0,"EOS":0.01,"BASO":0.0,"PLQ":3.0,"PDW":0.2},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","EOS","BASO","PLQ","PDW"],"arquivo":"PFC_BOLSA_557-6_20261103_160110_6515.pdf"}},{"bolsa":"557-6","componente":"ST","data":"2026-11-03","dados":{"hora":"12:56","equip":"ProCyte One","hemo":{"RBC":8.09,"HCT":51.7,"HGB":17.5,"VCM":63.9,"HCM":21.6,"CHCM":33.8,"RDW":18.9,"pRETIC":0.3,"RETIC":23.0,"WBC":8.25,"pNEU":63.2,"pLYM":18.6,"pMONO":11.6,"pEOS":6.3,"pBASO":0.2,"NEU":5.21,"LYM":1.53,"MONO":0.96,"EOS":0.52,"BASO":0.02,"PLQ":282.0,"VPM":10.6,"PDW":10.9,"PCT":0.3},"arquivo":"ST_BOLSA_557-6_20261103_125137_6511.pdf","htColeta":52.0,"duracao":3.0,"volumeColetado":450.0}},{"bolsa":"558-4","componente":"CH","data":"2026-11-03","dados":{"hora":"15:15","equip":"ProCyte One","hemo":{"RBC":10.64,"HCT":73.4,"HGB":25.9,"VCM":69.0,"HCM":24.3,"CHCM":35.3,"RDW":17.4,"pRETIC":0.2,"RETIC":23.8,"WBC":10.18,"pNEU":76.6,"pLYM":13.1,"pMONO":5.8,"pEOS":4.4,"pBASO":0.1,"NEU":7.8,"LYM":1.33,"MONO":0.59,"EOS":0.45,"BASO":0.01,"PLQ":179.0,"VPM":11.3,"PDW":13.8,"PCT":0.2},"arquivo":"CH_BOLSA_558-4_20261103_151044_6512.pdf"}},{"bolsa":"558-4","componente":"CP","data":"2026-11-04","dados":{"hora":"14:40","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":62.8,"pRETIC":0.0,"RETIC":4.7,"WBC":0.16,"pNEU":30.0,"pLYM":58.6,"pMONO":7.1,"pEOS":4.3,"pBASO":0.0,"NEU":0.05,"LYM":0.1,"MONO":0.01,"EOS":0.01,"BASO":0.0,"PLQ":448.0,"VPM":10.1,"PDW":10.3,"PCT":0.45},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO"],"arquivo":"CP_BOLSA_558-4_20261104_143628_6518.pdf","peso":90.0,"validade":"2026-11-07","swirling":"presente","overnight":"sim"}},{"bolsa":"558-4","componente":"PFC","data":"2026-11-03","dados":{"hora":"15:51","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":59.6,"pRETIC":0.0,"RETIC":8.7,"WBC":0.07,"pNEU":22.6,"pLYM":51.6,"pMONO":17.7,"pEOS":6.5,"pBASO":1.6,"NEU":0.02,"LYM":0.04,"MONO":0.01,"EOS":0.0,"BASO":0.0,"PLQ":45.0,"PDW":12.1},"alerta":["RBC","HCT","VCM","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","EOS","BASO"],"arquivo":"PFC_BOLSA_558-4_20261103_154707_6514.pdf"}},{"bolsa":"558-4","componente":"ST","data":"2026-11-03","dados":{"hora":"12:47","equip":"ProCyte One","hemo":{"RBC":7.57,"HCT":52.4,"HGB":17.6,"VCM":69.2,"HCM":23.2,"CHCM":33.5,"RDW":14.9,"pRETIC":0.1,"RETIC":8.8,"WBC":6.78,"pNEU":72.8,"pLYM":15.7,"pMONO":6.3,"pEOS":4.9,"pBASO":0.3,"NEU":4.93,"LYM":1.06,"MONO":0.43,"EOS":0.33,"BASO":0.02,"PLQ":264.0,"VPM":11.2,"PDW":14.0,"PCT":0.3},"arquivo":"ST_558-4_20261103_124239_6510.pdf","htColeta":54.3,"duracao":4.0,"volumeColetado":450.0}},{"bolsa":"569-0","componente":"CH","data":"2026-11-14","dados":{"hora":"12:12","equip":"ProCyte One","hemo":{"RBC":8.54,"HCT":56.9,"HGB":21.0,"VCM":66.6,"HCM":24.6,"CHCM":36.9,"RDW":17.8,"pRETIC":0.9,"RETIC":75.1,"WBC":18.63,"pNEU":61.4,"pLYM":28.0,"pMONO":8.4,"pEOS":2.1,"pBASO":0.1,"NEU":11.44,"LYM":5.21,"MONO":1.57,"EOS":0.39,"BASO":0.02,"PLQ":56.0,"VPM":9.7,"PDW":16.8,"PCT":0.05},"alerta":["PLQ","PDW","PCT"],"arquivo":"CH_BOLSA_569-0_20261114_120742_6539.pdf"}},{"bolsa":"569-0","componente":"CP","data":"2026-11-16","dados":{"hora":"16:04","equip":"ProCyte One","hemo":{"RBC":0.1,"HCT":0.0,"VCM":4.6,"pRETIC":16.0,"RETIC":15.6,"WBC":2.35,"pNEU":24.9,"pLYM":68.3,"pMONO":4.5,"pEOS":2.2,"pBASO":0.0,"NEU":0.58,"LYM":1.6,"MONO":0.11,"EOS":0.05,"BASO":0.0,"PLQ":125.0,"VPM":8.8,"PDW":6.2,"PCT":0.11},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO","PLQ","VPM","PDW","PCT"],"arquivo":"CP_FRED_569-0_20261116_160026_6547.pdf"}},{"bolsa":"569-0","componente":"ST","data":"2026-11-14","dados":{"hora":"09:40","equip":"ProCyte One","hemo":{"RBC":1.03,"HCT":6.8,"HGB":2.9,"VCM":66.5,"HCM":28.1,"CHCM":42.2,"RDW":0.2,"pRETIC":4.5,"RETIC":46.6,"WBC":14.08,"pNEU":57.6,"pLYM":32.2,"pMONO":7.0,"pEOS":3.1,"pBASO":0.1,"NEU":8.11,"LYM":4.53,"MONO":0.99,"EOS":0.44,"BASO":0.02,"PLQ":261.0,"VPM":14.3,"PDW":23.2,"PCT":0.37},"alerta":["RDW"],"arquivo":"ST_BOLSA_569-0_20261114_093550_6535.pdf"}},{"bolsa":"570-3","componente":"CH","data":"2026-11-14","dados":{"hora":"12:20","equip":"ProCyte One","hemo":{"RBC":9.13,"HCT":61.2,"HGB":22.3,"VCM":67.0,"HCM":24.5,"CHCM":36.5,"RDW":17.0,"pRETIC":0.3,"RETIC":23.4,"WBC":14.91,"pNEU":74.0,"pLYM":13.6,"pMONO":8.0,"pEOS":4.2,"pBASO":0.1,"NEU":11.04,"LYM":2.03,"MONO":1.2,"EOS":0.63,"BASO":0.01,"PLQ":100.0,"VPM":13.2,"PDW":24.2,"PCT":0.13},"alerta":["PLQ","PDW","PCT"],"arquivo":"CH_BOLSA_570-3_20261114_121524_6540.pdf"}},{"bolsa":"570-3","componente":"CP","data":"2026-11-16","dados":{"hora":"16:12","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":4.3,"pRETIC":0.0,"RETIC":6.3,"WBC":0.49,"pNEU":44.5,"pLYM":35.8,"pMONO":15.1,"pEOS":3.8,"pBASO":0.7,"NEU":0.22,"LYM":0.17,"MONO":0.07,"EOS":0.02,"BASO":0.0,"PLQ":55.0,"VPM":6.6,"PDW":3.4,"PCT":0.04},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","LYM","MONO","PLQ","VPM","PDW","PCT"],"arquivo":"CP_LILA_570-3_20261116_160835_6548.pdf"}},{"bolsa":"570-3","componente":"ST","data":"2026-11-14","dados":{"hora":"09:47","equip":"ProCyte One","hemo":{"RBC":7.18,"HCT":48.3,"HGB":17.8,"VCM":67.2,"HCM":24.8,"CHCM":36.8,"RDW":15.0,"pRETIC":0.3,"RETIC":20.0,"WBC":13.21,"pNEU":73.3,"pLYM":10.8,"pMONO":7.4,"pEOS":8.0,"pBASO":0.4,"NEU":9.68,"LYM":1.43,"MONO":0.98,"EOS":1.06,"BASO":0.06,"PLQ":245.0,"VPM":11.2,"PDW":15.6,"PCT":0.27},"arquivo":"ST_BOLSA_570-3_20261114_094253_6536.pdf"}},{"bolsa":"571-1","componente":"CH","data":"2026-11-14","dados":{"hora":"12:28","equip":"ProCyte One","hemo":{"RBC":9.03,"HCT":60.4,"HGB":22.5,"VCM":66.9,"HCM":25.0,"CHCM":37.3,"RDW":17.8,"pRETIC":0.3,"RETIC":24.2,"WBC":12.22,"pNEU":70.4,"pLYM":12.8,"pMONO":10.4,"pEOS":6.3,"pBASO":0.1,"NEU":8.61,"LYM":1.57,"MONO":1.27,"EOS":0.77,"BASO":0.01,"PLQ":131.0,"VPM":11.4,"PDW":19.8,"PCT":0.15},"arquivo":"CH_BOLSA_571-1_20261114_122321_6541.pdf"}},{"bolsa":"571-1","componente":"CP","data":"2026-11-16","dados":{"hora":"16:23","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":5.0,"pRETIC":0.0,"RETIC":2.6,"WBC":0.13,"pNEU":41.3,"pLYM":48.6,"pMONO":4.6,"pEOS":4.6,"pBASO":0.9,"NEU":0.05,"LYM":0.06,"MONO":0.01,"EOS":0.01,"BASO":0.0,"PLQ":79.0,"VPM":7.3,"PDW":3.5,"PCT":0.06},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","BASO","PLQ","VPM","PDW","PCT"],"arquivo":"CP_OHANA__571-1_20261116_161948_6549.pdf"}},{"bolsa":"571-1","componente":"ST","data":"2026-11-14","dados":{"hora":"10:02","equip":"ProCyte One","hemo":{"RBC":6.09,"HCT":41.1,"HGB":14.2,"VCM":67.5,"HCM":23.3,"CHCM":34.5,"RDW":14.4,"pRETIC":0.2,"RETIC":10.5,"WBC":8.24,"pNEU":71.4,"pLYM":12.0,"pMONO":10.3,"pEOS":6.3,"pBASO":0.1,"NEU":5.88,"LYM":0.99,"MONO":0.84,"EOS":0.52,"BASO":0.01,"PLQ":293.0,"VPM":10.9,"PDW":11.6,"PCT":0.32},"arquivo":"ST_BOLSA_571-1_20261114_095751_6537.pdf"}},{"bolsa":"572-0","componente":"CH","data":"2026-11-14","dados":{"hora":"12:36","equip":"ProCyte One","hemo":{"RBC":9.1,"HCT":60.5,"HGB":20.9,"VCM":66.5,"HCM":22.9,"CHCM":34.5,"RDW":17.7,"pRETIC":0.2,"RETIC":21.5,"WBC":7.27,"pNEU":74.7,"pLYM":17.1,"pMONO":6.5,"pEOS":1.7,"pBASO":0.0,"NEU":5.43,"LYM":1.24,"MONO":0.47,"EOS":0.12,"BASO":0.0,"PLQ":95.0,"VPM":12.6,"PDW":22.4,"PCT":0.12},"alerta":["WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","MONO","BASO"],"arquivo":"CH_BOLSA_572-0_20261114_123122_6542.pdf"}},{"bolsa":"572-0","componente":"CP","data":"2026-11-16","dados":{"hora":"16:32","equip":"ProCyte One","hemo":{"RBC":0.0,"HCT":0.0,"VCM":12.4,"pRETIC":0.0,"RETIC":3.4,"WBC":0.27,"pNEU":35.5,"pLYM":46.1,"pMONO":11.8,"pEOS":6.6,"pBASO":0.0,"NEU":0.09,"LYM":0.12,"MONO":0.03,"EOS":0.02,"BASO":0.0,"PLQ":279.0,"VPM":8.5,"PDW":7.5,"PCT":0.24},"alerta":["RBC","HCT","VCM","pRETIC","RETIC","WBC","pNEU","pLYM","pMONO","pEOS","pBASO","NEU","LYM","MONO","PLQ","VPM","PDW","PCT"],"arquivo":"CP_SHERLOCK_572-0_20261116_162827_6550.pdf"}},{"bolsa":"572-0","componente":"ST","data":"2026-11-14","dados":{"hora":"10:10","equip":"ProCyte One","hemo":{"RBC":5.59,"HCT":37.3,"HGB":12.5,"VCM":66.8,"HCM":22.3,"CHCM":33.4,"RDW":13.7,"pRETIC":0.1,"RETIC":6.0,"WBC":5.1,"pNEU":72.1,"pLYM":16.8,"pMONO":8.6,"pEOS":2.4,"pBASO":0.1,"NEU":3.67,"LYM":0.86,"MONO":0.44,"EOS":0.12,"BASO":0.0,"PLQ":234.0,"VPM":11.4,"PDW":16.6,"PCT":0.27},"arquivo":"ST_BOLSA_572-0_20261114_100517_6538.pdf"}},{"bolsa":"573-8","componente":"CH","data":"2026-11-16","dados":{"hora":"15:29","equip":"ProCyte One","hemo":{"RBC":8.69,"HCT":58.4,"HGB":20.9,"VCM":67.3,"HCM":24.1,"CHCM":35.8,"RDW":15.9,"pRETIC":0.2,"RETIC":18.7,"WBC":13.7,"pNEU":73.6,"pLYM":8.9,"pMONO":12.2,"pEOS":5.2,"pBASO":0.1,"NEU":10.08,"LYM":1.21,"MONO":1.68,"EOS":0.72,"BASO":0.01,"PLQ":143.0,"VPM":9.9,"PDW":14.9,"PCT":0.14},"arquivo":"CH_BOLSA_573-8_20261116_152421_6546.pdf"}},{"bolsa":"573-8","componente":"ST","data":"2026-11-16","dados":{"hora":"12:16","equip":"ProCyte One","hemo":{"RBC":5.84,"HCT":39.4,"HGB":13.6,"VCM":67.5,"HCM":23.4,"CHCM":34.6,"RDW":13.1,"pRETIC":0.1,"RETIC":3.4,"WBC":9.81,"pNEU":60.7,"pLYM":7.2,"pMONO":22.1,"pEOS":10.0,"pBASO":0.1,"NEU":5.95,"LYM":0.7,"MONO":2.17,"EOS":0.98,"BASO":0.01,"PLQ":386.0,"VPM":10.5,"PDW":11.2,"PCT":0.41},"arquivo":"ST_BOLSA_573-8_20261116_121206_6545.pdf"}}];
+const SEMENTE_SAG = [{ bolsa: "573-8", data: "2026-11-16", htDoadorProcyte: "44.8", htDoadorCitopet: "45.3", pesoCH: "284.36", htCH: "92.7", pesoFinal: "380.76", htFinalMicro: "65.2", htFinalProcyte: "58.4" }];
+async function iniciar() {
+  try {
+    let r = await qc("qcDados");
+    if (!r.registros.length) { const im = await qc("qcImportar", SEMENTE, SEMENTE_SAG); if (im.importados || im.sag) { toast("Entraram " + im.importados + " análises dos PDFs e do formulário de validação" + (im.sag ? " e a bolsa 573-8 no estudo de SAG" : "") + ".", 6000); r = await qc("qcDados"); } }
+    S.P = r.params; S.padrao = r.padrao; S.regs = r.registros; S.sag = r.sag; S.sagP = r.sagParams; S.admin = !!r.podeAjustar || S.admin;
+    pintar();
+  } catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o controle de qualidade. ' + esc(e.message || String(e)) + "</div>"; }
+}
+iniciar();
+</script>
+<!--CVH-QUALIDADE-COMPLETO-->
+</body></html>
