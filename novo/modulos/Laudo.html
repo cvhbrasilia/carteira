@@ -2265,29 +2265,36 @@ function blocoDiagrama(x, w, cel) {
 const HEMO = ["Eritrograma", "Leucograma", "Plaquetograma"];
 function blocosResultados(x, w, cel, so) {
   const blocos = [], grupos = GRUPO_ORD.filter((g) => (!so || so(g)) && estado.linhas.some((l) => l.grupo === g && (l.v != null || l.texto)));
-  const tam = cel ? 9.5 : 9.8, rh = cel ? 27 : 17;
+  const tam = cel ? 10 : 9.8, rh = cel ? 22 : 17;
   grupos.forEach((g) => {
     const ls = estado.linhas.filter((l) => l.grupo === g && (l.v != null || l.texto)), leuco = g === "Leucograma" && ls.some((l) => l.pct != null);
-    const cN = x, cP = x + w * 0.34, cV = x + w * (leuco ? 0.52 : 0.44), cU = x + w * (leuco ? 0.545 : 0.465), cR = x + w * 0.67, cB = x + w - 74;
-    blocos.push({ h: cel ? 26 : 34, el: (y) => {
-      const e = [T(x, y + 14, g.toUpperCase(), 8.5, { b: true, c: COR.VERMELHO }), E.lin(x, y + 18, x + w, y + 18, { s: COR.LINHA, lw: 0.6 })];
-      if (!cel) { const cab = (xx, t, a) => T(xx, y + 29, t, 6.5, { b: true, c: COR.OURO, a: a || "s" });
-        e.push(cab(cN, "EXAME")); if (leuco) e.push(cab(cP + 34, "RELATIVO", "e")); e.push(cab(cV, leuco ? "ABSOLUTO" : "RESULTADO", "e")); e.push(cab(cR, "REFERÊNCIA")); e.push(cab(cB, "BAIXO   NORMAL   ALTO")); }
+    // celular: a mesma ordem do A4 (exame, resultado, unidade, referência, barra), com letra maior e colunas ajustadas à largura
+    const cN = x, cP = cel ? x + w * 0.395 : x + w * 0.34, cV = cel ? x + w * (leuco ? 0.56 : 0.46) : x + w * (leuco ? 0.52 : 0.44), cU = cV + 3,
+      cR = cel ? x + w * (leuco ? 0.665 : 0.6) : x + w * 0.67, cB = cel ? x + w - 40 : x + w - 74, bw = cel ? 40 : 70;
+    blocos.push({ h: cel ? 32 : 34, el: (y) => {
+      const e = [T(x, y + 14, g.toUpperCase(), cel ? 9 : 8.5, { b: true, c: COR.VERMELHO }), E.lin(x, y + 18, x + w, y + 18, { s: COR.LINHA, lw: 0.6 })];
+      const cab = (xx, t, a) => T(xx, y + 28, t, cel ? 6 : 6.5, { b: true, c: COR.OURO, a: a || "s" });
+      e.push(cab(cel ? cN + 5 : cN, "EXAME")); if (leuco) e.push(cab(cel ? cP : cP + 34, "RELATIVO", "e")); e.push(cab(cV, leuco ? "ABSOLUTO" : "RESULTADO", "e")); e.push(cab(cR, "REFERÊNCIA"));
+      e.push(cel ? cab(cB + bw / 2, "FAIXA", "m") : cab(cB, "BAIXO   NORMAL   ALTO"));
       return e; } });
     ls.forEach((l, i) => {
       const f = forma(l), cor = f && f !== "ok" ? COR.VERMELHO : COR.BORDO;
       blocos.push({ h: rh, el: (y) => {
         const e = []; if (i % 2 === 0) e.push(E.ret(x, y + 1, w, rh - 2, { f: COR.FAIXA }));
-        const by = y + (cel ? 11 : 12);
+        const by = y + (cel ? 14 : 12);
         if (cel) {
-          e.push(T(x + 6, by, l.nome, tam, { c: COR.TEXTO }));
-          if (l.texto) { e.push(T(x + w - 6, by, l.texto, tam, { b: true, c: ehPos(l.texto) ? COR.VERMELHO : COR.BORDO, a: "e" })); return e; }
-          const vs = [seg(valTxt(l), tam + 0.5, { b: true, c: cor }), seg(" ", tam), ...unidadeSegs(l.un, 7.5, COR.TXT2)];
-          if (l.pct != null) vs.unshift(seg(fmt(l.pct, 1) + "%   ", 8, { c: COR.TXT2 }));
-          const wv = largSegs(vs); e.push(E.txt(x + w - 6 - wv, by, vs));
-          if (f && f !== "ok") e.push(seta(x + w - 6 - wv - 9, by - 1, f === "alto", 5.5));
-          const r = refTxt(l); if (r) e.push(T(x + 6, by + 11, "ref. " + r, 7.5, { c: COR.MARROM2 }));
-          e.push(...barraRef(l, x + w - 6 - 64, by + 6, 64, 3.6));
+          const vtxt = l.texto ? "" : valTxt(l), tv = tam + 0.8, wv = vtxt ? largura(vtxt, tv, true) : 0;
+          // o nome diminui só o necessário para não encostar no resultado
+          const limN = (leuco && l.pct != null ? cP - largura(fmt(l.pct, 1) + " %", 8.6, false) : cV - wv - (f && f !== "ok" ? 12 : 0)) - cN - 22;
+          let tn = tam; while (tn > 7.2 && largura(l.nome, tn, false) > limN) tn -= 0.2;
+          e.push(T(cN + 5, by, l.nome, tn, { c: COR.TEXTO }));
+          if (l.texto) { e.push(T(x + w - 5, by, l.texto, tam, { b: true, c: ehPos(l.texto) ? COR.VERMELHO : COR.BORDO, a: "e" })); return e; }
+          if (leuco && l.pct != null) e.push(T(cP, by, fmt(l.pct, 1) + " %", 8.6, { c: COR.TXT2, a: "e" }));
+          e.push(T(cV, by, vtxt, tv, { b: true, c: cor, a: "e" }));
+          if (f && f !== "ok") e.push(seta(cV - wv - 8, by - 1, f === "alto", 5));
+          e.push(E.txt(cU, by, unidadeSegs(l.un, 6.4, COR.TXT2)));
+          const r = refTxt(l); if (r) { let tr = 8.2; while (tr > 6.4 && largura(r, tr, false) > cB - cR - 5) tr -= 0.2; e.push(T(cR, by, r, tr, { c: COR.TXT2 })); }
+          e.push(...barraRef(l, cB, by - 4.4, bw, 3.8));
           return e;
         }
         e.push(T(cN + 6, by, l.nome, tam, { c: COR.TEXTO }));
