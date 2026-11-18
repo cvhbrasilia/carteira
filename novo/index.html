@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" href="icone-192.png"><link rel="manifest" href="carteira.webmanifest">
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carteira de Saúde CVH</title>
@@ -766,7 +768,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
   // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
   if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
-  window.BOOT = { modo: q.get('painel') ? 'painel' : (q.get('r') ? 'responsavel' : 'nenhum'), token: q.get('r') || '' };
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
   function sessao() { try { return sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
