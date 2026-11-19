@@ -6,6 +6,8 @@
   var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
   // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
   if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
   // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
   var r = q.get('r') || '';
   if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
