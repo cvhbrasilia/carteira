@@ -2408,6 +2408,8 @@ function blocosCoombs(x, w, cel) {
 const NOTA_AC_NEG = "O autocontrole negativo indica ausência de aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio. Entretanto, não exclui a presença de hemácias sensibilizadas por imunoglobulinas ou componentes do complemento, que podem não produzir aglutinação espontânea. A investigação dessa sensibilização requer métodos complementares, como o teste de antiglobulina direta (Coombs direto), associados à avaliação clínico-laboratorial.";
 const NOTA_AC_POS = "O autocontrole positivo indica aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio, o que pode estar associado à presença de autoanticorpos eritrocitários. Entretanto, esse resultado isoladamente não confirma hemólise imunomediada, sendo necessária a exclusão de fenômenos de pseudoaglutinação e interferências analíticas. Recomenda-se investigação complementar, incluindo avaliação morfológica eritrocitária, teste de aglutinação em solução salina e, quando indicado, teste de antiglobulina direta (Coombs direto), em conjunto com os achados clínico-laboratoriais.";
 const PLASMA_OPS = ["", "Normal", "Discretamente ictérico", "Moderadamente ictérico", "Intensamente ictérico", "Discretamente hemolisado", "Moderadamente hemolisado", "Intensamente hemolisado", "Discretamente lipêmico", "Moderadamente lipêmico", "Intensamente lipêmico"];
+// hematócrito opcional (em branco não sai no laudo): aceita 45, 45,5 ou 45%
+const htTxt = (v) => { const n = parseFloat(String(v == null ? "" : v).replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(n) && n > 0 && n < 100 ? String(n).replace(".", ",") + " %" : ""; };
 function blocosCompat(x, w, cel) {
   const t = estado.t, gel = t.metodo === "gel", acs = gel || t.acGel;
   const B = [secTit(x, w, (gel ? "Prova de compatibilidade em gel" : "Prova imunocromatográfica") + " · " + (felino() ? "felina" : "canina"), t.material ? "Material  " + t.material : "")];
@@ -2418,12 +2420,13 @@ function blocosCompat(x, w, cel) {
     if (gel && t.menor) L.push(["Prova menor (PC<)", p.menor, true]);
     if (acs && t.acDoadorOn) L.push(["Autocontrole do doador", p.acDoador + (gel ? "" : " (em coluna de gel)")]);
     if (p.doador) L.push(["Doador", p.doador]);
+    if (htTxt(p.ht)) L.push(["Hematócrito do doador", htTxt(p.ht)]);
     const inc = incompat(p.maior) || (gel && t.menor && incompat(p.menor));
     cartoes.push(blocoCartao({ titulo: p.bolsa ? "Bolsa " + p.bolsa : (t.provas.length > 1 ? "Bolsa " + (i + 1) : "Prova"), res: inc ? "Incompatível" : "Compatível", pos: inc, rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, linhas: L }, x, wl, cel));
   });
   // método do autocontrole só na imunocromatográfica, em que ele é feito à parte, em coluna de gel
   // o aspecto do plasma vai na legenda da foto do tubo; sem foto, sai numa linha discreta, alinhada à esquerda
-  const plasmaTxt = t.plasma ? "Plasma " + t.plasma.toLowerCase() : "", plasma = plasmaTxt && !IMG_DIN.fotoTubo ? [[plasmaTxt, "\u00a0"]] : [];
+  const plasmaTxt = t.plasma ? "Plasma " + t.plasma.toLowerCase() : "", plasma = [...(htTxt(t.htReceptor) ? [["Hematócrito do receptor", htTxt(t.htReceptor)]] : []), ...(plasmaTxt && !IMG_DIN.fotoTubo ? [[plasmaTxt, "\u00a0"]] : [])];
   if (acs) cartoes.push(blocoCartao({ titulo: "Autocontrole do receptor (ACR)", res: t.acPaciente, pos: ehPos(t.acPaciente), rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, linhas: [...(gel ? [] : [["Método", "Cartão de aglutinação em coluna de gel (Bio-Rad)"]]), ...plasma] }, x, wl, cel));
   else if (plasma.length) cartoes.push(blocoCartao({ titulo: "Amostra do receptor", res: "", rotW: lado ? 104 : 112, tamT: 15, linhas: plasma }, x, wl, cel));
   if (lado) {
@@ -3107,13 +3110,13 @@ function formTipo() {
       <div class="grade" style="margin-top:9px">${gel ? "" : campo("Lote", inp('data-t="lote"', t.lote)) + campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>
       ${gel ? "" : caixaKit(felino() ? "xmGato" : "xmCao") + campo("Texto sobre o teste", `<textarea rows="4" data-t="nota">${esc(t.nota)}</textarea>`)}</div>
       <div class="cx"><h3>Bolsas testadas</h3>${t.provas.map((p, i) => `<div class="item"><div class="it-top"><b>Bolsa ${i + 1}</b>${t.provas.length > 1 ? `<button type="button" class="lnk" data-a="tirar-bolsa" data-i="${i}">tirar</button>` : ""}</div>
-        <div class="grade">${campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa))}${campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador))}</div>
+        <div class="grade">${campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa))}${campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador))}${campo("Hematócrito do doador (opcional)", inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
         <label style="margin-top:6px">Prova maior</label>${segm(`data-a="pv" data-i="${i}" data-c="maior"`, p.maior, ["Compatível", "Incompatível"])}
         ${gel && t.menor ? `<label style="margin-top:6px">Prova menor</label>${segm(`data-a="pv" data-i="${i}" data-c="menor"`, p.menor, ["Compatível", "Incompatível"])}` : ""}
         ${(gel || t.acGel) && t.acDoadorOn ? `<label style="margin-top:6px">Autocontrole do doador</label>${segm(`data-a="pv" data-i="${i}" data-c="acDoador"`, p.acDoador, ["Negativo", "Positivo"])}` : ""}
         ${gel ? caixaFoto("gel" + i, "Foto do cartão de gel desta bolsa", "Recorte só os microtubos da prova (" + rotGel(i).pocos.join(", ") + "), sem a etiqueta escrita. O painel neutraliza o fundo e põe embaixo uma etiqueta com " + rotGel(i).pocos.join(" e ") + ", o paciente, o doador e a bolsa.") : ""}</div>`).join("")}
         <button type="button" class="btn sec mini" data-a="mais-bolsa">+ Outra bolsa</button></div>
-      <div class="cx"><h3>Amostra do receptor</h3><label>Plasma</label>${segm('data-a="tg" data-c="plasma"', t.plasma || "", PLASMA_OPS.slice(1))}
+      <div class="cx"><h3>Amostra do receptor</h3><div class="grade">${campo("Hematócrito do receptor (opcional)", inp('data-t="htReceptor" inputmode="decimal" placeholder="em branco, não sai no laudo"', t.htReceptor || ""))}</div><label>Plasma</label>${segm('data-a="tg" data-c="plasma"', t.plasma || "", PLASMA_OPS.slice(1))}
         ${t.plasmaIA && !t.plasmaManual ? `<p class="nota">Avaliação automática pela foto${t.plasmaIA ? " (" + esc(t.plasmaIA) + ")" : ""}. Mude se discordar.</p>` : ""}
         ${caixaFoto("tubo", "Foto do tubo com o plasma", "O painel separa o plasma da foto, com a cor real, e monta o tubo com uma etiqueta do CVH, sem estante e sem a escrita de caneta." + (CTX.temGemini ? " Também sugere o aspecto do plasma." : ""))}
         </div>`;
