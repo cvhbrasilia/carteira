@@ -130,7 +130,7 @@ button{cursor:pointer}
 .lg-capa{width:12.5em;aspect-ratio:var(--ar-capa);background:var(--img-capa) left center/contain no-repeat}
 .capa-meio{margin:2.6em 0 auto}
 .capa-sobre{font-size:.66em;letter-spacing:.22em;text-transform:uppercase;color:var(--dourado);font-weight:700;line-height:1.7}
-.capa h1{font-size:3.7em;line-height:.98;font-weight:800;color:#F7F0E7;margin:.22em 0 .38em;letter-spacing:-.015em;text-wrap:balance;overflow-wrap:anywhere}
+.capa h1{font-size:3.7em;line-height:.98;font-weight:800;color:#F7F0E7;margin:.22em 0 .38em;letter-spacing:-.015em;text-wrap:balance;overflow-wrap:break-word}
 .capa-tipo{display:inline-flex;align-items:center;gap:.65em;border:1px solid rgba(196,154,108,.55);border-radius:999px;padding:.3em .35em .3em .95em}
 .capa-tipo span{font-size:.54em;letter-spacing:.16em;text-transform:uppercase;color:var(--bege);font-weight:600}
 .capa-tipo b{background:var(--areia);color:var(--vinho);border-radius:999px;padding:.28em .85em;font-size:.8em}
@@ -769,6 +769,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
   // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
   if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
   // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
   var r = q.get('r') || '';
   if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
@@ -845,10 +847,24 @@ function nascISO(t) {
   else if ((m = t.match(/^(\d{1,2})[\/.\-](\d{4})$/))) { mes = +m[1]; ano = +m[2]; }
   else if ((m = t.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/))) { d = +m[1]; mes = +m[2]; ano = +m[3]; }
   else if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/))) { ano = +m[1]; mes = +m[2]; d = +m[3]; }
+  // só números, sem barra: 01082019 ou 141024 (ano com dois dígitos vira 20xx, ou 19xx se ainda não chegou)
+  else if ((m = t.match(/^(\d{2})(\d{2})(\d{4})$/))) { d = +m[1]; mes = +m[2]; ano = +m[3]; }
+  else if ((m = t.match(/^(\d{2})(\d{2})(\d{2})$/))) { d = +m[1]; mes = +m[2]; ano = 2000 + +m[3]; if (ano > new Date().getFullYear()) ano -= 100; }
   else return null;
   const dt = new Date(ano, mes - 1, d); if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== d || ano < 1980 || dt > new Date()) return null;
   return ano + '-' + p2(mes) + '-' + p2(d);
 }
+// digitação no celular (teclado numérico não tem barra): nascimento vira dd/mm/aaaa ao sair do campo; telefone vira (61) 999120093
+document.addEventListener('focusout', (e) => {
+  const el = e.target; if (!el || el.id !== 'aNasc') return;
+  const v = el.value.trim(); if (!/^\d{6}$|^\d{8}$/.test(v)) return;
+  const iso = nascISO(v); if (iso) el.value = br(iso);
+});
+document.addEventListener('input', (e) => {
+  const el = e.target; if (!el || !(el.id === 'rTel' || (el.classList && el.classList.contains('ct-t')))) return;
+  const d = el.value.replace(/\D/g, '').slice(0, 11); if (d.length < 3) return;
+  const novo = '(' + d.slice(0, 2) + ') ' + d.slice(2); if (novo !== el.value) el.value = novo;
+});
 const br = iso => iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
 const utc = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
 const dias = (a, b) => Math.round((utc(b) - utc(a)) / 864e5);
@@ -1109,10 +1125,15 @@ function cReceita(r) {
     '<div class="pdfs">' + (d.docs || []).map(lk).join('') + '</div>' + (r.vetNome ? assinatura(r) : '') + '</article>';
 }
 
+// nome da capa: diminui a letra para a palavra mais longa caber inteira numa linha (CHARLLOTE não quebra no meio)
+function capaTam(nome) {
+  const L = Math.max(0, ...String(nome || '').split(/\s+/).map(p => p.length));
+  return L > 7 ? ' style="font-size:' + Math.max(1.9, 3.7 * 7 / L).toFixed(2) + 'em"' : '';
+}
 function pgCapa(an) {
   const clube = an.doador === '1';
   return '<section class="pg capa"><i class="marca"></i><i class="lg-capa" role="img" aria-label="CVH Centro Veterinário de Hemoterapia"></i>' +
-    '<div class="capa-meio"><p class="capa-sobre">Carteira de saúde' + (clube ? '<br>do Clube do Doador' : '') + '</p><h1>' + esc(an.nome) + '</h1>' +
+    '<div class="capa-meio"><p class="capa-sobre">Carteira de saúde' + (clube ? '<br>do Clube do Doador' : '') + '</p><h1' + capaTam(an.nome) + '>' + esc(an.nome) + '</h1>' +
     (an.tipoSanguineo || an.dal ? '<div class="capa-tipo' + (an.tipoSanguineo && an.dal ? ' dois' : '') + '"><span>Tipo sanguíneo</span>' + (an.tipoSanguineo ? '<b>' + esc(tipoSang(an)) + '</b>' : '') + (an.dal ? '<b>DAL ' + esc(an.dal) + '</b>' : '') + '</div>' : '') + '</div>' +
     '<i class="capa-tubo"></i><div class="capa-pe"><div>' + (an.microchip ? '<span class="rot">Microchip</span><b>' + esc(an.microchip) + '</b>' : '') + '</div><i class="selo-neg"></i></div>' +
     '<p class="capa-dica">Arraste para o lado para virar a página</p></section>';
@@ -2137,7 +2158,7 @@ async function relPdf(b) {
 
 const MODS = [
   { k: 'carteiras', t: 'Carteiras', d: 'Vacinas, vermífugos, doações e lembretes', ic: svgIc('<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18M10 8h5M10 12h5"/>') },
-  { k: 'tcle', t: 'Termos', d: 'TCLE do Clube de Doadores, entrega de hemocomponentes e responsabilidade', ic: svgIc('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 16.5c1.2-2.2 2-2.2 2.6-.6.5 1.3 1.200 1.300 2-.2.5-.9 1.200-.9 2.400.800"/>') },
+  { k: 'transfusao', perm: 'calculadora', t: 'HemoCalculadora', d: 'CH, CP, PFC e crio, com leitura do hemograma por IA e mensagem pronta', ic: svgIc('<path d="M7.200 8.800H12.800C15.200 8.800 16.300 10.300 16 12.200C15.800 13.400 15.300 14 15.600 15.300C15.900 16.500 16.500 17.200 16.300 18.700C16 20.600 14.700 21.500 12.600 21.500H7.400C5.300 21.500 4 20.600 3.700 18.700C3.500 17.200 4.100 16.500 4.400 15.300C4.700 14 4.200 13.400 4 12.200C3.700 10.300 4.800 8.800 7.200 8.800z"/><path d="M7.500 8.800V6.300M10 8.800V5.400C10 3.900 9 3 7.700 3M12.500 8.800V6.300"/><path d="M19.300 2.800v4.400M17.100 5h4.400"/>') },
   { k: 'fichas', t: 'Fichas de doação', d: 'Ficha de coleta com assinatura eletrônica', ic: svgIc('<rect x="5" y="4.500" width="14" height="16.500" rx="2"/><path d="M9 4.500V3.500h6v1M9 9.500h6M9 13h6"/><path d="M8.500 17.500c1-1.600 1.700-1.600 2.200-.4.400 1 1 1 1.700-.2.400-.7 1-.7 2.100.6"/>') },
   { k: 'historico', t: 'Histórico laboratorial', d: 'Exames dos doadores ao longo das coletas', ic: svgIc('<path d="M4 4v16h16"/><path d="M7 15l3.500-4 3 2.500L19 7"/><circle cx="10.500" cy="11" r=".9"/><circle cx="13.500" cy="13.500" r=".9"/>') },
   { k: 'perfil', perm: 'perfil', t: 'Perfil laboratorial', d: 'Perfil individual de cada doador, com evolução, faixa própria e RCV', ic: svgIc('<path d="M9.500 3h5M10.500 3v6.200L5.300 18.300A1.800 1.800 0 0 0 6.900 21h10.200a1.800 1.800 0 0 0 1.600-2.700L13.500 9.200V3"/><path d="M7.800 15h8.400"/><circle cx="10.500" cy="17.700" r=".8"/><circle cx="13.800" cy="18.200" r=".6"/>') },
@@ -2148,7 +2169,7 @@ const MODS = [
   { k: 'qualidade', perm: 'qualidade', t: 'Controle de qualidade', d: 'Hemocomponentes conferidos com a Tabela 4 da ABVHMT, em gráficos interativos', ic: svgIc('<path d="M12 3l7 3v5.500c0 4.300-3 7.800-7 9.500-4-1.700-7-5.200-7-9.500V6z"/><path d="M8.500 12.200l2.300 2.300 4.700-4.800"/>') },
   { k: 'certificados', perm: 'certificados', t: 'Certificados', d: 'Certificado de cada doação, para imprimir e postar', ic: svgIc('<circle cx="12" cy="9" r="5.5"/><path d="M12 6.300l.9 1.800 2 .3-1.450 1.400.35 2-1.800-.95-1.800.95.35-2L9.100 8.400l2-.3z"/><path d="M8.700 13.600 7.500 21l4.500-2.400L16.500 21l-1.200-7.400"/>') },
   { k: 'inteligencia', perm: 'inteligencia', t: 'Central de inteligência', d: 'Aptos, pendências, tipos sanguíneos e evolução do clube', ic: svgIc('<path d="M4 20V10M9.500 20V4M15 20v-7M20.500 20v-4"/><path d="M3 20.500h18"/>') },
-  { k: 'transfusao', perm: 'calculadora', t: 'HemoCalculadora', d: 'CH, CP, PFC e crio, com leitura do hemograma por IA e mensagem pronta', ic: svgIc('<path d="M7.200 8.800H12.800C15.200 8.800 16.300 10.300 16 12.200C15.800 13.400 15.300 14 15.600 15.300C15.900 16.500 16.500 17.200 16.300 18.700C16 20.600 14.700 21.500 12.600 21.500H7.400C5.300 21.500 4 20.600 3.700 18.700C3.500 17.200 4.100 16.500 4.400 15.300C4.700 14 4.200 13.400 4 12.200C3.700 10.300 4.800 8.800 7.200 8.800z"/><path d="M7.500 8.800V6.300M10 8.800V5.400C10 3.900 9 3 7.700 3M12.500 8.800V6.300"/><path d="M19.300 2.800v4.400M17.100 5h4.400"/>') },
+  { k: 'tcle', t: 'Termos', d: 'TCLE do Clube de Doadores, entrega de hemocomponentes e responsabilidade', ic: svgIc('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 16.5c1.2-2.2 2-2.2 2.6-.6.5 1.3 1.200 1.300 2-.2.5-.9 1.200-.9 2.400.800"/>') },
   { k: 'pendencias', perm: 'pendencias', t: 'Pendências', d: 'Tarefas da equipe, com responsável e prazo', ic: svgIc('<path d="M9 5h10M9 12h10M9 19h10"/><path d="M3.500 5l1.300 1.300L7 4M3.500 12l1.300 1.300L7 11M3.500 19l1.300 1.300L7 18"/>') },
   { k: 'auditoria', perm: 'auditoria', t: 'Histórico de alterações', d: 'Quem criou, alterou ou apagou cada coisa, e quando', ic: svgIc('<circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/><path d="M3.500 4.500v3.500H7"/>') },
   { k: 'relatorios', perm: 'relatorios', t: 'Relatórios', d: 'Doações, doadores ativos e tipos sanguíneos, em planilha ou PDF', ic: svgIc('<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 17v-3M12 17v-6M15 17v-4"/>') },
@@ -3217,7 +3238,7 @@ function contatosDe(r) { try { const l = JSON.parse((r && r.contatos) || '[]'); 
 const zapTel = t => { let d = String(t || '').replace(/\D/g, ''); if (!d) return ''; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d; };
 function linhaContato(c, i) {
   c = c || {};
-  return '<div class="ct-l" data-i="' + i + '"><input class="ct-n" placeholder="Nome" value="' + esc(c.nome || '') + '" aria-label="Nome do contato"><input class="ct-t" type="tel" placeholder="(61) 9 0000-0000" value="' + esc(c.telefone || '') + '" aria-label="Telefone do contato"><input class="ct-r" placeholder="Relação (ex. esposa, filho, cuidador)" value="' + esc(c.relacao || '') + '" aria-label="Relação com o responsável"><button type="button" class="ct-x" aria-label="Remover contato">×</button></div>';
+  return '<div class="ct-l" data-i="' + i + '"><input class="ct-n" placeholder="Nome" value="' + esc(c.nome || '') + '" aria-label="Nome do contato"><input class="ct-t" type="tel" placeholder="(61) 999990000" value="' + esc(c.telefone || '') + '" aria-label="Telefone do contato"><input class="ct-r" placeholder="Relação (ex. esposa, filho, cuidador)" value="' + esc(c.relacao || '') + '" aria-label="Relação com o responsável"><button type="button" class="ct-x" aria-label="Remover contato">×</button></div>';
 }
 function lerContatosForm() { return [...document.querySelectorAll('#ctLista .ct-l')].map(l => ({ nome: l.querySelector('.ct-n').value.trim(), telefone: l.querySelector('.ct-t').value.trim(), relacao: l.querySelector('.ct-r').value.trim() })).filter(c => c.nome || c.telefone); }
 function ligarContatosForm() {
@@ -4296,7 +4317,7 @@ function preencherDoacao(j) {
 function abrirFormResp(r) {
   r = r || {};
   abrirFolha(r.id ? 'Editar responsável' : 'Novo responsável', '<div class="grade">' + campo('rNome', 'Nome', inp('rNome', r.nome, 'autocomplete="off"'), 'larga') +
-    campo('rEmail', 'E-mail (recebe os lembretes)', inp('rEmail', r.email, 'type="email" autocomplete="off"'), 'larga') + campo('rTel', 'Telefone (WhatsApp)', inp('rTel', r.telefone, 'type="tel" placeholder="(61) 9 0000-0000"'), 'larga') +
+    campo('rEmail', 'E-mail (recebe os lembretes)', inp('rEmail', r.email, 'type="email" autocomplete="off"'), 'larga') + campo('rTel', 'Telefone (WhatsApp)', inp('rTel', r.telefone, 'type="tel" placeholder="(61) 999990000"'), 'larga') +
     campo('rCpf', 'CPF', inp('rCpf', r.cpf, 'inputmode="numeric" placeholder="000.000.000-00"')) + campo('rCep', 'CEP', '<div class="cep-l">' + inp('rCep', r.cep, 'inputmode="numeric" placeholder="00000-000"') + '<button type="button" class="btn sec2 peq" id="bCep">Buscar</button></div>') +
     campo('rLog', 'Endereço', inp('rLog', r.logradouro), 'larga') + campo('rNum', 'Número', inp('rNum', r.numero)) + campo('rComp', 'Complemento', inp('rComp', r.complemento)) +
     campo('rBairro', 'Bairro', inp('rBairro', r.bairro)) + campo('rCidade', 'Cidade', inp('rCidade', r.cidade)) + campo('rUf', 'UF', inp('rUf', r.uf, 'maxlength="2"')) + '</div>' +
@@ -4322,7 +4343,7 @@ function abrirFormAnimal(a) {
   const esp = a.especie || 'Canina';
   abrirFolha(a.id ? 'Dados do animal' : 'Novo animal', '<div class="grade">' + campo('aNome', 'Nome', inp('aNome', a.nome, 'autocomplete="off"'), 'larga') +
     campo('aEsp', 'Espécie', sel('aEsp', ['Canina', 'Felina'], esp)) + campo('aSexo', 'Sexo', sel('aSexo', ['Macho', 'Fêmea'], a.sexo || 'Macho')) +
-    campo('aRaca', 'Raça', inp('aRaca', a.raca, 'autocomplete="off"')) + campo('aNasc', 'Nascimento (data, mês e ano, ou só o ano)', inp('aNasc', a.nascimento ? br(a.nascimento) : '', 'inputmode="numeric" autocomplete="off" placeholder="dd/mm/aaaa ou aaaa"')) +
+    campo('aRaca', 'Raça', inp('aRaca', a.raca, 'autocomplete="off"')) + campo('aNasc', 'Nascimento (data, mês e ano, ou só o ano)', inp('aNasc', a.nascimento ? br(a.nascimento) : '', 'inputmode="numeric" autocomplete="off" placeholder="ddmmaaaa, dd/mm/aaaa ou aaaa"')) +
     campo('aTipo', 'Tipo sanguíneo', '<select id="aTipo"></select>') + '<div class="campo" id="aDalBox"><label for="aDal">DAL</label>' + sel('aDal', ['Não tipado', 'Positivo', 'Negativo'], a.dal || 'Não tipado') + '</div>' + campo('aChip', 'Microchip', inp('aChip', a.microchip, 'inputmode="numeric"')) +
     '<label class="check larga"><input type="checkbox" id="aDoador"' + (a.doador === '1' ? ' checked' : '') + '> Participa do Clube do Doador</label>' +
     '<div class="larga" id="aApoBox"' + (a.doador === '1' ? '' : ' hidden') + '><div class="grade">' +

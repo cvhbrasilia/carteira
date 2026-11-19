@@ -1795,7 +1795,7 @@ let an = CTX.animal || {}, rp = CTX.responsavel || {};
 const estado = {
   tipo: "", animalId: CTX.animalId || "", receptor: !!CTX.receptor && !CTX.animalId, emitido: null,
   paciente: { nome: an.nome || "", especie: an.especie || "", raca: an.raca || "", sexo: /^m/i.test(an.sexo || "") ? "Macho" : /^f/i.test(an.sexo || "") ? "Fêmea" : an.sexo || "", idade: CTX.idade || "", peso: CTX.peso || "", microchip: an.microchip || "" },
-  resp: { nome: rp.nome || "" },
+  resp: { nome: rp.nome || "", cpf: rp.cpf || "" },
   exame: { titulo: "", data: hojeISO(), hora: "", equip: "", solicitante: "", clinica: "", amostra: "", doacao: "" },
   // IDEXX
   lido: false, arquivos: [], linhas: [], notas: "", interp: "", graficos: true, avisos: [],
@@ -2120,14 +2120,26 @@ function tipoSanguineoTxt() {
 const CLINICA_CVH = "CVH - Centro Veterinário de Hemoterapia";
 // laudo de doador do CVH (ou clínica igual à do CVH): o CVH é banco de sangue, não clínica veterinária
 const ehCvh = () => !estado.receptor && (!String(estado.exame.clinica || "").trim() || estado.exame.clinica === CLINICA_CVH);
+// exigências do CRMV no cabeçalho: CRMV do solicitante (do cadastro, quando é médico veterinário do CVH) e data da liberação
+function solicitanteTxt() {
+  const X = estado.exame, nome = String(X.solicitante || "").trim(); if (!nome) return "";
+  let crmv = String(X.solicitanteCrmv || "").trim();
+  if (!crmv) { const v = [estado.vet, ...(CTX.vets || []), ...(typeof VETS !== "undefined" && Array.isArray(VETS) ? VETS : [])].filter(Boolean).find((x) => String(x.nome || "").trim().toLowerCase() === nome.toLowerCase()); if (v && v.crmv) crmv = v.crmv; }
+  return nome + (crmv ? "  ·  " + (/crmv/i.test(crmv) ? crmv : "CRMV " + crmv) : "");
+}
+function liberacaoTxt() {
+  const q = (typeof salvo !== "undefined" && salvo && salvo.assinadoEm) || (estado.receptor && estado.emitido) || null;
+  return q ? q.data + " às " + String(q.hora || "").replace(":", "h") : br(hojeISO());
+}
 function blocoIdent(x, y, w, tam) {
   // cabeçalho igual em todos os laudos, no A4 e no celular: sempre os mesmos campos, na mesma ordem, em duas colunas.
   // O campo que não cabe em meia largura ocupa a linha inteira.
   const P = estado.paciente, R = estado.resp, X = estado.exame, el = [], lh = tam + 5.2, vazio = "não informado";
   const ts = estado.tipo === "tipagem" || tipAtual() ? "" : tipoSanguineoTxt();
   const itens = [["Paciente", P.nome, true], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : "", false, true],
-    ["Responsável", R.nome], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
-    ["Médico veterinário solicitante", X.solicitante], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica],
+    ["Responsável", R.nome], ["CPF do responsável", R.cpf || "", false, true], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
+    ["Liberação", liberacaoTxt()],
+    ["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica],
     ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
   const gap = 14, wm = (w - 24 - gap) / 2, linhas = [];
@@ -2395,7 +2407,7 @@ function blocosCoombs(x, w, cel) {
 }
 const NOTA_AC_NEG = "O autocontrole negativo indica ausência de aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio. Entretanto, não exclui a presença de hemácias sensibilizadas por imunoglobulinas ou componentes do complemento, que podem não produzir aglutinação espontânea. A investigação dessa sensibilização requer métodos complementares, como o teste de antiglobulina direta (Coombs direto), associados à avaliação clínico-laboratorial.";
 const NOTA_AC_POS = "O autocontrole positivo indica aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio, o que pode estar associado à presença de autoanticorpos eritrocitários. Entretanto, esse resultado isoladamente não confirma hemólise imunomediada, sendo necessária a exclusão de fenômenos de pseudoaglutinação e interferências analíticas. Recomenda-se investigação complementar, incluindo avaliação morfológica eritrocitária, teste de aglutinação em solução salina e, quando indicado, teste de antiglobulina direta (Coombs direto), em conjunto com os achados clínico-laboratoriais.";
-const PLASMA_OPS = ["", "Normal", "Discretamente ictérico", "Ictérico", "Intensamente ictérico", "Hemolisado", "Lipêmico"];
+const PLASMA_OPS = ["", "Normal", "Discretamente ictérico", "Moderadamente ictérico", "Intensamente ictérico", "Discretamente hemolisado", "Moderadamente hemolisado", "Intensamente hemolisado", "Discretamente lipêmico", "Moderadamente lipêmico", "Intensamente lipêmico"];
 function blocosCompat(x, w, cel) {
   const t = estado.t, gel = t.metodo === "gel", acs = gel || t.acGel;
   const B = [secTit(x, w, (gel ? "Prova de compatibilidade em gel" : "Prova imunocromatográfica") + " · " + (felino() ? "felina" : "canina"), t.material ? "Material  " + t.material : "")];
@@ -2927,12 +2939,12 @@ function imagensAmostra() {
   if (AMOSTRA_IMG.tubo) { const ch = JSON.stringify(rotTubo()); if (C.tuboCh !== ch) { C.tubo = desenharTubo(AMOSTRA_IMG.tubo, rotTubo()); C.tuboCh = ch; estado.fotos.tubo = C.tubo; } }
   (AMOSTRA_IMG.gel || []).forEach((g, i) => { if (!g || !estado.t.provas[i]) return; if (g.neutro !== !!estado.t.gelNeutro && g.orig) { g = AMOSTRA_IMG.gel[i] = analisarGel(g.orig, g.n, !!estado.t.gelNeutro); C["gel" + i] = ""; } const r = rotGel(i), ch = JSON.stringify(r); if (C["gel" + i] !== ch || g.n !== r.pocos.length) { if (g.n !== r.pocos.length) { delete estado.fotos["gel" + i]; return; } estado.fotos["gel" + i] = desenharGelProva(g, r); C["gel" + i] = ch; } });
 }
-const PLASMA_IA = (d) => { const h = String(d.hemolise || ""), i = String(d.ictericia || ""), l = String(d.lipemia || ""); if (/moderada|acentuada/i.test(h)) return "Hemolisado"; if (/intensa/i.test(i)) return "Intensamente ictérico"; if (/moderada/i.test(i)) return "Ictérico"; if (/discreta/i.test(i)) return "Discretamente ictérico"; if (/moderada|intensa/i.test(l)) return "Lipêmico"; return "Normal"; };
+const PLASMA_IA = (d) => { const h = String(d.hemolise || ""), i = String(d.ictericia || ""), l = String(d.lipemia || ""); if (/acentuada|intensa/i.test(h)) return "Intensamente hemolisado"; if (/moderada/i.test(h)) return "Moderadamente hemolisado"; if (/intensa/i.test(i)) return "Intensamente ictérico"; if (/moderada/i.test(i)) return "Moderadamente ictérico"; if (/discreta/i.test(i)) return "Discretamente ictérico"; if (/discreta/i.test(h)) return "Discretamente hemolisado"; if (/intensa/i.test(l)) return "Intensamente lipêmico"; if (/moderada/i.test(l)) return "Moderadamente lipêmico"; if (/discreta/i.test(l)) return "Discretamente lipêmico"; return "Normal"; };
 // aspecto do plasma pela cor média medida na foto do tubo (não depende do Gemini). Lipemia não dá para ver pela cor.
 function plasmaPorCor(c) {
   const r = c[0], g = c[1], b = c[2], am = (r + g) / 2 - b;
-  if (r - g > 55 && g - b < 45) return "Hemolisado";
-  if (am >= 120) return "Intensamente ictérico"; if (am >= 80) return "Ictérico"; if (am >= 48) return "Discretamente ictérico"; return "Normal";
+  if (r - g > 55 && g - b < 45) return "Moderadamente hemolisado";
+  if (am >= 120) return "Intensamente ictérico"; if (am >= 80) return "Moderadamente ictérico"; if (am >= 48) return "Discretamente ictérico"; return "Normal";
 }
 async function lerPlasma(fonte) {
   if (!CTX.temGemini || estado.t.plasmaManual) return;
@@ -3052,7 +3064,7 @@ function caixaExame() {
   if (X.doacao && !ds.some((d) => d.numero === X.doacao)) opDoa.push([X.doacao, X.doacao]);
   const doa = estado.receptor ? "" : campo("Doação", sel('data-x="doacao"', X.doacao, opDoa));
   return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}
-    ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH ? "" : X.clinica || "", estado.receptor ? 'placeholder="clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
+    ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="ex.: CRMV-DF 1234 (exigência do CRMV)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH ? "" : X.clinica || "", estado.receptor ? 'placeholder="clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
     ${CTX.temGemini ? `<div class="larga"><button type="button" class="btn sec mini" data-a="etiqueta">Ler a etiqueta da amostra</button><span class="nota" id="stEtq"> Com a foto da etiqueta do tubo ou do cartão, o painel preenche paciente, responsável, clínica, número, data da coleta e idade.</span></div>` : ""}
     ${estado.liberador ? campo("Assinado por", sel('data-vet="1"', estado.vet ? estado.vet.id : "", VETS.map((v) => [v.id, v.nome + (v.crmv ? " · " + v.crmv : "")])), "larga") + `<p class="nota larga">Você libera o laudo, que sai assinado pelo médico veterinário escolhido. Seu nome aparece discreto abaixo da assinatura.</p>` : ""}</div></div>`;
 }
