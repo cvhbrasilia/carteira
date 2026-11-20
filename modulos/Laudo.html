@@ -1716,6 +1716,67 @@ function lerIdexxLaudo(paginas) {
   return { cab, secoes: secoes.filter((x) => x.itens.length).map(({ itens, ...x }) => x), linhas, notas, data: prim.data, hora: prim.hora, equip: [...new Set(secoes.filter((x) => x.itens.length).map((x) => x.equip))].join(" e "), graf };
 }
 
+// ---------- leitura do PDF do Citopet (hemograma e bioquímica) ----------
+// o Citopet identifica pelo nome do animal; o número da doação pode vir junto do nome (ex.: "573-8 Balton" ou "Balton 573-8")
+const CIT_MAPA = [
+  ["^Hem[áa]cias$", "Hemácias", "Eritrograma", "×10⁶/µL", 1e-6], ["^Hemoglobina$", "Hemoglobina", "Eritrograma", "g/dL", 1], ["^Hemat[óo]crito$", "Hematócrito", "Eritrograma", "%", 1],
+  ["^VCM$", "VCM", "Eritrograma", "fL", 1], ["^HCM$", "HCM", "Eritrograma", "pg", 1], ["^CHCM$", "CHCM", "Eritrograma", "g/dL", 1], ["^RDW", "RDW", "Eritrograma", "%", 1],
+  ["^Reticul[óo]citos", "Reticulócitos", "Eritrograma", "/µL", 1], ["^Metarrubr[íi]citos", "Metarrubrícitos", "Eritrograma", "/100 leucócitos", 1],
+  ["^Prote[íi]na Plasm[áa]tica", "Proteína plasmática total", "Eritrograma", "g/dL", 1],
+  ["^Leuc[óo]citos", "Leucócitos totais", "Leucograma", "/µL", 1], ["^Mielócitos", "Mielócitos", "Leucograma", "/µL", 1], ["^Metamiel[óo]citos", "Metamielócitos", "Leucograma", "/µL", 1],
+  ["Bastonetes", "Bastonetes", "Leucograma", "/µL", 1], ["Segmentados", "Neutrófilos segmentados", "Leucograma", "/µL", 1], ["^Neutr[óo]filos$", "Neutrófilos", "Leucograma", "/µL", 1],
+  ["^Linf[óo]citos", "Linfócitos", "Leucograma", "/µL", 1], ["^Mon[óo]citos", "Monócitos", "Leucograma", "/µL", 1], ["^Eosin[óo]filos", "Eosinófilos", "Leucograma", "/µL", 1],
+  ["^Bas[óo]filos", "Basófilos", "Leucograma", "/µL", 1],
+  ["^Plaquetas", "Plaquetas", "Plaquetograma", "×10³/µL", 1e-3], ["^(VPM|MPV)", "VPM", "Plaquetograma", "fL", 1],
+  ["^Albumina", "Albumina", "Bioquímica", "g/dL", 1], ["^Globulina", "Globulinas", "Bioquímica", "g/dL", 1], ["^Rela[çc][ãa]o Albumina", "Relação albumina/globulina", "Bioquímica", "", 1],
+  ["^Prote[íi]nas Totais", "Proteínas totais", "Bioquímica", "g/dL", 1], ["^Fosfatase Alcalina", "Fosfatase alcalina", "Bioquímica", "U/L", 1],
+  ["^(Ureia|Uréia)", "Ureia", "Bioquímica", "mg/dL", 1], ["^Glicose", "Glicose", "Bioquímica", "mg/dL", 1], ["^Bilirrubina Total", "Bilirrubina total", "Bioquímica", "mg/dL", 1],
+  ["^(Gama|GGT)", "GGT", "Bioquímica", "U/L", 1], ["^Colesterol", "Colesterol", "Bioquímica", "mg/dL", 1], ["^Triglic", "Triglicerídeos", "Bioquímica", "mg/dL", 1],
+  ["^F[óo]sforo", "Fósforo", "Bioquímica", "mg/dL", 1], ["^C[áa]lcio", "Cálcio", "Bioquímica", "mg/dL", 1], ["^Pot[áa]ssio", "Potássio", "Eletrólitos", "mmol/L", 1], ["^S[óo]dio", "Sódio", "Eletrólitos", "mmol/L", 1],
+].map(([re, nome, grupo, un, f]) => ({ re: new RegExp(re, "i"), nome, grupo, un, f }));
+const nBr = (s) => { s = String(s || "").trim(); return s === "" ? null : parseFloat(s.replace(/\./g, "").replace(",", ".")); };   // 7.920.000 · 57,83 · 1165
+const RX_CIT = /^([A-Za-zÀ-ÿ/ ()]+?)\s*\.*\s*:\s*([<>]?)\s*(\d[\d.,]*)\s*([^\s\d(][^\s(]*)?(?:\s+(\d[\d,]*)\s*%)?\s*(?:\(\s*(\d[\d.,]*)\s*a\s*(\d[\d.,]*)\s*([^)\s]*))?/;
+const RX_CIT_OBS = /^([A-Za-zÀ-ÿ/ ]+?):\s*(\d[\d.,]*)\s*\(\s*Refer[êe]ncia:\s*(\d[\d.,]*)\s*a\s*(\d[\d.,]*)\s*([^)]*)\)/i;
+function lerCitopetLaudo(paginas) {
+  const L = linhasPdf(paginas), t = L.map((l) => l.t).join("\n");
+  if (!/CITOPET|citopet\.com\.br/i.test(t) && !/Data e hora da libera[çc][ãa]o/i.test(t)) throw new Error("Este PDF não parece ser um laudo do Citopet.");
+  const cp = (rot, prox) => { const m = t.match(new RegExp(rot + ":\\s*(.*?)(?=\\s{2,}|\\s+(?:" + prox + "):|\\n|$)", "i")); return m ? m[1].trim() : ""; };
+  const animal = cp("Animal", "Esp[ée]cie|Ra[çc]a"), cod = (animal.match(/(\d{2,5}\s*-\s*\d{1,2})(?!\d)/) || [])[1] || "";
+  const nome = animal.replace(/\(\s*\d+\s*\)/, "").replace(cod, "").replace(/\s+/g, " ").trim();
+  const col = (t.match(/Data da Coleta:\s*(\d\d\/\d\d\/\d{4})/i) || [])[1] || "", lib = t.match(/Data e hora da libera[çc][ãa]o:\s*(\d\d\/\d\d\/\d{4})\s*(\d\d:\d\d)?/i) || [];
+  const rtm = t.match(/Respons[áa]vel\s+(.+?)\s+(CRMV[\s-]*[A-Z]{2}\s*\d+)/i);
+  const cab = { responsavel: cp("Propriet[áa]rio", "Veterin[áa]rio|Sexo|Idade"), chip: "", nome, codigo: cod, especie: cp("Esp[ée]cie", "Ra[çc]a"), raca: cp("Ra[çc]a", "Sexo"),
+    sexo: cp("Sexo", "Idade"), peso: "", idade: cp("Idade", "Propriet[áa]rio"), doutor: cp("Veterin[áa]rio", "Data da Coleta") };
+  const linhas = [], notas = []; let grupoSec = "", obs = false;
+  const add = (rot, op, v, un, pct, rmin, rmax, sec) => {
+    const mp = CIT_MAPA.find((x) => x.re.test(rot.trim())), f = mp ? mp.f : 1, cv = (x) => x == null || !isFinite(x) ? null : Math.round(x * f * 1e6) / 1e6;
+    const k = (mp ? mp.nome : rot.trim()); if (linhas.some((l) => l.k === k)) return;
+    linhas.push({ k, nome: mp ? mp.nome : rot.trim().replace(/\s+/g, " "), grupo: mp ? mp.grupo : sec === "bio" ? "Bioquímica" : "Outros", un: mp ? mp.un : (un || "").replace(/μ/g, "µ"), op: op || "", ast: false,
+      v: cv(v), rmin: cv(rmin), rmax: cv(rmax), pct: pct == null ? null : pct, flag: "", equip: "Citopet" });
+  };
+  for (const l of L) {
+    const s = l.t.replace(/μ/g, "µ").trim(); if (!s) continue;
+    if (/^Hemograma/i.test(s)) { grupoSec = "hemo"; obs = false; continue; }
+    if (/^(An[áa]lise )?Bioqu[íi]mica|^Perfil/i.test(s)) { grupoSec = "bio"; obs = false; continue; }
+    if (/^(Qd\.|Tel:|Data e hora|Imagem d|P[áa]gina \d|Cliente:|Animal:|Sexo:|Veterin[áa]rio:|N[úu]mero:|M[ée]dic[ao] Veterin)/i.test(s)) { obs = false; continue; }
+    let m = s.match(/^Observa[çc][õo]es:\s*(.*)$/i), corpo = m ? m[1] : obs ? s : null;
+    if (m) obs = true;
+    if (corpo != null) {
+      const o = corpo.match(RX_CIT_OBS);
+      if (o) add(o[1], "", nBr(o[2]), o[5], null, nBr(o[3]), nBr(o[4]), "bio");
+      else if (corpo.trim()) { if (m || !notas.length) notas.push(corpo.trim()); else if (/^[a-zà-ÿ]/.test(corpo)) notas[notas.length - 1] += " " + corpo.trim(); else notas.push(corpo.trim()); }
+      continue;
+    }
+    const r = s.match(RX_CIT);
+    if (r && grupoSec) add(r[1], r[2], nBr(r[3]), r[4], r[5] != null ? nBr(r[5]) : null, r[6] != null ? nBr(r[6]) : null, r[7] != null ? nBr(r[7]) : null, grupoSec);
+  }
+  if (!linhas.length) throw new Error("Não encontrei resultados neste PDF do Citopet.");
+  linhas.sort((a, b) => GRUPO_ORD.indexOf(a.grupo) - GRUPO_ORD.indexOf(b.grupo));
+  return { cab, secoes: [], linhas, notas, data: isoDe(col) || "", hora: "", equip: "Citopet", graf: [], lab: "citopet",
+    labInfo: { labNome: "Citopet", labNumero: (t.match(/N[úu]mero:\s*(\d+)/i) || [])[1] || "", labLiberado: isoDe(lib[1] || ""), labHora: lib[2] || "",
+      labRt: rtm ? rtm[1].trim() + ", " + rtm[2].replace(/\s+/g, " ").replace(/CRMV\s*-?\s*/i, "CRMV-") : "Ana Carolina de Q. Machado, CRMV-DF 4332" } };
+}
+
 // ===================== Laudo de exame do CVH (resultado da IDEXX) =====================
 // ---------- leitura do PDF da TECSA (PCR em tempo real e sorologia) ----------
 function lerTecsa(paginas) {
@@ -1842,7 +1903,7 @@ const b64De = (u8) => { let t = ""; for (let i = 0; i < u8.length; i += 0x8000) 
 
 /* ═════════════ tipos de laudo ═════════════ */
 const TIPOS = {
-  idexx: { nome: "Hemograma e bioquímica", sub: "Lê o PDF da IDEXX (ProCyte, Catalyst) com valores, referências e gráficos" },
+  idexx: { nome: "Hemograma e bioquímica", sub: "Lê o PDF da IDEXX (ProCyte, Catalyst) ou do Citopet, com valores e referências" },
   tipagem: { nome: "Tipagem sanguínea", sub: "DEA 1 e DAL nos cães, grupos A, B e AB nos gatos" },
   tecsa: { nome: "PCR e sorologia da TECSA", sub: "Lê o PDF da TECSA pelo número da doação, com Ct, OD e cut-off" },
   fiv: { nome: "Teste rápido FIV e FeLV", sub: "Resultado com a foto do teste", so: "gato" },
@@ -1998,7 +2059,7 @@ function caixaOutroPdf() {
   const g = new Set(estado.linhas.map((l) => l.grupo)), hemo = ["Eritrograma", "Leucograma", "Plaquetograma"].some((x) => g.has(x)), bio = ["Bioquímica", "Eletrólitos", "Endocrinologia"].some((x) => g.has(x));
   if (hemo && !bio) return `<div class="kit aviso-kit"><b>Este PDF tem só o hemograma.</b><p class="nota">Quer juntar o PDF da bioquímica no mesmo laudo?</p><button type="button" class="btn sec mini" data-a="pdf-mais">Adicionar o PDF da bioquímica</button></div>`;
   if (bio && !hemo) return `<div class="kit aviso-kit"><b>Este PDF tem só a bioquímica.</b><p class="nota">Quer juntar o PDF do hemograma no mesmo laudo?</p><button type="button" class="btn sec mini" data-a="pdf-mais">Adicionar o PDF do hemograma</button></div>`;
-  return `<button type="button" class="lnk" data-a="pdf-mais">adicionar outro PDF da IDEXX a este laudo</button>`;
+  return `<button type="button" class="lnk" data-a="pdf-mais">adicionar outro PDF a este laudo</button>`;
 }
 function tituloExame(linhas) {
   const g = new Set(linhas.map((l) => l.grupo)), hemo = ["Eritrograma", "Leucograma", "Plaquetograma"].some((x) => g.has(x)), bio = ["Bioquímica", "Eletrólitos", "Endocrinologia"].some((x) => g.has(x));
@@ -2008,7 +2069,9 @@ async function lerArquivos(files) {
   const lidos = [];
   for (const f of files) {
     const { doc, pags } = await abrirPdf(f);
-    const r = lerIdexxLaudo(pags); r.nome = f.name; r.imgs = [];
+    const txt0 = pags.map((p) => p.map((i) => i.str || "").join(" ")).join(" ");
+    const cit = /CITOPET|citopet\.com\.br/i.test(txt0) && !/ProCyte|Catalyst|VetLab/i.test(txt0);
+    const r = cit ? lerCitopetLaudo(pags) : lerIdexxLaudo(pags); r.nome = f.name; r.imgs = [];
     for (const g of r.graf || []) { try { const im = await recortarGraficos(doc, g); if (im) r.imgs.push(im); } catch (e) {} }
     lidos.push(r);
   }
@@ -2024,7 +2087,12 @@ function aplicarLeitura(lidos) {
   estado.linhas = linhas;
   estado.notas = [...new Set(lidos.flatMap((r) => r.notas))].join("\n");
   const sol = r0.cab.doutor ? r0.cab.doutor.replace(/^Dra?\.\s*/i, "") : "";
-  Object.assign(estado.exame, { titulo: tituloExame(linhas), data: r0.data || hojeISO(), hora: r0.hora || "", equip: "IDEXX " + [...new Set(lidos.map((r) => r.equip))].join(" e "), solicitante: sol || estado.exame.solicitante });
+  const cit = lidos.some((r) => r.lab === "citopet");
+  if (cit && lidos.some((r) => r.lab !== "citopet")) throw new Error("Escolha PDFs de um laboratório só (IDEXX ou Citopet) em cada laudo.");
+  Object.assign(estado.exame, { titulo: tituloExame(linhas), data: r0.data || hojeISO(), hora: r0.hora || "", equip: cit ? "Citopet" : "IDEXX " + [...new Set(lidos.map((r) => r.equip))].join(" e "), solicitante: sol || estado.exame.solicitante },
+    cit ? Object.assign({}, r0.labInfo, { labNumero: [...new Set(lidos.map((r) => r.labInfo.labNumero).filter(Boolean))].join(" e "), labLiberado: lidos.map((r) => r.labInfo.labLiberado).sort().pop(), labHora: lidos.slice().sort((a, b) => (a.labInfo.labLiberado + a.labInfo.labHora).localeCompare(b.labInfo.labLiberado + b.labInfo.labHora)).pop().labInfo.labHora })
+      : { labNome: "", labNumero: "", labLiberado: "", labHora: "", labRt: "" });
+  if (cit && r0.cab.sexo && !estado.paciente.sexo) estado.paciente.sexo = r0.cab.sexo;
   if (r0.cab.peso) estado.paciente.peso = r0.cab.peso;
   if (!estado.paciente.idade && r0.cab.idade) estado.paciente.idade = r0.cab.idade.replace(/Anos?/i, (s) => s.toLowerCase());
   GRAF = {}; lidos.forEach((r, i) => (r.imgs || []).forEach((im, j) => { GRAF["graf" + i + "_" + j] = im; }));
@@ -2106,7 +2174,7 @@ function tuboTitulo(tx, y, xFim, tam, yMin) {
   const dy = Math.max(0, (yMin || 0) - (y + tam * 0.5 - y0)), topo = y + dy + tam * 0.5 - y0;
   return { el: [E.cam(o.t.p.map(p => [tx + p[0] * k, topo + p[1] * k]), { s: "#A73E3E", lw: Math.max(1.1, tam * 0.062) })], h: tam * 0.5 + o.H - y0, dy };
 }
-const rotuloData = () => estado.tipo === "idexx" ? "Análise  " : "Coleta  ";
+const rotuloData = () => estado.tipo === "idexx" && !estado.exame.labNome ? "Análise  " : "Coleta  ";
 // tipo sanguíneo do cadastro do doador (DEA 1, DAL ou grupo felino)
 function tipoSanguineoTxt() {
   if (estado.paciente.tipo != null && estado.paciente.tipo !== "") return estado.paciente.tipo;
@@ -2140,7 +2208,7 @@ function blocoIdent(x, y, w, tam) {
     ["Responsável", R.nome], ["CPF do responsável", R.cpf || "", false, true], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
     ["Liberação", liberacaoTxt()],
     ["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica],
-    ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], ["Equipamento", X.equip, false, true]]
+    ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], X.labNome ? ["Laboratório", X.labNome + (X.labNumero ? " · nº " + X.labNumero : ""), false, true] : ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
   const gap = 14, wm = (w - 24 - gap) / 2, linhas = [];
   itens.forEach(([rot, val, forte]) => {
@@ -2503,7 +2571,7 @@ function blocosTecsa(x, w, cel) {
 function blocosCorpo(x, w, cel) {
   const t = estado.tipo; let B = [];
   // os gráficos do hemograma vêm logo depois dele, antes da bioquímica
-  if (t === "idexx") B = [...blocosResultados(x, w, cel, (g) => HEMO.includes(g)), ...(estado.graficos ? blocoGraficos(x, w) : []), ...(estado.graficos && Object.keys(IMG_DIN).some((k) => /^graf/.test(k)) ? [ESP(10)] : []), ...blocosResultados(x, w, cel, (g) => !HEMO.includes(g)), ...blocoTexto("NOTAS DO EQUIPAMENTO", estado.notas, x, w, 9), ...blocoTexto("INTERPRETAÇÃO", estado.interp, x, w, cel ? 9.5 : 10)];
+  if (t === "idexx") B = [...blocosResultados(x, w, cel, (g) => HEMO.includes(g)), ...(estado.graficos ? blocoGraficos(x, w) : []), ...(estado.graficos && Object.keys(IMG_DIN).some((k) => /^graf/.test(k)) ? [ESP(10)] : []), ...blocosResultados(x, w, cel, (g) => !HEMO.includes(g)), ...blocoTexto(estado.exame.labNome ? "OBSERVAÇÕES DO LABORATÓRIO" : "NOTAS DO EQUIPAMENTO", estado.notas, x, w, 9), ...blocoTexto("INTERPRETAÇÃO", estado.interp, x, w, cel ? 9.5 : 10)];
   else if (t === "tipagem") B = blocosTipagem(x, w, cel);
   else if (t === "fiv") B = blocosFiv(x, w, cel);
   else if (t === "coombs") B = blocosCoombs(x, w, cel);
@@ -2513,6 +2581,7 @@ function blocosCorpo(x, w, cel) {
 }
 function notaMetodo() {
   const t = estado.tipo, x = estado.t;
+  if (t === "idexx" && estado.exame.labNome) { const X = estado.exame; return "Exame realizado pelo laboratório " + X.labNome + (X.labNumero ? " sob o número " + X.labNumero : "") + (X.data ? ", com coleta em " + br(X.data) : "") + (X.labLiberado ? ", liberado em " + br(X.labLiberado) + (X.labHora ? " às " + X.labHora : "") : "") + (X.labRt ? " por " + X.labRt : "") + ". Intervalos de referência do laboratório. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico."; }
   if (t === "idexx") return "Exame realizado no CVH, no analisador " + (estado.exame.equip || "IDEXX") + ". Intervalos de referência do fabricante para a espécie. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
   if (t === "tecsa") return "Exames realizados pelo laboratório TECSA" + (estado.exame.doacao ? " sob o registro " + estado.exame.doacao : "") + (x.protocolo ? " (protocolo " + x.protocolo + ")" : "") + (x.liberado ? ", liberados em " + br(x.liberado) : "") + "." + (x.rt ? " Responsável técnica do laboratório " + x.rt + "." : "") + " O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
   return "Exame realizado no CVH. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
@@ -3062,11 +3131,11 @@ function caixaPaciente() {
   return `<div class="cx"><h3>Paciente</h3><div class="grade g4">${modoRec}${recentes}${escolher}${campo("Nome", inp('data-pa="nome"', P.nome), "larga")}${campo("Espécie", esp)}${campo("Raça", inp('data-pa="raca"', P.raca, 'autocomplete="off" placeholder="comece a digitar"'))}<label>Sexo${segm('data-a="sexo"', /^m/i.test(P.sexo) ? "M" : /^f/i.test(P.sexo) ? "F" : "", ["M", "F"])}</label>${campo("Idade", campoIdade(P.idade))}${estado.tipo === "idexx" || estado.receptor ? campo("Peso (kg)", inp('data-pa="peso" inputmode="decimal"', P.peso)) : ""}${campo("Microchip", inp('data-pa="microchip" inputmode="numeric"', P.microchip))}${estado.tipo === "tipagem" ? "" : campo("Tipo sanguíneo", inp('data-pa="tipo"', tipoSanguineoTxt(), 'placeholder="ex.: DEA 1 negativo · DAL positivo"'))}${campo("Responsável", inp('data-r="nome"', estado.resp.nome), "larga")}</div></div>`;
 }
 function caixaExame() {
-  const X = estado.exame, idx = estado.tipo === "idexx", ds = doacoesDoAnimal();
+  const X = estado.exame, lab = estado.tipo === "idexx" && !!X.labNome, idx = estado.tipo === "idexx" && !lab, ds = doacoesDoAnimal();
   const opDoa = [["", "Sem vínculo com doação"], ...ds.map((d) => [d.numero, d.numero + " · " + br(d.data) + (d.andamento ? " · ficha em andamento" : "")])];
   if (X.doacao && !ds.some((d) => d.numero === X.doacao)) opDoa.push([X.doacao, X.doacao]);
   const doa = estado.receptor ? "" : campo("Doação", sel('data-x="doacao"', X.doacao, opDoa));
-  return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}
+  return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}${lab ? campo("Laboratório", inp('data-x="labNome"', X.labNome)) + campo("Número no laboratório", inp('data-x="labNumero"', X.labNumero || "")) + campo("Liberado em", inp('data-x="labLiberado" type="date"', X.labLiberado || "")) + campo("Hora da liberação", inp('data-x="labHora" type="time"', X.labHora || "")) + campo("Liberado por (laboratório)", inp('data-x="labRt"', X.labRt || "", 'placeholder="nome e CRMV de quem liberou no laboratório"'), "larga") : ""}
     ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="ex.: CRMV-DF 1234 (exigência do CRMV)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH ? "" : X.clinica || "", estado.receptor ? 'placeholder="clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
     ${CTX.temGemini ? `<div class="larga"><button type="button" class="btn sec mini" data-a="etiqueta">Ler a etiqueta da amostra</button><span class="nota" id="stEtq"> Com a foto da etiqueta do tubo ou do cartão, o painel preenche paciente, responsável, clínica, número, data da coleta e idade.</span></div>` : ""}
     ${estado.liberador ? campo("Assinado por", sel('data-vet="1"', estado.vet ? estado.vet.id : "", VETS.map((v) => [v.id, v.nome + (v.crmv ? " · " + v.crmv : "")])), "larga") + `<p class="nota larga">Você libera o laudo, que sai assinado pelo médico veterinário escolhido. Seu nome aparece discreto abaixo da assinatura.</p>` : ""}</div></div>`;
@@ -3146,8 +3215,8 @@ function montarForm0() {
   const topo = `<div class="topo-tipo"><button type="button" class="lnk" data-a="trocar-tipo">‹ Outro tipo de laudo</button><b>${esc(TIPOS[estado.tipo].nome)}</b></div>`;
   if (estado.tipo === "idexx") {
     $("#form").innerHTML = topo +
-      `<div class="cx"><h3>Resultado da IDEXX</h3><p class="nota">Escolha o PDF que o VetLab Station gera (ProCyte, Catalyst e outros). Hemograma e bioquímica da mesma coleta podem entrar juntos, escolhendo os dois arquivos.</p>
-        <button type="button" class="btn" data-a="pdf">${estado.lido ? "Trocar o PDF" : "Escolher o PDF da IDEXX"}</button><input type="file" id="arq" accept="application/pdf" multiple hidden>
+      `<div class="cx"><h3>Resultado da IDEXX ou do Citopet</h3><p class="nota">Escolha o PDF que o VetLab Station gera (ProCyte, Catalyst e outros) ou o laudo do Citopet. Hemograma e bioquímica da mesma coleta podem entrar juntos, escolhendo os dois arquivos. No Citopet, o número da doação junto do nome do animal liga o laudo à coleta.</p>
+        <button type="button" class="btn" data-a="pdf">${estado.lido ? "Trocar o PDF" : "Escolher o PDF da IDEXX ou do Citopet"}</button><input type="file" id="arq" accept="application/pdf" multiple hidden>
         <p class="st" id="stLer"></p>${estado.lido ? `<p class="nota">Lido: ${esc(estado.arquivos.join(", "))} · ${estado.linhas.length} resultados${estado.exame.doacao ? " · doação " + esc(estado.exame.doacao) : ""}.</p>` : ""}
         ${estado.avisos.map((a) => `<p class="aviso">${esc(a)} Confira se o PDF é mesmo deste animal.</p>`).join("")}${caixaSugestao()}${caixaOutroPdf()}</div>` +
       (!estado.lido ? "" : caixaExame() + caixaPaciente() +
@@ -3200,7 +3269,7 @@ function validar() {
   if (!k) return "Escolha o tipo de laudo.";
   if (estado.receptor && !String(estado.paciente.nome || "").trim()) return "Preencha o nome do paciente.";
   if (!estado.receptor && !estado.animalId) return "Escolha o animal do cadastro.";
-  if (k === "idexx" && (!estado.lido || !estado.linhas.some((l) => l.v != null || l.texto))) return "Escolha o PDF da IDEXX.";
+  if (k === "idexx" && (!estado.lido || !estado.linhas.some((l) => l.v != null || l.texto))) return "Escolha o PDF da IDEXX ou do Citopet.";
   if (k === "tecsa" && (!t.lido || !t.exames.some((e) => e.on))) return "Escolha o PDF da TECSA e deixe pelo menos um exame marcado.";
   if (k === "tipagem" && !estado.paciente.especie) return "Preencha a espécie do paciente.";
   if (k === "tipagem" && !felino() && !t.dea1.on && !t.dal.on) return "Marque o DEA 1, o DAL ou os dois.";

@@ -1097,7 +1097,8 @@ async function atualizarLaudosCvh(bt) {
   finally { if (bt) { bt.disabled = false; bt.textContent = t0; } }
 }
 function examesRecentes(aid) {
-  const ultima = L => { const m = L.reduce((a, x) => (x.data > a ? x.data : a), ''); return L.filter(x => x.data === m).slice(0, 6); };
+  // laudos da última coleta: até 20 dias antes do mais recente (IDEXX, TECSA e Citopet da mesma coleta ficam juntos)
+  const ultima = L => { const m = L.reduce((a, x) => (x.data > a ? x.data : a), ''), lim = Date.parse(m) - 20 * 864e5; return L.filter(x => x.data === m || Date.parse(x.data) >= lim).slice(0, 8); };
   if (E.d && Array.isArray(E.d.exames)) return ultima(E.d.exames.filter(x => x.animalId === aid));
   return ultima(((E.d && E.d.registros) || []).filter(r => r.tipo === 'laudo' && r.animalId === aid && r.excluido !== '1').sort((a, b) => (b.data + (b.assinadoEm || '')).localeCompare(a.data + (a.assinadoEm || '')))
     .map(r => { const d = r.dados || {}; return { data: r.data, titulo: d.titulo || 'Exame', a4: d.a4 && d.a4.url || '', cel: d.cel && d.cel.url || '' }; }).filter(x => x.a4 || x.cel));
