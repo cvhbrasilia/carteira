@@ -562,6 +562,11 @@ a.btn{text-decoration:none}
 .ac-lista li{padding:.62em .75em;border-radius:7px;cursor:pointer;font-size:15px;color:var(--tinta,#2b2320)}
 .ac-lista li:hover,.ac-lista li[aria-selected=true]{background:#f4ece5}
 .mini-bts{display:flex;gap:6px;margin-top:2px}
+.pl-filtro{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:6px 0 12px}.pl-filtro select{margin-left:6px}
+.pl-tipos{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.pl-tipos button{border:1px solid #E2D6C8;background:#fff;border-radius:999px;padding:8px 14px;font-weight:700;color:#5F130F}.pl-tipos button.on{background:#5F130F;color:#fff;border-color:#5F130F}.pl-tipos b{background:#A83D3D;color:#fff;border-radius:999px;padding:0 7px;margin-left:4px;font-size:12px}
+.pl-alertas{border:1px solid #e3b9b4}
+.pl-etapas .lab-it{flex-direction:column;align-items:stretch;gap:8px}.pl-etapas .lab-it .t small{white-space:normal}.pl-etapas .mini-bts{justify-content:flex-start;flex-wrap:wrap}
+@media (min-width:1100px){.tela-pl .tela-c{max-width:1320px}.pl-etapas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}}
 @media (min-width:1000px){.tela-lab .tela-c{max-width:1280px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);column-gap:28px;align-items:start}.tela-lab .tela-c>*{grid-column:1}.tela-lab #labRec{grid-column:2;grid-row:1 / span 40;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
 #alertaCrit{position:fixed;inset:0;z-index:9999;background:rgba(95,19,15,.92);display:flex;align-items:center;justify-content:center;padding:20px;animation:acPisca 1.2s infinite}
 @keyframes acPisca{50%{background:rgba(168,61,61,.95)}}
@@ -814,7 +819,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261120212130';
+  var VERSAO = '20261120214044';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2404,7 +2409,7 @@ function examesRecentes(aid) {
   // laudos da última coleta: até 20 dias antes do mais recente (IDEXX, TECSA e Citopet da mesma coleta ficam juntos)
   const ultima = L => { const m = L.reduce((a, x) => (x.data > a ? x.data : a), ''), lim = Date.parse(m) - 20 * 864e5; return L.filter(x => x.data === m || Date.parse(x.data) >= lim).slice(0, 8); };
   if (E.d && Array.isArray(E.d.exames)) return ultima(E.d.exames.filter(x => x.animalId === aid));
-  return ultima(((E.d && E.d.registros) || []).filter(r => r.tipo === 'laudo' && r.animalId === aid && r.excluido !== '1').sort((a, b) => (b.data + (b.assinadoEm || '')).localeCompare(a.data + (a.assinadoEm || '')))
+  return ultima(((E.d && E.d.registros) || []).filter(r => r.tipo === 'laudo' && r.animalId === aid && r.excluido !== '1' && !((r.dados || {}).envio && r.dados.envio.carteira === false)).sort((a, b) => (b.data + (b.assinadoEm || '')).localeCompare(a.data + (a.assinadoEm || '')))
     .map(r => { const d = r.dados || {}; return { data: r.data, titulo: d.titulo || 'Exame', a4: d.a4 && d.a4.url || '', cel: d.cel && d.cel.url || '' }; }).filter(x => x.a4 || x.cel));
 }
 function cExames(L) {
@@ -4906,6 +4911,7 @@ function itemLaudo(r, comAnimal) {
   return '<div class="ld-i"><div class="ld-t"><b>' + (comAnimal ? esc(an.nome) + ' · ' : '') + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(r.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', (d.exame || {}).equip, idx ? (d.linhas || []).length + ' resultados' : '', r.vetNome].filter(Boolean).join(' · ')) + '</small>' + sit + '</div>' +
     '<div class="acoes">' + lk(d.cel, 'PDF celular') + lk(d.a4, 'PDF A4') + (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' : '') +
     (((d.edicao && d.edicao.id) || edicaoDeAntigo(d)) && pode('laudos') ? '<button class="btn sec2 peq" data-acao="laudo-corrigir" data-id="' + r.id + '">Corrigir</button>' : '') +
+    (pode('laudos') ? (() => { const ev = envioDe(r); return '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' + (d.origens && pode('historico') ? '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : ''); })() : '') +
     (pode(['historico']) ? '<button class="btn sec2 peq rc-del" data-acao="laudo-apagar" data-id="' + r.id + '">Apagar</button>' : '') + '</div>' +
     ((d.paciente || {}).nome && an.nome && semAc(d.paciente.nome).trim().toLowerCase() !== semAc(an.nome).trim().toLowerCase() ? '<p class="nota ld-dif">Este laudo saiu com o nome "' + esc(d.paciente.nome) + '" e o cadastro hoje está "' + esc(an.nome) + '".' + (d.edicao && d.edicao.id ? ' Toque em Corrigir para refazer o laudo com o cadastro atual.' : ' Ele foi feito antes de o painel guardar a parte editável, então precisa ser refeito.') + '</p>' : '') + '</div>';
 }
@@ -4996,6 +5002,57 @@ function telaLaudos(aid, busca) {
     $('#listaLd').innerHTML = '<h3>' + l.length + (l.length === 1 ? ' laudo' : ' laudos') + '</h3>' + (l.length ? l.map(r => itemLaudo(r, !aid)).join('') : '<p class="vazio-p">' + (q ? 'Nenhum laudo encontrado.' : 'Ainda não há laudos.') + '</p>');
   };
   $('#buscaLd').oninput = pinta; pinta();
+}
+/* ═════════════ painel de laudos: por tipo e por etapa, com envio à carteira e ao histórico ═════════════ */
+const TIPOS_PL = [['tecsa', 'TECSA'], ['citopet', 'Citopet'], ['idexx', 'IDEXX'], ['tipagem', 'Tipagem'], ['compat', 'Prova de compatibilidade'], ['coombs', 'Coombs'], ['fiv', 'FIV e FeLV']];
+const catReg = r => { const d = r.dados || {}; return d.tipoLaudo === 'tecsa' ? 'tecsa' : (!d.tipoLaudo || d.tipoLaudo === 'idexx') ? ((d.exame || {}).labNome === 'Citopet' ? 'citopet' : 'idexx') : d.tipoLaudo; };
+const alertaReg = r => { const d = r.dados || {}, t = catReg(r); return (t === 'idexx' || t === 'citopet') && (d.linhas || []).length ? foraLaudo(d).map(l => l.nome) : (d.resumo || []).filter(x => x.alerta).map(x => x.nome + ': ' + x.texto); };
+const alertaLab = x => (x.resumo || []).filter(r => r.positivo || r.alterado).map(r => (r.positivo ? 'DETECTADO ' : '') + r.exame + (r.resultado ? ' ' + r.resultado : ''));
+const envioDe = r => Object.assign({ carteira: true, historico: !!((r.dados || {}).origens) }, (r.dados || {}).envio || {});
+const PL = { tipo: 'tecsa', mes: 'recentes', labs: null, rasc: null };
+async function telaPainelLaudos(recarregar) {
+  E.livro = null; E.animal = null; fecharFolha();
+  raiz.innerHTML = '<main class="tela tela-pl"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Laudos</button></div><header class="topo"><div class="t"><span>Laudos de exames</span><b>Painel de laudos</b></div></header><section class="cartao"><p class="vazio-p">Carregando…</p></section></div></main>';
+  try { if (recarregar || !PL.labs) { const [labs, rasc] = await Promise.all([api('laboratoriosListar', E.sessao, true), api('laudoRascunhos', E.sessao)]); PL.labs = E.labRec = labs.filter(x => !ehQualidade(x)); PL.rasc = E.rascunhos = rasc; } }
+  catch (e) { toast(e.message, 6000); }
+  pintarPainelLaudos();
+}
+function pintarPainelLaudos() {
+  if (!document.querySelector('.tela-pl')) return;
+  const labs = PL.labs || [], rasc = PL.rasc || [], regs = laudosTodos();
+  const dataDe = (o) => o.k === 'lab' ? isoLab(o.x) : o.k === 'rasc' ? String(o.x.em || '').slice(0, 10) : o.x.data;
+  const itens = labs.filter(x => x.situacao !== 'feito').map(x => ({ k: 'lab', x, t: x.origem, al: alertaLab(x), et: x.situacao === 'ignorado' ? 'ignorado' : alertaLab(x).length || x.positivo ? 'alerta' : 'aguardando' }))
+    .concat(rasc.map(x => ({ k: 'rasc', x, t: x.tipo === 'idexx' && /citopet/i.test(x.titulo || '') ? 'citopet' : x.tipo, al: [], et: 'aguardando' })))
+    .concat(regs.map(x => ({ k: 'reg', x, t: catReg(x), al: alertaReg(x), et: 'assinado' })));
+  const meses = [...new Set(itens.map(o => String(dataDe(o) || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+  const noPeriodo = o => { const d = dataDe(o) || ''; if (PL.mes === 'todos') return true; if (PL.mes === 'recentes') return !d || Date.parse(d) >= Date.now() - 31 * 864e5 || o.et !== 'assinado'; return d.slice(0, 7) === PL.mes; };
+  const V = itens.filter(noPeriodo);
+  const nomeMes = m => { const [a, b] = m.split('-'); return ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][+b - 1] + '/' + a; };
+  // alertas no topo: resultados com detecção ou fora da referência ainda sem laudo, e laudos assinados com alerta que não foram para a carteira
+  const alertas = V.filter(o => o.al.length && (o.k === 'lab' ? o.et !== 'ignorado' : o.k === 'reg' && !envioDe(o.x).carteira));
+  const nome = o => { if (o.k === 'reg') return (animalDe(o.x.animalId) || {}).nome || ''; if (o.k === 'rasc') return o.x.paciente || 'Sem nome'; const an = animalDoLab(o.x), nI = o.x.origem === 'idexx' ? idexxNome(o.x.nomeArquivo) : null; return an ? an.nome : (nI ? nI.animal : String(o.x.animal || '').replace(/\s*\(\d+\)\s*/, ' ').trim()) || 'animal não identificado'; };
+  const card = o => {
+    const x = o.x, al = o.al.length ? '<small class="lab-pos">' + esc(o.al.slice(0, 6).join(' · ')) + '</small>' : '';
+    if (o.k === 'lab') return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (o.al.length || x.positivo ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(nome(o)) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + '</b><small>' + esc([br(isoLab(x)) || x.data, x.numero ? 'nº ' + x.numero : '', x.completo === 'NÃO' ? 'resultado parcial' : '', x.situacao === 'ignorado' ? 'ignorado' : 'recebido do laboratório, aguardando o laudo do CVH'].filter(Boolean).join(' · ')) + '</small>' + al + '</div>' +
+      '<div class="mini-bts"><a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF</a><button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">Fazer laudo CVH</button><button class="mini" data-acao="pl-marcar" data-id="' + esc(x.id) + '" data-v="' + (x.situacao === 'ignorado' ? 'novo' : 'ignorado') + '">' + (x.situacao === 'ignorado' ? 'Voltar' : 'Ignorar') + '</button></div></div>';
+    if (o.k === 'rasc') return '<div class="item lab-it"><div class="t"><b><span class="chip neutro">em edição</span> ' + esc(nome(o)) + ' · ' + esc(x.titulo || 'Laudo') + '</b><small>' + esc(['salvo ' + br(String(x.em || '').slice(0, 10)), x.usuario].filter(Boolean).join(' · ')) + '</small></div><div class="mini-bts"><button class="mini" data-acao="laudo-ed-abrir" data-id="' + esc(x.id) + '">Revisar e assinar</button></div></div>';
+    const d = x.dados || {}, ev = envioDe(x), temHist = !!d.origens && pode('historico');
+    return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al +
+      '<small>' + (ev.carteira ? '<span class="chip ok">na carteira</span>' : '<span class="chip neutro">fora da carteira</span>') + ' ' + (temHist ? (ev.historico ? '<span class="chip ok">no histórico</span>' : '<span class="chip neutro">fora do histórico</span>') : '') + '</small></div>' +
+      '<div class="mini-bts">' + (d.cel && d.cel.url ? '<a class="mini" href="' + esc(d.cel.url) + '" target="_blank" rel="noopener">PDF</a>' : '') +
+      '<button class="mini" data-acao="pl-envio" data-id="' + x.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' +
+      (temHist ? '<button class="mini" data-acao="pl-envio" data-id="' + x.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : '') +
+      (((d.edicao && d.edicao.id) || edicaoDeAntigo(d)) && pode('laudos') ? '<button class="mini" data-acao="laudo-corrigir" data-id="' + x.id + '">Corrigir</button>' : '') + '</div></div>';
+  };
+  const cont = t => V.filter(o => o.t === t && o.et !== 'assinado' && o.et !== 'ignorado').length;
+  const T = V.filter(o => o.t === PL.tipo), etapa = (k, tit, nota) => { const L = T.filter(o => o.et === k); return '<section class="cartao"><h3>' + tit + ' · ' + L.length + '</h3>' + (nota ? '<p class="nota">' + nota + '</p>' : '') + (L.length ? L.map(card).join('') : '<p class="vazio-p">Nada aqui.</p>') + '</section>'; };
+  document.querySelector('.tela-pl .tela-c').innerHTML = '<div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Laudos</button></div><header class="topo"><div class="t"><span>Laudos de exames</span><b>Painel de laudos</b></div></header>' +
+    '<div class="pl-filtro"><label>Período <select id="plMes"><option value="recentes"' + (PL.mes === 'recentes' ? ' selected' : '') + '>Últimos 30 dias e pendentes</option>' + meses.map(m => '<option value="' + m + '"' + (PL.mes === m ? ' selected' : '') + '>' + nomeMes(m) + '</option>').join('') + '<option value="todos"' + (PL.mes === 'todos' ? ' selected' : '') + '>Todos</option></select></label><button class="btn sec2 peq" data-acao="pl-atualizar">Atualizar</button></div>' +
+    '<section class="cartao pl-alertas"><h3>Alertas' + (alertas.length ? ' <span class="chip critico">' + alertas.length + '</span>' : '') + '</h3>' + (alertas.length ? alertas.sort((a, b) => (b.x.positivo ? 1 : 0) - (a.x.positivo ? 1 : 0)).map(card).join('') : '<p class="vazio-p">Nenhum alerta no período.</p>') + '</section>' +
+    '<div class="pl-tipos">' + TIPOS_PL.map(([k, t]) => '<button class="' + (PL.tipo === k ? 'on' : '') + '" data-acao="pl-tipo" data-v="' + k + '">' + t + (cont(k) ? ' <b>' + cont(k) + '</b>' : '') + '</button>').join('') + '</div>' +
+    '<div class="pl-etapas">' + etapa('alerta', 'Alerta', 'Detectado, positivo ou fora da referência, ainda sem o laudo do CVH.') + etapa('aguardando', 'Aguardando revisão e assinatura', 'Recebidos dos laboratórios e laudos em edição.') + etapa('assinado', 'Revisados e assinados', 'Envie para a carteira do responsável e para o histórico laboratorial.') + '</div>' +
+    (T.some(o => o.et === 'ignorado') ? etapa('ignorado', 'Ignorados', '') : '');
+  const s = $('#plMes'); if (s) s.onchange = () => { PL.mes = s.value; pintarPainelLaudos(); };
 }
 /* ═════════════ notificações e sons do CVH ═════════════ */
 // sons feitos aqui mesmo (Web Audio): aviso suave em duas notas; alarme crítico em dois tons alternados, insistente
@@ -5091,6 +5148,7 @@ function telaInicio(busca) {
     '<div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>' + TIT[0] + '</span><b>' + TIT[1] + '</b></div></header>' +
     (mod === 'historico' ? '<p class="nota">Toque no animal para ver os exames dele na tela. Para incluir exames novos, use Adicionar exames. O PDF vai para o Drive e entra sozinho na carteira dele.</p>' : '') +
+    (mod === 'laudos' ? '<button class="btn" data-acao="laudos-painel" style="margin-bottom:10px">Painel de laudos: alertas, por tipo e por etapa</button>' : '') +
     (mod === 'laudos' ? '<p class="nota">Toque no animal para fazer um laudo ou ver os laudos dele. Para receptor sem cadastro, os PDFs são gerados sem salvar no sistema.</p><button class="btn" data-acao="laudo-receptor">Laudo de receptor (sem cadastro)</button> <button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button> <button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
@@ -5483,10 +5541,12 @@ const PONTE = {
     let edicao = null; if (o.edicao) { try { const r = await api('laudoEdicaoGuardar', E.sessao, an.id, o.edicao); if (r && r.id) edicao = { id: r.id }; } catch (_) {} }
     const antigo = o.regId ? regsDe(an.id).find(r => r.id === o.regId && r.tipo === 'laudo') : null;
     if (antigo && !origens.length && (antigo.dados || {}).origens) o.dados = Object.assign({}, o.dados, { origens: antigo.dados.origens });
-    const salvo = await api('salvarRegistro', E.sessao, { id: antigo ? antigo.id : '', animalId: an.id, tipo: 'laudo', grupo: 'laudo', data: o.data, proxima: '', vetId: o.vetId || '', dados: Object.assign({}, o.dados, { a4, cel }, edicao ? { edicao } : {}) });
+    const envio = antigo ? Object.assign({ carteira: true, historico: !!(antigo.dados || {}).origens }, (antigo.dados || {}).envio || {}) : { carteira: false, historico: false };
+    const salvo = await api('salvarRegistro', E.sessao, { id: antigo ? antigo.id : '', animalId: an.id, tipo: 'laudo', grupo: 'laudo', data: o.data, proxima: '', vetId: o.vetId || '', dados: Object.assign({}, o.dados, { a4, cel, envio }, edicao ? { edicao } : {}) });
     guardarRegistro(salvo);
     if (o.rascunhoId) { try { await api('laudoRascunhoApagar', E.sessao, o.rascunhoId); E.rascunhos = null; } catch (_) {} }
-    if (origens.length && pode('historico')) setTimeout(() => atualizarHistoricoSozinho(an.id), 300);
+    // carteira e histórico: pelos botões Enviar (painel de laudos e lista de laudos do animal); correção de laudo já no histórico atualiza sozinha
+    if (origens.length && pode('historico') && envio.historico) setTimeout(() => atualizarHistoricoSozinho(an.id), 300);
     if (E.ponte && E.ponte.pdfLab && E.ponte.pdfLab.labId) { for (const lid of (o.labIds && o.labIds.length ? o.labIds : [E.ponte.pdfLab.labId])) { try { await api('laboratorioMarcar', E.sessao, lid, { situacao: 'feito', registroId: salvo.id, animalId: an.id }); } catch (_) {} } }
     return { id: salvo.id, whats: whatsLaudo(salvo), historico: !!origens.length && pode('historico') };
   },
@@ -6357,6 +6417,19 @@ const ACOES = {
   'receitas-todas': () => telaReceitas(null),
   'laudos-todos': () => telaLaudos(null),
   'laudos-lista': () => { E.modulo = 'laudos'; telaInicio(); },
+  'laudos-painel': () => telaPainelLaudos(true),
+  'pl-atualizar': () => telaPainelLaudos(true),
+  'pl-tipo': b => { PL.tipo = b.dataset.v; pintarPainelLaudos(); },
+  'pl-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); const x = (PL.labs || []).find(y => y.id === b.dataset.id); if (x) x.situacao = b.dataset.v; pintarPainelLaudos(); } catch (e) { toast(e.message, 4000); } },
+  'pl-envio': async b => {
+    const r = regPorId(b.dataset.id); if (!r) return; b.disabled = true;
+    try {
+      const o = { [b.dataset.c]: b.dataset.v === '1' }; const salvo = await api('laudoEnvio', E.sessao, r.id, o); guardarRegistro(salvo);
+      if (b.dataset.c === 'historico') { atualizarHistoricoSozinho(r.animalId); toast('Histórico laboratorial sendo atualizado com este laudo. Leva alguns minutos.', 6000); }
+      else toast(o.carteira ? 'Laudo enviado para a carteira do responsável.' : 'Laudo retirado da carteira.', 4000);
+      if (document.querySelector('.tela-pl')) pintarPainelLaudos(); else if (document.querySelector('#listaLd')) telaLaudos(E.animal);
+    } catch (e) { toast(e.message, 6000); b.disabled = false; }
+  },
   'laudo-novo': b => abrirModulo('laudos', b.dataset.id),
   'laudo-ed-abrir': async b => { b.disabled = true; try { const r = await api('laudoRascunhoAbrir', E.sessao, b.dataset.id), m = (E.rascunhos || []).find(x => x.id === b.dataset.id) || {}; E.laudoEdicao = { id: r.id, texto: r.texto }; if (m.receptor || !animalDe(m.animalId)) { E.laudoReceptor = !!m.receptor; abrirModulo('laudos', null); } else abrirModulo('laudos', m.animalId); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'laudo-ed-apagar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Apagar mesmo?'; return; } try { await api('laudoRascunhoApagar', E.sessao, b.dataset.id); E.rascunhos = null; pintarRascunhos(E.animal); } catch (e) { toast(e.message, 5000); } },
