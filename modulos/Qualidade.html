@@ -391,7 +391,7 @@ const ABAS = [["geral", "Visão geral"], ["explorar", "Explorar"], ["ch", "Hemá
 function pintar() {
   const ms = meses();
   $("#app").innerHTML = `<div class="topo"><h1>Controle de qualidade<small>Hemocomponentes conferidos com a Tabela 4 da ABVHMT · ${S.regs.length} análises em ${new Set(S.regs.map((r) => r.bolsa)).size} bolsas</small></h1>
-    <div class="bts"><button class="btn" data-a="pdfs">Ler PDFs do ProCyte</button><button class="btn sec" data-a="novo">Lançar à mão</button>${S.admin ? '<button class="btn sec" data-a="params">Parâmetros</button>' : ""}<button class="btn sec" data-a="imprimir">Imprimir</button></div></div>
+    <div class="bts"><button class="btn" data-a="pdfsRecebidos">PDFs recebidos da IDEXX</button><button class="btn sec" data-a="pdfs">Ler PDFs do ProCyte</button><button class="btn sec" data-a="novo">Lançar à mão</button>${S.admin ? '<button class="btn sec" data-a="params">Parâmetros</button>' : ""}<button class="btn sec" data-a="imprimir">Imprimir</button></div></div>
     <div class="periodo">${[["tudo", "Tudo"], ["mes", "Mês"], ["3m", "Últimos 3 meses"], ["12m", "Últimos 12 meses"]].map(([k, t]) => `<button data-a="per" data-v="${k}" class="${S.periodo === k ? "on" : ""}">${t}</button>`).join("")}
     ${S.periodo === "mes" ? `<select id="selMes">${ms.slice().reverse().map((m) => `<option value="${m}"${m === (S.mes || ms[ms.length - 1]) ? " selected" : ""}>${mesTxt(m)}</option>`).join("")}</select>` : ""}</div>
     <nav class="abas">${ABAS.map(([k, t]) => `<button data-a="aba" data-v="${k}" class="${S.aba === k ? "on" : ""}">${t}</button>`).join("")}</nav><div id="conteudo"></div>`;
@@ -677,6 +677,20 @@ function doacaoDoHemograma(o) {
 // sem identificação clara: sugere o tipo pelos valores
 function incoerente(o) { const ht = o.hemo.HCT; if (ht == null) return false; return (["ST", "CH", "CHD"].includes(o.componente) && ht < 2) || (["CP", "PFC", "PC", "PIC", "CRIO"].includes(o.componente) && ht > 15); }
 function sugerirTipo(h) { const ht = h.HCT, p = h.PLQ; if (ht != null && ht < 2) return p != null && p > 300 ? "CP" : "PFC"; if (ht != null && ht >= 55) return "CH"; return "DOA"; }
+// PDFs da pasta "exames idexx" do Drive que o porteiro já mandou para o app (bolsas: ST, CH, CP, PFC)
+async function pdfsRecebidos(bt) {
+  if (bt) bt.disabled = true;
+  try {
+    const L = await ponte("labQualidade");
+    if (!L.length) return toast("Nenhum PDF novo da IDEXX para o controle de qualidade.");
+    const fs = [];
+    for (let k = 0; k < L.length; k++) {
+      toast("Baixando " + (k + 1) + " de " + L.length + "…");
+      try { const r = await ponte("arquivoLab", L[k].arquivoId), u8 = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0)); const f = new File([u8], L[k].nome || r.nome || "idexx.pdf", { type: "application/pdf" }); f.labId = L[k].labId; fs.push(f); } catch (_) {}
+    }
+    if (fs.length) await lerArquivos(fs);
+  } catch (e) { toast(e.message || String(e), 6000); } finally { if (bt) bt.disabled = false; }
+}
 async function lerArquivos(fs) {
   LOTE = []; abrirGaveta("Lendo os PDFs", '<p class="nota" id="lendo">Lendo 0 de ' + fs.length + "…</p>");
   const vistos = {};
@@ -753,11 +767,14 @@ async function salvarLote(bt) {
     if (pdfs && o.file) { st.textContent = "Guardando o PDF " + (k + 1) + " de " + sel.length + "…"; try { dados.pdf = await qc("qcSalvarPdf", o.arquivo, b64De(new Uint8Array(await o.file.arrayBuffer()))); } catch (_) {} }
     lista.push({ id: ant ? ant.id : "", bolsa, componente: comp, data, dados });
   }
+  const labIds = sel.filter((o) => o.file && o.file.labId).map((o) => o.file.labId);
   let n = 0;
   for (let k = 0; k < lista.length; k += 25) {
     st.textContent = "Salvando " + Math.min(k + 25, lista.length) + " de " + lista.length + "…";
     try { const rs = await qc("qcSalvarLote", lista.slice(k, k + 25)); rs.forEach((r) => { const j = S.regs.findIndex((x) => x.id === r.id); if (j >= 0) S.regs[j] = r; else S.regs.push(r); }); n += rs.length; } catch (e) { toast(e.message, 7000); break; }
   }
+  // PDFs que vieram da pasta da IDEXX: saem da lista de recebidos
+  { const nao = LOTE.filter((o) => o.file && o.file.labId && (!o.usar || !o.bolsa)).map((o) => o.file.labId); if (labIds.length && n) ponte("labFeito", labIds).catch(() => {}); void nao; }
     // resumo que fica na tela até ser fechado
   const porTipo = {}; lista.slice(0, n).forEach((x) => { porTipo[x.componente] = (porTipo[x.componente] || 0) + 1; });
   const resto = {}; LOTE.filter((o) => !o.usar || !o.bolsa).forEach((o) => { const g = (GRUPOS.find((x) => x[0] === o.grupo) || [0, "Não marcados"])[1]; resto[g] = (resto[g] || 0) + 1; });
@@ -1069,6 +1086,7 @@ document.addEventListener("click", (ev) => {
   else if (a === "novo") novoManual(v);
   else if (a === "salvarnovo") salvarNovo();
   else if (a === "pdfs") $("#arqPdf").click();
+  else if (a === "pdfsRecebidos") pdfsRecebidos(b);
   else if (a === "salvarlote") salvarLote(b);
   else if (a === "lotegrupo") { lerLote(); S.loteAberto[v] = !(S.loteAberto[v] || ((v === "bolsa" || v === "doador") && LOTE.filter((o) => o.grupo === v).length <= 40)); pintarLote(); }
   else if (a === "voltalote") pintarLote();

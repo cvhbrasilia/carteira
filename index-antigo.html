@@ -585,9 +585,10 @@ a.mini{text-decoration:none;display:inline-block}
 .asd{display:flex;align-items:center;gap:.5em;border:1px solid var(--linha);border-radius:.45em;padding:.35em .5em;margin-top:.4em;background:rgba(255,255,255,.55)}
 .asd i{width:2.3em;aspect-ratio:1;background:var(--img-selo) center/contain no-repeat;flex:none}
 .asd-t{display:flex;flex-direction:column;font-size:.47em;line-height:1.32;color:var(--tinta2);flex:0 1 auto;min-width:0;white-space:nowrap}
-.asd-t small{font-size:.8em;font-weight:800;color:var(--vermelho);letter-spacing:.02em}
+.asd-t small{font-size:.62em;font-weight:800;color:var(--vermelho);letter-spacing:.02em}
 .asd-t b{color:var(--vinho);font-size:1.32em;line-height:1.2}
-.asd .rub{flex:0 1 5.2em;min-width:2.8em;height:2.1em;margin:-.5em 0 0 -.2em;align-self:flex-start}
+.asd-t{position:relative}
+.asd-t .rub{position:absolute;right:0;top:-.15em;width:7.2em;height:2.9em}
 .asd .qr{width:2.5em;height:2.5em;margin-left:auto;flex:none}
 .asd-c{font-size:.42em;color:var(--tinta2);margin:.25em 0 0 .1em}
 
@@ -2225,8 +2226,8 @@ function carimbo(v, rot) {
 // bloco da assinatura eletrônica: selo, nome, CRMV, data e hora, rubrica e QR Code de verificação (mesmo modelo dos laudos)
 function assinatura(r) {
   const v = vetDe(r), lib = r.dados && r.dados.liberadoPor && r.dados.liberadoPor.nome;
-  return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><b>' + esc(r.vetNome || v.nome || '') + '</b><span>Médico veterinário · ' + esc(r.vetCrmv || v.crmv || '') + '</span><span>' + quando(r.assinadoEm) + '</span></div>' +
-    rubSvg(v.rubrica) + (r.codigo ? qrSvg(urlVerifCarteira(r.codigo)) : '') + '</div>' +
+  return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><b>' + esc(r.vetNome || v.nome || '') + '</b><span>Médico veterinário · ' + esc(r.vetCrmv || v.crmv || '') + '</span><span>' + quando(r.assinadoEm) + '</span>' + rubSvg(v.rubrica) + '</div>' +
+    (r.codigo ? qrSvg(urlVerifCarteira(r.codigo)) : '') + '</div>' +
     (r.codigo || lib ? '<p class="asd-c">' + (r.codigo ? 'Código ' + esc(r.codigo) : '') + (lib ? (r.codigo ? ' · ' : '') + 'Liberado por ' + esc(lib) : '') + '</p>' : '');
 }
 const btnEd = r => '<button class="ed" data-ed="' + r.id + '">Editar</button>';
