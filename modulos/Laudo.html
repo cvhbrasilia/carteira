@@ -54,7 +54,11 @@ svg.folha{display:block;width:100%;height:auto;font-family:"Receita CVH",sans-se
 .sv-doc{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--areia)}
 .sv-doc small{display:block;color:var(--tinta2);font-size:12.5px}
 .sv-bts{display:flex;flex-wrap:wrap;gap:6px}
-.wrap{grid-template-columns:minmax(0,560px) minmax(0,1fr)}
+@media (min-width:901px){.wrap{grid-template-columns:minmax(0,560px) minmax(0,1fr)}}
+/* celular: uma coluna só, a prévia fica no fim da página e nada desliza para o lado */
+html,body{overflow-x:hidden;max-width:100%}
+.folha-wrap svg{width:100%;height:auto;display:block}
+@media (max-width:900px){.lado{border-top:1px solid var(--areia2);padding-top:14px}.lado::before{content:"Prévia do laudo";display:block;font-weight:700;color:var(--vinho);margin-bottom:8px}}
 .rcab,.rl{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(54px,.7fr) 56px minmax(0,1.3fr) 24px;gap:6px;align-items:center}
 .rl.com-pct{grid-template-columns:minmax(0,1.5fr) minmax(54px,.7fr) 56px minmax(0,1.3fr) 24px}
 .rcab{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7A5530;padding:0 2px 4px}
