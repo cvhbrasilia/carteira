@@ -819,7 +819,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261120215523';
+  var VERSAO = '20261120230754';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4930,7 +4930,8 @@ const ROT_LAB = { tecsa: 'TECSA', citopet: 'Citopet', idexx: 'IDEXX' };
 // "Rafaella Rangel_575-4 CHARLLOTE_20261118_114806_6552.pdf" (hemograma do doador: responsável, doação e animal)
 function idexxNome(nome) {
   const base = String(nome || '').replace(/\.pdf$/i, ''), dt = (base.match(/_(\d{4})(\d\d)(\d\d)_\d{6}/) || []), sem = base.replace(/_\d{8}_\d{6}_\d+$/, '');
-  const qc = /^(ST|CHD?|CH-C-SG|CP|PFC?|PF|PLAQUETA|CRIO)[_ -]/i.test(sem) || /[_ ]BOLSA([_ ]|$)/i.test(sem);
+  // só o hemograma e a bioquímica do doador (Responsável_código ANIMAL) viram laudo; o resto da IDEXX vai para o controle de qualidade
+  const qc = /^(ST|CHD?|CH-C-SG|CP|PFC?|PF|PLAQUETA|CRIO)[_ -]/i.test(sem) || /[_ ]BOLSA([_ ]|$)/i.test(sem) || !/^[A-Za-zÀ-ÿ][^_]*_\s*(\d{2,5}\s*-\s*\d{1,2}\s+)?[A-Za-zÀ-ÿ]/.test(sem);
   const cod = (sem.match(/(\d{2,5})\s*-\s*(\d{1,2})(?!\d)/) || []), codigo = cod[1] ? cod[1] + '-' + cod[2] : '';
   const partes = sem.split('_').map(t => t.trim()).filter(Boolean);
   const pc = partes.find(t => codigo && t.indexOf(cod[0]) >= 0) || '';
