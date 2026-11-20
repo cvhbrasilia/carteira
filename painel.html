@@ -4912,7 +4912,7 @@ async function pintarLaboratorios(todos) {
   if (!$('#labRec')) return;
   const novos = L.filter(x => x.situacao === 'novo').length;
   el.innerHTML = '<h3>Laudos dos laboratórios' + (novos ? ' <span class="chip critico">' + novos + (novos === 1 ? ' novo' : ' novos') + '</span>' : '') + '</h3>' +
-    '<p class="nota">O robô confere o TECSA e o Citopet a cada 15 minutos, das 7h às 20h. Os laudos chegam aqui com o PDF original; o laudo do CVH abre preenchido para conferir e assinar.</p>' +
+    '<p class="nota">O robô confere o TECSA e o Citopet a cada 15 minutos, das 7h às 23h, de segunda a sábado. Os laudos chegam aqui com o PDF original; o laudo do CVH abre preenchido para conferir e assinar.</p>' +
     (L.length ? L.map(x => {
       const an = animalDoLab(x), pos = x.positivo, alt = (x.resumo || []).filter(r => r.positivo || r.alterado);
       return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (pos ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(x.codigo || x.animal || '') + (an ? ' · ' + esc(an.nome) : ' · <small>animal não identificado</small>') + '</b>' +
