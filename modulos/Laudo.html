@@ -3504,6 +3504,18 @@ if (CTX.edicao && CTX.edicao.texto) {
 } else if (CTX.tipo && TIPOS[CTX.tipo]) iniciarTipo(CTX.tipo);
 montarForm(); ligar(); renderPrevia();
 if (avisoAbertura) { $("#st").className = "st"; $("#st").textContent = avisoAbertura; }
+// laudo que chegou sozinho do laboratório (TECSA, Citopet ou IDEXX): abre o PDF original e preenche o laudo do CVH
+if (CTX.pdfLab && CTX.pdfLab.id) (async () => {
+  const st = $("#st"); st.className = "st"; st.textContent = "Abrindo o PDF do laboratório…";
+  try {
+    const r = await ponte("arquivoLab", CTX.pdfLab.id), b = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0));
+    const f = new File([b], r.nome || CTX.pdfLab.nome || "laudo.pdf", { type: "application/pdf" });
+    if (CTX.pdfLab.origem === "tecsa") { iniciarTipo("tecsa"); const { pags } = await abrirPdf(f); aplicarTecsa(lerTecsa(pags), f.name); }
+    else { iniciarTipo("idexx"); LIDOS = await lerArquivos([f]); aplicarLeitura(LIDOS); }
+    estado.origens = await origensDe([f]); salvo = null; $("#salvo").hidden = true; montarForm(); renderPrevia(); marcarSujo(true);
+    st.textContent = "Laudo preenchido com o PDF do laboratório. Confira os dados antes de assinar.";
+  } catch (e) { st.className = "st erro"; st.textContent = "Não consegui abrir o PDF do laboratório: " + (e.message || e); }
+})();
 /* sem preenchimento automático: o navegador não oferece os contatos da agenda nos campos de nome, telefone e e-mail */
 (function () { function v() { var l = document.querySelectorAll('input:not([autocomplete]),textarea:not([autocomplete])'); for (var i = 0; i < l.length; i++) if (l[i].type !== 'password' && l[i].type !== 'file' && l[i].type !== 'checkbox' && l[i].type !== 'radio') l[i].setAttribute('autocomplete', 'off'); }
   var t = null; function ag() { if (t) return; t = setTimeout(function () { t = null; v(); }, 60); }
