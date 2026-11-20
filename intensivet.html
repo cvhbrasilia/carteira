@@ -273,7 +273,7 @@ function tique() {
       if (agora() > fim) {
         if (!AVISADO[ch]) { AVISADO[ch] = 1; srv("intAlertaGuarda", u.id).catch(() => {}); }
         if (!SILENCIO[ch] || Date.now() - SILENCIO[ch] > 3 * 6e4) alarme(ch, u.componente + " fora da refrigeração", "A bolsa " + u.id + " passou de " + prazo(u) + " minutos. Guarde agora e leia o QR do equipamento.");
-      } else if (agora() > fim - 5 * 6e4 && !AVISADO["q" + ch]) { AVISADO["q" + ch] = 1; somAviso(); toast("Faltam 5 minutos para guardar " + u.id + ".", 6000); }
+      } else if (agora() > fim - Math.min(5, prazo(u) / 2.5) * 6e4 && !AVISADO["q" + ch]) { AVISADO["q" + ch] = 1; somAviso(); toast("Faltam " + Math.round(Math.min(5, prazo(u) / 2.5)) + " minutos para guardar " + u.id + ".", 6000); }
     }
   }
 }

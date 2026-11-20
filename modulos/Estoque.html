@@ -120,8 +120,8 @@ const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
 const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;
 const animalDe = (id) => ANI[id] || {};
 const tipoTxt = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
-const ROT_SIT = { quarentena: "Aguardando liberação", disponivel: "Disponível", reservada: "Reservada", transito: "Em trânsito", retirada: "Retirada para transfusão", utilizada: "Utilizada", descartada: "Descartada", bloqueada: "Bloqueada" };
-const COR_SIT = { quarentena: "av", disponivel: "ok", reservada: "", transito: "av", retirada: "av", utilizada: "ne", descartada: "ne", bloqueada: "al" };
+const ROT_SIT = { quarentena: "Aguardando liberação", disponivel: "Disponível", reservada: "Reservada", transito: "Em trânsito", retirada: "Retirada para transfusão", producao_crio: "Em produção de CRIO", utilizada: "Utilizada", descartada: "Descartada", bloqueada: "Bloqueada" };
+const COR_SIT = { quarentena: "av", disponivel: "ok", reservada: "", transito: "av", retirada: "av", producao_crio: "av", utilizada: "ne", descartada: "ne", bloqueada: "al" };
 const NOME_COMP = { CH: "CH com SAG", CP: "Concentrado de plaquetas", PFC: "Plasma fresco congelado", CRIO: "Crioprecipitado", PPC: "Plasma pobre em crio" };
 const ETAPAS = [["peso_st", "Peso do ST"], ["centrifugacao", "Centrifugação"], ["ch_sem_sag", "CH sem SAG"], ["ch_com_sag", "CH com SAG"], ["cp_pfc", "CP e PFC"], ["concluida", "Concluída"]];
 
@@ -137,7 +137,8 @@ function alertaValidade(u) {
   return null;
 }
 // plasma no freezer sem a conferência do dia seguinte
-const congPendente = (u) => { const c = (u.dados || {}).congelamento; return c && c.inicio && !(c.conferido && c.conferido.congelado) && Date.now() - Date.parse(c.inicio) > 12 * 36e5; };
+// PFC: conferência no dia seguinte; CRIO: 6 horas depois do início do congelamento (fica pendente até alguém conferir)
+const congPendente = (u) => { const c = (u.dados || {}).congelamento; return c && c.inicio && !(c.conferido && c.conferido.congelado) && Date.now() - Date.parse(c.inicio) > (u.componente === "CRIO" ? 6 : 12) * 36e5; };
 
 /* ── produção ── */
 // coletas que aparecem para produzir: fichas com coleta a partir do início do estoque (20/11/2026)
@@ -227,6 +228,9 @@ function abrirUnidade(id) {
     if (u.situacao === "bloqueada") acoes += bt("desbloquear", "Desbloquear"); else if (u.situacao !== "retirada") acoes += bt("bloquear", "Bloquear");
     acoes += bt("mover", "Mudar de local");
     if (["PFC", "CRIO", "PPC"].includes(u.componente)) acoes += D.congelamento && D.congelamento.inicio ? (D.congelamento.conferido && D.congelamento.conferido.congelado ? "" : bt("conferirSim", "Congelado") + bt("conferirNao", "Ainda não congelado")) : bt("congelar", "Iniciar congelamento");
+    if ((u.local || "CVH") === "CVH" && ["disponivel", "reservada", "quarentena", "bloqueada"].includes(u.situacao)) acoes += bt("fracionar", "Fracionar");
+    if (u.componente === "PFC" && (u.local || "CVH") === "CVH" && ["disponivel", "quarentena"].includes(u.situacao)) acoes += bt("crio", "Iniciar produção de CRIO");
+    if (u.situacao === "producao_crio") acoes += bt("crioConcluir", "Concluir CRIO", " ") + bt("crioCancelar", "Cancelar produção de CRIO");
     acoes += bt("descartar", "Descartar", "perigo");
   }
   if (!fim) acoes += bt("etq", "Etiqueta");
@@ -235,6 +239,9 @@ function abrirUnidade(id) {
     "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
     "<dt>Validade</dt><dd>" + esc(br(String(u.validade || "").slice(0, 10))) + (al ? ' <span class="chip ' + al.c + '">' + al.t + "</span>" : "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "</dd><dt>Local</dt><dd>" + esc(u.local || "") + (u.equipamento ? " · " + esc(u.equipamento) : "") + "</dd>" +
     (u.componente === "CH" && D.htFinal != null ? "<dt>Ht do CH com SAG</dt><dd>" + fmt(D.htFinal, 1) + "% <small>(micro-Ht)</small></dd>" : "") +
+    ((D.fracionamentos || []).length ? "<dt>Fracionamentos</dt><dd>" + D.fracionamentos.map((c) => esc(hora(c.em)) + " · " + esc(c.por) + "<br><small>inicial " + fmt(c.volumeInicial, 1) + " mL · restante " + fmt(c.volumeRestante, 1) + " mL · " + c.fracoes.map((f) => esc(f.id) + " " + fmt(f.volume, 1) + " mL").join(", ") + ' · <span class="chip ' + (c.nivel === "ok" ? "ok" : c.nivel === "alerta" ? "av" : "al") + '">diferença ' + fmt(c.diferenca, 1) + " mL (" + fmt(c.diferencaPct, 1) + "%)</span></small>").join("<br>") + "</dd>" : "") +
+    (D.fracionamento ? "<dt>Origem</dt><dd>fração de " + esc(D.fracionamento.de) + " · " + esc(hora(D.fracionamento.em)) + "</dd>" : "") +
+    (D.crioDe ? "<dt>Origem</dt><dd>CRIO do plasma " + esc(D.crioDe) + "</dd>" : "") + (D.crio ? "<dt>CRIO</dt><dd>produção iniciada " + esc(hora(D.crio.inicio)) + (D.crio.crio ? " · CRIO " + esc(D.crio.crio) + " · plasma pobre descartado (" + esc(D.crio.ppc.confirmadoPor) + ")" : "") + "</dd>" : "") +
     (D.congelamento && D.congelamento.inicio ? "<dt>Congelamento</dt><dd>início " + esc(hora(D.congelamento.inicio)) + (D.congelamento.conferido ? " · " + (D.congelamento.conferido.congelado ? "congelado" : "ainda não congelado") + " (" + esc(hora(D.congelamento.conferido.em)) + ")" : " · conferência pendente") + "</dd>" : "") +
     (D.remessa ? "<dt>Remessa</dt><dd>" + esc(D.remessa) + "</dd>" : "") +
     (D.guarda ? "<dt>Guarda na Intensivet</dt><dd>" + esc(D.guarda.nome) + " · " + esc(hora(D.guarda.em)) + " · " + esc(D.guarda.por) + (D.guarda.minutos != null ? ' <span class="chip ' + (D.guarda.noPrazo ? "ok" : "al") + '">' + D.guarda.minutos + " min</span>" : "") + (D.guarda.fotoUrl ? ' · <a href="' + esc(D.guarda.fotoUrl) + '" target="_blank" rel="noopener">foto</a>' : D.guarda.foto ? "" : " · sem foto") + "</dd>" : "") +
@@ -270,6 +277,10 @@ async function acaoUnidade(acao, o) {
       '<div class="bts" style="margin-top:10px"><button class="btn peq ' + (acao === "descartar" ? "perigo" : "") + '" data-a="uConf" data-v="' + acao + '">Confirmar</button><button class="btn peq sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div>';
     const t = $("#uTxt"); if (t) t.focus(); return;
   }
+  if (acao === "fracionar") { S.nFr = 1; $("#uForm").innerHTML = formFracionar(u); calcFracionar(); $("#fPI").focus(); return; }
+  if (acao === "crio") { try { const r = await est("estCrioIniciar", u.id); Object.assign(u, r); toast("Plasma em produção de CRIO. Saiu do saldo de PFC."); pintar(); abrirUnidade(u.id); } catch (e) { toast(e.message, 6000); } return; }
+  if (acao === "crioCancelar") { try { const r = await est("estCrioCancelar", u.id); Object.assign(u, r); toast("Produção de CRIO cancelada."); pintar(); abrirUnidade(u.id); } catch (e) { toast(e.message, 6000); } return; }
+  if (acao === "crioConcluir") { $("#uForm").innerHTML = formCrio(u); return; }
   if (acao === "etq") { $("#uForm").innerHTML = escolherEtiqueta([u.id]); previaEtiqueta(u.id); return; }
   if (acao === "devApta" || acao === "devBloq") { a = "receberDevolucao"; o.apta = acao === "devApta"; }
   if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
@@ -277,12 +288,58 @@ async function acaoUnidade(acao, o) {
   catch (e) { toast(e.message, 6000); }
 }
 
+/* ── fracionamento por pesagem (4.2 a 4.4) ── */
+const densDe = (c) => c === "CH" ? S.P.sag.densidade : c === "CP" ? S.P.qc.densCP : S.P.qc.densPL;
+const bolsasDe = (c) => (S.P.bolsas || []).filter((b) => !(b.uso || []).length || b.uso.includes(c));
+const optBolsas = (c, pref) => bolsasDe(c).map((b, i) => '<option value="' + b.tara + '"' + ((pref ? b.id === pref : i === 0) ? " selected" : "") + ">" + esc(b.nome) + " · tara " + fmt(b.tara, 1) + " g</option>").join("");
+const campoPeso = (id, rot, ph) => "<label>" + rot + '</label><div style="display:flex;gap:8px"><input type="text" inputmode="decimal" id="' + id + '" placeholder="' + esc(ph || "g") + '" style="flex:1"><button class="btn sec peq" data-a="foto" data-v="' + id + '">Foto</button></div>';
+function formFracionar(u) {
+  const c = u.componente, mae = u.componente === "CH" ? "ch-final" : "satelite";
+  let h = '<div class="cx" style="margin-top:12px"><h2>Fracionar ' + esc(u.id) + "</h2><p><small>Sistema fechado. Pese a bolsa mãe antes, separe a fração orientado pelo peso-alvo e pese tudo no fim.</small></p>" +
+    '<label>Modelo da bolsa mãe</label><select id="fTM">' + optBolsas(c, mae) + "</select>" + campoPeso("fPI", "Peso inicial da bolsa mãe (g)", u.peso_g != null ? "último registro " + fmt(u.peso_g, 1) + " g" : "g") + '<small id="fPIv"></small><div id="fFr">';
+  for (let i = 0; i < (S.nFr || 1); i++) h += '<div class="cx" style="margin:10px 0;background:var(--areia)"><b>Fração ' + (i + 1) + '</b><label>Volume a separar (mL)</label><input type="text" inputmode="decimal" id="fA' + i + '"><label>Modelo da bolsa filha</label><select id="fT' + i + '">' + optBolsas(c, "transferencia") + '</select><div id="fAlvo' + i + '" style="font-weight:800;color:var(--vinho);margin-top:6px"></div>' + campoPeso("fP" + i, "Peso final da fração (g)") + '<label>Identificação física (opcional)</label><input type="text" id="fI' + i + '" placeholder="ex.: 11001"></div>';
+  return h + '</div><button class="btn sec peq" data-a="fMais">Mais uma fração</button>' + campoPeso("fPF", "Peso final da bolsa mãe (g)") + '<div id="fConc" style="margin-top:10px"></div><label>Observação (opcional)</label><input type="text" id="fObs"><div class="bts" style="margin-top:10px"><button class="btn" data-a="fConfirmar">Confirmar fracionamento</button><button class="btn sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div></div>';
+}
+function calcFracionar() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u || !$("#fPI")) return;
+  const d = densDe(u.componente), tM = +$("#fTM").value, pI = num($("#fPI").value), pF = num($("#fPF").value), L = S.P.limites || { fracionamentoMl: 30, criticoMl: 40 };
+  const vol = (p, t) => p == null ? null : (p - t) / d;
+  $("#fPIv").textContent = pI != null ? (pI < tM ? "Peso menor que a tara: confira o modelo." : "Volume estimado " + fmt(vol(pI, tM), 1) + " mL") : "";
+  let soma = 0, todas = true;
+  for (let i = 0; i < (S.nFr || 1); i++) {
+    const a = num($("#fA" + i).value), t = +$("#fT" + i).value, p = num($("#fP" + i).value);
+    $("#fAlvo" + i).textContent = a ? "No visor da balança: " + fmt(t + a * d, 1) + " g (bolsa filha com " + fmt(a) + " mL)" : "";
+    if (p == null) todas = false; else soma += vol(p, t);
+  }
+  if (pI == null || pF == null || !todas) { $("#fConc").innerHTML = ""; return; }
+  const vI = vol(pI, tM), vF = vol(pF, tM), dif = vI - vF - soma, pct = vI ? dif / vI * 100 : 0, cl = dif > L.criticoMl ? "al" : dif > L.fracionamentoMl ? "av" : "ok";
+  $("#fConc").innerHTML = '<dl class="dl"><dt>Volume inicial da bolsa mãe</dt><dd>' + fmt(vI, 1) + " mL</dd><dt>Volume restante na bolsa mãe</dt><dd>" + fmt(vF, 1) + " mL</dd><dt>Volume das frações</dt><dd>" + fmt(soma, 1) + ' mL</dd><dt>Diferença não conciliada</dt><dd><span class="chip ' + cl + '">' + fmt(dif, 1) + " mL (" + fmt(pct, 1) + "%)</span></dd></dl>" + (dif < 0 ? "<p><small>As pesagens indicam ganho de volume. Confira os modelos e pese de novo.</small></p>" : cl !== "ok" ? "<p><small>Diferença acima do limite de " + L.fracionamentoMl + " mL. Será registrada e o CVH será avisado.</small></p>" : "");
+}
+async function confirmarFracionar() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  const fr = []; for (let i = 0; i < (S.nFr || 1); i++) fr.push({ peso: $("#fP" + i).value, tara: $("#fT" + i).value, identificacao: $("#fI" + i).value, alvo: $("#fA" + i).value });
+  const r = await est("estFracionar", u.id, { pesoInicial: $("#fPI").value, taraMae: $("#fTM").value, pesoFinalMae: $("#fPF").value, fracoes: fr, obs: $("#fObs").value });
+  Object.assign(u, r.mae); S.uni = S.uni.concat(r.filhas); pintar(); abrirUnidade(u.id);
+  $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px"><h2>Fracionamento registrado</h2><p>' + r.filhas.map((f) => esc(f.id) + " · " + fmt(f.volume_ml, 1) + " mL").join("<br>") + "</p><p>Bolsa mãe com " + fmt(r.mae.volume_ml, 1) + " mL. Diferença " + fmt(r.conciliacao.diferenca, 1) + " mL.</p></div>" + escolherEtiqueta([u.id].concat(r.filhas.map((f) => f.id)));
+  previaEtiqueta(r.filhas[0].id); toast("Fracionamento registrado.");
+}
+function formCrio(u) {
+  return '<div class="cx" style="margin-top:12px"><h2>Concluir CRIO de ' + esc(u.id) + '</h2><label>Modelo da bolsa do CRIO</label><select id="cTara">' + optBolsas("CRIO", "satelite") + "</select>" + campoPeso("cPeso", "Peso do CRIO (g)") + '<small id="cVol"></small>' + campoPeso("cPPC", "Peso do plasma pobre, antes do descarte (opcional)") +
+    '<label>Identificação física do CRIO (opcional)</label><input type="text" id="cId"><label class="op" style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-weight:600"><input type="checkbox" id="cDesc"> O plasma pobre em crioprecipitado foi descartado.</label><div class="bts" style="margin-top:10px"><button class="btn" data-a="cConfirmar">Registrar o CRIO</button></div><p><small>Depois, na ficha do CRIO, toque em Iniciar congelamento. O aviso Verificar CRIO aparece 6 horas depois.</small></p></div>';
+}
+async function confirmarCrio() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  const r = await est("estCrioConcluir", u.id, { pesoCrio: $("#cPeso").value, taraCrio: $("#cTara").value, pesoPPC: $("#cPPC").value, identificacao: $("#cId").value, ppcDescartado: $("#cDesc").checked });
+  Object.assign(u, r.pfc); S.uni.push(r.crio); pintar(); abrirUnidade(r.crio.id); toast("CRIO " + r.crio.id + " registrado com " + fmt(r.crio.volume_ml, 1) + " mL.", 6000);
+}
+
 /* ── telas ── */
 function pendencias() {
   const L = [];
   aguardando().slice(0, 30).forEach((d) => L.push({ n: 1, t: "Coleta " + d.numero + " aguardando o peso do conjunto de ST", s: (d.nome || "") + " · " + br(d.data), a: "prod", v: d.numero.replace(/\s/g, "") }));
   S.prod.filter((p) => p.etapa !== "concluida").forEach((p) => L.push({ n: 1, t: "Produção da coleta " + p.coleta + " em andamento", s: (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], a: "prod", v: p.coleta }));
-  S.uni.filter(congPendente).forEach((u) => L.push({ n: 0, t: "Verificar congelamento do plasma " + u.id, s: "iniciado " + hora(u.dados.congelamento.inicio), a: "uni", v: u.id }));
+  S.uni.filter(congPendente).forEach((u) => L.push({ n: 0, t: (u.componente === "CRIO" ? "Verificar CRIO " : "Verificar congelamento do plasma ") + u.id, s: "congelamento iniciado " + hora(u.dados.congelamento.inicio) + (u.componente === "CRIO" ? " · 6 horas completas " + hora(Date.parse(u.dados.congelamento.inicio) + 216e5) : ""), a: "uni", v: u.id }));
+  S.uni.filter((u) => u.situacao === "producao_crio").forEach((u) => L.push({ n: 1, t: "CRIO em produção a partir de " + u.id, s: "iniciado " + hora(u.dados.crio.inicio), a: "uni", v: u.id }));
   S.uni.forEach((u) => { const al = alertaValidade(u); if (al && al.n <= 5) L.push({ n: al.n <= 1 ? 0 : 2, t: u.id + " · " + al.t, s: ROT_SIT[u.situacao] + " · " + (u.local || ""), a: "uni", v: u.id }); });
   S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
   return L.sort((a, b) => a.n - b.n);
@@ -300,7 +357,14 @@ function telaProd() {
   const it = (c, t, s, ch) => '<div class="lin"><div class="t"><b>' + esc(t) + "</b><small>" + esc(s) + '</small></div><button class="btn peq" data-a="prod" data-v="' + esc(c) + '">' + ch + "</button></div>";
   return '<div class="duas"><div class="cx"><h2>Em produção</h2>' + (E.length ? E.map((p) => { const d = doacao(p.coleta) || {}; return it(p.coleta, "Coleta " + p.coleta + " · " + (d.nome || animalDe(p.animal_id).nome || ""), (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], "Continuar"); }).join("") : '<p class="vazio">Nenhuma produção em andamento.</p>') + "</div>" +
     '<div class="cx"><h2>Coletas aguardando o peso do ST</h2><p class="nota">Fichas de doação com coleta a partir de 20/11. Toque para registrar o peso do conjunto completo.</p>' + (A.length ? A.map((d) => it(d.numero.replace(/\s/g, ""), "Coleta " + d.numero + " · " + (d.nome || ""), br(d.data) + (d.volume ? " · " + d.volume + " mL" : ""), "Registrar peso")).join("") : '<p class="vazio">Nenhuma coleta aguardando.</p>') + "</div></div>" +
-    (C.length ? '<div class="cx"><h2>Concluídas</h2>' + C.map((p) => it(p.coleta, "Coleta " + p.coleta, "concluída " + hora(p.atualizado), "Ver")).join("") + "</div>" : "");
+    (C.length ? '<div class="cx"><h2>Concluídas</h2>' + C.map((p) => it(p.coleta, "Coleta " + p.coleta, "concluída " + hora(p.atualizado), "Ver")).join("") + "</div>" : "") + (S.admin ? cadastroBolsas() : "");
+}
+// 4.1 e 5.1: modelos de bolsa com tara e limites de diferença (só administrador altera)
+function cadastroBolsas() {
+  const B = S.P.bolsas || [], L = S.P.limites || {}, comps = ["CH", "CP", "PFC", "CRIO", "PPC"];
+  return '<div class="cx"><h2>Modelos de bolsa e taras</h2><p class="nota">O conjunto que vai à balança em cada etapa. Confira as taras com a balança do CVH.</p>' + B.concat([{ nome: "", tara: "", uso: [] }]).map((b, i) =>
+    '<div class="lin" style="flex-wrap:wrap;gap:6px" data-bolsa="' + i + '"><input type="text" class="bN" value="' + esc(b.nome) + '" placeholder="Novo modelo" style="flex:2;min-width:180px"><input type="text" inputmode="decimal" class="bT" value="' + esc(b.tara) + '" placeholder="tara g" style="width:90px;flex:0 0 90px"><input type="hidden" class="bI" value="' + esc(b.id || "") + '"><span style="display:flex;gap:6px;flex-wrap:wrap">' + comps.map((c) => '<label style="font-size:12.5px;font-weight:600"><input type="checkbox" class="bU" value="' + c + '"' + ((b.uso || []).includes(c) ? " checked" : "") + "> " + c + "</label>").join("") + "</span></div>").join("") +
+    '<h2 style="margin-top:14px">Diferença no fracionamento</h2><div style="display:flex;gap:10px;flex-wrap:wrap"><label>Alerta acima de (mL)<input type="text" inputmode="decimal" id="limA" value="' + esc(L.fracionamentoMl) + '"></label><label>Crítico acima de (mL)<input type="text" inputmode="decimal" id="limC" value="' + esc(L.criticoMl) + '"></label><label>Ganho tolerado (mL)<input type="text" inputmode="decimal" id="limG" value="' + esc(L.ganhoMl) + '"></label></div><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="bolsasSalvar">Salvar</button></div></div>';
 }
 function telaEstoque() {
   const f = S.f, tipoDe = (u) => tipoTxt(animalDe(u.animal_id));
@@ -573,6 +637,9 @@ document.addEventListener("click", async (ev) => {
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
   if (a === "camera") return abrirCamera();
+  if (a === "bolsasSalvar") { try { const bolsas = [...document.querySelectorAll("[data-bolsa]")].map((r) => ({ id: r.querySelector(".bI").value, nome: r.querySelector(".bN").value, tara: num(r.querySelector(".bT").value), uso: [...r.querySelectorAll(".bU:checked")].map((x) => x.value) })).filter((x) => x.nome.trim() && x.tara != null); S.P = await est("estParametros", { bolsas, limites: { fracionamentoMl: num($("#limA").value), criticoMl: num($("#limC").value), ganhoMl: num($("#limG").value) } }); toast("Salvo."); pintar(); } catch (e) { toast(e.message, 6000); } return; }
+  if (a === "fMais") { const v0 = {}; document.querySelectorAll("#uForm input, #uForm select").forEach((x) => { v0[x.id] = x.value; }); S.nFr = (S.nFr || 1) + 1; const u = S.uni.find((x) => x.id === S.uniAberta); $("#uForm").innerHTML = formFracionar(u); Object.entries(v0).forEach(([k, val]) => { const el = document.getElementById(k); if (el) el.value = val; }); calcFracionar(); return; }
+  if (a === "fConfirmar" || a === "cConfirmar") { try { b.disabled = true; await (a === "fConfirmar" ? confirmarFracionar() : confirmarCrio()); } catch (e) { toast(e.message || String(e), 7000); } finally { b.disabled = false; } return; }
   if (a === "ctSalvar") { try { const r = await est("estUnidadeAcao", v, "contato", { notas: $("#ctNotas").value }); const u = S.uni.find((x) => x.id === v); if (u) Object.assign(u, r); toast("Salvo."); abrirUnidade(v); } catch (e) { toast(e.message, 6000); } return; }
   if (a === "ctCopiar") { const u = S.uni.find((x) => x.id === v); if (!u) return; const t = textoRequisicao(Object.assign({}, u, { dados: Object.assign({}, u.dados, { contatoCVH: { notas: ($("#ctNotas") || {}).value || "" } }) })); try { await navigator.clipboard.writeText(t); toast("Dados copiados. Cole no formulário da requisição.", 5000); } catch (e) { $("#ctNotas").value += "\n\n" + t; toast("Não consegui copiar sozinho. Os dados foram para o campo; selecione e copie.", 7000); } return; }
   if (a === "rem") return abrirRem(v);
@@ -637,6 +704,8 @@ async function lerPesoFoto(file) {
   } catch (e) { toast(e.message || String(e), 6000); }
 }
 $("#cam").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; lerPesoFoto(f); });
+document.addEventListener("input", (ev) => { if (/^f(PI|PF|A\d|P\d)$/.test(ev.target.id)) calcFracionar(); if (ev.target.id === "cPeso") { const p = num(ev.target.value), t = +$("#cTara").value; $("#cVol").textContent = p != null && p >= t ? "Volume estimado " + fmt((p - t) / S.P.qc.densPL, 1) + " mL" : ""; } });
+document.addEventListener("change", (ev) => { if (/^f(TM|T\d)$/.test(ev.target.id)) calcFracionar(); });
 document.addEventListener("input", (ev) => { if (["pPesoCH", "pHtCH"].includes(ev.target.id) && S.prodAberta) { const p = S.prod.find((x) => x.coleta === S.prodAberta); if (p) { p.dados = Object.assign({}, p.dados, { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value) }); const y = $("#gvC").scrollTop, el = ev.target.id, pos = ev.target.selectionStart; abrirProducao(S.prodAberta); $("#gvC").scrollTop = y; const n = $("#" + el); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } } });
 window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
 
