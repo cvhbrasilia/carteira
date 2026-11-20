@@ -26,7 +26,7 @@ button{cursor:pointer}
 .cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
 .cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
 .nota{font-size:13px;color:var(--tinta2);margin:4px 0 10px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:12px}
 .kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
 .kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
 .kpi span{font-size:12.5px;color:var(--tinta2)}
@@ -79,6 +79,9 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 #camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
 #camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
 #camE .flash.on{opacity:1;transition:none}
+.unid.fr{margin-left:28px;width:calc(100% - 28px);background:#FBF3E8;border-left:3px solid var(--cara);border-radius:0 10px 10px 0;padding-left:10px}
+.unid.fr .co{background:#C49A6C!important;width:38px;height:38px;font-size:11.5px}
+.grupo-t{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta2);margin:12px 0 2px}
 </style></head>
 <body>
 <div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
@@ -209,10 +212,26 @@ async function concluirProd(coleta) {
 }
 
 /* ── unidade ── */
-function linhaUnidade(u) {
+function linhaUnidade(u, fr) {
   const a = animalDe(u.animal_id), al = alertaValidade(u);
-  return '<button class="unid" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + "</b><small>" + esc([a.nome, tipoTxt(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
+  return '<button class="unid' + (fr ? " fr" : "") + '" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + "</b><small>" + esc([a.nome, tipoTxt(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
     (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
+}
+// frações logo abaixo da bolsa mãe (sub-linha em outra cor); se a mãe não está na lista, a fração aparece sozinha
+function listaAninhada(L) {
+  const ids = new Set(L.map((u) => u.id)), raiz = (u) => { let m = u; const vis = new Set(); while (m.mae_id && ids.has(m.mae_id) && !vis.has(m.id)) { vis.add(m.id); m = L.find((x) => x.id === m.mae_id); } return m; };
+  const filhos = {}; L.forEach((u) => { const r = raiz(u); if (r.id !== u.id) (filhos[r.id] = filhos[r.id] || []).push(u); });
+  return L.filter((u) => raiz(u).id === u.id).map((u) => linhaUnidade(u) + (filhos[u.id] || []).sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true })).map((f) => linhaUnidade(f, true)).join("")).join("");
+}
+const ORDEM_COMP = ["CH", "PFC", "CRIO", "CP", "PPC"];
+function porComponente(L) {
+  return ORDEM_COMP.concat([...new Set(L.map((u) => u.componente))].filter((c) => !ORDEM_COMP.includes(c))).map((c) => { const G = L.filter((u) => u.componente === c).sort((a, b) => String(a.validade || "9").localeCompare(String(b.validade || "9"))); return G.length ? '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + " · " + G.length + (G.length === 1 ? " bolsa" : " bolsas") + "</div>" + listaAninhada(G) : ""; }).join("");
+}
+function kpis() {
+  const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && !["utilizada", "descartada"].includes(u.situacao)), disp = cvh.filter((u) => u.situacao === "disponivel"), noInt = S.uni.filter((u) => u.local === "Intensivet" && ["disponivel", "reservada"].includes(u.situacao)).length;
+  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
+  return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis no CVH", "filtro", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis no CVH", "filtro", "PFC") + k(disp.filter((u) => u.componente === "CRIO").length, "CRIO disponíveis no CVH", "filtro", "CRIO") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis no CVH", "filtro", "CP") +
+    k(cvh.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(cvh.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(noInt, "Na Intensivet", "aba", "int") + k(aguardando().length + S.prod.filter((p) => p.etapa !== "concluida").length, "Coletas para produzir", "aba", "prod") + "</div>";
 }
 function abrirUnidade(id) {
   const u = S.uni.find((x) => x.id === id); if (!u) return;
@@ -345,12 +364,20 @@ function pendencias() {
   return L.sort((a, b) => a.n - b.n);
 }
 function telaHoje() {
-  const at = S.uni.filter((u) => !["utilizada", "descartada"].includes(u.situacao)), disp = at.filter((u) => u.situacao === "disponivel");
-  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
-  const P = pendencias();
-  return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis", "filtro", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis", "filtro", "PFC") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis", "filtro", "CP") +
-    k(at.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(at.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(aguardando().length + S.prod.filter((p) => p.etapa !== "concluida").length, "Coletas para produzir", "aba", "prod") + "</div>" +
-    '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente agora.</p>') + "</div>";
+  const P = pendencias(), vivas = ["disponivel", "reservada"];
+  const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && vivas.includes(u.situacao)), intv = S.uni.filter((u) => u.local === "Intensivet" && vivas.concat(["bloqueada", "retirada"]).includes(u.situacao)), caminho = S.uni.filter((u) => u.situacao === "transito");
+  return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente agora.</p>') + "</div>" +
+    '<div class="duas"><div class="cx"><h2>Bolsas disponíveis no CVH · ' + cvh.length + "</h2>" + (cvh.length ? porComponente(cvh) : '<p class="vazio">Nenhuma bolsa disponível.</p>') + "</div>" +
+    '<div class="cx"><h2>Bolsas na Intensivet · ' + intv.length + "</h2>" + (intv.length ? porComponente(intv) : '<p class="vazio">Nenhuma bolsa na Intensivet.</p>') + (caminho.length ? '<div class="grupo-t">Em trânsito · ' + caminho.length + "</div>" + listaAninhada(caminho) : "") + "</div></div>";
+}
+// fracionamento: escolher a bolsa, fracionar pela pesagem e imprimir as etiquetas novas
+function telaFrac() {
+  const ok = S.uni.filter((u) => (u.local || "CVH") === "CVH" && ["disponivel", "reservada", "quarentena"].includes(u.situacao));
+  const feitos = S.uni.filter((u) => (u.dados || {}).fracionamentos && u.dados.fracionamentos.length).flatMap((u) => u.dados.fracionamentos.map((c) => ({ u, c }))).sort((a, b) => String(b.c.em).localeCompare(String(a.c.em))).slice(0, 30);
+  const lin = (u, fr) => '<div class="lin' + (fr ? '" style="margin-left:28px;background:#FBF3E8;border-left:3px solid var(--cara);padding-left:10px' : "") + '"><div class="t"><b>' + esc(u.id) + "</b><small>" + esc([(animalDe(u.animal_id) || {}).nome, tipoTxt(animalDe(u.animal_id)), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "", "validade " + br(String(u.validade || "").slice(0, 10)), ROT_SIT[u.situacao]].filter(Boolean).join(" · ")) + '</small></div><button class="btn peq" data-a="fracAbrir" data-v="' + esc(u.id) + '">Fracionar</button></div>';
+  const grupos = ORDEM_COMP.map((c) => { const G = ok.filter((u) => u.componente === c).sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true })); if (!G.length) return ""; const ids = new Set(G.map((u) => u.id)); return '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + "</div>" + G.filter((u) => !u.mae_id || !ids.has(u.mae_id)).map((u) => lin(u) + G.filter((f) => f.mae_id === u.id).map((f) => lin(f, true)).join("")).join(""); }).join("");
+  return '<div class="cx"><h2>Fracionar uma bolsa</h2><p class="nota">Sistema fechado. Escolha a bolsa: o app pede a pesagem da mãe, mostra o peso-alvo da fração, confere a diferença e gera as etiquetas novas.</p>' + (grupos || '<p class="vazio">Nenhuma bolsa no CVH.</p>') + "</div>" +
+    '<div class="cx"><h2>Últimos fracionamentos</h2>' + (feitos.length ? feitos.map(({ u, c }) => '<div class="lin"><div class="t"><b>' + esc(u.id) + " → " + esc(c.fracoes.map((f) => f.id).join(", ")) + "</b><small>" + esc(hora(c.em)) + " · " + esc(c.por) + " · inicial " + fmt(c.volumeInicial, 1) + " mL · restante " + fmt(c.volumeRestante, 1) + " mL · frações " + c.fracoes.map((f) => fmt(f.volume, 1) + " mL").join(", ") + '</small><small><span class="chip ' + (c.nivel === "ok" ? "ok" : c.nivel === "alerta" ? "av" : "al") + '">diferença ' + fmt(c.diferenca, 1) + " mL (" + fmt(c.diferencaPct, 1) + '%)</span></small></div><button class="btn sec peq" data-a="fracEtq" data-v="' + esc([u.id].concat(c.fracoes.map((f) => f.id)).join("|")) + '">Etiquetas</button></div>').join("") + '<div id="fracEtqBox"></div>' : '<p class="vazio">Nenhum fracionamento ainda.</p>') + "</div>";
 }
 function telaProd() {
   const A = aguardando(), E = S.prod.filter((p) => p.etapa !== "concluida"), C = S.prod.filter((p) => p.etapa === "concluida").slice(0, 15);
@@ -377,7 +404,7 @@ function telaEstoque() {
   return '<div class="filtros">' + fb("comp", "", "Todos") + fb("comp", "CH", "CH") + fb("comp", "CP", "CP") + fb("comp", "PFC", "PFC") + fb("comp", "CRIO", "CRIO") + "</div>" +
     '<div class="filtros">' + fb("tipo", "", "Qualquer tipagem") + fb("tipo", "DEA1-", "DEA 1 −") + fb("tipo", "DEA1+", "DEA 1 +") + fb("tipo", "DAL-", "DAL −") + fb("tipo", "DAL+", "DAL +") + "</div>" +
     '<div class="filtros">' + fb("sit", "ativas", "No estoque") + fb("sit", "disponivel", "Disponíveis") + fb("sit", "reservada", "Reservadas") + fb("sit", "quarentena", "Aguardando liberação") + fb("sit", "bloqueada", "Bloqueadas") + fb("sit", "todas", "Todas, inclusive as que saíram") + "</div>" +
-    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + (L.length ? ' <button class="btn sec peq" style="float:right" data-a="etqLista" data-v="' + esc(L.map((u) => u.id).join("|")) + '">Etiquetas</button>' : "") + '</h2><div id="etqBox"></div>' + (L.length ? L.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
+    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + (L.length ? ' <button class="btn sec peq" style="float:right" data-a="etqLista" data-v="' + esc(L.map((u) => u.id).join("|")) + '">Etiquetas</button>' : "") + '</h2><div id="etqBox"></div>' + (L.length ? listaAninhada(L) : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
 }
 /* ── transporte (item 23): atendimentos, avisos ao motoboy e Uber ── */
 const ROT_AT = { aberto: "Aberto", possivel: "Possível venda", autorizado: "Autorizado · link de pagamento solicitado", pago: "Pagamento confirmado", testes: "Testes concluídos · laudo em elaboração", fracionamento: "Fracionamento da bolsa", preparo: "Em preparação para envio", pronta: "Embalagem pronta para retirada", retirada: "Retirada · em entrega", entregue: "Entregue", concluido: "Concluído", cancelado: "Cancelado",
@@ -551,8 +578,8 @@ function telaHist() {
 function pintar() {
   const nP = pendencias().filter((x) => x.n <= 1).length;
   const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
-  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
-    ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, tr: telaTransporte, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
+  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div>' + kpis() + '<nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("frac", "Fracionamento") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
+    ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, tr: telaTransporte, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
 }
 
 /* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
@@ -750,6 +777,8 @@ document.addEventListener("click", async (ev) => {
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
   if (a === "camera") return abrirCamera();
+  if (a === "fracAbrir") { abrirUnidade(v); return acaoUnidade("fracionar"); }
+  if (a === "fracEtq") { const el = $("#fracEtqBox"); if (el) { el.innerHTML = escolherEtiqueta(v.split("|")); previaEtiqueta(v.split("|")[1] || v.split("|")[0]); el.scrollIntoView({ block: "nearest" }); } return; }
   if (a === "eqNovo" || a === "eqEditar") { const e = S.eq.find((x) => x.id === v) || { id: "", nome: "", local: "CVH", aceita: [], ativo: true }; $("#eqQrBox").innerHTML = '<div class="cx" style="margin-top:10px"><h2>' + (e.id ? "Editar " + esc(e.id) : "Novo equipamento") + '</h2><label>Código do QR (letras, números e hífen)</label><input type="text" id="eqId" value="' + esc(e.id) + '"' + (e.id ? " readonly" : ' placeholder="ex.: CVH-GEL-01"') + '><label>Nome</label><input type="text" id="eqNome" value="' + esc(e.nome) + '" placeholder="ex.: Câmara de conservação de CH"><label>Local</label><input type="text" id="eqLocal" value="' + esc(e.local) + '" placeholder="CVH ou Intensivet"><label>Hemocomponentes que guarda</label><div style="display:flex;gap:10px;flex-wrap:wrap">' + ["CH", "PFC", "CRIO", "PPC", "CP"].map((c) => '<label style="font-weight:600"><input type="checkbox" class="eqC" value="' + c + '"' + ((e.aceita || []).includes(c) ? " checked" : "") + "> " + c + "</label>").join("") + '</div><label style="font-weight:600"><input type="checkbox" id="eqAtivo"' + (e.ativo !== false ? " checked" : "") + '> Ativo</label><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="eqSalvar">Salvar</button></div></div>'; return; }
   if (a === "eqSalvar") { try { b.disabled = true; S.eq = await est("estEquipamentoSalvar", { id: $("#eqId").value, nome: $("#eqNome").value, local: $("#eqLocal").value.trim() || "CVH", aceita: [...document.querySelectorAll(".eqC:checked")].map((x) => x.value), ativo: $("#eqAtivo").checked }); toast("Equipamento salvo. Imprima o QR e cole no equipamento.", 6000); pintar(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } return; }
   if (a === "eqQR1") { $("#eqQrBox").innerHTML = escolherQr("equip", v); return; }
