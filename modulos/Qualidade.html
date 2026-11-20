@@ -678,17 +678,25 @@ function doacaoDoHemograma(o) {
 function incoerente(o) { const ht = o.hemo.HCT; if (ht == null) return false; return (["ST", "CH", "CHD"].includes(o.componente) && ht < 2) || (["CP", "PFC", "PC", "PIC", "CRIO"].includes(o.componente) && ht > 15); }
 function sugerirTipo(h) { const ht = h.HCT, p = h.PLQ; if (ht != null && ht < 2) return p != null && p > 300 ? "CP" : "PFC"; if (ht != null && ht >= 55) return "CH"; return "DOA"; }
 // PDFs da pasta "exames idexx" do Drive que o porteiro já mandou para o app (bolsas: ST, CH, CP, PFC)
-async function pdfsRecebidos(bt) {
+async function pdfsRecebidos(bt, auto) {
   if (bt) bt.disabled = true;
   try {
     const L = await ponte("labQualidade");
-    if (!L.length) return toast("Nenhum PDF novo da IDEXX para o controle de qualidade.");
+    if (!L.length) { if (!auto) toast("Nenhum PDF novo da IDEXX para o controle de qualidade."); return; }
     const fs = [];
     for (let k = 0; k < L.length; k++) {
-      toast("Baixando " + (k + 1) + " de " + L.length + "…");
+      toast((auto ? "Recebendo os PDFs da IDEXX: " : "Baixando ") + (k + 1) + " de " + L.length + "…");
       try { const r = await ponte("arquivoLab", L[k].arquivoId), u8 = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0)); const f = new File([u8], L[k].nome || r.nome || "idexx.pdf", { type: "application/pdf" }); f.labId = L[k].labId; fs.push(f); } catch (_) {}
     }
     if (fs.length) await lerArquivos(fs);
+    // os que já estavam no sistema saem da lista de recebidos
+    const ja = LOTE.filter((o) => o.grupo === "ja" && o.file && o.file.labId).map((o) => o.file.labId); if (ja.length) ponte("labFeito", ja).catch(() => {});
+    if (auto) {
+      const marcados = LOTE.filter((o) => o.usar && o.bolsa).length, conferir = LOTE.filter((o) => o.grupo === "conferir").length;
+      if (marcados) await salvarLote({ disabled: false });
+      else if (!conferir) { fecharGaveta(); LOTE = []; }
+      if (conferir) toast(conferir + (conferir === 1 ? " PDF da IDEXX precisa" : " PDFs da IDEXX precisam") + " de conferência (tipo de hemocomponente).", 7000);
+    }
   } catch (e) { toast(e.message || String(e), 6000); } finally { if (bt) bt.disabled = false; }
 }
 async function lerArquivos(fs) {
@@ -1116,6 +1124,8 @@ async function iniciar() {
     if (!r.registros.length) { const im = await qc("qcImportar", SEMENTE, SEMENTE_SAG); if (im.importados || im.sag) { toast("Entraram " + im.importados + " análises dos PDFs e do formulário de validação" + (im.sag ? " e a bolsa 573-8 no estudo de SAG" : "") + ".", 6000); r = await qc("qcDados"); } }
     S.P = r.params; S.padrao = r.padrao; S.regs = r.registros; S.sag = r.sag; S.sagP = r.sagParams; S.admin = !!r.podeAjustar || S.admin;
     pintar();
+    // PDFs de bolsas que chegaram da pasta da IDEXX entram sozinhos (sem laudo do CVH); só o que precisa de conferência fica para você
+    pdfsRecebidos(null, true).catch(() => {});
   } catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o controle de qualidade. ' + esc(e.message || String(e)) + "</div>"; }
 }
 iniciar();
