@@ -4923,10 +4923,13 @@ const isoLab = x => (x.origem === 'idexx' && idexxNome(x.nomeArquivo).data) || (
 function laudoJaFeito(x, an) {
   if (!an) return null; const d = isoLab(x); if (!d) return null;
   const perto = (a, n) => Math.abs((Date.parse(a) - Date.parse(d)) / 864e5) <= n;
+  // o histórico laboratorial do animal já inclui exames até esta data
+  const hist = regsDe(an.id).find(r => r.tipo === 'historico' && r.excluido !== '1' && x.origem !== 'tecsa' && Date.parse(r.data) >= Date.parse(d) - 864e5);
   return laudosDe(an.id).find(r => { const D = r.dados || {}, X = D.exame || {};
+    if (x.codigo && String(X.doacao || '').replace(/\s/g, '') === x.codigo && ((x.origem === 'tecsa' && D.tipoLaudo === 'tecsa') || (x.origem !== 'tecsa' && D.tipoLaudo === 'idexx'))) return true;
     if (x.origem === 'tecsa') return D.tipoLaudo === 'tecsa' && ((x.codigo && String(X.doacao || '').replace(/\s/g, '') === x.codigo) || perto(r.data, 3));
     if (x.origem === 'citopet') return D.tipoLaudo === 'idexx' && X.labNome === 'Citopet' && (String(X.labNumero || '').indexOf(x.numero) >= 0 || perto(r.data, 1));
-    return D.tipoLaudo === 'idexx' && !X.labNome && perto(r.data, 1); }) || null;
+    return D.tipoLaudo === 'idexx' && !X.labNome && perto(r.data, 1); }) || hist || null;
 }
 function animalDoLab(x) {
   if (x.animalId && animalDe(x.animalId)) return animalDe(x.animalId);

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Estoque CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 14px 90px}
+.topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.topo h1{margin:0;font-size:22px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12px;font-weight:500;color:var(--tinta2)}
+.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:7px 11px;font-size:13.5px;border-radius:10px}
+.btn.grande{width:100%;padding:16px;font-size:17px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px}
+.abas{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--areia2);margin-bottom:14px;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas button{border:0;background:none;padding:10px 12px;font-weight:700;color:var(--tinta2);border-bottom:3px solid transparent;white-space:nowrap}
+.abas button.on{color:var(--vinho);border-color:var(--vinho)}
+.abas b{background:var(--verm);color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;margin-left:4px}
+.cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
+.cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
+.nota{font-size:13px;color:var(--tinta2);margin:4px 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
+.kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--tinta2)}
+.lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
+.lin:first-of-type{border-top:0}
+.lin .t{min-width:0}
+.lin .t b{display:block;color:var(--vinho)}
+.lin .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--areia);color:var(--vinho);white-space:nowrap}
+.chip.ok{background:#E3EFE6;color:var(--ok)}.chip.al{background:#F6DADA;color:#8A1D14}.chip.av{background:#FBF0DC;color:#7A4E0B}.chip.ne{background:#f1ece6;color:#7a6a62}
+.unid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:10px 4px;border-top:1px solid #f0e8df}
+.unid .co{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--vinho)}
+.unid .co.CP{background:#C49A6C}.unid .co.PFC,.unid .co.CRIO,.unid .co.PPC{background:#A83D3D}
+.unid .t b{color:var(--vinho)}.unid .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.unid .d{text-align:right}.unid .d small{display:block;color:var(--tinta2);font-size:12px}
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.filtros button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--tinta2)}
+.filtros button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.passos{display:flex;gap:4px;margin:8px 0 14px;flex-wrap:wrap}
+.passos span{flex:1;min-width:70px;font-size:11px;text-align:center;padding:6px 4px;border-radius:8px;background:#f3ede6;color:#9a8a80;font-weight:700}
+.passos span.feito{background:#E3EFE6;color:var(--ok)}.passos span.agora{background:var(--vinho);color:#fff}
+label{display:block;font-size:13px;color:var(--tinta2);margin:8px 0 4px}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:12px;border:1px solid var(--areia2);border-radius:10px;background:#fff;color:var(--tinta);font-size:17px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.grade{grid-template-columns:1fr}}
+.calc{background:#FFFBF5;border:1px dashed var(--bege);border-radius:12px;padding:12px;margin:10px 0}
+.calc b.big{font-size:26px;color:var(--vinho)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:6px 0 12px}
+.dl dt{color:var(--tinta2)}.dl dd{margin:0;font-weight:600}
+.ev{font-size:13px;border-left:3px solid var(--areia2);padding:3px 0 3px 10px;margin:6px 0}
+.ev small{color:var(--tinta2)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#veu.on{opacity:1;pointer-events:auto}
+#gaveta{position:fixed;left:0;right:0;bottom:0;max-height:88vh;background:var(--papel);border-radius:18px 18px 0 0;transform:translateY(105%);transition:transform .25s;z-index:21;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.18)}
+#gaveta.on{transform:none}
+@media (min-width:900px){#gaveta{left:auto;top:0;bottom:0;width:520px;max-height:none;border-radius:18px 0 0 18px;transform:translateX(105%)}#gaveta.on{transform:none}}
+.gv-t{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
+.gv-t h3{margin:0;color:var(--vinho);font-size:18px}
+.gv-t button{border:0;background:#fff;border-radius:999px;width:40px;height:40px;font-size:22px;color:var(--vinho);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+#gvC{overflow:auto;padding:0 16px 30px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
+.vazio{color:var(--tinta2);font-size:14px;padding:6px 0}
+@media (min-width:1000px){.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}}
+</style></head>
+<body>
+<div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
+<div id="veu"></div>
+<aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
+<script>
+/* Estoque Inteligente CVH · fase 1: produção na bancada, estoque, ficha da bolsa e pendências do dia */
+const CTX = window.CVH_CTX || {};
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const p2 = (n) => String(n).padStart(2, "0");
+const hojeISO = () => { const d = new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); };
+const br = (d) => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(d || "")); return m ? m[3] + "/" + m[2] + "/" + m[1] : (d || ""); };
+const hora = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const num = (x) => { if (x == null || x === "") return null; const n = parseFloat(String(x).replace(/\s/g, "").replace(",", ".")); return isFinite(n) ? n : null; };
+const fmt = (v, c = 0) => v == null || !isFinite(v) ? "" : (+v).toLocaleString("pt-BR", { maximumFractionDigits: c, minimumFractionDigits: c });
+const dias = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+const somaDias = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); };
+const ponte = (metodo, ...args) => {
+  let f = null; try { f = window.parent.CVH_PONTE; } catch (e) { f = null; }
+  if (typeof f !== "function") return Promise.reject(new Error("Abra o estoque pelo Painel CVH."));
+  const copia = (r) => { try { return r == null ? r : JSON.parse(JSON.stringify(r)); } catch (e) { return r; } };
+  return new Promise((ok, erro) => { try { Promise.resolve(f(metodo, JSON.parse(JSON.stringify(args)))).then((r) => ok(copia(r)), (e) => erro(new Error((e && e.message) || String(e)))); } catch (e) { erro(e); } });
+};
+const est = (fn, ...a) => ponte("est", fn, ...a);
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 3500); }
+function abrirGaveta(t, h) { $("#gvT").textContent = t; $("#gvC").innerHTML = h; $("#gvC").scrollTop = 0; $("#gaveta").classList.add("on"); $("#veu").classList.add("on"); $("#gaveta").setAttribute("aria-hidden", "false"); }
+function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); $("#gaveta").setAttribute("aria-hidden", "true"); S.prodAberta = null; S.uniAberta = null; }
+// deslizar a gaveta para baixo no celular fecha
+(() => { let y0 = null; const g = $("#gaveta"); g.addEventListener("touchstart", (e) => { y0 = $("#gvC").scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); g.addEventListener("touchend", (e) => { if (y0 != null && e.changedTouches[0].clientY - y0 > 90) fecharGaveta(); y0 = null; }, { passive: true }); })();
+
+/* ── estado ── */
+const S = { aba: "hoje", prod: [], uni: [], ev: [], P: null, admin: !!CTX.admin, f: { comp: "", tipo: "", sit: "ativas" }, prodAberta: null, uniAberta: null };
+const DOA = (CTX.doacoes || []).filter((d) => d.numero);
+const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
+const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;
+const animalDe = (id) => ANI[id] || {};
+const tipoTxt = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const ROT_SIT = { quarentena: "Aguardando liberação", disponivel: "Disponível", reservada: "Reservada", transito: "Em trânsito", utilizada: "Utilizada", descartada: "Descartada", bloqueada: "Bloqueada" };
+const COR_SIT = { quarentena: "av", disponivel: "ok", reservada: "", transito: "av", utilizada: "ne", descartada: "ne", bloqueada: "al" };
+const NOME_COMP = { CH: "CH com SAG", CP: "Concentrado de plaquetas", PFC: "Plasma fresco congelado", CRIO: "Crioprecipitado", PPC: "Plasma pobre em crio" };
+const ETAPAS = [["peso_st", "Peso do ST"], ["centrifugacao", "Centrifugação"], ["ch_sem_sag", "CH sem SAG"], ["ch_com_sag", "CH com SAG"], ["cp_pfc", "CP e PFC"], ["concluida", "Concluída"]];
+
+// validade: avisos de 10, 5 e 1 dia, no dia e depois da data impressa
+function alertaValidade(u) {
+  if (!u.validade || ["utilizada", "descartada"].includes(u.situacao)) return null;
+  const n = dias(hojeISO(), String(u.validade).slice(0, 10));
+  if (n < 0) return { t: "DATA DA ETIQUETA VENCIDA", c: "al", n };
+  if (n === 0) return { t: "VENCE HOJE", c: "al", n };
+  if (n === 1) return { t: "VENCE AMANHÃ", c: "al", n };
+  if (n <= 5) return { t: "Vence em " + n + " dias", c: "av", n };
+  if (n <= 10) return { t: "Vence em " + n + " dias", c: "ne", n };
+  return null;
+}
+// plasma no freezer sem a conferência do dia seguinte
+const congPendente = (u) => { const c = (u.dados || {}).congelamento; return c && c.inicio && !(c.conferido && c.conferido.congelado) && Date.now() - Date.parse(c.inicio) > 12 * 36e5; };
+
+/* ── produção ── */
+// coletas que aparecem para produzir: fichas dos últimos 21 dias com coleta e volume
+function aguardando() {
+  const tem = new Set(S.prod.map((p) => p.coleta));
+  return DOA.filter((d) => !d.naoColetado && d.data && dias(d.data, hojeISO()) <= 21 && !tem.has(d.numero.replace(/\s/g, ""))).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+}
+function sag(p) {
+  const P = S.P.sag, peso = num(p.pesoCHsem), htM = num(p.htCHsem), ht = htM != null ? htM : P.htMedioCH;
+  if (peso == null || peso <= P.tara) return null;
+  const vol = (peso - P.tara) / P.densidade, calc = vol * (ht / P.htAlvo - 1);
+  return { vol, calc: Math.max(0, calc), ht, medido: htM != null, suficiente: calc <= P.sagBolsa };
+}
+const volPeso = (peso, tara, dens) => { const p = num(peso); return p == null || p <= tara ? null : (p - tara) / dens; };
+function abrirProducao(coleta) {
+  const p = S.prod.find((x) => x.coleta === coleta) || { coleta, etapa: "peso_st", dados: {} }, d = doacao(coleta) || {}, a = animalDe(d.animalId || p.animal_id);
+  S.prodAberta = coleta;
+  const D = p.dados || {}, et = p.etapa, ie = ETAPAS.findIndex((e) => e[0] === et);
+  const passos = '<div class="passos">' + ETAPAS.slice(0, 5).map((e, i) => '<span class="' + (i < ie || et === "concluida" ? "feito" : i === ie ? "agora" : "") + '">' + e[1] + "</span>").join("") + "</div>";
+  const cab = '<dl class="dl"><dt>Doador</dt><dd>' + esc(a.nome || d.nome || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd><dt>Coleta</dt><dd>" + esc(br(d.data || "")) + (d.volume ? " · " + esc(d.volume) + " mL de ST" : "") + "</dd>" +
+    (d.lote || d.validade ? "<dt>Bolsa</dt><dd>" + esc([d.lote ? "lote " + d.lote : "", d.validade ? "validade " + br(d.validade) : ""].filter(Boolean).join(" · ")) + "</dd>" : "") + (d.seguimento ? "<dt>Segmento</dt><dd>" + esc(d.seguimento) + "</dd>" : "") + "</dl>";
+  let corpo = "";
+  if (et === "peso_st") corpo = '<h2>Peso do conjunto completo de ST</h2><p class="nota">Tudo o que vai à balança na entrada da produção: bolsa de coleta com o sangue, bolsa de SAG com a solução, bolsa das plaquetas, plástico, manguitos e conexões.</p>' +
+    '<label>Peso bruto do conjunto (g)</label><input type="number" inputmode="decimal" id="pPesoST" value="' + esc(D.pesoST ?? "") + '"><label>Micro-hematócrito do ST (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtST" value="' + esc(D.htST ?? "") + '">' +
+    '<p class="nota">Identifique a amostra do ST na IDEXX como <b>ST_BOLSA ' + esc(coleta) + "</b>.</p>" + '<button class="btn grande" data-a="pSalvar" data-v="peso_st">Confirmar peso e seguir</button>';
+  else if (et === "centrifugacao") corpo = "<h2>Centrifugações e transferência</h2>" +
+    [["c1", "Primeira centrifugação concluída e porção das plaquetas separada"], ["c2", "Segunda centrifugação concluída"], ["tp", "Plasma remanescente transferido para a bolsa das plaquetas"]].map(([k, t]) => '<div class="lin"><div class="t"><b>' + t + "</b><small>" + (D[k] ? "feito " + esc(hora(D[k])) : "pendente") + "</small></div>" + (D[k] ? '<span class="chip ok">feito</span>' : '<button class="btn peq" data-a="pMarca" data-v="' + k + '">Feito</button>') + "</div>").join("") +
+    (D.c1 && D.c2 && D.tp ? '<button class="btn grande" data-a="pAvanca" data-v="ch_sem_sag" style="margin-top:12px">Pesar o CH sem SAG</button>' : "");
+  else if (et === "ch_sem_sag" || et === "ch_com_sag") {
+    const c = sag(D);
+    corpo = '<h2>SAGcalculadora</h2><div class="grade"><div><label>Peso do CH sem SAG (g)</label><input type="number" inputmode="decimal" id="pPesoCH" value="' + esc(D.pesoCHsem ?? "") + '"></div><div><label>Micro-Ht do CH sem SAG (%) <small>opcional</small></label><input type="number" inputmode="decimal" id="pHtCH" value="' + esc(D.htCHsem ?? "") + '"></div></div>' +
+      (c ? '<div class="calc"><small>Volume de SAG a acrescentar</small><br><b class="big">' + fmt(c.calc) + ' mL</b><br><small>CH sem SAG com ' + fmt(c.vol) + " mL · hematócrito " + (c.medido ? "medido " : "pela média do CVH, ") + fmt(c.ht, 1) + "% · alvo " + fmt(S.P.sag.htAlvo) + "%" + (c.suficiente ? "" : " · <b>passa da bolsa de SAG (" + fmt(S.P.sag.sagBolsa) + " mL)</b>") + "</small></div>" : '<p class="nota">Informe o peso para calcular o SAG. Sem micro-Ht, o cálculo usa a média do CVH (' + fmt(S.P.sag.htMedioCH, 1) + "%), e isso fica identificado no histórico.</p>") +
+      '<div class="grade"><div><label>SAG acrescentado (mL)</label><input type="number" inputmode="decimal" id="pSagAd" value="' + esc(D.sagAdicionado ?? (c ? Math.round(c.calc) : "")) + '"></div><div><label>Peso final do CH com SAG (g)</label><input type="number" inputmode="decimal" id="pPesoFinal" value="' + esc(D.pesoCHfinal ?? "") + '"></div></div>' +
+      '<label>Micro-Ht do CH com SAG (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtFinal" value="' + esc(D.htCHfinal ?? "") + '">' +
+      '<p class="nota">Identifique a amostra na IDEXX como <b>CH_BOLSA ' + esc(coleta) + '</b>.</p><button class="btn grande" data-a="pSalvar" data-v="ch">Salvar CH e seguir para CP e PFC</button>';
+  } else if (et === "cp_pfc") {
+    const Q = S.P.qc, vcp = volPeso(D.pesoCP, Q.taraCP, Q.densCP), vpl = volPeso(D.pesoPFC, Q.taraPL, Q.densPL);
+    corpo = '<h2>CP e PFC</h2><div class="grade"><div><label>Peso do CP (g)</label><input type="number" inputmode="decimal" id="pPesoCP" value="' + esc(D.pesoCP ?? "") + '"><small class="nota">' + (vcp != null ? "≈ " + fmt(vcp) + " mL" : "") + '</small></div><div><label>Peso do PFC (g)</label><input type="number" inputmode="decimal" id="pPesoPFC" value="' + esc(D.pesoPFC ?? "") + '"><small class="nota">' + (vpl != null ? "≈ " + fmt(vpl) + " mL" : "") + "</small></div></div>" +
+      '<label><input type="checkbox" id="pSemCP"' + (D.semCP ? " checked" : "") + '> Não houve CP nesta coleta</label><label><input type="checkbox" id="pCong" checked> Iniciar o congelamento do PFC agora (conferência amanhã)</label>' +
+      '<button class="btn grande" data-a="pConcluir" style="margin-top:12px">Concluir a produção e guardar as bolsas</button>';
+  } else corpo = '<p class="nota">Produção concluída. As bolsas estão no estoque.</p>' + S.uni.filter((u) => u.coleta === coleta).map(linhaUnidade).join("");
+  abrirGaveta("Produção da coleta " + coleta, passos + cab + corpo);
+}
+async function salvarProd(coleta, etapa, dados, msg) {
+  const d = doacao(coleta) || {};
+  const r = await est("estProducaoSalvar", coleta, { animalId: d.animalId || "", etapa, dados });
+  const i = S.prod.findIndex((x) => x.coleta === coleta); if (i >= 0) S.prod[i] = r; else S.prod.unshift(r);
+  if (msg) toast(msg); pintar(); abrirProducao(coleta);
+}
+async function concluirProd(coleta) {
+  const p = S.prod.find((x) => x.coleta === coleta), D = Object.assign({}, p.dados), d = doacao(coleta) || {}, Q = S.P.qc, V = S.P.validade;
+  D.pesoCP = num($("#pPesoCP").value); D.pesoPFC = num($("#pPesoPFC").value); D.semCP = $("#pSemCP").checked;
+  if (!D.semCP && D.pesoCP == null) return toast("Informe o peso do CP ou marque que não houve CP.");
+  if (D.pesoPFC == null) return toast("Informe o peso do PFC.");
+  await est("estProducaoSalvar", coleta, { etapa: "cp_pfc", dados: { pesoCP: D.pesoCP, pesoPFC: D.pesoPFC, semCP: D.semCP } });
+  const dc = d.data || hojeISO(), Ps = S.P.sag;
+  const U = [{ componente: "CH", peso_g: num(D.pesoCHfinal), volume_ml: volPeso(D.pesoCHfinal, Ps.tara, Ps.densidade), validade: somaDias(dc, V.CH), data_coleta: dc, dados: { htFinal: D.htCHfinal ?? null, sagAdicionado: D.sagAdicionado ?? null, htUsadoNoSag: D.htUsadoSag ?? null, htUsadoMedido: !!D.htMedidoSag } }];
+  if (!D.semCP) U.push({ componente: "CP", peso_g: D.pesoCP, volume_ml: volPeso(D.pesoCP, Q.taraCP, Q.densCP), validade: somaDias(dc, V.CP), data_coleta: dc });
+  U.push({ componente: "PFC", peso_g: D.pesoPFC, volume_ml: volPeso(D.pesoPFC, Q.taraPL, Q.densPL), validade: somaDias(dc, V.PFC), data_coleta: dc });
+  U.forEach((u) => { if (u.volume_ml != null) u.volume_ml = Math.round(u.volume_ml); });
+  const cong = $("#pCong").checked;
+  const R = await est("estProducaoConcluir", coleta, U);
+  if (cong) { const pf = R.find((u) => u.componente === "PFC"); if (pf) { const r2 = await est("estUnidadeAcao", pf.id, "congelar", {}); Object.assign(pf, r2); } }
+  S.uni = S.uni.filter((u) => u.coleta !== coleta).concat(R); p.etapa = "concluida";
+  toast("Produção concluída. " + R.length + " bolsas no estoque, aguardando liberação."); pintar(); abrirProducao(coleta);
+}
+
+/* ── unidade ── */
+function linhaUnidade(u) {
+  const a = animalDe(u.animal_id), al = alertaValidade(u);
+  return '<button class="unid" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + "</b><small>" + esc([a.nome, tipoTxt(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
+    (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
+}
+function abrirUnidade(id) {
+  const u = S.uni.find((x) => x.id === id); if (!u) return;
+  S.uniAberta = id; const a = animalDe(u.animal_id), D = u.dados || {}, al = alertaValidade(u), fim = ["utilizada", "descartada"].includes(u.situacao);
+  const evs = S.ev.filter((e) => e.unidade_id === id || (e.coleta === u.coleta && !e.unidade_id)).slice(0, 25);
+  const bt = (a2, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="uAcao" data-v="' + a2 + '">' + t + "</button>";
+  let acoes = "";
+  if (!fim) {
+    if (u.situacao === "quarentena") acoes += bt("liberar", "Liberar para uso", " ");
+    if (u.situacao === "disponivel") acoes += bt("reservar", "Reservar");
+    if (u.situacao === "reservada") acoes += bt("cancelarReserva", "Cancelar a reserva");
+    if (u.situacao === "bloqueada") acoes += bt("desbloquear", "Desbloquear"); else acoes += bt("bloquear", "Bloquear");
+    acoes += bt("mover", "Mudar de local");
+    if (["PFC", "CRIO", "PPC"].includes(u.componente)) acoes += D.congelamento && D.congelamento.inicio ? (D.congelamento.conferido && D.congelamento.conferido.congelado ? "" : bt("conferirSim", "Congelado") + bt("conferirNao", "Ainda não congelado")) : bt("congelar", "Iniciar congelamento");
+    acoes += bt("descartar", "Descartar", "perigo");
+  }
+  const h = '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd>" +
+    "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
+    "<dt>Validade</dt><dd>" + esc(br(String(u.validade || "").slice(0, 10))) + (al ? ' <span class="chip ' + al.c + '">' + al.t + "</span>" : "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "</dd><dt>Local</dt><dd>" + esc(u.local || "") + (u.equipamento ? " · " + esc(u.equipamento) : "") + "</dd>" +
+    (u.componente === "CH" && D.htFinal != null ? "<dt>Ht do CH com SAG</dt><dd>" + fmt(D.htFinal, 1) + "% <small>(micro-Ht)</small></dd>" : "") +
+    (D.congelamento && D.congelamento.inicio ? "<dt>Congelamento</dt><dd>início " + esc(hora(D.congelamento.inicio)) + (D.congelamento.conferido ? " · " + (D.congelamento.conferido.congelado ? "congelado" : "ainda não congelado") + " (" + esc(hora(D.congelamento.conferido.em)) + ")" : " · conferência pendente") + "</dd>" : "") +
+    (D.descarte ? "<dt>Descarte</dt><dd>" + esc(D.descarte.motivo) + " · " + esc(D.descarte.por) + "</dd>" : "") + (D.bloqueio && u.situacao === "bloqueada" ? "<dt>Bloqueio</dt><dd>" + esc(D.bloqueio.motivo) + "</dd>" : "") + "</dl>" +
+    (acoes ? '<div class="bts">' + acoes + '</div><div id="uForm"></div>' : "") + '<h2 style="margin-top:18px">Histórico</h2>' + (evs.length ? evs.map((e) => '<div class="ev"><b>' + esc(rotEvento(e.tipo)) + "</b> <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + detEvento(e) + "</div>").join("") : '<p class="vazio">Sem registros.</p>');
+  abrirGaveta(u.id + " · " + (NOME_COMP[u.componente] || u.componente), h);
+}
+const ROT_EV = { "unidade:criada": "Entrou no estoque", "unidade:liberar": "Liberada", "unidade:reservar": "Reservada", "unidade:cancelarReserva": "Reserva cancelada", "unidade:descartar": "Descartada", "unidade:mover": "Local alterado", "unidade:congelar": "Congelamento iniciado", "unidade:conferirCongelamento": "Congelamento conferido", "unidade:bloquear": "Bloqueada", "unidade:desbloquear": "Desbloqueada", "unidade:editar": "Dados corrigidos", "unidade:corrigida": "Produção corrigida", "producao:peso_st": "Peso do ST", "producao:centrifugacao": "Centrifugação", "producao:ch_sem_sag": "CH sem SAG", "producao:ch_com_sag": "CH com SAG", "producao:cp_pfc": "CP e PFC", "producao:concluida": "Produção concluída" };
+const rotEvento = (t) => ROT_EV[t] || t;
+function detEvento(e) { const d = e.dados || {}, x = [d.reserva, d.motivo, d.local, d.justificativa, d.congelado === true ? "congelado" : d.congelado === false ? "ainda não congelado" : ""].filter(Boolean); return x.length ? "<br><small>" + esc(x.join(" · ")) + "</small>" : ""; }
+const PEDE = { reservar: ["Reservar para", "clínica, paciente ou procedimento", "reserva"], descartar: ["Motivo do descarte", "", "motivo"], bloquear: ["Motivo do bloqueio", "", "motivo"], mover: ["Novo local", "ex.: CVH, Intensivet", "local"] };
+async function acaoUnidade(acao, o) {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  let a = acao; o = o || {};
+  // ações que pedem um texto: o campo aparece na própria ficha
+  if (PEDE[acao] && !o[PEDE[acao][2]]) {
+    const [rot, ph, k] = PEDE[acao];
+    $("#uForm").innerHTML = '<label>' + rot + '</label><input type="text" id="uTxt" placeholder="' + esc(ph) + '" value="' + esc(acao === "mover" ? u.local || "CVH" : "") + '">' + (acao === "mover" ? '<label>Equipamento (refrigerador ou freezer, opcional)</label><input type="text" id="uEq" value="' + esc(u.equipamento || "") + '">' : "") +
+      '<div class="bts" style="margin-top:10px"><button class="btn peq ' + (acao === "descartar" ? "perigo" : "") + '" data-a="uConf" data-v="' + acao + '">Confirmar</button><button class="btn peq sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div>';
+    const t = $("#uTxt"); if (t) t.focus(); return;
+  }
+  if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
+  try { const r = await est("estUnidadeAcao", u.id, a, o); Object.assign(u, r); S.ev.unshift({ quando: new Date().toISOString(), coleta: u.coleta, unidade_id: u.id, tipo: "unidade:" + a, usuario: CTX.usuario || "", dados: o }); toast("Feito."); pintar(); abrirUnidade(u.id); }
+  catch (e) { toast(e.message, 6000); }
+}
+
+/* ── telas ── */
+function pendencias() {
+  const L = [];
+  aguardando().slice(0, 30).forEach((d) => L.push({ n: 1, t: "Coleta " + d.numero + " aguardando o peso do conjunto de ST", s: (d.nome || "") + " · " + br(d.data), a: "prod", v: d.numero.replace(/\s/g, "") }));
+  S.prod.filter((p) => p.etapa !== "concluida").forEach((p) => L.push({ n: 1, t: "Produção da coleta " + p.coleta + " em andamento", s: (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], a: "prod", v: p.coleta }));
+  S.uni.filter(congPendente).forEach((u) => L.push({ n: 0, t: "Verificar congelamento do plasma " + u.id, s: "iniciado " + hora(u.dados.congelamento.inicio), a: "uni", v: u.id }));
+  S.uni.forEach((u) => { const al = alertaValidade(u); if (al && al.n <= 5) L.push({ n: al.n <= 1 ? 0 : 2, t: u.id + " · " + al.t, s: ROT_SIT[u.situacao] + " · " + (u.local || ""), a: "uni", v: u.id }); });
+  S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
+  return L.sort((a, b) => a.n - b.n);
+}
+function telaHoje() {
+  const at = S.uni.filter((u) => !["utilizada", "descartada"].includes(u.situacao)), disp = at.filter((u) => u.situacao === "disponivel");
+  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
+  const P = pendencias();
+  return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis", "filtro", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis", "filtro", "PFC") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis", "filtro", "CP") +
+    k(at.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(at.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(aguardando().length + S.prod.filter((p) => p.etapa !== "concluida").length, "Coletas para produzir", "aba", "prod") + "</div>" +
+    '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente agora.</p>') + "</div>";
+}
+function telaProd() {
+  const A = aguardando(), E = S.prod.filter((p) => p.etapa !== "concluida"), C = S.prod.filter((p) => p.etapa === "concluida").slice(0, 15);
+  const it = (c, t, s, ch) => '<div class="lin"><div class="t"><b>' + esc(t) + "</b><small>" + esc(s) + '</small></div><button class="btn peq" data-a="prod" data-v="' + esc(c) + '">' + ch + "</button></div>";
+  return '<div class="duas"><div class="cx"><h2>Em produção</h2>' + (E.length ? E.map((p) => { const d = doacao(p.coleta) || {}; return it(p.coleta, "Coleta " + p.coleta + " · " + (d.nome || animalDe(p.animal_id).nome || ""), (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], "Continuar"); }).join("") : '<p class="vazio">Nenhuma produção em andamento.</p>') + "</div>" +
+    '<div class="cx"><h2>Coletas aguardando o peso do ST</h2><p class="nota">Fichas de doação dos últimos 21 dias com coleta. Toque para registrar o peso do conjunto completo.</p>' + (A.length ? A.map((d) => it(d.numero.replace(/\s/g, ""), "Coleta " + d.numero + " · " + (d.nome || ""), br(d.data) + (d.volume ? " · " + d.volume + " mL" : ""), "Registrar peso")).join("") : '<p class="vazio">Nenhuma coleta aguardando.</p>') + "</div></div>" +
+    (C.length ? '<div class="cx"><h2>Concluídas</h2>' + C.map((p) => it(p.coleta, "Coleta " + p.coleta, "concluída " + hora(p.atualizado), "Ver")).join("") + "</div>" : "");
+}
+function telaEstoque() {
+  const f = S.f, tipoDe = (u) => tipoTxt(animalDe(u.animal_id));
+  let L = S.uni.filter((u) => f.sit === "todas" ? true : f.sit === "ativas" ? !["utilizada", "descartada"].includes(u.situacao) : u.situacao === f.sit);
+  if (f.comp) L = L.filter((u) => u.componente === f.comp);
+  if (f.tipo) L = L.filter((u) => { const t = tipoDe(u); return f.tipo === "DEA1-" ? /DEA 1 −/.test(t) : f.tipo === "DEA1+" ? /DEA 1 \+/.test(t) : f.tipo === "DAL-" ? /DAL −/.test(t) : f.tipo === "DAL+" ? /DAL \+/.test(t) : t.indexOf(f.tipo) >= 0; });
+  L.sort((a, b) => String(a.validade || "9").localeCompare(String(b.validade || "9")));
+  const fb = (campo, v, t) => '<button class="' + (f[campo] === v ? "on" : "") + '" data-a="f" data-c="' + campo + '" data-v="' + v + '">' + t + "</button>";
+  const vol = L.reduce((s, u) => s + (+u.volume_ml || 0), 0);
+  return '<div class="filtros">' + fb("comp", "", "Todos") + fb("comp", "CH", "CH") + fb("comp", "CP", "CP") + fb("comp", "PFC", "PFC") + fb("comp", "CRIO", "CRIO") + "</div>" +
+    '<div class="filtros">' + fb("tipo", "", "Qualquer tipagem") + fb("tipo", "DEA1-", "DEA 1 −") + fb("tipo", "DEA1+", "DEA 1 +") + fb("tipo", "DAL-", "DAL −") + fb("tipo", "DAL+", "DAL +") + "</div>" +
+    '<div class="filtros">' + fb("sit", "ativas", "No estoque") + fb("sit", "disponivel", "Disponíveis") + fb("sit", "reservada", "Reservadas") + fb("sit", "quarentena", "Aguardando liberação") + fb("sit", "bloqueada", "Bloqueadas") + fb("sit", "todas", "Todas, inclusive as que saíram") + "</div>" +
+    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + "</h2>" + (L.length ? L.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
+}
+function telaHist() {
+  return '<div class="cx"><h2>Últimos registros</h2>' + (S.ev.length ? S.ev.slice(0, 120).map((e) => '<div class="ev"><b>' + esc(rotEvento(e.tipo)) + "</b> · " + esc(e.unidade_id || "coleta " + e.coleta) + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + detEvento(e) + "</div>").join("") : '<p class="vazio">Sem registros.</p>') + "</div>";
+}
+function pintar() {
+  const nP = pendencias().filter((x) => x.n <= 1).length;
+  const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
+  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("hist", "Histórico") + "</nav>" +
+    ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, hist: telaHist }[S.aba] || telaHoje)();
+}
+
+/* ── cliques ── */
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  if (a === "fechar" || ev.target.id === "veu") return fecharGaveta();
+  if (a === "aba") { S.aba = v; pintar(); window.scrollTo(0, 0); return; }
+  if (a === "filtro") { S.aba = "estoque"; if (["CH", "CP", "PFC", "CRIO"].includes(v)) { S.f.comp = v; S.f.sit = "disponivel"; } else { S.f.comp = ""; S.f.sit = v; } pintar(); return; }
+  if (a === "f") { S.f[b.dataset.c] = v; pintar(); return; }
+  if (a === "prod") return abrirProducao(v);
+  if (a === "uni") return abrirUnidade(v);
+  if (a === "uAcao") return acaoUnidade(v);
+  if (a === "uConf") { const t = ($("#uTxt") || {}).value || "", k = PEDE[v][2]; if (!t.trim()) return toast("Preencha o campo."); const o = { [k]: t.trim() }; if (v === "mover") o.equipamento = ($("#uEq") || {}).value || ""; return acaoUnidade(v, o); }
+  const c = S.prodAberta; if (!c) return;
+  try {
+    b.disabled = true;
+    if (a === "pSalvar" && v === "peso_st") { const p = num($("#pPesoST").value); if (p == null || p <= 0) throw new Error("Informe o peso do conjunto em gramas."); await salvarProd(c, "centrifugacao", { pesoST: p, htST: num($("#pHtST").value), volumeST: num((doacao(c) || {}).volume) }, "Peso do ST registrado."); }
+    if (a === "pMarca") await salvarProd(c, "centrifugacao", { [v]: new Date().toISOString() });
+    if (a === "pAvanca") await salvarProd(c, v, {});
+    if (a === "pSalvar" && v === "ch") {
+      const D = { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value), sagAdicionado: num($("#pSagAd").value), pesoCHfinal: num($("#pPesoFinal").value), htCHfinal: num($("#pHtFinal").value) };
+      if (D.pesoCHsem == null) throw new Error("Informe o peso do CH sem SAG.");
+      const cs = sag(D); if (cs) { D.sagCalculado = Math.round(cs.calc); D.htUsadoSag = cs.ht; D.htMedidoSag = cs.medido; }
+      if (D.pesoCHfinal == null) { await salvarProd(c, "ch_com_sag", D, "CH sem SAG registrado. Falta o peso final."); return; }
+      await salvarProd(c, "cp_pfc", D, "CH com SAG registrado.");
+    }
+    if (a === "pConcluir") await concluirProd(c);
+  } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
+});
+document.addEventListener("input", (ev) => { if (["pPesoCH", "pHtCH"].includes(ev.target.id) && S.prodAberta) { const p = S.prod.find((x) => x.coleta === S.prodAberta); if (p) { p.dados = Object.assign({}, p.dados, { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value) }); const y = $("#gvC").scrollTop, el = ev.target.id, pos = ev.target.selectionStart; abrirProducao(S.prodAberta); $("#gvC").scrollTop = y; const n = $("#" + el); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } } });
+window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
+
+async function iniciar() {
+  try { const r = await est("estDados"); S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar(); }
+  catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o estoque. ' + esc(e.message || String(e)) + "</div>"; }
+}
+iniciar();
+</script>
+<!--CVH-ESTOQUE-COMPLETO-->
+</body></html>
