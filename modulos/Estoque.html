@@ -114,7 +114,7 @@ function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classLi
 (() => { let y0 = null; const g = $("#gaveta"); g.addEventListener("touchstart", (e) => { y0 = $("#gvC").scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); g.addEventListener("touchend", (e) => { if (y0 != null && e.changedTouches[0].clientY - y0 > 90) fecharGaveta(); y0 = null; }, { passive: true }); })();
 
 /* ── estado ── */
-const S = { aba: "hoje", rem: [], eq: [], ap: [], sel: {}, prod: [], uni: [], ev: [], P: null, admin: !!CTX.admin, f: { comp: "", tipo: "", sit: "ativas" }, prodAberta: null, uniAberta: null };
+const S = { aba: "hoje", at: [], rem: [], eq: [], ap: [], sel: {}, prod: [], uni: [], ev: [], P: null, admin: !!CTX.admin, f: { comp: "", tipo: "", sit: "ativas" }, prodAberta: null, uniAberta: null };
 const DOA = (CTX.doacoes || []).filter((d) => d.numero);
 const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
 const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;
@@ -379,6 +379,50 @@ function telaEstoque() {
     '<div class="filtros">' + fb("sit", "ativas", "No estoque") + fb("sit", "disponivel", "Disponíveis") + fb("sit", "reservada", "Reservadas") + fb("sit", "quarentena", "Aguardando liberação") + fb("sit", "bloqueada", "Bloqueadas") + fb("sit", "todas", "Todas, inclusive as que saíram") + "</div>" +
     '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + (L.length ? ' <button class="btn sec peq" style="float:right" data-a="etqLista" data-v="' + esc(L.map((u) => u.id).join("|")) + '">Etiquetas</button>' : "") + '</h2><div id="etqBox"></div>' + (L.length ? L.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
 }
+/* ── transporte (item 23): atendimentos, avisos ao motoboy e Uber ── */
+const ROT_AT = { aberto: "Aberto", possivel: "Possível venda", autorizado: "Autorizado · link de pagamento solicitado", pago: "Pagamento confirmado", testes: "Testes concluídos · laudo em elaboração", fracionamento: "Fracionamento da bolsa", preparo: "Em preparação para envio", pronta: "Embalagem pronta para retirada", retirada: "Retirada · em entrega", entregue: "Entregue", concluido: "Concluído", cancelado: "Cancelado",
+  amostraChegou: "Amostra chegou no CVH", amostraBuscada: "Amostra buscada pelo motoboy", amostraEntregue: "Amostra entregue pelo motoboy", retirei: "Retirada pelo motoboy", entreguei: "Entrega registrada pelo motoboy", uber: "Link do Uber", uberFim: "Corrida encerrada", cancelar: "Cancelado", reabrir: "Reaberto" };
+const COR_AT = { pronta: "al", preparo: "av", fracionamento: "av", retirada: "av", entregue: "ok", concluido: "ok", cancelado: "ne" };
+function telaTransporte() {
+  const at = S.at.filter((a) => !["concluido", "cancelado"].includes(a.etapa)), fim = S.at.filter((a) => ["concluido", "cancelado"].includes(a.etapa)).slice(0, 20);
+  const lin = (a) => '<div class="lin" data-a="at" data-v="' + esc(a.id) + '" style="cursor:pointer"><div class="t"><b>' + esc(a.destino) + (a.paciente ? " · " + esc(a.paciente) : "") + "</b><small>" + (a.modalidade === "uber" ? "Uber" : "Motoboy") + (a.remessa_id ? " · caixa " + esc(a.remessa_id) : "") + " · " + esc(hora(a.criado)) + '</small></div><span class="chip ' + (COR_AT[a.etapa] || "") + '">' + esc(ROT_AT[a.etapa] || a.etapa) + "</span></div>";
+  return '<div class="bts" style="margin-bottom:12px"><button class="btn" data-a="atNovo">Novo atendimento</button>' + (S.admin ? '<button class="btn sec" data-a="apNovo" data-v="motoboy">Ativar celular do motoboy</button>' : "") + '</div><div id="apLink"></div>' +
+    '<div class="cx"><h2>Em andamento</h2>' + (at.length ? at.map(lin).join("") : '<p class="vazio">Nenhum atendimento em andamento.</p>') + "</div>" + (fim.length ? '<div class="cx"><h2>Encerrados</h2>' + fim.map(lin).join("") + "</div>" : "");
+}
+function formAtendimento(a) {
+  a = a || {}; const rems = S.rem.filter((r) => ["preparo", "transito"].includes(r.situacao) || r.id === a.remessa_id);
+  return '<label>Destino</label><input type="text" id="atDest" value="' + esc(a.destino || "") + '" placeholder="Clínica ou Intensivet"><label>Endereço</label><input type="text" id="atEnd" value="' + esc(a.endereco || "") + '"><label>Paciente</label><input type="text" id="atPac" value="' + esc(a.paciente || "") + '"><label>Médico veterinário solicitante</label><input type="text" id="atSol" value="' + esc(a.solicitante || "") + '">' +
+    '<label>Transporte</label><div class="filtros" style="margin:0"><button class="' + (a.modalidade !== "uber" ? "on" : "") + '" data-a="atMod" data-v="motoboy">Motoboy terceirizado</button><button class="' + (a.modalidade === "uber" ? "on" : "") + '" data-a="atMod" data-v="uber">Uber</button></div>' +
+    '<label>Caixa da remessa (opcional)</label><select id="atRem"><option value="">Sem remessa</option>' + rems.map((r) => '<option value="' + esc(r.id) + '"' + (r.id === a.remessa_id ? " selected" : "") + ">" + esc(r.id) + " · " + esc(r.destino) + " · " + r.unidades.length + " bolsa(s)</option>").join("") + "</select>" +
+    '<div class="bts" style="margin-top:12px"><button class="btn" data-a="atSalvar" data-v="' + esc(a.id || "") + '">' + (a.id ? "Salvar" : "Abrir atendimento") + "</button></div>";
+}
+const dtLocal = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "T" + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+function abrirAtendimento(id) {
+  const a = S.at.find((x) => x.id === id); if (!a) return; S.atAberto = id; const am = a.amostra || {}, r = S.rem.find((x) => x.id === a.remessa_id), moto = a.modalidade !== "uber";
+  const B = (et, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="atEt" data-id="' + esc(a.id) + '" data-v="' + et + '">' + t + "</button>";
+  let ac = "";
+  if (a.etapa === "aberto") ac = B("possivel", "Avisar possível venda") + B("autorizado", "Autorizado · link de pagamento solicitado", " ");
+  if (a.etapa === "possivel") ac = B("autorizado", "Autorizado · link de pagamento solicitado", " ");
+  if (a.etapa === "autorizado") ac = S.admin ? '<button class="btn peq" data-a="atPago" data-v="' + esc(a.id) + '">Pagamento confirmado</button>' : "<small>Aguardando o Plínio confirmar o pagamento.</small>";
+  if (["pago", "testes", "fracionamento", "preparo"].includes(a.etapa) && am.buscar && !am.chegouEm) ac += B("amostraChegou", "Amostra chegou no CVH");
+  if (a.etapa === "pago") ac += B("testes", "Testes concluídos · laudo em elaboração", " ");
+  if (a.etapa === "testes") ac += B("fracionamento", "Fracionamento da bolsa escolhida") + B("preparo", "Em preparação para envio", " ");
+  if (a.etapa === "fracionamento") ac += B("preparo", "Em preparação para envio", " ");
+  if (a.etapa === "preparo") ac += B("pronta", "Embalagem pronta para retirada", " ");
+  if (a.etapa === "pronta") ac += B("retirada", "Registrar a retirada", " ");
+  if (a.etapa === "retirada" && moto) ac += B("entregue", "Marcar entregue");
+  if (["preparo", "pronta", "retirada"].includes(a.etapa) && !moto) ac += '<div style="width:100%"><label>Colar link do Uber</label><input type="text" id="atUber" value="' + esc(a.link_uber || "") + '"></div>' + B("uber", "Salvar o link");
+  if (["retirada", "entregue"].includes(a.etapa) && !moto && !a.uber_fim) ac += '<div style="width:100%"><label>Horário do encerramento da corrida (ver no Uber)</label><input type="datetime-local" id="atUberFim" value="' + dtLocal() + '"></div>' + B("uberFim", "Confirmar encerramento da corrida", " ");
+  if (a.etapa === "entregue") ac += B("concluido", "Concluir");
+  if (!["concluido", "cancelado"].includes(a.etapa)) ac += B("cancelar", "Cancelar atendimento", "perigo"); else ac += B("reabrir", "Reabrir");
+  const avisoUber = !moto && ["preparo", "pronta"].includes(a.etapa) && !a.link_uber ? '<div class="cx" style="background:#FBF0DC;margin:8px 0"><b>Esta entrega será por Uber. Chamar o Uber e acrescentar o link da corrida.</b></div>' : "";
+  abrirGaveta("Atendimento " + a.id, avisoUber + '<dl class="dl"><dt>Destino</dt><dd>' + esc(a.destino) + (a.endereco ? "<br><small>" + esc(a.endereco) + "</small>" : "") + "</dd>" + (a.paciente ? "<dt>Paciente</dt><dd>" + esc(a.paciente) + "</dd>" : "") + (a.solicitante ? "<dt>Solicitante</dt><dd>" + esc(a.solicitante) + "</dd>" : "") + "<dt>Transporte</dt><dd>" + (moto ? "Motoboy terceirizado" : "Uber") + (a.link_uber ? ' · <a href="' + esc(a.link_uber) + '" target="_blank" rel="noopener">abrir a corrida</a>' : "") + "</dd><dt>Etapa</dt><dd>" + esc(ROT_AT[a.etapa] || a.etapa) + "</dd>" +
+    (am.buscar != null ? "<dt>Amostra</dt><dd>" + (am.buscar ? "buscar em " + esc(am.local || "") + (am.prazoBusca ? " até " + esc(hora(am.prazoBusca)) : "") : "já estava no CVH") + (am.buscadaEm ? "<br><small>buscada " + esc(hora(am.buscadaEm)) + "</small>" : "") + (am.chegouEm ? "<br><small>chegou " + esc(hora(am.chegouEm)) + "</small>" : "") + (am.previsaoTestes ? "<br><small>testes previstos " + esc(hora(am.previsaoTestes)) + "</small>" : "") + "</dd>" : "") +
+    (r ? "<dt>Caixa</dt><dd>" + esc(r.id) + " · " + esc(ROT_REM[r.situacao] || r.situacao) + (r.recebida_em ? "<br><small>QR lido pela " + esc(r.destino) + " " + esc(hora(r.recebida_em)) + "</small>" : "") + "</dd>" : "") + (a.uber_fim ? "<dt>Corrida encerrada</dt><dd>" + esc(hora(a.uber_fim)) + "</dd>" : "") + "</dl>" +
+    '<div class="bts">' + ac + '</div><div id="atForm"></div><h2 style="margin-top:16px">Linha do tempo</h2>' + (a.linha || []).slice().reverse().map((x) => '<div class="ev"><b>' + esc(ROT_AT[x.etapa] || x.etapa) + "</b> <small>" + esc(hora(x.em)) + " · " + esc(x.por) + "</small></div>").join("") +
+    '<h2 style="margin-top:16px">Dados</h2>' + formAtendimento(a));
+}
+
 /* ── remessas e Intensivet ── */
 const ROT_REM = { preparo: "Em preparo", transito: "Em trânsito", entregue: "Entregue, aguardando leitura da caixa", recebida: "Recebida, guardando", concluida: "Concluída", cancelada: "Cancelada" };
 const COR_REM = { preparo: "", transito: "av", entregue: "al", recebida: "av", concluida: "ok", cancelada: "ne" };
@@ -430,7 +474,7 @@ function telaIntensivet() {
     '<div class="bts"><button class="btn peq" data-a="apNovo" data-v="recepcao">Ativar celular da recepção</button><button class="btn peq" data-a="apNovo" data-v="internacao">Ativar celular da internação</button></div><div id="apLink"></div></div>';
   return h;
 }
-async function recarregar() { const r = await est("estDados"); S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; pintar(); }
+async function recarregar() { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; pintar(); }
 
 function telaHist() {
   return '<div class="cx"><h2>Últimos registros</h2>' + (S.ev.length ? S.ev.slice(0, 120).map((e) => '<div class="ev"><b>' + esc(rotEvento(e.tipo)) + "</b> · " + esc(e.unidade_id || "coleta " + e.coleta) + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + detEvento(e) + "</div>").join("") : '<p class="vazio">Sem registros.</p>') + "</div>";
@@ -438,8 +482,8 @@ function telaHist() {
 function pintar() {
   const nP = pendencias().filter((x) => x.n <= 1).length;
   const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
-  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
-    ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
+  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("tr", "Transporte", S.at.filter((a) => ["pronta", "preparo"].includes(a.etapa)).length) + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
+    ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, tr: telaTransporte, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
 }
 
 /* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
@@ -637,6 +681,24 @@ document.addEventListener("click", async (ev) => {
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
   if (a === "camera") return abrirCamera();
+  if (a === "at") return abrirAtendimento(v);
+  if (a === "atNovo") { abrirGaveta("Novo atendimento", formAtendimento({})); return; }
+  if (a === "atMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "atPago") { $("#atForm").innerHTML = '<div class="cx" style="margin-top:10px"><h2>Pagamento confirmado</h2><label class="op" style="display:flex;gap:10px;font-weight:600"><input type="checkbox" id="pgBuscar"> Há amostra a buscar</label><label>Local da busca</label><input type="text" id="pgLocal"><label>Prazo para a busca</label><input type="datetime-local" id="pgPrazo"><label>Previsão de chegada da amostra no CVH</label><input type="datetime-local" id="pgCheg"><label>Previsão para concluir os testes</label><input type="datetime-local" id="pgTestes"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="atPagoOk" data-v="' + esc(v) + '">Confirmar o pagamento</button></div></div>'; return; }
+  if (["atSalvar", "atEt", "atPagoOk"].includes(a)) {
+    try {
+      b.disabled = true; let r;
+      const iso = (id) => { const el = $("#" + id); return el && el.value ? new Date(el.value).toISOString() : null; };
+      if (a === "atSalvar") { const m = (document.querySelector('[data-a="atMod"].on') || {}).dataset || {}; r = await est("estAtendimentoSalvar", { id: v || undefined, destino: $("#atDest").value, endereco: $("#atEnd").value, paciente: $("#atPac").value, solicitante: $("#atSol").value, modalidade: m.v || "motoboy", remessa: $("#atRem").value }); }
+      if (a === "atPagoOk") r = await est("estAtendimentoEtapa", v, "pago", { buscar: $("#pgBuscar").checked, local: $("#pgLocal").value, prazoBusca: iso("pgPrazo"), previsaoChegada: iso("pgCheg"), previsaoTestes: iso("pgTestes") });
+      if (a === "atEt") { const et = v, o = {}; if (et === "uber") o.link = $("#atUber").value; if (et === "uberFim") o.quando = iso("atUberFim"); r = await est("estAtendimentoEtapa", b.dataset.id, et, o); }
+      const i = S.at.findIndex((x) => x.id === r.id); if (i >= 0) S.at[i] = r; else S.at.unshift(r);
+      if (a === "atEt" && ["retirada", "uberFim"].includes(v)) await recarregar(); else pintar();
+      abrirAtendimento(r.id); toast(a === "atSalvar" && !v ? "Atendimento aberto." : "Registrado." + (r.modalidade === "motoboy" && a !== "atSalvar" && ["possivel", "autorizado", "pago", "testes", "fracionamento", "pronta"].includes(r.etapa) ? " O motoboy foi avisado." : ""), 4000);
+    } catch (e) { toast(e.message || String(e), 7000); } finally { b.disabled = false; }
+    return;
+  }
+
   if (a === "bolsasSalvar") { try { const bolsas = [...document.querySelectorAll("[data-bolsa]")].map((r) => ({ id: r.querySelector(".bI").value, nome: r.querySelector(".bN").value, tara: num(r.querySelector(".bT").value), uso: [...r.querySelectorAll(".bU:checked")].map((x) => x.value) })).filter((x) => x.nome.trim() && x.tara != null); S.P = await est("estParametros", { bolsas, limites: { fracionamentoMl: num($("#limA").value), criticoMl: num($("#limC").value), ganhoMl: num($("#limG").value) } }); toast("Salvo."); pintar(); } catch (e) { toast(e.message, 6000); } return; }
   if (a === "fMais") { const v0 = {}; document.querySelectorAll("#uForm input, #uForm select").forEach((x) => { v0[x.id] = x.value; }); S.nFr = (S.nFr || 1) + 1; const u = S.uni.find((x) => x.id === S.uniAberta); $("#uForm").innerHTML = formFracionar(u); Object.entries(v0).forEach(([k, val]) => { const el = document.getElementById(k); if (el) el.value = val; }); calcFracionar(); return; }
   if (a === "fConfirmar" || a === "cConfirmar") { try { b.disabled = true; await (a === "fConfirmar" ? confirmarFracionar() : confirmarCrio()); } catch (e) { toast(e.message || String(e), 7000); } finally { b.disabled = false; } return; }
@@ -660,7 +722,7 @@ document.addEventListener("click", async (ev) => {
       if (a === "remUber") { $("#rForm").innerHTML = '<label>Link do Uber</label><input type="text" id="rUber" value="' + esc((r && r.link_uber) || "") + '"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remUberOk" data-v="' + esc(v) + '">Salvar</button></div>'; return; }
       if (a === "remUberOk") await est("estRemessaAcao", v, "uber", { link: $("#rUber").value.trim() });
       if (a === "remCancelar") await est("estRemessaAcao", v, "cancelar", {});
-      if (a === "apNovo") { const o = await est("estAparelhoCriar", { setor: v }); const base = await ponte("origem"); const link = base + "intensivet.html?k=" + o.token; await recarregar(); $("#apLink").innerHTML = '<label>Abra este link no celular da ' + (v === "recepcao" ? "recepção" : "internação") + ' (uma vez só) e adicione à tela inicial</label><input type="text" readonly value="' + esc(link) + '" onclick="this.select()"><div class="bts"><button class="btn sec peq" data-a="copiar" data-v="' + esc(link) + '">Copiar o link</button></div>'; return; }
+      if (a === "apNovo") { const o = await est("estAparelhoCriar", { setor: v }); const base = await ponte("origem"); const link = base + (v === "motoboy" ? "motoboy.html" : "intensivet.html") + "?k=" + o.token; await recarregar(); $("#apLink").innerHTML = '<label>Abra este link no celular ' + (v === "recepcao" ? "da recepção" : v === "motoboy" ? "do motoboy" : "da internação") + ' (uma vez só) e adicione à tela inicial</label><input type="text" readonly value="' + esc(link) + '" onclick="this.select()"><div class="bts"><button class="btn sec peq" data-a="copiar" data-v="' + esc(link) + '">Copiar o link</button></div>'; return; }
       if (a === "apDesativar") { await est("estAparelhoDesativar", v); await recarregar(); toast("Celular desativado."); return; }
       await recarregar(); if (S.remAberta && $("#gaveta").classList.contains("on")) await abrirRem(S.remAberta);
     } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
@@ -710,7 +772,7 @@ document.addEventListener("input", (ev) => { if (["pPesoCH", "pHtCH"].includes(e
 window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
 
 async function iniciar() {
-  try { const r = await est("estDados"); S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar(); }
+  try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar(); }
   catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o estoque. ' + esc(e.message || String(e)) + "</div>"; }
 }
 iniciar();

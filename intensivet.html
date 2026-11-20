@@ -143,6 +143,19 @@ function alarme(chave, titulo, corpo) {
 }
 const SILENCIO = {};
 
+/* ── notificações com o app fechado (caixa a caminho, alertas) ── */
+async function ativarNotif() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error(/iPhone|iPad/.test(navigator.userAgent) ? "No iPhone, adicione esta página à tela de início (Compartilhar, Adicionar à Tela de Início) e abra por lá para ativar as notificações." : "Este navegador não recebe notificações.");
+  somLiberar(); const p = await Notification.requestPermission(); if (p !== "granted") throw new Error("Permissão de notificação não concedida.");
+  const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
+  const chave = await window.CVH_SERVIDOR.chamar("pushChave", []); if (!chave) throw new Error("O servidor ainda não tem a chave das notificações.");
+  const b = Uint8Array.from(atob(chave.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((chave.length + 3) % 4)), (c) => c.charCodeAt(0));
+  let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b });
+  await srv("apPushAssinar", sub.toJSON());
+}
+const notifOk = () => { try { return "Notification" in window && Notification.permission === "granted"; } catch (e) { return false; } };
+try { if (navigator.serviceWorker) { navigator.serviceWorker.register("sw.js").catch(() => {}); navigator.serviceWorker.addEventListener("message", () => carregar(true)); } } catch (e) {}
+
 /* ── leitor de QR: BarcodeDetector quando o celular tem; senão jsQR; sempre dá para digitar ── */
 let JSQR = null, CAM_FIM = null;
 function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
@@ -225,6 +238,7 @@ function pintar() {
   // caixas a caminho
   const caminho = rem.filter((r) => r.situacao === "transito");
   if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
+  if (!notifOk()) h += '<div class="cx av"><p>Ative as notificações para saber quando uma caixa do CVH estiver a caminho, mesmo com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>';
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
   // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento; CRIO primeiro
   const prio = { CRIO: 0, PFC: 1, PPC: 1, CH: 2, CP: 3 };
@@ -404,6 +418,7 @@ document.addEventListener("click", async (ev) => {
   try {
     if (a === "fechar") { PROX = null; return fechar(); }
     if (a === "atualizar") { await carregar(); return toast("Atualizado.", 1500); }
+    if (a === "notif") { await ativarNotif(); toast("Notificações ativadas.", 4000); return pintar(); }
     if (a === "receber") return receber();
     if (a === "nomeOk") return nomeOk(b);
     if (a === "guardar") return guardar(v);

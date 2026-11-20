@@ -17,7 +17,8 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   e.waitUntil((async () => {
     const abertos = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const c of abertos) if (/painel/.test(c.url)) { await c.focus(); return; }
+    const pag = String((e.notification.data || {}).url || 'painel.html').replace(/[?#].*$/, '');
+    for (const c of abertos) if (c.url.indexOf(pag) >= 0) { await c.focus(); return; }
     await self.clients.openWindow(new URL((e.notification.data || {}).url || 'painel.html', self.registration.scope).href);
   })());
 });
