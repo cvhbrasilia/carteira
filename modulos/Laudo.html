@@ -3350,7 +3350,7 @@ async function salvar() {
     st.textContent = "Enviando para o Drive…";
     const fora = dados.resumo.filter((r) => r.alerta).map((r) => r.nome);
     const origens = (estado.tipo === "idexx" || estado.tipo === "tecsa") ? (estado.origens || []) : [];
-    const res = await ponte("salvarLaudo", { regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) } });
+    const res = await ponte("salvarLaudo", { labIds: estado.labIds || [], regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) } });
     salvo.res = res; await contarKits(); marcarSujo(false); renderPrevia(); mostrarSalvo(res); st.textContent = "";
   } catch (e) { salvo = null; bt.disabled = false; st.className = "st erro"; st.textContent = "Não consegui salvar. " + (e.message || e); renderPrevia(); }
 }
@@ -3515,7 +3515,32 @@ if (CTX.pdfLab && CTX.pdfLab.id) (async () => {
     const r = await ponte("arquivoLab", CTX.pdfLab.id), b = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0));
     const f = new File([b], r.nome || CTX.pdfLab.nome || "laudo.pdf", { type: "application/pdf" });
     if (CTX.pdfLab.origem === "tecsa") { iniciarTipo("tecsa"); const { pags } = await abrirPdf(f); aplicarTecsa(lerTecsa(pags), f.name); }
-    else { iniciarTipo("idexx"); LIDOS = await lerArquivos([f]); aplicarLeitura(LIDOS); }
+    else {
+      iniciarTipo("idexx"); LIDOS = await lerArquivos([f]); const usados = [f];
+      // a IDEXX às vezes deixa dois arquivos do mesmo exame (só hemograma e depois hemograma com bioquímica):
+      // lê os outros PDFs do mesmo dia e junta os que forem do mesmo paciente, começando pelo mais completo
+      const c0 = LIDOS[0].cab, mesmo = (c) => (c0.codigo && c.codigo) ? codNorm(c0.codigo) === codNorm(c.codigo) : (!!String(c0.nome || '').trim() && !!String(c.nome || '').trim() && mesmoNome(c0.nome, c.nome) && (!c0.responsavel || !c.responsavel || mesmoNome(c0.responsavel.split(" ")[0], c.responsavel.split(" ")[0])));
+      estado.labIds = [CTX.pdfLab.labId].filter(Boolean);
+      for (const cd of CTX.pdfLab.candidatos || []) {
+        try { const r2 = await ponte("arquivoLab", cd.id), b2 = Uint8Array.from(atob(r2.base64), (c) => c.charCodeAt(0)), f2 = new File([b2], r2.nome || cd.nome || "idexx.pdf", { type: "application/pdf" });
+          const L2 = await lerArquivos([f2]); if (L2[0] && mesmo(L2[0].cab) && L2[0].data === LIDOS[0].data) { LIDOS.push(L2[0]); usados.push(f2); estado.labIds.push(cd.labId); } } catch (_) {}
+      }
+      const ord = LIDOS.map((r, i) => [r, usados[i]]).sort((x, y) => y[0].linhas.length - x[0].linhas.length);
+      LIDOS = ord.map((x) => x[0]); usados.splice(0, usados.length, ...ord.map((x) => x[1]));
+      { const cod = LIDOS.map((r) => r.cab.codigo).find(Boolean); if (cod && !LIDOS[0].cab.codigo) LIDOS[0].cab.codigo = cod; }
+      aplicarLeitura(LIDOS);
+      const juntei = () => { if (LIDOS.length > 1) estado.avisos.push("Juntei " + LIDOS.length + " PDFs da IDEXX do mesmo paciente e do mesmo dia (" + LIDOS.map((r) => r.linhas.length + " resultados").join(" e ") + ")."); };
+      // sem animal escolhido: procura pelo número da doação ou pelo nome do paciente e do responsável no PDF
+      if (!estado.animalId) {
+        const doa = LIDOS[0].cab.codigo ? acharDoacao(LIDOS[0].cab.codigo) : null;
+        const cand = doa ? ANIMAIS.filter((a) => a.id === doa.animalId) : ANIMAIS.filter((a) => mesmoNome(a.nome, c0.nome) && (!c0.responsavel || !a.resp || mesmoNome(String(a.resp).split(" ")[0], c0.responsavel.split(" ")[0])));
+        if (cand.length === 1) { usarAnimal(cand[0].id); aplicarLeitura(LIDOS); if (doa) estado.exame.doacao = doa.numero; }
+        else estado.avisos.push("Não identifiquei o animal (" + (c0.nome || "sem nome no PDF") + "). Escolha o animal do cadastro antes de salvar.");
+      }
+      juntei();
+      estado.origens = await origensDe(usados); salvo = null; $("#salvo").hidden = true; montarForm(); renderPrevia(); marcarSujo(true);
+      st.textContent = "Laudo preenchido com o PDF do laboratório. Confira os dados antes de assinar."; return;
+    }
     estado.origens = await origensDe([f]); salvo = null; $("#salvo").hidden = true; montarForm(); renderPrevia(); marcarSujo(true);
     st.textContent = "Laudo preenchido com o PDF do laboratório. Confira os dados antes de assinar.";
   } catch (e) { st.className = "st erro"; st.textContent = "Não consegui abrir o PDF do laboratório: " + (e.message || e); }

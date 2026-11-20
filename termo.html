@@ -36,6 +36,8 @@
       .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
   if (q.get('v')) {
     chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
       function (e) { document.body.textContent = e.message; });
