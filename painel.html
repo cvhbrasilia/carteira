@@ -820,7 +820,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261120214044';
+  var VERSAO = '20261120215523';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4964,14 +4964,18 @@ function animalDoLab(x) {
   if (cod) { const r = (E.d.registros || []).find(r => r.tipo === 'doacao' && r.excluido !== '1' && String((r.dados || {}).numero || ((r.dados || {}).ficha || {}).numero || '').replace(/\s/g, '') === cod); if (r) return animalDe(r.animalId); }
   const nome = semAc(String(x.animal || '').replace(/\(.*?\)/g, '').replace(/\d{2,5}\s*-\s*\d{1,2}/, '').trim()); if (!nome) return null;
   const c = (E.d.animais || []).filter(a => semAc(a.nome) === nome), rp = semAc(x.responsavel || '');
-  return (rp && c.find(a => semAc((respDe(a) || {}).nome || '').split(' ')[0] === rp.split(' ')[0])) || (c.length === 1 ? c[0] : null);
+  const mesmoResp = a => rp && semAc((respDe(a) || {}).nome || '').split(' ')[0] === rp.split(' ')[0];
+  const achado = (rp && c.find(mesmoResp)) || (c.length === 1 ? c[0] : null); if (achado) return achado;
+  // grafia parecida (uma letra a mais ou a menos) só com o mesmo responsável
+  const dist = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; const d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; };
+  const par = (E.d.animais || []).filter(a => mesmoResp(a) && dist(semAc(a.nome), nome) <= 2); return par.length === 1 ? par[0] : null;
 }
 async function pintarLaboratorios(todos) {
   const el = $('#labRec'); if (!el) return;
   let L; try { L = E.labRec = await api('laboratoriosListar', E.sessao, !!todos); } catch (e) { el.innerHTML = '<h3>Laudos dos laboratórios</h3><p class="nota">' + esc(e.message) + '</p>'; return; }
   if (!$('#labRec')) return;
   const nQc = L.filter(ehQualidade).length;
-  L = L.filter(x => !ehQualidade(x));
+  L = L.filter(x => !ehQualidade(x) && (todos || x.situacao !== 'arquivado'));
   if (!todos) L = L.filter(x => { if (x.situacao === 'feito') return true; const r = laudoJaFeito(x, animalDoLab(x)); if (!r) return true; api('laboratorioMarcar', E.sessao, x.id, { situacao: 'feito', registroId: r.id }).catch(() => {}); return false; });
   const novos = L.filter(x => x.situacao === 'novo').length;
   el.innerHTML = '<h3>Laudos dos laboratórios' + (novos ? ' <span class="chip critico">' + novos + (novos === 1 ? ' novo' : ' novos') + '</span>' : '') + '</h3>' +
@@ -5022,7 +5026,7 @@ function pintarPainelLaudos() {
   if (!document.querySelector('.tela-pl')) return;
   const labs = PL.labs || [], rasc = PL.rasc || [], regs = laudosTodos();
   const dataDe = (o) => o.k === 'lab' ? isoLab(o.x) : o.k === 'rasc' ? String(o.x.em || '').slice(0, 10) : o.x.data;
-  const itens = labs.filter(x => x.situacao !== 'feito').map(x => ({ k: 'lab', x, t: x.origem, al: alertaLab(x), et: x.situacao === 'ignorado' ? 'ignorado' : alertaLab(x).length || x.positivo ? 'alerta' : 'aguardando' }))
+  const itens = labs.filter(x => x.situacao !== 'feito').map(x => ({ k: 'lab', x, t: x.origem, al: alertaLab(x), et: ['ignorado', 'arquivado'].includes(x.situacao) ? 'arquivado' : alertaLab(x).length || x.positivo ? 'alerta' : 'aguardando' }))
     .concat(rasc.map(x => ({ k: 'rasc', x, t: x.tipo === 'idexx' && /citopet/i.test(x.titulo || '') ? 'citopet' : x.tipo, al: [], et: 'aguardando' })))
     .concat(regs.map(x => ({ k: 'reg', x, t: catReg(x), al: alertaReg(x), et: 'assinado' })));
   const meses = [...new Set(itens.map(o => String(dataDe(o) || '').slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -5030,12 +5034,12 @@ function pintarPainelLaudos() {
   const V = itens.filter(noPeriodo);
   const nomeMes = m => { const [a, b] = m.split('-'); return ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][+b - 1] + '/' + a; };
   // alertas no topo: resultados com detecção ou fora da referência ainda sem laudo, e laudos assinados com alerta que não foram para a carteira
-  const alertas = V.filter(o => o.al.length && (o.k === 'lab' ? o.et !== 'ignorado' : o.k === 'reg' && !envioDe(o.x).carteira));
+  const alertas = V.filter(o => o.al.length && (o.k === 'lab' ? o.et !== 'arquivado' : o.k === 'reg' && !envioDe(o.x).carteira));
   const nome = o => { if (o.k === 'reg') return (animalDe(o.x.animalId) || {}).nome || ''; if (o.k === 'rasc') return o.x.paciente || 'Sem nome'; const an = animalDoLab(o.x), nI = o.x.origem === 'idexx' ? idexxNome(o.x.nomeArquivo) : null; return an ? an.nome : (nI ? nI.animal : String(o.x.animal || '').replace(/\s*\(\d+\)\s*/, ' ').trim()) || 'animal não identificado'; };
   const card = o => {
     const x = o.x, al = o.al.length ? '<small class="lab-pos">' + esc(o.al.slice(0, 6).join(' · ')) + '</small>' : '';
-    if (o.k === 'lab') return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (o.al.length || x.positivo ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(nome(o)) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + '</b><small>' + esc([br(isoLab(x)) || x.data, x.numero ? 'nº ' + x.numero : '', x.completo === 'NÃO' ? 'resultado parcial' : '', x.situacao === 'ignorado' ? 'ignorado' : 'recebido do laboratório, aguardando o laudo do CVH'].filter(Boolean).join(' · ')) + '</small>' + al + '</div>' +
-      '<div class="mini-bts"><a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF</a><button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">Fazer laudo CVH</button><button class="mini" data-acao="pl-marcar" data-id="' + esc(x.id) + '" data-v="' + (x.situacao === 'ignorado' ? 'novo' : 'ignorado') + '">' + (x.situacao === 'ignorado' ? 'Voltar' : 'Ignorar') + '</button></div></div>';
+    if (o.k === 'lab') return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (o.al.length || x.positivo ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(nome(o)) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + '</b><small>' + esc([br(isoLab(x)) || x.data, x.numero ? 'nº ' + x.numero : '', x.completo === 'NÃO' ? 'resultado parcial' : '', ['ignorado', 'arquivado'].includes(x.situacao) ? 'arquivado' : 'recebido do laboratório, aguardando o laudo do CVH'].filter(Boolean).join(' · ')) + '</small>' + al + '</div>' +
+      '<div class="mini-bts"><a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF</a><button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">Fazer laudo CVH</button><button class="mini" data-acao="pl-marcar" data-id="' + esc(x.id) + '" data-v="' + (['ignorado', 'arquivado'].includes(x.situacao) ? 'visto' : 'arquivado') + '">' + (['ignorado', 'arquivado'].includes(x.situacao) ? 'Voltar para o fluxo' : 'Arquivar') + '</button></div></div>';
     if (o.k === 'rasc') return '<div class="item lab-it"><div class="t"><b><span class="chip neutro">em edição</span> ' + esc(nome(o)) + ' · ' + esc(x.titulo || 'Laudo') + '</b><small>' + esc(['salvo ' + br(String(x.em || '').slice(0, 10)), x.usuario].filter(Boolean).join(' · ')) + '</small></div><div class="mini-bts"><button class="mini" data-acao="laudo-ed-abrir" data-id="' + esc(x.id) + '">Revisar e assinar</button></div></div>';
     const d = x.dados || {}, ev = envioDe(x), temHist = !!d.origens && pode('historico');
     return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al +
@@ -5045,14 +5049,14 @@ function pintarPainelLaudos() {
       (temHist ? '<button class="mini" data-acao="pl-envio" data-id="' + x.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : '') +
       (((d.edicao && d.edicao.id) || edicaoDeAntigo(d)) && pode('laudos') ? '<button class="mini" data-acao="laudo-corrigir" data-id="' + x.id + '">Corrigir</button>' : '') + '</div></div>';
   };
-  const cont = t => V.filter(o => o.t === t && o.et !== 'assinado' && o.et !== 'ignorado').length;
+  const cont = t => V.filter(o => o.t === t && o.et !== 'assinado' && o.et !== 'arquivado').length;
   const T = V.filter(o => o.t === PL.tipo), etapa = (k, tit, nota) => { const L = T.filter(o => o.et === k); return '<section class="cartao"><h3>' + tit + ' · ' + L.length + '</h3>' + (nota ? '<p class="nota">' + nota + '</p>' : '') + (L.length ? L.map(card).join('') : '<p class="vazio-p">Nada aqui.</p>') + '</section>'; };
   document.querySelector('.tela-pl .tela-c').innerHTML = '<div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Laudos</button></div><header class="topo"><div class="t"><span>Laudos de exames</span><b>Painel de laudos</b></div></header>' +
     '<div class="pl-filtro"><label>Período <select id="plMes"><option value="recentes"' + (PL.mes === 'recentes' ? ' selected' : '') + '>Últimos 30 dias e pendentes</option>' + meses.map(m => '<option value="' + m + '"' + (PL.mes === m ? ' selected' : '') + '>' + nomeMes(m) + '</option>').join('') + '<option value="todos"' + (PL.mes === 'todos' ? ' selected' : '') + '>Todos</option></select></label><button class="btn sec2 peq" data-acao="pl-atualizar">Atualizar</button></div>' +
     '<section class="cartao pl-alertas"><h3>Alertas' + (alertas.length ? ' <span class="chip critico">' + alertas.length + '</span>' : '') + '</h3>' + (alertas.length ? alertas.sort((a, b) => (b.x.positivo ? 1 : 0) - (a.x.positivo ? 1 : 0)).map(card).join('') : '<p class="vazio-p">Nenhum alerta no período.</p>') + '</section>' +
     '<div class="pl-tipos">' + TIPOS_PL.map(([k, t]) => '<button class="' + (PL.tipo === k ? 'on' : '') + '" data-acao="pl-tipo" data-v="' + k + '">' + t + (cont(k) ? ' <b>' + cont(k) + '</b>' : '') + '</button>').join('') + '</div>' +
     '<div class="pl-etapas">' + etapa('alerta', 'Alerta', 'Detectado, positivo ou fora da referência, ainda sem o laudo do CVH.') + etapa('aguardando', 'Aguardando revisão e assinatura', 'Recebidos dos laboratórios e laudos em edição.') + etapa('assinado', 'Revisados e assinados', 'Envie para a carteira do responsável e para o histórico laboratorial.') + '</div>' +
-    (T.some(o => o.et === 'ignorado') ? etapa('ignorado', 'Ignorados', '') : '');
+    (() => { const A = itens.filter(o => o.t === PL.tipo && o.et === 'arquivado'); return A.length ? '<details class="cartao"><summary><b>Arquivados · ' + A.length + '</b> <small>(laudos antigos baixados de uma vez, para organizar depois)</small></summary>' + A.map(card).join('') + '</details>' : ''; })();
   const s = $('#plMes'); if (s) s.onchange = () => { PL.mes = s.value; pintarPainelLaudos(); };
 }
 /* ═════════════ notificações e sons do CVH ═════════════ */
