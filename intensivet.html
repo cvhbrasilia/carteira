@@ -226,28 +226,35 @@ function pintar() {
   const caminho = rem.filter((r) => r.situacao === "transito");
   if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
-  // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento e tirar a foto
+  // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento; CRIO primeiro
+  const prio = { CRIO: 0, PFC: 1, PPC: 1, CH: 2, CP: 3 };
   for (const r of rem.filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
-    const us = r.unidades.map(uniDe).filter(Boolean), ini = inicioGuarda(r);
+    const us = r.unidades.map(uniDe).filter(Boolean).sort((a, b) => (prio[a.componente] ?? 9) - (prio[b.componente] ?? 9)), ini = inicioGuarda(r);
     const pend = us.filter((u) => u.situacao === "transito" || (u.dados && u.dados.guarda && !u.dados.guarda.foto)); if (!pend.length) continue;
-    h += '<div class="cx al"><h2>Guardar agora · caixa ' + esc(r.id) + "</h2>" + (r.recebida_em ? "<small>Recebida por " + esc(r.recebida_por) + " " + esc(hora(r.recebida_em)) + "</small>" : "<p><b>A caixa foi entregue. Leia o QR da caixa antes de abrir.</b></p>") +
+    h += '<div class="cx al"><h2>Guardar agora · caixa ' + esc(r.id) + "</h2>" + (r.recebida_em ? "<small>Recebida por " + esc(r.recebida_por) + " " + esc(hora(r.recebida_em)) + "</small>" : "<p><b>Entrega registrada. Toque em Chegou caixa do CVH e leia o QR da caixa antes de abrir.</b></p>") +
       us.map((u) => { const g = (u.dados || {}).guarda; let st, bt = "";
-        if (u.situacao === "transito") { st = ini ? "<small>Tempo para guardar</small>" + relogio(ini + prazo(u) * 6e4) : ""; if (r.recebida_em) bt = '<button class="btn peq" data-a="guardar" data-v="' + esc(u.id) + '">Ler QR do equipamento</button>'; }
-        else if (g && !g.foto) { st = '<span class="tag av">falta a foto</span>'; bt = '<button class="btn peq" data-a="fotoGuarda" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
+        if (u.situacao === "transito") { st = ini && D.prazos[u.componente] ? "<small>Tempo para guardar</small>" + relogio(ini + prazo(u) * 6e4) : ""; if (r.recebida_em) bt = '<button class="btn peq" data-a="guardar" data-v="' + esc(u.id) + '">Guardar</button>'; }
+        else if (g && !g.foto) { st = '<span class="tag av">No equipamento · foto pendente</span>'; bt = '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
         else st = '<span class="tag ok">guardada</span>';
-        return '<div class="bolsa">' + linhaBolsa(u) + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") + "</div>";
+        const eq = (D.equipamentos || []).find((e) => (e.aceita || []).includes(u.componente));
+        return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
+      (r.recebida_em ? '<div class="bts"><button class="btn sec peq" data-a="ocorrencia" data-v="Caixa ' + esc(r.id) + '">Informar ocorrência ao CVH</button></div>' : "") + "</div>";
   }
-  // internação: bolsas retiradas esperando o registro da transfusão
-  const ret = (D.unidades || []).filter((u) => u.situacao === "retirada");
-  if (ret.length) h += '<div class="cx av"><h2>Retiradas para transfusão</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora();
-    return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + '</small><div class="bts">' + (interna ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">Transfundido</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">Cancelar retirada (' + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
-  if (interna) h += '<button class="btn grande sec" data-a="retirarQR">Ler etiqueta da bolsa para transfusão</button>';
+  // bolsas que voltaram ao estoque por cancelamento e ainda esperam o QR do equipamento e a foto
+  const regu = (D.unidades || []).filter((u) => (u.dados || {}).guardaPendente || ((u.dados || {}).guarda && !u.dados.guarda.foto && !u.dados.remessa && u.local === A.local && ["disponivel", "reservada"].includes(u.situacao)));
+  if (regu.length) h += '<div class="cx al"><h2>Guardar de novo</h2>' + regu.map((u) => '<div class="bolsa">' + linhaBolsa(u) + '<div class="bts">' + ((u.dados || {}).guardaPendente ? '<button class="btn peq" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler QR do equipamento</button>' : '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>') + "</div></div>").join("") + "</div>";
+  // internação: TRANSFUNDIDO | CANCELAR E DEVOLVER AO ESTOQUE
+  const dez = (u) => Date.parse(((u.dados || {}).uso || {}).retiradaEm) + 6e5;
+  const ret = (D.unidades || []).filter((u) => u.situacao === "retirada" || (u.situacao === "utilizada" && dez(u) > agora()));
+  if (ret.length) h += '<div class="cx av"><h2>Retiradas para uso</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora(), feita = u.situacao === "utilizada";
+    return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + (feita ? " · transfundida em " + esc(((u.dados.uso || {}).paciente || {}).nome || "") : "") + (u.reserva ? " · reserva " + esc(u.reserva) : "") + '</small><div class="bts">' + (interna && !feita ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">TRANSFUNDIDO</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">' + (feita ? "Corrigir: não foi usada" : "CANCELAR E DEVOLVER AO ESTOQUE") + " (" + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
+  h += '<button class="btn grande sec" data-a="lerEtiqueta">Ler etiqueta da bolsa</button>';
   // miniestoque
   const est = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada"].includes(u.situacao));
   const ordem = ["CH", "PFC", "CRIO", "CP", "PPC"];
   h += '<div class="cx"><h2>Estoque na ' + esc(A.local) + " · " + est.length + (est.length === 1 ? " bolsa" : " bolsas") + "</h2>" + (est.length ? est.sort((a, b) => ordem.indexOf(a.componente) - ordem.indexOf(b.componente) || String(a.validade).localeCompare(String(b.validade))).map((u) =>
     '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
-    (interna && u.situacao !== "bloqueada" ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para transfusão</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
+    (interna && u.situacao !== "bloqueada" ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button><button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
   const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
   if (feitas.length) h += '<div class="cx"><h2>Transfundidas nas últimas 24 horas</h2>' + feitas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(((u.dados.uso || {}).paciente || {}).nome || "") + " · " + esc(hora((u.dados.uso || {}).transfundidaEm)) + "</small></div>").join("") + "</div>";
   h += '<p class="vazio"><small>Dúvidas sobre as bolsas, fale com o CVH.</small></p>';
@@ -261,7 +268,7 @@ function tique() {
   if (!D) return;
   for (const r of (D.remessas || []).filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
     const ini = inicioGuarda(r); if (!ini) continue;
-    for (const u of r.unidades.map(uniDe).filter((x) => x && x.situacao === "transito")) {
+    for (const u of r.unidades.map(uniDe).filter((x) => x && x.situacao === "transito" && D.prazos[x.componente])) {
       const fim = ini + prazo(u) * 6e4, ch = "g:" + u.id;
       if (agora() > fim) {
         if (!AVISADO[ch]) { AVISADO[ch] = 1; srv("intAlertaGuarda", u.id).catch(() => {}); }
@@ -288,70 +295,132 @@ setInterval(() => carregar(true), 30000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) carregar(true); });
 
 /* ── ações ── */
-async function receber() {
-  const t = await lerQR("Leia o QR do lado de fora da caixa"); if (!t) return;
-  receberCaixa(norm(t));
+// recebimento (10.2): nome, foto rápida pela câmera frontal (sem prévia), depois o QR externo da caixa
+async function fotoFrontal() {
+  let f = null; const v = document.createElement("video"); v.playsInline = true; v.muted = true; v.setAttribute("playsinline", ""); v.style.cssText = "position:fixed;width:2px;height:2px;opacity:0;left:0;top:0"; document.body.appendChild(v);
+  try {
+    f = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 } }, audio: false }); v.srcObject = f; await v.play();
+    await new Promise((r) => setTimeout(r, 700));
+    const c = document.createElement("canvas"), k = Math.min(1, 640 / (v.videoWidth || 640)); c.width = Math.round((v.videoWidth || 640) * k); c.height = Math.round((v.videoHeight || 480) * k); c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.7).split(",")[1];
+  } catch (e) { return null; } finally { if (f) f.getTracks().forEach((t) => t.stop()); v.remove(); }
 }
-function receberCaixa(id) {
+function pedirNome(titulo, depois) {
+  modal("<h2>" + esc(titulo) + '</h2><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '" autocomplete="given-name"><p><small>Ao continuar, o aplicativo registra uma foto rápida pela câmera da frente para identificar quem recebeu. A foto tem acesso restrito ao CVH.</small></p><div class="bts"><button class="btn" data-a="nomeOk">Continuar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  PROX = depois;
+}
+let PROX = null;
+async function nomeOk(b) {
+  const nome = ($("#mNome") || {}).value ? $("#mNome").value.trim() : ""; if (!nome) return toast("Informe seu primeiro nome."); salvarNome(nome);
+  b.disabled = true; const fn = PROX; PROX = null; toast("Registrando a foto do recebimento…", 3000);
+  const foto = await fotoFrontal(); fechar(); if (fn) await fn(nome, foto);
+}
+function receber() {
+  pedirNome("Chegou caixa do CVH", async (nome, foto) => {
+    const t = await lerQR("Leia o QR do lado de fora da caixa, antes de abrir"); if (!t) return toast("Recebimento não registrado. A foto foi descartada.", 5000);
+    await confirmarRecebimento(norm(t), nome, foto);
+  });
+}
+function receberCaixa(id) { pedirNome("Caixa " + id, (nome, foto) => confirmarRecebimento(id, nome, foto)); }
+async function confirmarRecebimento(id, nome, foto) {
   const r = (D.remessas || []).find((x) => x.id === id);
-  if (!r) { bip(false); toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); return; }
-  modal("<h2>Caixa " + esc(id) + "</h2><p>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa." : " bolsas.") + ' Tire a foto da frente da caixa, ainda fechada.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '" autocomplete="given-name"><div class="bts"><button class="btn" data-a="recFoto" data-v="' + esc(id) + '">Tirar a foto e confirmar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  if (!r) { bip(false); return toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); }
+  toast("Enviando…", 20000);
+  try { await srv("intReceber", id, nome, foto); somOk(); toast("Recebimento confirmado. Guarde cada bolsa: leia a etiqueta e depois o QR do equipamento.", 8000); await carregar(); }
+  catch (e) { bip(false); toast(e.message, 7000); }
 }
-async function recFoto(id, b) {
-  const nome = $("#mNome").value.trim(); if (!nome) return toast("Informe seu primeiro nome.");
-  salvarNome(nome); const f = await tirarFoto(); if (!f) return toast("A foto da caixa é necessária.");
-  b.disabled = true; toast("Enviando…", 20000);
-  try { await srv("intReceber", id, nome, f); somOk(); fechar(); toast("Recebimento confirmado. Guarde cada bolsa e leia o QR do equipamento.", 7000); await carregar(); }
-  catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+// guarda (10.3 a 10.6): etiqueta da bolsa, orientação do CH, QR do equipamento, foto da bolsa no equipamento
+const pendenteGuarda = (u) => u && (u.situacao === "transito" && (D.remessas || []).some((r) => r.recebida_em && r.unidades.includes(u.id)) || (u.dados || {}).guardaPendente);
+const ORIENTA_CH = '<svg viewBox="0 0 320 150" style="width:100%;max-width:420px;display:block;margin:6px auto" font-family="Arial" font-size="12"><rect x="4" y="4" width="152" height="142" rx="10" fill="#E3EFE6" stroke="#2F6B45"/><text x="80" y="22" text-anchor="middle" font-weight="700" fill="#2F6B45">CORRETO ✓</text><path d="M18 116 L142 116 L128 98 L32 98 Z" fill="#fff" stroke="#8a7a70" stroke-dasharray="4 3"/><rect x="44" y="40" width="72" height="58" rx="8" fill="#A83D3D"/><rect x="58" y="56" width="44" height="22" rx="2" fill="#fff"/><text x="80" y="71" text-anchor="middle" font-size="9" fill="#2b2320">CH</text><text x="80" y="131" text-anchor="middle" font-size="10" fill="#2b2320">bolsa por cima, fora dele;</text><text x="80" y="143" text-anchor="middle" font-size="10" fill="#2b2320">plástico aberto por baixo</text><rect x="164" y="4" width="152" height="142" rx="10" fill="#F6DADA" stroke="#A83D3D"/><text x="240" y="22" text-anchor="middle" font-weight="700" fill="#8A1D14">EVITAR ✕</text><rect x="190" y="34" width="100" height="84" rx="8" fill="#fff" fill-opacity=".7" stroke="#8a7a70"/><rect x="204" y="48" width="72" height="58" rx="8" fill="#A83D3D" opacity=".8"/><rect x="186" y="30" width="108" height="10" rx="3" fill="#C49A6C" stroke="#8A1D14" stroke-width="2"/><text x="240" y="131" text-anchor="middle" font-size="10" fill="#2b2320">bolsa dentro do</text><text x="240" y="143" text-anchor="middle" font-size="10" fill="#2b2320">ziplock fechado</text></svg>';
+async function guardar(uidSugerido) {
+  const t = await lerQR(uidSugerido ? "Leia a etiqueta da bolsa " + uidSugerido : "Leia a etiqueta da bolsa"); if (!t) return;
+  const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
+  if (!u || !pendenteGuarda(u)) { bip(false); return toast(u ? "Esta bolsa não está esperando guarda." : "Bolsa não encontrada nesta caixa. Confira a etiqueta.", 7000); }
+  if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
+  await lerEquip(u.id);
 }
-async function guardar(uid) {
-  const u = uniDe(uid); const t = await lerQR("Bolsa " + uid + " · leia o QR do " + (u && u.componente === "CH" ? "refrigerador" : "freezer")); if (!t) return;
-  try { await srv("intGuardar", uid, norm(t), nomeSalvo()); somOk(); await carregar(); toast("Equipamento certo. Agora toque em Foto da bolsa guardada.", 6000); }
-  catch (e) { tom(220, 0, 0.5, 0.3, "square"); toast(e.message, 8000); }
+async function lerEquip(uid) {
+  fechar(); const u = uniDe(uid); const t = await lerQR(uid + " · leia o QR do " + (u.componente === "CH" ? "refrigerador" : "freezer")); if (!t) return;
+  try { await srv("intGuardar", uid, norm(t), nomeSalvo()); somOk(); await carregar(); pedirFotoGuarda(uid); }
+  catch (e) { bip(false); toast(e.message, 9000); }
+}
+function pedirFotoGuarda(uid) {
+  const u = uniDe(uid) || {};
+  modal("<h2>No equipamento · foto pendente</h2><p>Tire a foto da bolsa " + esc(uid) + " já dentro do equipamento." + (u.componente === "CH" ? " A foto precisa mostrar a bolsa fora do ziplock, apoiada sobre o plástico aberto." : "") + '</p><div class="bts"><button class="btn" data-a="fotoGuarda" data-v="' + esc(uid) + '">Tirar a foto</button><button class="btn sec" data-a="fechar">Depois</button></div>');
 }
 async function fotoGuarda(uid) {
   const f = await tirarFoto(); if (!f) return toast("Tire a foto da bolsa guardada.");
-  toast("Enviando a foto…", 20000);
+  fechar(); toast("Enviando a foto…", 20000);
   try { await srv("intFotoGuarda", uid, f); somOk(); toast("Bolsa guardada.", 4000); await carregar(); } catch (e) { toast(e.message, 7000); }
 }
+function ocorrencia(alvo) {
+  modal("<h2>Informar ocorrência ao CVH</h2><p>" + esc(alvo) + '</p><label>O que aconteceu</label><textarea id="ocTxt" rows="4" placeholder="Ex.: sinal de descongelamento, bolsa danificada, bolsa faltando ou a mais na caixa"></textarea><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="ocOk" data-v="' + esc(alvo) + '">Enviar ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+// uso (10.10 e 10.11)
 function confirmarRetirada(uid) {
   const u = uniDe(uid); if (!u || u.local !== D.aparelho.local || !["disponivel", "reservada"].includes(u.situacao)) return toast("Esta bolsa não está disponível aqui. Confira a etiqueta.", 7000);
-  modal("<h2>Retirar para transfusão</h2>" + '<div class="bolsa">' + linhaBolsa(u) + "</div>" + (u.situacao === "reservada" ? '<p class="tag av">Reservada' + (u.reserva ? " para " + esc(u.reserva) : "") + "</p>" : "") + '<p>Ao confirmar, a bolsa sai do estoque da Intensivet. Dá para cancelar em até 10 minutos.</p><div class="bts"><button class="btn" data-a="retirarOk" data-v="' + esc(uid) + '">Confirmar retirada</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  modal("<h2>Retirar para uso</h2>" + '<div class="bolsa">' + linhaBolsa(u) + "</div>" + (u.situacao === "reservada" ? '<p class="tag av">Reservada' + (u.reserva ? " para " + esc(u.reserva) : "") + "</p>" : "") + '<p>Ao confirmar, a bolsa sai do estoque da Intensivet. Dá para cancelar e devolver ao estoque em até 10 minutos.</p><div class="bts"><button class="btn" data-a="retirarOk" data-v="' + esc(uid) + '">Confirmar retirada</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
 }
-async function retirarQR() { const t = await lerQR("Leia a etiqueta da bolsa"); if (!t) return; const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id); if (!u) return toast("Bolsa não encontrada no estoque daqui. Confira a etiqueta.", 7000); confirmarRetirada(u.id); }
+async function retirarQR() { const t = await lerQR("Leia a etiqueta da bolsa"); if (!t) return; const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id); if (!u) { bip(false); return toast("Bolsa não encontrada no estoque daqui. Confira a etiqueta.", 7000); } confirmarRetirada(u.id); }
+const vets = () => { try { return JSON.parse(localStorage.getItem("cvh_int_vets") || "[]"); } catch (e) { return []; } };
 function formTransfusao(uid) {
-  const u = uniDe(uid), o = ((u.dados || {}).uso || {});
-  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do paciente</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="number" inputmode="decimal" id="tPeso"><label>Hematócrito antes da transfusão (%)</label><input type="number" inputmode="decimal" id="tHt"><label>Telefone do responsável</label><input type="tel" id="tTel"><label>Médico veterinário responsável</label><input type="text" id="tVet"><label>CRMV</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
-    '<label>Contato do CVH com o responsável</label><label class="op"><input type="radio" name="tCont" value="ciente"> O responsável está ciente da transfusão e o CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Aguardar o médico veterinário avisar o responsável.</label>' +
-    '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">Registrar transfusão</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  const V = vets();
+  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="number" inputmode="decimal" id="tPeso"><label>Hematócrito do paciente (%)</label><input type="number" inputmode="decimal" id="tHt"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
+    (V.length ? '<label>Médico veterinário</label><div class="bts" style="margin-top:0">' + V.map((v, i) => '<button class="btn sec peq" data-a="vetUsar" data-v="' + i + '">' + esc(v.nome) + "</button>").join("") + "</div>" : "") +
+    '<label>Nome do médico veterinário</label><input type="text" id="tVet"><label>CRMV/UF</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
+    '<label>Contato com o responsável</label><label class="op"><input type="radio" name="tCont" value="ciente"> O responsável já está ciente da transfusão. O CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Favor aguardar para entrar em contato. O responsável ainda não foi avisado.</label>' +
+    '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">TRANSFUNDIDO</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
 }
 async function transfOk(uid, b) {
   const c = document.querySelector('input[name="tCont"]:checked');
   const o = { animal: $("#tAn").value.trim(), peso: $("#tPeso").value.trim(), ht: $("#tHt").value.trim(), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim(), crmv: $("#tCrmv").value.trim(), contato: c ? c.value : "" };
   b.disabled = true;
-  try { await srv("intTransfundir", uid, o); somOk(); fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar(); } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+  try {
+    await srv("intTransfundir", uid, o); somOk();
+    try { const V = vets().filter((v) => v.nome.toLowerCase() !== o.vet.toLowerCase()); V.unshift({ nome: o.vet, crmv: o.crmv }); localStorage.setItem("cvh_int_vets", JSON.stringify(V.slice(0, 12))); } catch (e) {}
+    fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar();
+  } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+}
+function cancelarUso(uid) {
+  const u = uniDe(uid), feita = u && u.situacao === "utilizada";
+  modal("<h2>Cancelar e devolver ao estoque</h2><p>" + esc(uid) + "</p>" + (feita ? '<label class="op"><input type="checkbox" id="cSem"> Confirmo que a bolsa não foi usada e que as condições de retorno estão atendidas (Transfundido tocado por engano).</label>' : "<p>Use só se a transfusão não começou e a bolsa está íntegra.</p>") + '<p><small>Depois de cancelar, leia o QR do equipamento e tire a foto da bolsa guardada.</small></p><div class="bts"><button class="btn perigo" data-a="cancelarOk" data-v="' + esc(uid) + '">Cancelar e devolver</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
 }
 function devolver(uid) {
   const u = uniDe(uid);
-  modal("<h2>Devolver ao CVH</h2>" + '<div class="bolsa">' + linhaBolsa(u) + '</div><p>Use só quando o CVH pedir a bolsa de volta ou quando ela não for mais ficar aqui.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="devOk" data-v="' + esc(uid) + '">Confirmar devolução</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  modal("<h2>Devolver ao CVH</h2>" + '<div class="bolsa">' + linhaBolsa(u) + '</div><p>Use quando o CVH pedir a bolsa de volta ou quando ela não for mais ficar aqui.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="devOk" data-v="' + esc(uid) + '">Confirmar a saída da bolsa</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+async function lerEtiquetaGeral() { const t = await lerQR("Leia a etiqueta da bolsa"); if (t) tratarBolsa(norm(t)); }
+function tratarBolsa(id) {
+  const u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
+  if (u && pendenteGuarda(u)) { if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; } return lerEquip(u.id); }
+  if (u && D.aparelho.setor === "internacao" && ["disponivel", "reservada"].includes(u.situacao) && u.local === D.aparelho.local) return confirmarRetirada(u.id);
+  if (u && u.local === D.aparelho.local) { modal('<div class="bolsa">' + linhaBolsa(u) + "</div><p>" + esc(u.equipamento || "") + '</p><div class="bts"><button class="btn sec" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button><button class="btn sec" data-a="ocorrencia" data-v="' + esc(u.id) + '">Informar ocorrência</button><button class="btn sec" data-a="fechar">Fechar</button></div>'); return; }
+  bip(false); toast("Bolsa não encontrada no estoque daqui.", 6000);
 }
 
 document.addEventListener("click", async (ev) => {
   if (ev.target.id === "veu") return fechar();
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
   try {
-    if (a === "fechar") return fechar();
+    if (a === "fechar") { PROX = null; return fechar(); }
     if (a === "atualizar") { await carregar(); return toast("Atualizado.", 1500); }
     if (a === "receber") return receber();
-    if (a === "recFoto") return recFoto(v, b);
+    if (a === "nomeOk") return nomeOk(b);
     if (a === "guardar") return guardar(v);
+    if (a === "lerEquip") return lerEquip(v);
+    if (a === "lerEtiqueta") return lerEtiquetaGeral();
+    if (a === "pedirFoto") return pedirFotoGuarda(v);
     if (a === "fotoGuarda") return fotoGuarda(v);
+    if (a === "ocorrencia") return ocorrencia(v);
+    if (a === "ocOk") { const tx = $("#ocTxt").value.trim(); if (!tx) return toast("Descreva a ocorrência."); const n = $("#mNome").value.trim(); if (n) salvarNome(n); b.disabled = true; await srv("intOcorrencia", v, tx, n); fechar(); somOk(); return toast("Ocorrência enviada ao CVH.", 5000); }
     if (a === "retirar") return confirmarRetirada(v);
     if (a === "retirarQR") return retirarQR();
     if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
     if (a === "transfundir") return formTransfusao(v);
+    if (a === "vetUsar") { const x = vets()[+v]; if (x) { $("#tVet").value = x.nome; $("#tCrmv").value = x.crmv; } return; }
     if (a === "transfOk") return transfOk(v, b);
-    if (a === "cancelar") { b.disabled = true; await srv("intCancelarRetirada", v); fechar(); toast("Retirada cancelada. A bolsa voltou para o estoque. Guarde no mesmo equipamento.", 7000); return carregar(); }
+    if (a === "cancelar") return cancelarUso(v);
+    if (a === "cancelarOk") { const c = $("#cSem"); if (c && !c.checked) return toast("Marque a confirmação."); b.disabled = true; await srv("intCancelarRetirada", v, { semUso: !!c }); fechar(); await carregar(); toast("Retirada cancelada. Agora leia o QR do equipamento.", 6000); return lerEquip(v); }
     if (a === "devolver") return devolver(v);
     if (a === "devOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; await srv("intDevolver", v, n); fechar(); toast("Devolução registrada. Mande a bolsa ao CVH em caixa térmica.", 7000); return carregar(); }
   } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; }
@@ -368,7 +437,7 @@ function lidoLeitor(c) {
   if (!D || $("#modal").classList.contains("on")) return;
   const C = norm(c), r = (D.remessas || []).find((x) => x.id === C), u = (D.unidades || []).find((x) => x.id.toUpperCase() === C);
   if (r && !r.recebida_em) { bip(); return receberCaixa(r.id); }
-  if (u && D.aparelho.setor === "internacao" && u.local === D.aparelho.local && ["disponivel", "reservada"].includes(u.situacao)) { bip(); return confirmarRetirada(u.id); }
+  if (u) return tratarBolsa(u.id.toUpperCase());
   bip(false); toast("Código não reconhecido aqui: " + c, 5000);
 }
 if (!("BarcodeDetector" in window)) setTimeout(() => { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }, 1500);
