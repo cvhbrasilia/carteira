@@ -3636,7 +3636,9 @@ function telaConta() {
     (v ? '<button class="btn sec2 peq" data-acao="minha-rubrica">Minha rubrica</button>' : '') + '</section>' +
     '<section class="cartao"><h3>Trocar senha</h3><div class="grade">' + campo('sAtual', 'Senha atual', inp('sAtual', '', 'type="password" autocomplete="current-password"'), 'larga') +
     campo('sNova', 'Nova senha', inp('sNova', '', 'type="password" autocomplete="new-password"')) + campo('sNova2', 'Repita', inp('sNova2', '', 'type="password" autocomplete="new-password"')) + '</div>' +
-    '<button class="btn sec2 peq" data-acao="trocar-senha">Trocar senha</button></section>');
+    '<button class="btn sec2 peq" data-acao="trocar-senha">Trocar senha</button><p class="nota">Ao trocar a senha, todos os outros aparelhos conectados com o seu usuário saem na hora.</p></section>' +
+    '<section class="cartao"><h3>Aparelhos conectados</h3><p class="nota">Esqueceu o painel aberto em outro computador ou celular? Encerre o acesso de todos os outros aparelhos. Este continua conectado.</p>' +
+    '<button class="btn sec2 peq" data-acao="sair-outros">Sair de todos os outros aparelhos</button></section>');
 }
 
 /* ═════════════ painel: telas ═════════════ */
@@ -5019,9 +5021,12 @@ const ACOES = {
   'sair-modulo': b => sairModulo(b),
   'minha-rubrica': () => { const v = vetLogado(); if (v) abrirFormVet(v); },
   'editar-usuario': b => abrirFormUsuario(b.dataset.id ? E.d.usuarios.find(u => u.id === b.dataset.id) : null),
+  'sair-outros': async b => {
+    try { b.disabled = true; const n = await api('encerrarOutrasSessoes', E.sessao); toast(n ? (n === 1 ? 'Um outro aparelho foi desconectado.' : n + ' outros aparelhos foram desconectados.') : 'Nenhum outro aparelho estava conectado.', 4500); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
+  },
   'trocar-senha': async b => {
     if (vl('sNova') !== vl('sNova2')) return toast('As duas senhas novas não são iguais.', 4000);
-    try { b.disabled = true; await api('trocarSenha', E.sessao, $('#sAtual').value, $('#sNova').value); toast('Senha alterada.'); $('#sAtual').value = $('#sNova').value = $('#sNova2').value = ''; } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
+    try { b.disabled = true; await api('trocarSenha', E.sessao, $('#sAtual').value, $('#sNova').value); toast('Senha alterada. Os outros aparelhos com o seu usuário foram desconectados.', 4500); $('#sAtual').value = $('#sNova').value = $('#sNova2').value = ''; } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
   },
   'abrir-resp': b => E.modulo === 'tcle' && E.modo === 'painel' ? abrirModulo('tcle', null, b.dataset.id) : telaResp(b.dataset.id),
   'tcle-todos': () => abrirModulo('tcle', null, null),
