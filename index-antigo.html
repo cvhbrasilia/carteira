@@ -5360,7 +5360,7 @@ async function abrirModulo(nome, aid, rid) {
     erroModulo('O arquivo ' + cfg.arquivo + ' no Apps Script está incompleto: chegaram ' + h.length.toLocaleString('pt-BR') + ' caracteres, o certo é cerca de ' + cfg.tamanho + '. Apague o conteúdo dele, cole o arquivo inteiro de novo, salve e publique uma nova versão.');
     return;
   }
-  raiz.innerHTML = barra + '<iframe class="modulo" id="modulo" title="' + cfg.titulo + (quem ? ' de ' + esc(quem) : '') + '"></iframe>';
+  raiz.innerHTML = barra + '<iframe class="modulo" id="modulo" allow="camera; clipboard-write" title="' + cfg.titulo + (quem ? ' de ' + esc(quem) : '') + '"></iframe>';
   // os dados do animal vão dentro do próprio HTML do módulo, sem depender de troca de mensagens
   const ctx = '<script>window.addEventListener("error", function (e) { if (!e.lineno && !e.filename && !e.error && /^Script error\\.?$/.test(e.message || "")) return; /* erro sem detalhe nenhum vem de fora do módulo (recursos do próprio Safari ou de outro site): não dá para diagnosticar e não afeta o módulo */ try { parent.CVH_ERRO_MODULO((e.message || "erro") + (e.lineno ? " (linha " + e.lineno + ")" : "") + (e.filename && e.filename.indexOf("about:") !== 0 ? " em " + String(e.filename).split("/").pop().slice(0, 40) : "") + (e.error && e.error.stack ? " · " + String(e.error.stack).split("\\n")[0].slice(0, 120) : "")); } catch (_) {} });' +
     'window.CVH_CTX = ' + JSON.stringify(E.ponte).replace(/</g, '\\u003c') + ';<\/script>';

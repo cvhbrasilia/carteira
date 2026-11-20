@@ -157,19 +157,34 @@ function lerQR(titulo) {
     try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
     catch (e) { toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
     try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
-    if (!det) { try { jq = await carregarJsQR(); } catch (e) { toast("Leitor de QR indisponível. Digite o código.", 6000); } }
+    let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
     const passo = async () => {
       if (!vivo) return;
       try {
         if (v.readyState >= 2) {
           if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(60); return fim(r[0].rawValue); } }
+          else if (zx && (++n % 2 || !jq)) { const t = zx(v); if (t) { if (navigator.vibrate) navigator.vibrate(60); return fim(t); } }
           else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(60); return fim(r.data); } }
         }
       } catch (e) {}
-      setTimeout(passo, det ? 90 : 160);
+      setTimeout(passo, det ? 90 : 40);
     };
     passo();
   });
+}
+
+// código de barras (Code 128) pela câmera quando o celular não tem leitor próprio (iPhone): ZXing na faixa do meio da imagem
+let ZXP = null;
+function carregarZX() {
+  if (window.ZXing) return Promise.resolve(window.ZXing); if (ZXP) return ZXP;
+  ZXP = new Promise((ok, erro) => { const tenta = (src, depois) => { const sc = document.createElement("script"); sc.src = src; sc.onload = () => window.ZXing ? ok(window.ZXing) : depois(); sc.onerror = depois; document.head.appendChild(sc); }; let local = "bibliotecas/zxing.min.js"; try { if (window.parent !== window) local = new URL(local, window.parent.location.href).href; } catch (e) {} tenta(local, () => tenta("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js", () => { ZXP = null; erro(new Error("zxing")); })); });
+  return ZXP;
+}
+function leitorBarras(Z) {
+  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); const r = new Z.MultiFormatReader(); r.setHints(h);
+  const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height);
+    try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
 }
 // o QR pode trazer só o código ou um endereço com ?u= / ?c= / ?e=
 const codigo = (t) => { t = String(t || "").trim(); const m = t.match(/[?&](?:u|c|e)=([^&#]+)/); return (m ? decodeURIComponent(m[1]) : t).trim(); };
@@ -356,7 +371,7 @@ function lidoLeitor(c) {
   if (u && D.aparelho.setor === "internacao" && u.local === D.aparelho.local && ["disponivel", "reservada"].includes(u.situacao)) { bip(); return confirmarRetirada(u.id); }
   bip(false); toast("Código não reconhecido aqui: " + c, 5000);
 }
-if (!("BarcodeDetector" in window)) setTimeout(() => carregarJsQR().catch(() => {}), 1500);
+if (!("BarcodeDetector" in window)) setTimeout(() => { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }, 1500);
 carregar();
 </script>
 </body></html>
