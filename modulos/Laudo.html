@@ -1916,7 +1916,9 @@ const TIPOS = {
   fiv: { nome: "Teste rápido FIV e FeLV", sub: "Resultado com a foto do teste", so: "gato" },
   coombs: { nome: "Teste de Coombs", sub: "Teste de antiglobulina direta" },
   compat: { nome: "Prova de compatibilidade", sub: "Em gel ou imunocromatográfica" },
+  compatExt: { nome: "Prova de compatibilidade externa", sub: "Amostras de doador e receptor enviadas por médico veterinário de fora do CVH" },
 };
+const extDoador = () => estado.tipo === "compat" && !!(estado.t && estado.t.doadorExterno);
 const GRAUS = ["", "+", "++", "+++"];
 const NOTA_GRAU = "As cruzes indicam a intensidade da aglutinação no teste do paciente, de + (fraca) a +++ (intensa).";
 const NOTA_DEA1 = "O grupo 1 do sistema DEA (Dog Erythrocyte Antigen) é o mais relevante clinicamente na medicina transfusional veterinária. Os cães podem ser classificados como DEA 1 positivo ou DEA 1 negativo. Cães DEA 1 negativos não possuem aloanticorpos naturais contra o DEA 1, mas podem se sensibilizar após uma transfusão incompatível e desenvolver anticorpos em cerca de 4 a 14 dias, o que pode resultar em reações hemolíticas agudas ou tardias nas transfusões seguintes.\n" +
@@ -2005,7 +2007,7 @@ function entrarSub() { if (SUB || !estado.tip || estado.tipo !== "compat") retur
 function sairSub() { if (!subGuardado) return; estado.t = subGuardado[0]; estado.tipo = subGuardado[1]; subGuardado = null; subBase = null; SUB = false; }
 const tipAtual = () => (estado.tipo === "tipagem" ? estado.t : estado.tipo === "compat" ? estado.tip : null);
 function iniciarTipo(k) {
-  sairSub(); estado.tip = null;
+  sairSub(); estado.tip = null; if (estado.assinadoAntes) { estado.regId = ""; estado.assinadoAntes = false; } estado.alertaOk = "";
   estado.tipo = k; estado.obs = ""; estado.fotos = {}; AMOSTRA_IMG.tubo = null; AMOSTRA_IMG.gel = []; AMOSTRA_IMG.cache = {}; salvo = null; estado.kitContado = false; estado.kitForm = ""; estado.emitido = null;
   const g = felino(), tsA = semAc(an.tipoSanguineo || ""), dalA = semAc(an.dal || "");
   estado.exame = { titulo: "", data: hojeISO(), hora: "", equip: "", solicitante: estado.vet && !estado.receptor ? estado.vet.nome : "", clinica: "", amostra: "", doacao: "" };
@@ -2197,14 +2199,18 @@ const CLINICA_CVH = "CVH - Centro Veterinário de Hemoterapia";
 // laudo de doador do CVH (ou clínica igual à do CVH): o CVH é banco de sangue, não clínica veterinária
 const ehCvh = () => !estado.receptor && (!String(estado.exame.clinica || "").trim() || estado.exame.clinica === CLINICA_CVH);
 // exigências do CRMV no cabeçalho: CRMV do solicitante (do cadastro, quando é médico veterinário do CVH) e data da liberação
+function crmvSolicitante() {
+  const X = estado.exame, nome = String(X.solicitante || "").trim(); let crmv = String(X.solicitanteCrmv || "").trim();
+  if (!crmv && nome) { const v = [estado.vet, ...(CTX.vets || []), ...(typeof VETS !== "undefined" && Array.isArray(VETS) ? VETS : [])].filter(Boolean).find((x) => { const vn = semAc(x.nome).replace(/^(dra?|dr)\.?\s+/, "").trim(), n = semAc(nome).replace(/^(dra?|dr)\.?\s+/, "").trim(); return vn === n || (n.length >= 3 && n.split(/\s+/).every((p) => vn.split(/\s+/).includes(p))); }); if (v && v.crmv) crmv = v.crmv; }
+  return crmv;
+}
 function solicitanteTxt() {
-  const X = estado.exame, nome = String(X.solicitante || "").trim(); if (!nome) return "";
-  let crmv = String(X.solicitanteCrmv || "").trim();
-  if (!crmv) { const v = [estado.vet, ...(CTX.vets || []), ...(typeof VETS !== "undefined" && Array.isArray(VETS) ? VETS : [])].filter(Boolean).find((x) => String(x.nome || "").trim().toLowerCase() === nome.toLowerCase()); if (v && v.crmv) crmv = v.crmv; }
+  const nome = String(estado.exame.solicitante || "").trim(); if (!nome) return "";
+  const crmv = crmvSolicitante();
   return nome + (crmv ? "  ·  " + (/crmv/i.test(crmv) ? crmv : "CRMV " + crmv) : "");
 }
 function liberacaoTxt() {
-  const q = (typeof salvo !== "undefined" && salvo && salvo.assinadoEm) || (estado.receptor && estado.emitido) || null;
+  const q = (typeof salvo !== "undefined" && salvo && salvo.assinadoEm) || null;
   return q ? q.data + " às " + String(q.hora || "").replace(":", "h") : br(hojeISO());
 }
 function blocoIdent(x, y, w, tam) {
@@ -2484,6 +2490,27 @@ function blocosCoombs(x, w, cel) {
 const NOTA_AC_NEG = "O autocontrole negativo indica ausência de aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio. Entretanto, não exclui a presença de hemácias sensibilizadas por imunoglobulinas ou componentes do complemento, que podem não produzir aglutinação espontânea. A investigação dessa sensibilização requer métodos complementares, como o teste de antiglobulina direta (Coombs direto), associados à avaliação clínico-laboratorial.";
 const NOTA_AC_POS = "O autocontrole positivo indica aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio, o que pode estar associado à presença de autoanticorpos eritrocitários. Entretanto, esse resultado isoladamente não confirma hemólise imunomediada, sendo necessária a exclusão de fenômenos de pseudoaglutinação e interferências analíticas. Recomenda-se investigação complementar, incluindo avaliação morfológica eritrocitária, teste de aglutinação em solução salina e, quando indicado, teste de antiglobulina direta (Coombs direto), em conjunto com os achados clínico-laboratoriais.";
 const PLASMA_OPS = ["", "Normal", "Discretamente ictérico", "Moderadamente ictérico", "Intensamente ictérico", "Discretamente hemolisado", "Moderadamente hemolisado", "Intensamente hemolisado", "Discretamente lipêmico", "Moderadamente lipêmico", "Intensamente lipêmico"];
+// plasma como na ficha de doação: ictérico, hemolisado e lipêmico ao mesmo tempo, cada um discreto, moderado ou intenso, e outros com descrição
+const PLASMA_TIPOS = [["ictericia", "ictérico", "Icterícia"], ["hemolise", "hemolisado", "Hemólise"], ["lipemia", "lipêmico", "Lipemia"]], PLASMA_ADV = { Discreto: "discretamente", Moderado: "moderadamente", Intenso: "intensamente" };
+function selDePlasma(txt) {
+  const x = semAc(txt), s = { ictericia: "", hemolise: "", lipemia: "", outros: "", normal: /^normal/.test(x) };
+  PLASMA_TIPOS.forEach(([k, adj]) => { const m = x.match(new RegExp("(discreta|moderada|intensa)mente " + semAc(adj))); if (m) s[k] = { discreta: "Discreto", moderada: "Moderado", intensa: "Intenso" }[m[1]]; });
+  s._de = String(txt || ""); return s;
+}
+function plasmaSel(t) { if (!t.plasmaSel || t.plasmaSel._de !== String(t.plasma || "")) t.plasmaSel = selDePlasma(t.plasma); return t.plasmaSel; }
+function textoPlasma(s) {
+  const p = PLASMA_TIPOS.filter(([k]) => s[k]).map(([k, adj]) => PLASMA_ADV[s[k]] + " " + adj), o = String(s.outros || "").trim();
+  if (o) p.push(o.charAt(0).toLowerCase() + o.slice(1));
+  if (!p.length) return s.normal ? "Normal" : "";
+  const j = p.length > 1 ? p.slice(0, -1).join(", ") + " e " + p[p.length - 1] : p[0]; return j.charAt(0).toUpperCase() + j.slice(1);
+}
+function plasmaAtualizar(t) { const s = plasmaSel(t); t.plasmaManual = true; t.plasma = textoPlasma(s); s._de = t.plasma; }
+function formPlasma(t) {
+  const s = plasmaSel(t), nada = !PLASMA_TIPOS.some(([k]) => s[k]) && !String(s.outros || "").trim();
+  return `<label>Plasma</label><p class="nota">Marque tudo o que houver, como na ficha de doação.</p>${segm('data-a="plg" data-c="normal"', nada && s.normal ? "Normal" : "", ["Normal"])}
+    ${PLASMA_TIPOS.map(([k, , rot]) => `<label style="margin-top:6px">${rot}</label>${segm(`data-a="plg" data-c="${k}"`, s[k] || "Não", ["Não", "Discreto", "Moderado", "Intenso"])}`).join("")}
+    ${campo("Outros (descreva)", inp('data-pl-outros="1"', s.outros || "", 'placeholder="ex.: turvo, com fibrina"'))}`;
+}
 // hematócrito opcional (em branco não sai no laudo): aceita 45, 45,5 ou 45%
 const htTxt = (v) => { const n = parseFloat(String(v == null ? "" : v).replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(n) && n > 0 && n < 100 ? String(n).replace(".", ",") + " %" : ""; };
 function blocosCompat(x, w, cel) {
@@ -2494,11 +2521,12 @@ function blocosCompat(x, w, cel) {
   t.provas.forEach((p, i) => {
     const L = [["Prova maior" + (gel ? " (PC>)" : ""), p.maior, true]];
     if (gel && t.menor) L.push(["Prova menor (PC<)", p.menor, true]);
-    if (acs && t.acDoadorOn) L.push(["Autocontrole do doador", p.acDoador + (gel ? "" : " (em coluna de gel)")]);
-    if (p.doador) L.push(["Doador", p.doador]);
-    if (htTxt(p.ht)) L.push(["Hematócrito do doador", htTxt(p.ht)]);
+    if (acs && t.acDoadorOn) L.push(["Autocontrole do doador", "Negativo" + (gel ? "" : " (em coluna de gel)")]);
+    if (p.doador && !t.doadorExterno) L.push(["Doador", p.doador]);
+    if (t.doadorExterno && p.bolsa) L.push(["Bolsa", p.bolsa]);
+    if (htTxt(p.ht)) L.push([t.doadorExterno ? "Hematócrito" : "Hematócrito do doador", htTxt(p.ht)]);
     const inc = incompat(p.maior) || (gel && t.menor && incompat(p.menor));
-    cartoes.push(blocoCartao({ titulo: p.bolsa ? "Bolsa " + p.bolsa : (t.provas.length > 1 ? "Bolsa " + (i + 1) : "Prova"), res: inc ? "Incompatível" : "Compatível", pos: inc, rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, linhas: L }, x, wl, cel));
+    cartoes.push(blocoCartao({ titulo: t.doadorExterno ? "Doador " + (p.doador || i + 1) : p.bolsa ? "Bolsa " + p.bolsa : (t.provas.length > 1 ? "Bolsa " + (i + 1) : "Prova"), res: inc ? "Incompatível" : "Compatível", pos: inc, rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, linhas: L }, x, wl, cel));
   });
   // método do autocontrole só na imunocromatográfica, em que ele é feito à parte, em coluna de gel
   // o aspecto do plasma vai na legenda da foto do tubo; sem foto, sai numa linha discreta, alinhada à esquerda
@@ -2623,11 +2651,6 @@ function blocoAssinatura(x, w, y, celular) {
   { const fim = tx + largura("Médico veterinário  ·  " + (v.crmv || ""), 7.2), ini = Math.max(tx + largura(v.nome || "", 9, true) + 4, fim - 60); el.push(...rubricaEls(v.rubrica, ini, by + 5, fim - ini, 24)); }
   const lib = estado.liberador ? (q) => quebrar("Liberado por " + estado.liberador.nome + (q ? " em " + q.data + " às " + q.hora : ""), 6.2, false, w).forEach((l) => { el.push(T(x, y + hh + 7, l, 6.2, { c: COR.MARROM2 })); hh += 8; }) : null;
   let hh = 0;
-  if (estado.receptor) {
-    const em = estado.emitido || agora();
-    el.push(T(tx, by + 41.5, em.data + " às " + em.hora, 6.8, { c: COR.MARROM2 }));
-    hh = 8 + h + 2; if (lib) lib(estado.emitido); return { el, h: hh + 6 };
-  }
   el.push(T(tx, by + 41, quando ? quando.data + " às " + quando.hora : "data e hora ao salvar", 6.6, { c: COR.MARROM2 }));
   el.push(T(tx + (celular ? 0 : 92), by + (celular ? 47.5 : 41), salvo ? "Código " + salvo.codigo : "código ao salvar", 6.6, { b: true, c: COR.MARROM2 }));
   if (salvo && CTX.urlVerificacao) el.push(...qrEls(urlVerif(salvo.codigo), qx, by + (h - sz) / 2, sz));
@@ -2650,6 +2673,7 @@ function paginasLaudo() {
   const metodo = quebrar(notaMetodo(), 7.5, false, W), rodapeH = 96 + metodo.length * 10;
   // o fim do laudo (pelo menos umas quatro linhas) vai junto com a assinatura, para ela nunca ficar sozinha numa folha
   let tail = blocos.length, soma = 0; while (tail > 0 && soma < 50) { tail--; soma += blocos[tail].h; }
+  { const nObs = blocoTexto("OBSERVAÇÕES", estado.obs, X, W, 9.6).length; if (nObs) tail = Math.min(tail, blocos.length - nObs); }
   const resto = blocos.map((_, i) => blocos.slice(i).reduce((a, b) => a + b.h, 0));
   blocos.forEach((b, i) => {
     if (b.quebra) { if (pag.length && y + resto[i] > PG.YMAX - rodapeH) novaPag(); return; }
@@ -3148,7 +3172,7 @@ function linhaForm(l) {
 }
 function caixaPaciente() {
   const P = estado.paciente;
-  const modoRec = !CTX.animalId ? `<label class="chk larga"><span><input type="checkbox" data-rec="1" ${estado.receptor ? "checked" : ""}> Paciente receptor, sem cadastro (digitar os dados e gerar os PDFs sem salvar no sistema)</span></label>` : "";
+  const modoRec = !CTX.animalId ? `<label class="chk larga"><span><input type="checkbox" data-rec="1" ${estado.receptor ? "checked" : ""}> Paciente receptor, sem cadastro (digitar os dados; o laudo fica salvo e assinado no painel de laudos)</span></label>` : "";
   const recentes = estado.receptor && RECEPTORES.length ? `<label class="larga">Receptor recente (dados guardados neste aparelho)<select data-rcp="1"><option value="">Digitar um paciente novo</option>${RECEPTORES.map((r, i) => `<option value="${i}">${esc([r.paciente && r.paciente.nome, r.resp && r.resp.nome, r.exame && r.exame.clinica, r.em ? br(r.em.slice(0, 10)) : ""].filter(Boolean).join(" · "))}</option>`).join("")}</select></label>` : "";
   const escolher = !CTX.animalId && !estado.receptor ? `<label class="larga">Animal do cadastro<select data-animal="1"><option value="">Escolha o animal</option>${ANIMAIS.map((a) => `<option value="${esc(a.id)}"${a.id === estado.animalId ? " selected" : ""}>${esc(a.nome + (a.resp ? " · " + a.resp : "") + (a.especie ? " · " + a.especie : ""))}</option>`).join("")}</select></label>` : "";
   const esp = ["Canina", "Felina"].includes(P.especie) || !P.especie ? sel('data-pa="especie"', P.especie, [["", "escolha"], ["Canina", "Canina"], ["Felina", "Felina"]]) : inp('data-pa="especie"', P.especie);
@@ -3160,7 +3184,7 @@ function caixaExame() {
   if (X.doacao && !ds.some((d) => d.numero === X.doacao)) opDoa.push([X.doacao, X.doacao]);
   const doa = estado.receptor ? "" : campo("Doação", sel('data-x="doacao"', X.doacao, opDoa));
   return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}${lab ? campo("Laboratório", inp('data-x="labNome"', X.labNome)) + campo("Número no laboratório", inp('data-x="labNumero"', X.labNumero || "")) + campo("Liberado em", inp('data-x="labLiberado" type="date"', X.labLiberado || "")) + campo("Hora da liberação", inp('data-x="labHora" type="time"', X.labHora || "")) + campo("Liberado por (laboratório)", inp('data-x="labRt"', X.labRt || "", 'placeholder="nome e CRMV de quem liberou no laboratório"'), "larga") : ""}
-    ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="ex.: CRMV-DF 1234 (exigência do CRMV)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH ? "" : X.clinica || "", estado.receptor ? 'placeholder="clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
+    ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="obrigatório (do cadastro, se for do CVH)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH && !estado.receptor && estado.tipo !== "compat" ? "" : X.clinica || "", estado.receptor || estado.tipo === "compat" ? 'placeholder="obrigatória: clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
     ${CTX.temGemini ? `<div class="larga"><button type="button" class="btn sec mini" data-a="etiqueta">Ler a etiqueta da amostra</button><span class="nota" id="stEtq"> Com a foto da etiqueta do tubo ou do cartão, o painel preenche paciente, responsável, clínica, número, data da coleta e idade.</span></div>` : ""}
     ${estado.liberador ? campo("Assinado por", sel('data-vet="1"', estado.vet ? estado.vet.id : "", VETS.map((v) => [v.id, v.nome + (v.crmv ? " · " + v.crmv : "")])), "larga") + `<p class="nota larga">Você libera o laudo, que sai assinado pelo médico veterinário escolhido. Seu nome aparece discreto abaixo da assinatura.</p>` : ""}</div></div>`;
 }
@@ -3202,14 +3226,15 @@ function formTipo() {
       ${gel || t.acGel ? `<label class="chk"><span><input type="checkbox" data-tb="acDoadorOn" ${t.acDoadorOn ? "checked" : ""}> Incluir o autocontrole do doador</span></label><label style="margin-top:6px">Autocontrole do receptor (ACR)</label>${segm('data-a="tg" data-c="acPaciente"', t.acPaciente, ["Negativo", "Positivo"])}` : ""}
       <div class="grade" style="margin-top:9px">${gel ? "" : campo("Lote", inp('data-t="lote"', t.lote)) + campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>
       ${gel ? "" : caixaKit(felino() ? "xmGato" : "xmCao") + campo("Texto sobre o teste", `<textarea rows="4" data-t="nota">${esc(t.nota)}</textarea>`)}</div>
-      <div class="cx"><h3>Bolsas testadas</h3>${t.provas.map((p, i) => `<div class="item"><div class="it-top"><b>Bolsa ${i + 1}</b>${t.provas.length > 1 ? `<button type="button" class="lnk" data-a="tirar-bolsa" data-i="${i}">tirar</button>` : ""}</div>
-        <div class="grade">${campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa))}${campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador))}${campo("Hematócrito do doador (opcional)", inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
+      <div class="cx"><h3>${t.doadorExterno ? "Doadores testados" : "Bolsas testadas"}</h3><label class="chk"><span><input type="checkbox" data-tb="doadorExterno" ${t.doadorExterno ? "checked" : ""}> Doador externo (amostra do doador enviada pelo médico veterinário, sem bolsa do CVH)</span></label>${t.provas.map((p, i) => `<div class="item"><div class="it-top"><b>${t.doadorExterno ? "Doador" : "Bolsa"} ${i + 1}</b>${t.provas.length > 1 ? `<button type="button" class="lnk" data-a="tirar-bolsa" data-i="${i}">tirar</button>` : ""}</div>
+        <div class="grade">${t.doadorExterno ? campo("Identificação do doador (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="nome ou número do doador"`, p.doador)) + campo("Número da bolsa (opcional)", inp(`data-pv-c="bolsa" data-i="${i}"`, p.bolsa)) + campo("Hematócrito da bolsa ou do doador (opcional)", inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))
+          : campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa)) + campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador)) + campo("Hematócrito do doador (opcional)", inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
         <label style="margin-top:6px">Prova maior</label>${segm(`data-a="pv" data-i="${i}" data-c="maior"`, p.maior, ["Compatível", "Incompatível"])}
         ${gel && t.menor ? `<label style="margin-top:6px">Prova menor</label>${segm(`data-a="pv" data-i="${i}" data-c="menor"`, p.menor, ["Compatível", "Incompatível"])}` : ""}
-        ${(gel || t.acGel) && t.acDoadorOn ? `<label style="margin-top:6px">Autocontrole do doador</label>${segm(`data-a="pv" data-i="${i}" data-c="acDoador"`, p.acDoador, ["Negativo", "Positivo"])}` : ""}
+        ${(gel || t.acGel) && t.acDoadorOn ? `<label style="margin-top:6px">Autocontrole do doador</label>${segm(`data-a="pv" data-i="${i}" data-c="acDoador"`, "Negativo", ["Negativo"])}` : ""}
         ${gel ? caixaFoto("gel" + i, "Foto do cartão de gel desta bolsa", "Recorte só os microtubos da prova (" + rotGel(i).pocos.join(", ") + "), sem a etiqueta escrita. O painel neutraliza o fundo e põe embaixo uma etiqueta com " + rotGel(i).pocos.join(" e ") + ", o paciente, o doador e a bolsa.") : ""}</div>`).join("")}
-        <button type="button" class="btn sec mini" data-a="mais-bolsa">+ Outra bolsa</button></div>
-      <div class="cx"><h3>Amostra do receptor</h3><div class="grade">${campo("Hematócrito do receptor (opcional)", inp('data-t="htReceptor" inputmode="decimal" placeholder="em branco, não sai no laudo"', t.htReceptor || ""))}</div><label>Plasma</label>${segm('data-a="tg" data-c="plasma"', t.plasma || "", PLASMA_OPS.slice(1))}
+        <button type="button" class="btn sec mini" data-a="mais-bolsa">${t.doadorExterno ? "+ Outro doador" : "+ Outra bolsa"}</button></div>
+      <div class="cx"><h3>Amostra do receptor</h3><div class="grade">${campo("Hematócrito do receptor (opcional)", inp('data-t="htReceptor" inputmode="decimal" placeholder="em branco, não sai no laudo"', t.htReceptor || ""))}</div>${formPlasma(t)}
         ${t.plasmaIA && !t.plasmaManual ? `<p class="nota">Avaliação automática pela foto${t.plasmaIA ? " (" + esc(t.plasmaIA) + ")" : ""}. Mude se discordar.</p>` : ""}
         ${caixaFoto("tubo", "Foto do tubo com o plasma", "O painel separa o plasma da foto, com a cor real, e monta o tubo com uma etiqueta do CVH, sem estante e sem a escrita de caneta." + (CTX.temGemini ? " Também sugere o aspecto do plasma." : ""))}
         </div>`;
@@ -3231,12 +3256,12 @@ function montarForm() { montarForm0(); autoRaca(); }
 function montarForm0() {
   if (!estado.tipo) {
     const g = felino(), tipos = Object.entries(TIPOS).filter(([, v]) => !(v.so === "gato" && estado.paciente.especie && !g));
-    $("#form").innerHTML = `<div class="cx"><h3>Novo laudo${estado.paciente.nome ? " de " + esc(estado.paciente.nome) : ""}</h3><p class="nota">Escolha o tipo de laudo. Todos saem no padrão do CVH, em A4 e para celular, assinados com o seu CRMV.${estado.receptor ? " Paciente receptor, sem cadastro: você digita os dados e gera os PDFs sem salvar no sistema." : ""}</p>
+    $("#form").innerHTML = `<div class="cx"><h3>Novo laudo${estado.paciente.nome ? " de " + esc(estado.paciente.nome) : ""}</h3><p class="nota">Escolha o tipo de laudo. Todos saem no padrão do CVH, em A4 e para celular, assinados com o seu CRMV.${estado.receptor ? " Paciente receptor, sem cadastro: você digita os dados e o laudo fica salvo e assinado no painel de laudos." : ""}</p>
       <div class="tipos">${tipos.map(([k, v]) => `<button type="button" class="tipo" data-a="tipo" data-v="${k}"><b>${esc(v.nome)}</b><small>${esc(v.sub)}</small></button>`).join("")}</div></div>`;
     $("#salvar").parentElement.hidden = true; return;
   }
   $("#salvar").parentElement.hidden = false;
-  const topo = `<div class="topo-tipo"><button type="button" class="lnk" data-a="trocar-tipo">‹ Outro tipo de laudo</button><b>${esc(TIPOS[estado.tipo].nome)}</b></div>`;
+  const topo = `<div class="topo-tipo"><button type="button" class="lnk" data-a="trocar-tipo">‹ Outro tipo de laudo</button><b>${esc((extDoador() ? TIPOS.compatExt : TIPOS[estado.tipo]).nome)}</b></div>`;
   if (estado.tipo === "idexx") {
     $("#form").innerHTML = topo +
       `<div class="cx"><h3>Resultado da IDEXX ou do Citopet</h3><p class="nota">Escolha o PDF que o VetLab Station gera (ProCyte, Catalyst e outros) ou o laudo do Citopet. Hemograma e bioquímica da mesma coleta podem entrar juntos, escolhendo os dois arquivos. No Citopet, o número da doação junto do nome do animal liga o laudo à coleta.</p>
@@ -3281,7 +3306,7 @@ function renderPrevia() {
   document.querySelectorAll("#modo-prev button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === modo)));
   const box = $("#previa");
   if (!pronto()) { box.innerHTML = `<div class="vazio">${!estado.tipo ? "Escolha o tipo de laudo." : "A prévia do laudo aparece aqui depois de escolher o PDF."}</div>`; $("#salvar").disabled = true; return; }
-  $("#salvar").disabled = !estado.vet || !!salvo; $("#salvar").textContent = estado.receptor ? "Gerar os PDFs (sem salvar)" : "Salvar e assinar";
+  $("#salvar").disabled = !estado.vet || !!salvo; $("#salvar").textContent = estado.regId || estado.assinadoAntes ? "Salvar e assinar de novo" : "Salvar e assinar";
   if (modo === "cel") { const M = paginaCelular(); box.innerHTML = `<div class="folha-wrap mob">${paraSVG(M.folhas[0], false, { W: PM.W, H: M.alturas[0] })}</div>`; return; }
   box.innerHTML = paginasLaudo().map((els) => `<div class="folha-wrap">${paraSVG(els, true)}</div>`).join("");
 }
@@ -3297,9 +3322,14 @@ function validar() {
   if (k === "tecsa" && (!t.lido || !t.exames.some((e) => e.on))) return "Escolha o PDF da TECSA e deixe pelo menos um exame marcado.";
   if (k === "tipagem" && !estado.paciente.especie) return "Preencha a espécie do paciente.";
   if (k === "tipagem" && !felino() && !t.dea1.on && !t.dal.on) return "Marque o DEA 1, o DAL ou os dois.";
-  if (k === "compat" && t.provas.some((p) => !String(p.doador || "").trim())) return "Preencha o número da doação de cada bolsa.";
+  if (k === "compat" && t.provas.some((p) => !String(p.doador || "").trim())) return t.doadorExterno ? "Preencha a identificação do doador de cada prova." : "Preencha o número da doação de cada bolsa.";
+  if (k === "compat") t.provas.forEach((p) => (p.acDoador = "Negativo"));
+  // exigência do CRMV: solicitante com CRMV e clínica de origem
+  if (!String(estado.exame.solicitante || "").trim()) return "Preencha o médico veterinário solicitante.";
+  if (!/\d/.test(crmvSolicitante())) return "Preencha o CRMV do solicitante.";
+  if ((estado.receptor || k === "compat") && !String(estado.exame.clinica || "").trim()) return "Preencha a clínica veterinária solicitante." + (estado.receptor ? "" : " Se a amostra é do próprio CVH, escreva CVH.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(estado.exame.data || "")) return "Preencha a data.";
-  if (!estado.receptor && !CTX.urlVerificacao) return "Atualize o Código.gs publicado para gerar o QR Code de verificação.";
+  if (!CTX.urlVerificacao) return "Atualize o Código.gs publicado para gerar o QR Code de verificação.";
   if (!estado.vet) return "Não há médico veterinário cadastrado para assinar o laudo. Cadastre em Ajustes.";
   return "";
 }
@@ -3310,7 +3340,7 @@ function resumoLaudo() {
   if (k === "tipagem") { if (felino()) R.push({ nome: "Grupo sanguíneo", texto: t.grupo }); else { if (t.dea1.on) R.push({ nome: "DEA 1", texto: t.dea1.res + (t.dea1.res === "Positivo" && t.dea1.grau ? " " + t.dea1.grau : "") }); if (t.dal.on) R.push({ nome: "DAL", texto: t.dal.res + (t.dal.res === "Positivo" && t.dal.grau ? " " + t.dal.grau : "") }); } }
   if (k === "fiv") R.push({ nome: "FIV", texto: t.fiv, alerta: ehPos(t.fiv) }, { nome: "FeLV", texto: t.felv, alerta: ehPos(t.felv) });
   if (k === "coombs") R.push({ nome: "Coombs direto", texto: t.res + (ehPos(t.res) && t.grau ? " " + t.grau : ""), alerta: ehPos(t.res) });
-  if (k === "compat") t.provas.forEach((p, i) => { const inc = incompat(p.maior) || (t.metodo === "gel" && t.menor && incompat(p.menor)); R.push({ nome: "Bolsa " + (p.bolsa || i + 1), texto: inc ? "Incompatível" : "Compatível", alerta: inc }); });
+  if (k === "compat") t.provas.forEach((p, i) => { const inc = incompat(p.maior) || (t.metodo === "gel" && t.menor && incompat(p.menor)); R.push({ nome: t.doadorExterno ? "Doador " + (p.doador || i + 1) : "Bolsa " + (p.bolsa || i + 1), texto: inc ? "Incompatível" : "Compatível", alerta: inc }); });
   if (k === "tecsa") t.exames.filter((e) => e.on).forEach((e) => R.push({ nome: e.agente, texto: e.resultado + (ehPos(e.resultado) && e.ct ? " (Ct " + e.ct + ")" : "") + (e.tipo === "sorologia" && e.od ? " (OD " + e.od + ")" : ""), alerta: ehPos(e.resultado) }));
   return R;
 }
@@ -3337,9 +3367,19 @@ async function gerarSemSalvar() {
     <div class="sv-bts"><button type="button" class="btn sec mini" data-a="baixar" data-v="a4">PDF digital</button><button type="button" class="btn sec mini" data-a="baixar" data-v="imp">Impressão</button><button type="button" class="btn sec mini" data-a="baixar" data-v="cel">Celular</button></div></div>`;
   $("#salvo").hidden = false; marcarSujo(false); renderPrevia(); $("#salvo").scrollIntoView({ behavior: "smooth", block: "start" }); avisoUltimo();
 }
+// resultados que pedem confirmação antes de liberar (incompatível, autocontrole positivo, reagente, detectado)
+function suspeitos() {
+  if (estado.tipo === "idexx") return [];
+  const L = resumoLaudo().filter((r) => r.alerta).map((r) => r.nome + " " + String(r.texto || "").toLowerCase()), t = estado.t;
+  if (estado.tipo === "compat" && (t.metodo === "gel" || t.acGel) && ehPos(t.acPaciente)) L.push("autocontrole do receptor positivo");
+  if (estado.tipo === "compat" && t.metodo === "gel" && t.menor) t.provas.forEach((p, i) => { if (incompat(p.menor) && !incompat(p.maior)) L.push("prova menor incompatível (" + (t.doadorExterno ? "doador " + (p.doador || i + 1) : "bolsa " + (p.bolsa || i + 1)) + ")"); });
+  return L;
+}
 async function salvar() {
   const st = $("#st"), erro = validar(); if (erro) { st.textContent = erro; st.className = "st erro"; return; }
-  if (estado.receptor) return gerarSemSalvar();
+  const sus = suspeitos();
+  if (sus.length && estado.alertaOk !== JSON.stringify(sus)) { st.className = "st erro"; st.innerHTML = "Resultado que pede atenção: " + esc(sus.join("; ")) + ". Confira a prévia antes de liberar. <button type=\"button\" class=\"btn mini\" data-a=\"conf-alerta\">Conferi, salvar e assinar</button>"; return; }
+  if (estado.receptor) { const P = Object.assign({}, estado.paciente), ts = tipagemTxt(); if (ts) P.tipo = ts; else if (!P.tipo) delete P.tipo; ponte("receptorGuardar", { paciente: P, resp: { nome: estado.resp.nome }, exame: { clinica: estado.exame.clinica || "", solicitante: estado.exame.solicitante || "", solicitanteCrmv: estado.exame.solicitanteCrmv || "", amostra: estado.exame.amostra || "" } }).catch(() => {}); ponte("novaRaca", estado.paciente.especie, estado.paciente.raca).catch(() => {}); }
   const bt = $("#salvar"); bt.disabled = true; st.className = "st"; st.textContent = "Assinando e gerando os PDFs…";
   try {
     const d = new Date(), quando = { data: br(hojeISO()), hora: p2(d.getHours()) + ":" + p2(d.getMinutes()), iso: d.toISOString() }, dados = dadosLaudo();
@@ -3351,14 +3391,14 @@ async function salvar() {
     st.textContent = "Enviando para o Drive…";
     const fora = dados.resumo.filter((r) => r.alerta).map((r) => r.nome);
     const origens = (estado.tipo === "idexx" || estado.tipo === "tecsa") ? (estado.origens || []) : [];
-    const res = await ponte("salvarLaudo", { labIds: estado.labIds || [], regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) } });
-    salvo.res = res; await contarKits(); marcarSujo(false); renderPrevia(); mostrarSalvo(res); st.textContent = "";
+    const res = await ponte("salvarLaudo", { receptor: !!estado.receptor, labIds: estado.labIds || [], regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) } });
+    salvo.res = res; if (res && res.id) estado.regId = res.id; estado.assinadoAntes = true; await contarKits(); marcarSujo(false); renderPrevia(); mostrarSalvo(res); st.textContent = "";
   } catch (e) { salvo = null; bt.disabled = false; st.className = "st erro"; st.textContent = "Não consegui salvar. " + (e.message || e); renderPrevia(); }
 }
 function mostrarSalvo(res) {
   $("#salvo").innerHTML = `<h3>Laudo salvo e assinado</h3><div class="sv-doc"><div><b>${esc(estado.exame.titulo)} de ${esc(estado.paciente.nome)}</b><small>Código ${esc(salvo.codigo)}. Fica na seção Laudos de exames do painel.</small></div>
     <div class="sv-bts"><button type="button" class="btn sec mini" data-a="baixar" data-v="a4">PDF digital</button><button type="button" class="btn sec mini" data-a="baixar" data-v="imp">Impressão</button><button type="button" class="btn sec mini" data-a="baixar" data-v="cel">Celular</button></div></div>
-    ${res && res.whats ? `<a class="btn" target="_blank" rel="noopener" href="${esc(res.whats)}">Enviar ao responsável por WhatsApp</a>` : `<p class="nota">O responsável não tem telefone no cadastro. Envie o PDF do celular pelo botão acima.</p>`}
+    ${res && res.whats ? `<a class="btn" target="_blank" rel="noopener" href="${esc(res.whats)}">Enviar ao responsável por WhatsApp</a>` : estado.receptor ? `<p class="nota">Envie o PDF do celular para a clínica pelo botão acima. O laudo fica no painel de laudos, em ${esc(TIPOS[estado.tipo].nome)}.</p>` : `<p class="nota">O responsável não tem telefone no cadastro. Envie o PDF do celular pelo botão acima.</p>`}
     ${res && res.historico ? `<p class="nota">Os resultados entram sozinhos no Histórico Laboratorial de ${esc(estado.paciente.nome)}. Abra o histórico para conferir, acrescentar o Citopet se tiver e salvar na carteira.</p><button type="button" class="btn sec" data-a="historico">Abrir o Histórico Laboratorial</button>` : ""}
     <button type="button" class="btn sec" data-a="voltar">Voltar para os laudos</button>`;
   $("#salvo").hidden = false; $("#salvo").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3375,18 +3415,19 @@ async function baixar(v) {
 
 /* ═════════════ eventos ═════════════ */
 const setCaminho = (o, c, v) => { const p = c.split("."); let a = o; for (let i = 0; i < p.length - 1; i++) a = a[p[i]]; a[p[p.length - 1]] = v; };
-function mudou(refazerForm) { sairSub(); if (!salvo) marcarSujo(true); if (refazerForm) montarForm(); agendarPrevia(); }
+function mudou(refazerForm) { sairSub(); if (salvo) { salvo = null; $("#salvo").hidden = true; const st = $("#st"); st.className = "st erro"; st.textContent = "O laudo mudou depois de assinado. Para valer, salve e assine de novo."; } marcarSujo(true); if (refazerForm) montarForm(); agendarPrevia(); }
 function ligar() {
   document.addEventListener("input", (ev) => {
     const t = ev.target;
     if (t.dataset.comtip) { const antes = tituloPadrao(); estado.tip = t.checked ? comTip0() : null; kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.dataset.comxm) { if (estado.tipo !== "tipagem") return; const antes = tituloPadrao(); estado.tip = estado.t; estado.tipo = "compat"; estado.t = novaCompat(); kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.closest && t.closest('[data-sub="tip"]')) entrarSub();
-    if (t.dataset.x) { estado.exame[t.dataset.x] = t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
+    if (t.dataset.x) { estado.exame[t.dataset.x] = t.dataset.x === "clinica" && /^\s*cvh\s*$/i.test(t.value) ? CLINICA_CVH : t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
     else if (t.dataset.pa) { estado.paciente[t.dataset.pa] = t.value; if (t.dataset.pa === "especie" && estado.tipo) { const x = estado.t; if (estado.tipo === "tipagem" && !felino() && x.dea1 && !x.dea1.on && !x.dal.on) { x.dea1.on = true; x.dal.on = true; } kitsNoLaudo(); ajustarNota(); return mudou(true); } }
     else if (t.dataset.r) estado.resp[t.dataset.r] = t.value;
     else if (t.dataset.p) estado[t.dataset.p] = t.value;
     else if (t.dataset.g) estado.graficos = t.checked;
+    else if (t.dataset.plOutros) { const s0 = plasmaSel(estado.t); s0.outros = t.value; s0.normal = false; plasmaAtualizar(estado.t); }
     else if (t.dataset.t) { estado.t[t.dataset.t] = t.value; if (t.dataset.t === "nota") estado.t.notaEditada = true; if (t.dataset.t === "davr") return mudou(true); if (t.dataset.t === "kit") { Object.assign(estado.t, KITS_FIV[t.value] || {}); estado.t.lote = ""; estado.t.validade = ""; kitsNoLaudo(); return mudou(true); } }
     else if (t.dataset.tb) { estado.t[t.dataset.tb] = t.checked; return mudou(true); }
     else if (t.dataset.ts) { setCaminho(estado.t, t.dataset.ts, t.type === "checkbox" ? t.checked : t.value); if (t.type === "checkbox") { ajustarNota(); return mudou(true); } }
@@ -3425,7 +3466,8 @@ function ligar() {
   document.addEventListener("click", async (ev) => {
     const b = ev.target.closest("[data-a]"); if (!b) return;
     const a = b.dataset.a; if (b.closest('[data-sub="tip"]')) entrarSub();
-    if (a === "tipo") { iniciarTipo(b.dataset.v); montarForm(); renderPrevia(); marcarSujo(true); }
+    if (a === "conf-alerta") { estado.alertaOk = JSON.stringify(suspeitos()); return salvar(); }
+    if (a === "tipo") { if (b.dataset.v === "compatExt") { iniciarTipo("compat"); estado.t.doadorExterno = true; } else iniciarTipo(b.dataset.v); montarForm(); renderPrevia(); marcarSujo(true); }
     if (a === "trocar-tipo") { estado.tipo = ""; salvo = null; $("#salvo").hidden = true; montarForm(); renderPrevia(); }
     if (a === "pdf") { $("#arq").dataset.somar = ""; $("#arq").click(); }
     if (a === "pdf-mais") { $("#arq").dataset.somar = "1"; $("#arq").click(); }
@@ -3438,6 +3480,7 @@ function ligar() {
     if (a === "corte-usar") usarCorte(false);
     if (a === "corte-inteira") usarCorte(true);
     if (a === "corte-cancelar") $("#corte").hidden = true;
+    if (a === "plg") { const s0 = plasmaSel(estado.t), c = b.dataset.c; if (c === "normal") { PLASMA_TIPOS.forEach(([k]) => (s0[k] = "")); s0.outros = ""; s0.normal = true; } else { s0[c] = b.dataset.v === "Não" ? "" : b.dataset.v; s0.normal = false; } plasmaAtualizar(estado.t); mudou(true); }
     if (a === "tg") { const c = b.dataset.c; let v = b.dataset.v; if (c === "metodo") v = v === "Em gel" ? "gel" : "imuno"; if (c === "plasma") estado.t.plasmaManual = true; estado.t[c] = v; kitsNoLaudo(); mudou(true); }
     if (a === "ts") { setCaminho(estado.t, b.dataset.c, b.dataset.v); kitsNoLaudo(); mudou(true); }
     if (a === "pv") { estado.t.provas[+b.dataset.i][b.dataset.c] = b.dataset.v; mudou(true); }
