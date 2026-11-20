@@ -171,7 +171,7 @@ function abrirProducao(coleta) {
     corpo = '<h2>CP e PFC</h2><div class="grade"><div><label>Peso do CP (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCP" value="' + esc(D.pesoCP ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCP">Foto</button></div><small class="nota">' + (vcp != null ? "≈ " + fmt(vcp) + " mL" : "") + '</small></div><div><label>Peso do PFC (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoPFC" value="' + esc(D.pesoPFC ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoPFC">Foto</button></div><small class="nota">' + (vpl != null ? "≈ " + fmt(vpl) + " mL" : "") + "</small></div></div>" +
       '<label><input type="checkbox" id="pSemCP"' + (D.semCP ? " checked" : "") + '> Não houve CP nesta coleta</label><label><input type="checkbox" id="pCong" checked> Iniciar o congelamento do PFC agora (conferência amanhã)</label>' +
       '<button class="btn grande" data-a="pConcluir" style="margin-top:12px">Concluir a produção e guardar as bolsas</button>';
-  } else corpo = '<p class="nota">Produção concluída. As bolsas estão no estoque.</p>' + S.uni.filter((u) => u.coleta === coleta).map(linhaUnidade).join("");
+  } else { const us = S.uni.filter((u) => u.coleta === coleta); corpo = '<p class="nota">Produção concluída. As bolsas estão no estoque.</p>' + us.map(linhaUnidade).join("") + (us.length ? escolherEtiqueta(us.map((u) => u.id)) : ""); }
   abrirGaveta("Produção da coleta " + coleta, passos + cab + corpo);
 }
 async function salvarProd(coleta, etapa, dados, msg) {
@@ -220,6 +220,7 @@ function abrirUnidade(id) {
     if (["PFC", "CRIO", "PPC"].includes(u.componente)) acoes += D.congelamento && D.congelamento.inicio ? (D.congelamento.conferido && D.congelamento.conferido.congelado ? "" : bt("conferirSim", "Congelado") + bt("conferirNao", "Ainda não congelado")) : bt("congelar", "Iniciar congelamento");
     acoes += bt("descartar", "Descartar", "perigo");
   }
+  if (!fim) acoes += bt("etq", "Etiqueta");
   const h = '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || D.doador || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd>" +
     ((D.identificacao || D.loteBolsa) ? "<dt>Identificação</dt><dd>" + esc([D.identificacao, D.loteBolsa].filter(Boolean).join(" · ")) + (u.mae_id ? " <small>(fração da bolsa " + esc(u.mae_id) + ")</small>" : "") + "</dd>" : "") + (D.obs ? "<dt>Observação</dt><dd>" + esc(D.obs) + "</dd>" : "") +
     "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
@@ -248,6 +249,7 @@ async function acaoUnidade(acao, o) {
       '<div class="bts" style="margin-top:10px"><button class="btn peq ' + (acao === "descartar" ? "perigo" : "") + '" data-a="uConf" data-v="' + acao + '">Confirmar</button><button class="btn peq sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div>';
     const t = $("#uTxt"); if (t) t.focus(); return;
   }
+  if (acao === "etq") { $("#uForm").innerHTML = escolherEtiqueta([u.id]); return; }
   if (acao === "devApta" || acao === "devBloq") { a = "receberDevolucao"; o.apta = acao === "devApta"; }
   if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
   try { const r = await est("estUnidadeAcao", u.id, a, o); Object.assign(u, r); S.ev.unshift({ quando: new Date().toISOString(), coleta: u.coleta, unidade_id: u.id, tipo: "unidade:" + a, usuario: CTX.usuario || "", dados: o }); toast("Feito."); pintar(); abrirUnidade(u.id); }
@@ -290,7 +292,7 @@ function telaEstoque() {
   return '<div class="filtros">' + fb("comp", "", "Todos") + fb("comp", "CH", "CH") + fb("comp", "CP", "CP") + fb("comp", "PFC", "PFC") + fb("comp", "CRIO", "CRIO") + "</div>" +
     '<div class="filtros">' + fb("tipo", "", "Qualquer tipagem") + fb("tipo", "DEA1-", "DEA 1 −") + fb("tipo", "DEA1+", "DEA 1 +") + fb("tipo", "DAL-", "DAL −") + fb("tipo", "DAL+", "DAL +") + "</div>" +
     '<div class="filtros">' + fb("sit", "ativas", "No estoque") + fb("sit", "disponivel", "Disponíveis") + fb("sit", "reservada", "Reservadas") + fb("sit", "quarentena", "Aguardando liberação") + fb("sit", "bloqueada", "Bloqueadas") + fb("sit", "todas", "Todas, inclusive as que saíram") + "</div>" +
-    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + "</h2>" + (L.length ? L.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
+    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + (L.length ? ' <button class="btn sec peq" style="float:right" data-a="etqLista" data-v="' + esc(L.map((u) => u.id).join("|")) + '">Etiquetas</button>' : "") + '</h2><div id="etqBox"></div>' + (L.length ? L.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
 }
 /* ── remessas e Intensivet ── */
 const ROT_REM = { preparo: "Em preparo", transito: "Em trânsito", entregue: "Entregue, aguardando leitura da caixa", recebida: "Recebida, guardando", concluida: "Concluída", cancelada: "Cancelada" };
@@ -322,8 +324,7 @@ async function abrirRem(id) {
     '<div class="bts">' + ac + '</div><div id="rForm"></div><h2 style="margin-top:16px">Bolsas</h2>' + us.map((u) => { const g = (u.dados || {}).guarda; return '<div class="ev" data-a="uni" data-v="' + esc(u.id) + '" style="cursor:pointer"><b>' + esc(u.id) + "</b> · " + esc(ROT_SIT[u.situacao] || u.situacao) + (g ? "<br><small>" + esc(g.nome) + (g.minutos != null ? " · " + g.minutos + " min" + (g.noPrazo ? "" : ", fora do prazo") : "") + (g.foto ? " · com foto" : " · falta a foto") + "</small>" : "") + "</div>"; }).join(""));
 }
 function imprimir(titulo, corpo) {
-  const w = window.open("", "_blank"); if (!w) return toast("Libere as janelas novas para imprimir.");
-  w.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(titulo) + '</title><style>@page{size:A4;margin:14mm}body{font-family:"Proza Libre",Georgia,serif;color:#2b2320;margin:0}.et{display:inline-block;width:88mm;border:1px dashed #C6B098;border-radius:4mm;padding:6mm;margin:0 4mm 6mm 0;text-align:center;vertical-align:top;page-break-inside:avoid}.et svg{width:52mm;height:52mm}.et b{display:block;font-size:20pt;color:#5F130F;letter-spacing:.06em}.et small{display:block;font-size:10pt;margin-top:2mm}</style></head><body>' + corpo + "<script>setTimeout(function(){print()},400)<\/script></body></html>"); w.document.close();
+  imprimirDoc(titulo, '<style>@page{size:A4;margin:14mm}body{font-family:"Proza Libre",Georgia,serif;color:#2b2320;margin:0}.et{display:inline-block;width:88mm;border:1px dashed #C6B098;border-radius:4mm;padding:6mm;margin:0 4mm 6mm 0;text-align:center;vertical-align:top;page-break-inside:avoid}.et svg{width:52mm;height:52mm}.et b{display:block;font-size:20pt;color:#5F130F;letter-spacing:.06em}.et small{display:block;font-size:10pt;margin-top:2mm}</style>' + corpo);
 }
 async function imprimirQRRem(r) { const q = await qrHtml(r.id); imprimir("Caixa " + r.id, '<div class="et">' + q + "<b>" + esc(r.id) + "</b><small>CVH · " + esc(r.destino) + "<br>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + " · leia o QR antes de abrir a caixa</small></div>"); }
 async function imprimirQREq(lista) { let h = ""; for (const e of lista) h += '<div class="et">' + (await qrHtml(e.id)) + "<b>" + esc(e.id) + "</b><small>" + esc(e.nome) + " · " + esc(e.local) + "<br>" + esc((e.aceita || []).join(", ")) + "</small></div>"; imprimir("QR dos equipamentos", h); }
@@ -356,6 +357,75 @@ function pintar() {
     ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
 }
 
+/* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
+const C128 = "212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112".split(" ");
+// Code 128 B: lido por qualquer leitor de código de barras; o QR ao lado é para a câmera do celular
+function code128Svg(txt, alt) {
+  const v = [104]; for (const ch of String(txt)) { const c = ch.charCodeAt(0) - 32; if (c < 0 || c > 94) continue; v.push(c); }
+  v.push(v.reduce((s, x, i) => s + x * (i || 1), 0) % 103); v.push(106);
+  const larg = v.map((x) => C128[x]).join("").split("").map(Number), tot = larg.reduce((a, b) => a + b, 0) + 20;
+  let x = 10, d = ""; larg.forEach((w, i) => { if (i % 2 === 0) d += "M" + x + " 0h" + w + "v40h-" + w + "z"; x += w; });
+  return '<svg class="bc" viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="height:' + (alt || 8) + 'mm"><rect width="' + tot + '" height="40" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+}
+const FORMATOS = {
+  z50: { nome: "Zebra 50 × 30 mm", w: 50, h: 30 },
+  zg: { nome: "Zebra grande 100 × 150 mm", w: 100, h: 150 },
+  b100: { nome: "Brother 100 × 100 mm", w: 100, h: 100 },
+};
+const fmtEtq = () => { try { return localStorage.getItem("cvh_etq") || "z50"; } catch (e) { return "z50"; } };
+const CONSERVA = { CH: "Conservar entre 2 e 6 °C", PFC: "Conservar a −18 °C ou menos", CRIO: "Conservar a −18 °C ou menos", PPC: "Conservar a −18 °C ou menos", CP: "Conservar entre 20 e 24 °C, sob agitação" };
+function etiquetaHtml(u, f, qr) {
+  const a = animalDe(u.animal_id), D = u.dados || {}, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a);
+  const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
+  if (f === "z50") return '<div class="et p"><div class="l1"><b>CVH</b><span>' + esc(NOME_COMP[u.componente] || u.componente) + '</span></div><div class="id">' + esc(u.id) + '</div><div class="l2">' + esc(esp + (tipo ? " · " + tipo : "")) + '</div><div class="l2">' + esc([vol, col ? "col. " + col : ""].filter(Boolean).join(" · ")) + '</div><div class="l3">Validade ' + esc(val) + '</div><div class="cod">' + code128Svg(u.id, 6.2) + '<span class="q">' + qr + "</span></div></div>";
+  const g = f === "zg";
+  return '<div class="et g ' + f + '"><div class="cab"><b>CVH</b><span>Centro Veterinário de Hemoterapia<br>Brasília, DF · uso veterinário</span></div><div class="comp">' + esc(NOME_COMP[u.componente] || u.componente) + '</div><div class="id">' + esc(u.id) + '</div>' +
+    '<table><tr><td>Espécie</td><td>' + esc(esp) + "</td></tr><tr><td>Tipo sanguíneo</td><td><b>" + esc(tipo || "não informado") + "</b></td></tr><tr><td>Volume</td><td>" + esc(vol || "não informado") + (u.peso_g != null ? " (" + fmt(u.peso_g) + " g)" : "") + "</td></tr>" + (u.componente === "CH" && D.htFinal != null ? "<tr><td>Hematócrito</td><td>" + fmt(D.htFinal, 1) + "%</td></tr>" : "") +
+    "<tr><td>Coleta</td><td>" + esc(col) + "</td></tr><tr><td>Validade</td><td><b>" + esc(val) + "</b></td></tr>" + (u.mae_id ? "<tr><td>Fração de</td><td>" + esc(u.mae_id) + "</td></tr>" : "") + '</table><div class="cons">' + esc(CONSERVA[u.componente] || "") + '</div><div class="cod">' + code128Svg(u.id, g ? 14 : 11) + '<span class="q">' + qr + '</span></div><div class="rt">Responsável técnico Plínio Rossi · CRMV-DF 2703</div></div>';
+}
+const CSS_ETQ = {
+  z50: "@page{size:50mm 30mm;margin:0}.et.p{width:50mm;height:30mm;padding:1.4mm 2mm;overflow:hidden;page-break-after:always;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column}.p .l1{display:flex;justify-content:space-between;font-size:6.6pt;line-height:1.1}.p .l1 b{font-size:7.5pt;letter-spacing:.08em}.p .id{font-size:13pt;font-weight:800;line-height:1.05}.p .l2{font-size:6.6pt;line-height:1.15}.p .l3{font-size:7.4pt;font-weight:800;line-height:1.2}.p .cod{display:flex;align-items:flex-end;gap:1mm;margin-top:auto}.p .bc{flex:1;width:0}.p .q svg{width:9mm;height:9mm;display:block}",
+  g: ".et.g{padding:5mm;overflow:hidden;page-break-after:always;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column}.g .cab{display:flex;gap:3mm;align-items:center;border-bottom:.4mm solid #000;padding-bottom:2mm}.g .cab b{font-size:20pt;letter-spacing:.1em}.g .cab span{font-size:8pt;line-height:1.2}.g .comp{font-size:13pt;font-weight:800;margin-top:2mm}.g .id{font-size:24pt;font-weight:800;line-height:1.05}.g table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-top:1.5mm}.g td{padding:.6mm 0;border-bottom:.2mm solid #999}.g td:first-child{width:38%;color:#333}.g .cons{font-size:9.5pt;font-weight:800;margin-top:2mm}.g .cod{display:flex;align-items:flex-end;gap:3mm;margin-top:auto}.g .bc{flex:1;width:0}.g .q svg{width:22mm;height:22mm;display:block}.g .rt{font-size:7.5pt;margin-top:1.5mm}",
+};
+async function imprimirEtiquetas(ids, f) {
+  f = f || fmtEtq(); const F = FORMATOS[f]; const us = ids.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); if (!us.length) return toast("Nenhuma bolsa para etiquetar.");
+  let h = ""; for (const u of us) h += etiquetaHtml(u, f, await qrHtml(u.id));
+  const css = f === "z50" ? CSS_ETQ.z50 : "@page{size:" + F.w + "mm " + F.h + "mm;margin:0}" + CSS_ETQ.g + ".et.g{width:" + F.w + "mm;height:" + F.h + "mm}";
+  imprimirDoc("Etiquetas", "<style>*{box-sizing:border-box}body{margin:0}" + css + "</style>" + h);
+}
+// impressão por um quadro escondido: não esbarra no bloqueio de janelas e não tira o usuário do painel
+function imprimirDoc(titulo, corpo) {
+  let fr = $("#frImp"); if (fr) fr.remove(); fr = document.createElement("iframe"); fr.id = "frImp"; fr.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(fr);
+  const d = fr.contentWindow.document; d.open(); d.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(titulo) + "</title></head><body>" + corpo + "</body></html>"); d.close();
+  setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast("Não consegui abrir a impressão."); } }, 350);
+}
+function escolherEtiqueta(ids) {
+  const f = fmtEtq();
+  return '<div class="cx" style="margin-top:12px"><h2>Etiquetas · ' + ids.length + (ids.length === 1 ? " bolsa" : " bolsas") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="etqFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><button class="btn peq" data-a="etqImp" data-v="' + esc(ids.join("|")) + '">Imprimir</button><p><small>Na janela de impressão, escolha a impressora e o mesmo tamanho de etiqueta.</small></p></div>';
+}
+
+/* ── leitor: o leitor de código de barras (USB ou Bluetooth) digita o código e um Enter em poucos milissegundos ── */
+let BIP = null;
+function bip(ok) { try { BIP = BIP || new (window.AudioContext || window.webkitAudioContext)(); if (BIP.state === "suspended") BIP.resume(); const o = BIP.createOscillator(), g = BIP.createGain(), t = BIP.currentTime; o.type = "square"; o.frequency.value = ok === false ? 380 : 2700; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + (ok === false ? 0.35 : 0.09)); o.connect(g); g.connect(BIP.destination); o.start(t); o.stop(t + 0.4); } catch (e) {} }
+const LEIT = { buf: "", t0: 0, ult: 0 };
+document.addEventListener("keydown", (e) => {
+  const agora = performance.now();
+  if (e.key === "Enter") { const c = LEIT.buf; LEIT.buf = ""; if (c.length >= 4 && agora - LEIT.t0 < 40 * c.length + 120) { e.preventDefault(); if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) { const el = document.activeElement; el.value = el.value.slice(0, Math.max(0, el.value.length - c.length)); } lido(c); } return; }
+  if (e.key.length !== 1) return;
+  if (agora - LEIT.ult > 60) { LEIT.buf = ""; LEIT.t0 = agora; }
+  LEIT.ult = agora; LEIT.buf += e.key;
+}, true);
+function lido(txt) {
+  const c = String(txt).trim().replace(/^.*[?&](?:u|c|e)=/, ""), C = c.toUpperCase().replace(/\s+/g, " ");
+  const u = S.uni.find((x) => x.id.toUpperCase() === C), r = S.rem.find((x) => x.id === C);
+  // remessa em montagem: a leitura marca a bolsa
+  const cx = document.querySelector('[data-sel="' + (u ? u.id.replace(/"/g, "") : "") + '"]');
+  if (u && cx) { if (cx.checked) { bip(false); return toast(u.id + " já está na remessa."); } cx.checked = true; bip(); return toast(u.id + " marcada para a remessa.", 1500); }
+  if (u) { bip(); return abrirUnidade(u.id); }
+  if (r) { bip(); return abrirRem(r.id); }
+  bip(false); toast("Código não encontrado no estoque: " + c, 5000);
+}
+
 /* ── cliques ── */
 document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
@@ -367,6 +437,9 @@ document.addEventListener("click", async (ev) => {
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
   if (a === "rem") return abrirRem(v);
+  if (a === "etqFmt") { try { localStorage.setItem("cvh_etq", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
+  if (a === "etqLista") { const ids = v.split("|"); const el = document.getElementById("etqBox"); if (el) el.innerHTML = escolherEtiqueta(ids); return; }
   if (a === "remNova") return abrirRemNova();
   if (a === "eqQR") return imprimirQREq(S.eq.filter((e) => e.ativo));
   if (["remCriar", "remSaida", "remSaidaOk", "remEntrega", "remCancelar", "remUber", "remUberOk", "remQR", "apNovo", "apDesativar"].includes(a)) {

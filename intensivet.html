@@ -131,6 +131,7 @@ function somLiberar() { try { AUD = AUD || new (window.AudioContext || window.we
 document.addEventListener("pointerdown", somLiberar, { passive: true });
 function tom(f, ini, dur, vol, tipo) { if (!AUD) return; const o = AUD.createOscillator(), g = AUD.createGain(), t = AUD.currentTime + ini; o.type = tipo || "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(AUD.destination); o.start(t); o.stop(t + dur + 0.05); }
 function somAviso() { tom(659.3, 0, 0.9, 0.22); tom(880, 0.18, 1.2, 0.2); }
+function bip(ok) { somLiberar(); tom(ok === false ? 380 : 2700, 0, ok === false ? 0.35 : 0.09, 0.25, "square"); }
 function somOk() { tom(784, 0, 0.35, 0.18); tom(1046.5, 0.12, 0.5, 0.16); }
 let ALARME = null, ALARME_ON = "";
 function alarme(chave, titulo, corpo) {
@@ -143,29 +144,29 @@ function alarme(chave, titulo, corpo) {
 const SILENCIO = {};
 
 /* ── leitor de QR: BarcodeDetector quando o celular tem; senão jsQR; sempre dá para digitar ── */
-let JSQR = null;
+let JSQR = null, CAM_FIM = null;
 function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"; s.onload = () => ok(window.jsQR); s.onerror = () => { JSQR = null; erro(new Error("leitor")); }; document.head.appendChild(s); }); return JSQR; }
 function lerQR(titulo) {
   return new Promise(async (resolve) => {
     const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
     let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
-    const fim = (txt) => { if (!vivo) return; vivo = false; cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
-    $("#camSair").onclick = () => fim(null);
+    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bip(); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
     $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
     $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
     try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
     catch (e) { toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
-    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code"] }); } } catch (e) { det = null; }
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
     if (!det) { try { jq = await carregarJsQR(); } catch (e) { toast("Leitor de QR indisponível. Digite o código.", 6000); } }
     const passo = async () => {
       if (!vivo) return;
       try {
         if (v.readyState >= 2) {
-          if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(80); return fim(r[0].rawValue); } }
-          else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(80); return fim(r.data); } }
+          if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(60); return fim(r[0].rawValue); } }
+          else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(60); return fim(r.data); } }
         }
       } catch (e) {}
-      setTimeout(passo, 220);
+      setTimeout(passo, det ? 90 : 160);
     };
     passo();
   });
@@ -274,8 +275,11 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) carr
 /* ── ações ── */
 async function receber() {
   const t = await lerQR("Leia o QR do lado de fora da caixa"); if (!t) return;
-  const id = norm(t), r = (D.remessas || []).find((x) => x.id === id);
-  if (!r) { toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); return; }
+  receberCaixa(norm(t));
+}
+function receberCaixa(id) {
+  const r = (D.remessas || []).find((x) => x.id === id);
+  if (!r) { bip(false); toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); return; }
   modal("<h2>Caixa " + esc(id) + "</h2><p>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa." : " bolsas.") + ' Tire a foto da frente da caixa, ainda fechada.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '" autocomplete="given-name"><div class="bts"><button class="btn" data-a="recFoto" data-v="' + esc(id) + '">Tirar a foto e confirmar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
 }
 async function recFoto(id, b) {
@@ -337,6 +341,21 @@ document.addEventListener("click", async (ev) => {
     if (a === "devOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; await srv("intDevolver", v, n); fechar(); toast("Devolução registrada. Mande a bolsa ao CVH em caixa térmica.", 7000); return carregar(); }
   } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; }
 });
+// leitor de código de barras ligado ao celular (Bluetooth): digita o código e um Enter em poucos milissegundos
+const LEIT = { buf: "", t0: 0, ult: 0 };
+document.addEventListener("keydown", (e) => {
+  const t = performance.now();
+  if (e.key === "Enter") { const c = LEIT.buf; LEIT.buf = ""; if (c.length >= 4 && t - LEIT.t0 < 40 * c.length + 120) { e.preventDefault(); const el = document.activeElement; if (el && /INPUT|TEXTAREA/.test(el.tagName)) el.value = el.value.slice(0, Math.max(0, el.value.length - c.length)); lidoLeitor(c); } return; }
+  if (e.key.length !== 1) return; if (t - LEIT.ult > 60) { LEIT.buf = ""; LEIT.t0 = t; } LEIT.ult = t; LEIT.buf += e.key;
+}, true);
+function lidoLeitor(c) {
+  if (CAM_FIM) return CAM_FIM(c);
+  if (!D || $("#modal").classList.contains("on")) return;
+  const C = norm(c), r = (D.remessas || []).find((x) => x.id === C), u = (D.unidades || []).find((x) => x.id.toUpperCase() === C);
+  if (r && !r.recebida_em) { bip(); return receberCaixa(r.id); }
+  if (u && D.aparelho.setor === "internacao" && u.local === D.aparelho.local && ["disponivel", "reservada"].includes(u.situacao)) { bip(); return confirmarRetirada(u.id); }
+  bip(false); toast("Código não reconhecido aqui: " + c, 5000);
+}
 carregar();
 </script>
 </body></html>
