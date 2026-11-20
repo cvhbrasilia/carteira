@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  function reescrever(x) {
+    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  if (q.get('v')) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Estoque CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png"><link rel="icon" type="image/png" href="painel-192.png"><link rel="manifest" href="painel.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Estoque CVH · Intensivet</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 90px}
+.topo{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.topo h1{margin:0;font-size:21px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12.5px;font-weight:600;color:var(--tinta2)}
+.btn{border:0;border-radius:14px;padding:12px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:8px 12px;font-size:14px;border-radius:11px}
+.btn.grande{width:100%;padding:18px;font-size:18px;margin-bottom:10px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin-bottom:12px}
+.cx h2{margin:0 0 8px;font-size:16px;color:var(--vinho)}
+.cx.al{border-color:#e3b9b4;background:#fdf3f1}
+.cx.av{border-color:#ecd7b3;background:#fdf8ef}
+.bolsa{border-top:1px solid var(--areia);padding:10px 0}
+.bolsa:first-of-type{border-top:0}
+.bolsa b{font-size:16.5px}
+.bolsa small{display:block;color:var(--tinta2)}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700;background:var(--areia);color:var(--tinta2);margin-left:4px}
+.tag.ok{background:#e4efe7;color:var(--ok)}.tag.al{background:#f7dedb;color:var(--verm)}.tag.av{background:#f6ead3;color:#8a5a12}
+.relogio{font-variant-numeric:tabular-nums;font-weight:800}
+.relogio.al{color:var(--verm)}
+.vazio{color:var(--tinta2);text-align:center;padding:14px}
+label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
+input[type=text],input[type=tel],input[type=number],textarea{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;background:#fff}
+.op{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--areia2);border-radius:12px;padding:11px;margin-top:8px;font-weight:600}
+.op input{margin-top:3px;transform:scale(1.25)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.5);z-index:20;display:none}
+#veu.on{display:block}
+#modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:16px;z-index:21;display:none}
+#modal.on{display:block}
+#modal h2{margin:0 0 6px;color:var(--vinho);font-size:18px}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:12px 16px;border-radius:14px;z-index:40;max-width:92vw;font-weight:600}
+#alarme{position:fixed;inset:0;background:var(--verm);color:#fff;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+#alarme h2{font-size:24px;margin:8px 0}
+#alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
+</style></head>
+<body>
+<div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
+<div id="veu"></div><div id="modal" role="dialog" aria-modal="true"></div>
+<div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
+<input type="file" id="foto" accept="image/*" capture="environment" hidden>
+<script>
+"use strict";
+const $ = (q) => document.querySelector(q);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const p2 = (n) => String(n).padStart(2, "0");
+const hora = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const dataBr = (iso) => iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "";
+const NOME_COMP = { CH: "CH com SAG", CP: "Concentrado de plaquetas", PFC: "Plasma fresco congelado", CRIO: "Crioprecipitado", PPC: "Plasma pobre em crio" };
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 4000); }
+function modal(h) { $("#modal").innerHTML = h; $("#modal").classList.add("on"); $("#veu").classList.add("on"); $("#modal").scrollTop = 0; }
+function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remove("on"); }
+
+/* ── aparelho: o link do CVH (?k=…) ativa este celular; depois o endereço fica limpo ── */
+let K = "";
+try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_int_k", q.get("k")); history.replaceState(null, "", location.pathname); } K = localStorage.getItem("cvh_int_k") || ""; } catch (e) {}
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]);
+const nomeSalvo = () => { try { return localStorage.getItem("cvh_int_nome") || ""; } catch (e) { return ""; } };
+const salvarNome = (n) => { try { localStorage.setItem("cvh_int_nome", n); } catch (e) {} };
+
+/* ── sons (Web Audio): aviso suave e alarme insistente; o primeiro toque na tela libera o som ── */
+let AUD = null;
+function somLiberar() { try { AUD = AUD || new (window.AudioContext || window.webkitAudioContext)(); if (AUD.state === "suspended") AUD.resume(); } catch (e) {} }
+document.addEventListener("pointerdown", somLiberar, { passive: true });
+function tom(f, ini, dur, vol, tipo) { if (!AUD) return; const o = AUD.createOscillator(), g = AUD.createGain(), t = AUD.currentTime + ini; o.type = tipo || "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(AUD.destination); o.start(t); o.stop(t + dur + 0.05); }
+function somAviso() { tom(659.3, 0, 0.9, 0.22); tom(880, 0.18, 1.2, 0.2); }
+function somOk() { tom(784, 0, 0.35, 0.18); tom(1046.5, 0.12, 0.5, 0.16); }
+let ALARME = null, ALARME_ON = "";
+function alarme(chave, titulo, corpo) {
+  if (ALARME_ON) return; ALARME_ON = chave;
+  const ov = document.createElement("div"); ov.id = "alarme"; ov.innerHTML = "<div><b>ATENÇÃO</b><h2>" + esc(titulo) + "</h2><p>" + esc(corpo) + '</p><button class="btn" id="alOk">Estou resolvendo</button></div>'; document.body.appendChild(ov);
+  const ciclo = () => { for (let i = 0; i < 4; i++) { tom(853, i * 0.5, 0.24, 0.35, "square"); tom(960, i * 0.5 + 0.25, 0.24, 0.35, "square"); } if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600]); };
+  ciclo(); ALARME = setInterval(ciclo, 2600);
+  $("#alOk").onclick = () => { clearInterval(ALARME); ALARME = null; ov.remove(); if (navigator.vibrate) navigator.vibrate(0); SILENCIO[chave] = Date.now(); ALARME_ON = ""; };
+}
+const SILENCIO = {};
+
+/* ── leitor de QR: BarcodeDetector quando o celular tem; senão jsQR; sempre dá para digitar ── */
+let JSQR = null;
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"; s.onload = () => ok(window.jsQR); s.onerror = () => { JSQR = null; erro(new Error("leitor")); }; document.head.appendChild(s); }); return JSQR; }
+function lerQR(titulo) {
+  return new Promise(async (resolve) => {
+    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
+    let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+    const fim = (txt) => { if (!vivo) return; vivo = false; cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    $("#camSair").onclick = () => fim(null);
+    $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
+    $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
+    try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
+    catch (e) { toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code"] }); } } catch (e) { det = null; }
+    if (!det) { try { jq = await carregarJsQR(); } catch (e) { toast("Leitor de QR indisponível. Digite o código.", 6000); } }
+    const passo = async () => {
+      if (!vivo) return;
+      try {
+        if (v.readyState >= 2) {
+          if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(80); return fim(r[0].rawValue); } }
+          else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(80); return fim(r.data); } }
+        }
+      } catch (e) {}
+      setTimeout(passo, 220);
+    };
+    passo();
+  });
+}
+// o QR pode trazer só o código ou um endereço com ?u= / ?c= / ?e=
+const codigo = (t) => { t = String(t || "").trim(); const m = t.match(/[?&](?:u|c|e)=([^&#]+)/); return (m ? decodeURIComponent(m[1]) : t).trim(); };
+const norm = (t) => codigo(t).toUpperCase().replace(/\s+/g, " ");
+
+/* ── foto: vai reduzida, para subir rápido ── */
+function tirarFoto() {
+  return new Promise((resolve) => {
+    const inp = $("#foto"); inp.value = "";
+    inp.onchange = async () => {
+      const f = inp.files[0]; if (!f) return resolve(null);
+      try {
+        const img = await new Promise((ok, erro) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = erro; im.src = u; });
+        const k = Math.min(1, 1100 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); resolve(c.toDataURL("image/jpeg", 0.72).split(",")[1]);
+      } catch (e) { toast("Não consegui abrir a foto. Tente de novo."); resolve(null); }
+    };
+    inp.click();
+  });
+}
+
+/* ── estado ── */
+let D = null, DIF = 0;
+const agora = () => Date.now() + DIF;
+const uniDe = (id) => (D.unidades || []).find((u) => u.id === id);
+const anDe = (id) => (D.animais || []).find((a) => a.id === id) || {};
+const tipoTxt = (u) => { const a = anDe(u.animal_id), t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const especie = (u) => /fel|gat/i.test(anDe(u.animal_id).especie || "") ? "Felino" : "Canino";
+const linhaBolsa = (u) => "<b>" + esc(u.componente) + " · " + esc(u.coleta) + '</b><small>' + esc(NOME_COMP[u.componente] || u.componente) + " · " + esc(especie(u)) + (tipoTxt(u) ? " " + esc(tipoTxt(u)) : "") + (u.volume_ml ? " · " + esc(u.volume_ml) + " mL" : "") + (u.validade ? " · validade " + esc(dataBr(u.validade)) : "") + "</small>";
+const prazo = (u) => (D.prazos || {})[u.componente] || 20;
+const inicioGuarda = (r) => r && (r.entrega_em || r.recebida_em) ? Date.parse(r.entrega_em || r.recebida_em) : null;
+function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Math.abs(s), t = p2(Math.floor(a / 60)) + ":" + p2(a % 60); return '<span class="relogio' + (s < 0 ? " al" : "") + '" data-fim="' + fimMs + '">' + (s < 0 ? "atrasado " + t : t) + "</span>"; }
+
+function pintar() {
+  if (!D) return;
+  const A = D.aparelho, interna = A.setor === "internacao", rem = D.remessas || [];
+  let h = '<div class="topo"><h1>Estoque CVH<small>' + esc(A.nome) + "</small></h1><button class=\"btn sec peq\" data-a=\"atualizar\">Atualizar</button></div>";
+  // caixas a caminho
+  const caminho = rem.filter((r) => r.situacao === "transito");
+  if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
+  h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
+  // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento e tirar a foto
+  for (const r of rem.filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
+    const us = r.unidades.map(uniDe).filter(Boolean), ini = inicioGuarda(r);
+    const pend = us.filter((u) => u.situacao === "transito" || (u.dados && u.dados.guarda && !u.dados.guarda.foto)); if (!pend.length) continue;
+    h += '<div class="cx al"><h2>Guardar agora · caixa ' + esc(r.id) + "</h2>" + (r.recebida_em ? "<small>Recebida por " + esc(r.recebida_por) + " " + esc(hora(r.recebida_em)) + "</small>" : "<p><b>A caixa foi entregue. Leia o QR da caixa antes de abrir.</b></p>") +
+      us.map((u) => { const g = (u.dados || {}).guarda; let st, bt = "";
+        if (u.situacao === "transito") { st = ini ? "<small>Tempo para guardar</small>" + relogio(ini + prazo(u) * 6e4) : ""; if (r.recebida_em) bt = '<button class="btn peq" data-a="guardar" data-v="' + esc(u.id) + '">Ler QR do equipamento</button>'; }
+        else if (g && !g.foto) { st = '<span class="tag av">falta a foto</span>'; bt = '<button class="btn peq" data-a="fotoGuarda" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
+        else st = '<span class="tag ok">guardada</span>';
+        return '<div class="bolsa">' + linhaBolsa(u) + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") + "</div>";
+  }
+  // internação: bolsas retiradas esperando o registro da transfusão
+  const ret = (D.unidades || []).filter((u) => u.situacao === "retirada");
+  if (ret.length) h += '<div class="cx av"><h2>Retiradas para transfusão</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora();
+    return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + '</small><div class="bts">' + (interna ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">Transfundido</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">Cancelar retirada (' + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
+  if (interna) h += '<button class="btn grande sec" data-a="retirarQR">Ler etiqueta da bolsa para transfusão</button>';
+  // miniestoque
+  const est = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada"].includes(u.situacao));
+  const ordem = ["CH", "PFC", "CRIO", "CP", "PPC"];
+  h += '<div class="cx"><h2>Estoque na ' + esc(A.local) + " · " + est.length + (est.length === 1 ? " bolsa" : " bolsas") + "</h2>" + (est.length ? est.sort((a, b) => ordem.indexOf(a.componente) - ordem.indexOf(b.componente) || String(a.validade).localeCompare(String(b.validade))).map((u) =>
+    '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
+    (interna && u.situacao !== "bloqueada" ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para transfusão</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
+  const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
+  if (feitas.length) h += '<div class="cx"><h2>Transfundidas nas últimas 24 horas</h2>' + feitas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(((u.dados.uso || {}).paciente || {}).nome || "") + " · " + esc(hora((u.dados.uso || {}).transfundidaEm)) + "</small></div>").join("") + "</div>";
+  h += '<p class="vazio"><small>Dúvidas sobre as bolsas, fale com o CVH.</small></p>';
+  $("#app").innerHTML = h;
+}
+
+/* ── relógios e alarme da guarda ── */
+const AVISADO = {};
+function tique() {
+  document.querySelectorAll(".relogio[data-fim]").forEach((el) => { const s = Math.round((+el.dataset.fim - agora()) / 1000), a = Math.abs(s); el.textContent = (s < 0 ? "atrasado " : "") + p2(Math.floor(a / 60)) + ":" + p2(a % 60); el.classList.toggle("al", s < 0); });
+  if (!D) return;
+  for (const r of (D.remessas || []).filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
+    const ini = inicioGuarda(r); if (!ini) continue;
+    for (const u of r.unidades.map(uniDe).filter((x) => x && x.situacao === "transito")) {
+      const fim = ini + prazo(u) * 6e4, ch = "g:" + u.id;
+      if (agora() > fim) {
+        if (!AVISADO[ch]) { AVISADO[ch] = 1; srv("intAlertaGuarda", u.id).catch(() => {}); }
+        if (!SILENCIO[ch] || Date.now() - SILENCIO[ch] > 3 * 6e4) alarme(ch, u.componente + " fora da refrigeração", "A bolsa " + u.id + " passou de " + prazo(u) + " minutos. Guarde agora e leia o QR do equipamento.");
+      } else if (agora() > fim - 5 * 6e4 && !AVISADO["q" + ch]) { AVISADO["q" + ch] = 1; somAviso(); toast("Faltam 5 minutos para guardar " + u.id + ".", 6000); }
+    }
+  }
+}
+setInterval(tique, 1000);
+
+async function carregar(silencio) {
+  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Abra neste celular o link de ativação enviado pelo CVH.</p></div>'; return; }
+  try {
+    const antes = D; D = await srv("intDados"); DIF = Date.parse(D.agora) - Date.now();
+    if (antes) { const novas = (D.remessas || []).filter((r) => r.situacao === "transito" && !(antes.remessas || []).some((x) => x.id === r.id)); if (novas.length) { somAviso(); toast("Caixa do CVH a caminho.", 7000); } }
+    if (!$("#modal").classList.contains("on") && !$("#cam").classList.contains("on")) pintar();
+  } catch (e) {
+    if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_int_k"); } catch (_) {} K = ""; return carregar(); }
+    if (!silencio) toast(e.message || String(e), 6000);
+    if (!D) $("#app").innerHTML = '<div class="cx vazio">Sem conexão com o CVH. ' + esc(e.message || "") + '<div class="bts" style="justify-content:center"><button class="btn" data-a="atualizar">Tentar de novo</button></div></div>';
+  }
+}
+setInterval(() => carregar(true), 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) carregar(true); });
+
+/* ── ações ── */
+async function receber() {
+  const t = await lerQR("Leia o QR do lado de fora da caixa"); if (!t) return;
+  const id = norm(t), r = (D.remessas || []).find((x) => x.id === id);
+  if (!r) { toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); return; }
+  modal("<h2>Caixa " + esc(id) + "</h2><p>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa." : " bolsas.") + ' Tire a foto da frente da caixa, ainda fechada.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '" autocomplete="given-name"><div class="bts"><button class="btn" data-a="recFoto" data-v="' + esc(id) + '">Tirar a foto e confirmar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+async function recFoto(id, b) {
+  const nome = $("#mNome").value.trim(); if (!nome) return toast("Informe seu primeiro nome.");
+  salvarNome(nome); const f = await tirarFoto(); if (!f) return toast("A foto da caixa é necessária.");
+  b.disabled = true; toast("Enviando…", 20000);
+  try { await srv("intReceber", id, nome, f); somOk(); fechar(); toast("Recebimento confirmado. Guarde cada bolsa e leia o QR do equipamento.", 7000); await carregar(); }
+  catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+}
+async function guardar(uid) {
+  const u = uniDe(uid); const t = await lerQR("Bolsa " + uid + " · leia o QR do " + (u && u.componente === "CH" ? "refrigerador" : "freezer")); if (!t) return;
+  try { await srv("intGuardar", uid, norm(t), nomeSalvo()); somOk(); await carregar(); toast("Equipamento certo. Agora toque em Foto da bolsa guardada.", 6000); }
+  catch (e) { tom(220, 0, 0.5, 0.3, "square"); toast(e.message, 8000); }
+}
+async function fotoGuarda(uid) {
+  const f = await tirarFoto(); if (!f) return toast("Tire a foto da bolsa guardada.");
+  toast("Enviando a foto…", 20000);
+  try { await srv("intFotoGuarda", uid, f); somOk(); toast("Bolsa guardada.", 4000); await carregar(); } catch (e) { toast(e.message, 7000); }
+}
+function confirmarRetirada(uid) {
+  const u = uniDe(uid); if (!u || u.local !== D.aparelho.local || !["disponivel", "reservada"].includes(u.situacao)) return toast("Esta bolsa não está disponível aqui. Confira a etiqueta.", 7000);
+  modal("<h2>Retirar para transfusão</h2>" + '<div class="bolsa">' + linhaBolsa(u) + "</div>" + (u.situacao === "reservada" ? '<p class="tag av">Reservada' + (u.reserva ? " para " + esc(u.reserva) : "") + "</p>" : "") + '<p>Ao confirmar, a bolsa sai do estoque da Intensivet. Dá para cancelar em até 10 minutos.</p><div class="bts"><button class="btn" data-a="retirarOk" data-v="' + esc(uid) + '">Confirmar retirada</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+async function retirarQR() { const t = await lerQR("Leia a etiqueta da bolsa"); if (!t) return; const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id); if (!u) return toast("Bolsa não encontrada no estoque daqui. Confira a etiqueta.", 7000); confirmarRetirada(u.id); }
+function formTransfusao(uid) {
+  const u = uniDe(uid), o = ((u.dados || {}).uso || {});
+  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do paciente</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="number" inputmode="decimal" id="tPeso"><label>Hematócrito antes da transfusão (%)</label><input type="number" inputmode="decimal" id="tHt"><label>Telefone do responsável</label><input type="tel" id="tTel"><label>Médico veterinário responsável</label><input type="text" id="tVet"><label>CRMV</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
+    '<label>Contato do CVH com o responsável</label><label class="op"><input type="radio" name="tCont" value="ciente"> O responsável está ciente da transfusão e o CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Aguardar o médico veterinário avisar o responsável.</label>' +
+    '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">Registrar transfusão</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+async function transfOk(uid, b) {
+  const c = document.querySelector('input[name="tCont"]:checked');
+  const o = { animal: $("#tAn").value.trim(), peso: $("#tPeso").value.trim(), ht: $("#tHt").value.trim(), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim(), crmv: $("#tCrmv").value.trim(), contato: c ? c.value : "" };
+  b.disabled = true;
+  try { await srv("intTransfundir", uid, o); somOk(); fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar(); } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+}
+function devolver(uid) {
+  const u = uniDe(uid);
+  modal("<h2>Devolver ao CVH</h2>" + '<div class="bolsa">' + linhaBolsa(u) + '</div><p>Use só quando o CVH pedir a bolsa de volta ou quando ela não for mais ficar aqui.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="devOk" data-v="' + esc(uid) + '">Confirmar devolução</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+
+document.addEventListener("click", async (ev) => {
+  if (ev.target.id === "veu") return fechar();
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  try {
+    if (a === "fechar") return fechar();
+    if (a === "atualizar") { await carregar(); return toast("Atualizado.", 1500); }
+    if (a === "receber") return receber();
+    if (a === "recFoto") return recFoto(v, b);
+    if (a === "guardar") return guardar(v);
+    if (a === "fotoGuarda") return fotoGuarda(v);
+    if (a === "retirar") return confirmarRetirada(v);
+    if (a === "retirarQR") return retirarQR();
+    if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
+    if (a === "transfundir") return formTransfusao(v);
+    if (a === "transfOk") return transfOk(v, b);
+    if (a === "cancelar") { b.disabled = true; await srv("intCancelarRetirada", v); fechar(); toast("Retirada cancelada. A bolsa voltou para o estoque. Guarde no mesmo equipamento.", 7000); return carregar(); }
+    if (a === "devolver") return devolver(v);
+    if (a === "devOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; await srv("intDevolver", v, n); fechar(); toast("Devolução registrada. Mande a bolsa ao CVH em caixa térmica.", 7000); return carregar(); }
+  } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; }
+});
+carregar();
+</script>
+</body></html>

@@ -5391,6 +5391,8 @@ const PONTE = {
   qcAba: a => { const b = document.querySelector('.mod-barra [data-acao=sair-modulo]'); if (b) b.textContent = a === 'geral' ? '‹ Painel' : '‹ Controle de qualidade'; },
   // leitura rápida por foto (balança): até 3 tentativas em modelos diferentes, sem esperar minutos
   iaRapida: async (tipo, mime, b64) => { if (!['balanca'].includes(tipo)) throw new Error('Leitura não permitida.'); for (let t = 0; t < 3; t++) { const r = await api('lerComIA', E.sessao, tipo, mime, b64, t); if (r && r.dados) return r.dados; } throw new Error('A leitura automática está ocupada agora. Digite o peso.'); },
+  qr: t => qrSvg(String(t || '')),
+  origem: () => location.origin + location.pathname.replace(/[^/]*$/, ''),
   est: (fn, ...a) => { if (!/^est[A-Z]\w+$/.test(String(fn))) throw new Error('Função não permitida.'); return api(fn, E.sessao, ...JSON.parse(JSON.stringify(a))); },
   qc: (fn, ...a) => {
     if (!/^qc[A-Z]\w+$/.test(String(fn))) throw new Error('Função não permitida.');
