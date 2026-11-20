@@ -449,7 +449,7 @@ async function abrirRem(id) {
   const us = r.unidades.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean);
   abrirGaveta("Remessa " + r.id, '<dl class="dl"><dt>Destino</dt><dd>' + esc(r.destino) + "</dd><dt>Finalidade</dt><dd>" + esc(r.finalidade || "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_REM[r.situacao] || r.situacao) + "</dd><dt>Preparada</dt><dd>" + esc(hora(r.criado)) + " · " + esc(r.criado_por) + "</dd>" +
     (r.saida_em ? "<dt>Saída</dt><dd>" + esc(hora(r.saida_em)) + (r.modalidade ? " · " + esc(r.modalidade) : "") + "</dd>" : "") + (r.link_uber ? '<dt>Uber</dt><dd><a href="' + esc(r.link_uber) + '" target="_blank" rel="noopener">acompanhar</a></dd>' : "") +
-    (r.entrega_em ? "<dt>Entrega</dt><dd>" + esc(hora(r.entrega_em)) + "</dd>" : "") + (r.recebida_em ? "<dt>Recebida</dt><dd>" + esc(hora(r.recebida_em)) + " · " + esc(r.recebida_por) + " (" + (r.recebida_setor === "recepcao" ? "recepção" : "internação") + ")" + (r.fotoUrl ? '<br><a href="' + esc(r.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(r.fotoUrl) + '" alt="Foto de quem recebeu" style="width:110px;height:110px;object-fit:cover;border-radius:12px;margin-top:6px;border:1px solid var(--areia2)"></a><br><small>Foto de quem recebeu (acesso restrito). Toque para ampliar.</small>' : r.recebida_em ? "<br><small>Sem foto (a câmera da frente não abriu no celular)</small>" : "") + "</dd>" : "") + "</dl>" +
+    (r.entrega_em ? "<dt>Entrega</dt><dd>" + esc(hora(r.entrega_em)) + "</dd>" : "") + (r.recebida_em ? "<dt>Recebida</dt><dd>" + esc(hora(r.recebida_em)) + " · " + esc(r.recebida_por) + " (" + (r.recebida_setor === "recepcao" ? "recepção" : "internação") + ")" + (r.fotoUrl ? '<br><a href="' + esc(r.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(r.fotoUrl) + '" alt="Foto de quem recebeu" style="width:110px;height:110px;object-fit:cover;border-radius:12px;margin-top:6px;border:1px solid var(--areia2)"></a><br><small>Foto de quem recebeu (acesso restrito). Toque para ampliar.</small>' : r.recebida_em && S.admin && !r.foto_recebimento ? "<br><small>Sem foto (a câmera da frente não abriu no celular)</small>" : "") + "</dd>" : "") + "</dl>" +
     '<div class="bts">' + ac + '</div><div id="rForm"></div><h2 style="margin-top:16px">Bolsas</h2>' + us.map((u) => { const g = (u.dados || {}).guarda; return '<div class="ev" data-a="uni" data-v="' + esc(u.id) + '" style="cursor:pointer"><b>' + esc(u.id) + "</b> · " + esc(ROT_SIT[u.situacao] || u.situacao) + (g ? "<br><small>" + esc(g.nome) + (g.minutos != null ? " · " + g.minutos + " min" + (g.noPrazo ? "" : ", fora do prazo") : "") + (g.foto ? " · com foto" : " · falta a foto") + "</small>" : "") + "</div>"; }).join(""));
 }
 function imprimir(titulo, corpo) {
@@ -457,14 +457,58 @@ function imprimir(titulo, corpo) {
 }
 async function imprimirQRRem(r) { const q = await qrHtml(r.id); imprimir("Caixa " + r.id, '<div class="et">' + q + "<b>" + esc(r.id) + "</b><small>CVH · " + esc(r.destino) + "<br>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + " · leia o QR antes de abrir a caixa</small></div>"); }
 async function imprimirQREq(lista) { let h = ""; for (const e of lista) h += '<div class="et">' + (await qrHtml(e.id)) + "<b>" + esc(e.id) + "</b><small>" + esc(e.nome) + " · " + esc(e.local) + "<br>" + esc((e.aceita || []).join(", ")) + "</small></div>"; imprimir("QR dos equipamentos", h); }
+/* ── registros da Intensivet (só administrador): recebimentos, guardas, estoque, uso e conferência das fotos ── */
+const ROT_EVI = { "remessa:criada": "Remessa preparada", "remessa:saida": "Saída da caixa", "remessa:entrega": "Entrega registrada", "remessa:recebida": "Caixa recebida", "remessa:uber": "Link do Uber", "remessa:cancelar": "Remessa cancelada", "unidade:saida": "Bolsa saiu do CVH", "unidade:guardada": "Guardada", "unidade:fotoGuarda": "Foto da guarda", "unidade:retirada": "Retirada para uso", "unidade:retiradaCancelada": "Retirada cancelada", "unidade:transfusaoCorrigida": "Transfundido corrigido", "unidade:transfundida": "Transfundida", "unidade:devolvida": "Devolvida ao CVH", "unidade:receberDevolucao": "Devolução conferida no CVH", "ocorrencia": "Ocorrência" };
+const minEntre = (a, b) => a && b ? Math.round((Date.parse(b) - Date.parse(a)) / 6e4) : null;
+async function abrirRegistros(dias) {
+  S.intVista = "registros"; S.regDias = dias || S.regDias || 30;
+  $("#app").querySelector("#intCorpo").innerHTML = '<p class="vazio">Carregando os registros…</p>';
+  try { S.reg = await est("estRegistrosIntensivet", S.regDias); pintar(); } catch (e) { toast(e.message, 6000); S.intVista = ""; pintar(); }
+}
+function fotoCard(tipo, id, src, titulo, linhas, conf) {
+  return '<div class="cx" style="padding:10px;margin:0"><a href="' + esc(src) + '" target="_blank" rel="noopener"><img src="' + esc(src) + '" alt="' + esc(titulo) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:var(--areia)"></a><b style="display:block;margin-top:6px">' + esc(titulo) + "</b><small>" + linhas.map(esc).join("<br>") + "</small>" +
+    (conf ? '<div style="margin-top:6px"><span class="chip ' + (conf.ok ? "ok" : "al") + '">' + (conf.ok ? "Conferida" : "Problema") + "</span> <small>" + esc(conf.por) + " · " + esc(hora(conf.em)) + (conf.obs ? "<br>" + esc(conf.obs) : "") + "</small></div>" : '<input type="text" id="fo-' + esc(tipo + id) + '" placeholder="Observação (opcional)" style="margin-top:6px;padding:8px;font-size:14px"><div class="bts" style="margin-top:6px"><button class="btn peq" data-a="fotoOk" data-t="' + tipo + '" data-v="' + esc(id) + '">Conferida</button><button class="btn perigo peq" data-a="fotoProb" data-t="' + tipo + '" data-v="' + esc(id) + '">Problema</button></div>') + "</div>";
+}
+function telaRegistros() {
+  const R = S.reg; if (!R) return '<p class="vazio">Carregando…</p>';
+  const uniR = (id) => R.unidades.find((u) => u.id === id), setor = (x) => x === "recepcao" ? "recepção" : x === "internacao" ? "internação" : x || "";
+  const filtro = '<div class="filtros">' + [7, 30, 90, 365].map((d) => '<button class="' + (R.dias === d ? "on" : "") + '" data-a="regDias" data-v="' + d + '">' + (d === 365 ? "1 ano" : d + " dias") + "</button>").join("") + "</div>";
+  // fotos
+  const fotos = [];
+  R.remessas.filter((r) => r.foto_recebimento).forEach((r) => fotos.push({ conf: (r.dados || {}).fotoConferida, h: fotoCard("recebimento", r.id, r.fotoUrl, "Recebeu: " + (r.recebida_por || ""), ["Caixa " + r.id + " · " + setor(r.recebida_setor), hora(r.recebida_em)], (r.dados || {}).fotoConferida) }));
+  R.unidades.filter((u) => u.dados && u.dados.guarda && u.dados.guarda.foto).forEach((u) => { const g = u.dados.guarda; fotos.push({ conf: g.conferida, h: fotoCard("guarda", u.id, g.fotoUrl, "Guarda: " + u.id, [g.nome + " · " + hora(g.em), (g.minutos != null ? g.minutos + " min " + (g.noPrazo ? "(no prazo)" : "(fora do prazo)") : "") + " · " + (g.por || "")], g.conferida) }); });
+  const pend = fotos.filter((f) => !f.conf);
+  let h = '<div class="bts" style="margin-bottom:10px"><button class="btn sec peq" data-a="regSair">‹ Voltar à Intensivet</button></div><div class="cx" style="border-color:var(--vinho)"><h2>Registros da Intensivet</h2><p class="nota">Área restrita ao administrador. As fotos de quem recebeu ficam só aqui.</p>' + filtro + "</div>";
+  h += '<div class="cx"><h2>Fotos para conferir · ' + pend.length + '</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">' + (pend.length ? pend.map((f) => f.h).join("") : '<p class="vazio">Nenhuma foto pendente.</p>') + "</div>" +
+    (fotos.length > pend.length ? '<details style="margin-top:10px"><summary>Fotos já conferidas · ' + (fotos.length - pend.length) + '</summary><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px">' + fotos.filter((f) => f.conf).map((f) => f.h).join("") + "</div></details>" : "") + "</div>";
+  // recebimentos
+  h += '<div class="cx"><h2>Recebimentos</h2>' + (R.remessas.length ? R.remessas.map((r) => {
+    const us = (r.unidades || []).map(uniR).filter(Boolean), d = r.dados || {}, espera = minEntre(r.entrega_em, r.recebida_em);
+    return '<div class="ev"><b>Caixa ' + esc(r.id) + "</b> · " + esc(r.destino) + " · " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ' <span class="chip ' + (COR_REM[r.situacao] || "") + '">' + esc(ROT_REM[r.situacao] || r.situacao) + "</span><br><small>" +
+      ["Preparada " + hora(r.criado) + " · " + r.criado_por, r.saida_em ? "Saída " + hora(r.saida_em) + (r.modalidade ? " · " + r.modalidade : "") : "", d.uberFim ? "Corrida encerrada " + hora(d.uberFim) : r.entrega_em ? "Entrega " + hora(r.entrega_em) : "", r.recebida_em ? "QR da caixa lido " + hora(r.recebida_em) + " · " + (r.recebida_por || "") + " (" + setor(r.recebida_setor) + ")" + (espera != null && espera > 0 ? " · " + espera + " min depois da entrega" : "") : ""].filter(Boolean).map(esc).join("<br>") +
+      (us.length ? "<br>" + us.map((u) => { const g = (u.dados || {}).guarda; return esc(u.id) + (g ? " → " + esc(g.nome) + " " + esc(hora(g.em)) + (g.minutos != null ? ' <span class="chip ' + (g.noPrazo ? "ok" : "al") + '">' + g.minutos + " min</span>" : "") + (g.foto ? "" : " · sem foto") : u.situacao === "transito" ? " · guarda pendente" : ""); }).join("<br>") : "") + "</small></div>";
+  }).join("") : '<p class="vazio">Nenhuma remessa no período.</p>') + "</div>";
+  // estoque atual
+  const est = R.unidades.filter((u) => u.local === "Intensivet" && !["utilizada", "descartada"].includes(u.situacao));
+  h += '<div class="cx"><h2>Estoque na Intensivet · ' + est.length + "</h2>" + (est.length ? est.map((u) => { const g = (u.dados || {}).guarda || {}; return '<div class="ev" data-a="uni" data-v="' + esc(u.id) + '" style="cursor:pointer"><b>' + esc(u.id) + "</b> · " + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "<br><small>" + esc(u.equipamento || "") + (g.em ? " · entrou " + esc(hora(g.em)) : "") + " · validade " + esc(br(String(u.validade || "").slice(0, 10))) + (u.volume_ml ? " · " + fmt(u.volume_ml) + " mL" : "") + "</small></div>"; }).join("") : '<p class="vazio">Nenhuma bolsa.</p>') + "</div>";
+  // uso, devoluções e ocorrências
+  const usos = R.eventos.filter((e) => /retirada|transfund|Corrigida|devolvida|receberDevolucao|ocorrencia/.test(e.tipo));
+  h += '<div class="cx"><h2>Uso, devoluções e ocorrências</h2>' + (usos.length ? usos.map((e) => { const d = e.dados || {}; return '<div class="ev"><b>' + esc(ROT_EVI[e.tipo] || e.tipo) + "</b> · " + esc(e.unidade_id || d.alvo || "") + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + ([d.paciente, d.vet, d.contato === "ciente" ? "responsável ciente" : d.contato === "aguardar" ? "aguardar o veterinário" : "", d.texto].filter(Boolean).length ? "<br><small>" + esc([d.paciente, d.vet, d.contato === "ciente" ? "responsável ciente" : d.contato === "aguardar" ? "aguardar o veterinário" : "", d.texto].filter(Boolean).join(" · ")) + "</small>" : "") + "</div>"; }).join("") : '<p class="vazio">Nada no período.</p>') + "</div>";
+  // linha do tempo completa
+  h += '<details class="cx"><summary><b>Todos os registros do período · ' + R.eventos.length + "</b></summary>" + R.eventos.map((e) => '<div class="ev"><b>' + esc(ROT_EVI[e.tipo] || e.tipo) + "</b> · " + esc(e.unidade_id || (e.dados || {}).remessa || "") + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small></div>").join("") + "</details>";
+  // celulares
+  h += '<div class="cx"><h2>Celulares ativados</h2>' + R.aparelhos.map((a) => '<div class="ev"><b>' + esc(a.nome) + "</b> · " + esc(setor(a.setor)) + (a.ativo ? "" : " · desativado") + " <small>ativado " + esc(hora(a.criado)) + (a.ultimo_uso ? " · último uso " + esc(hora(a.ultimo_uso)) : "") + "</small></div>").join("") + "</div>";
+  return h;
+}
 function telaIntensivet() {
+  if (S.intVista === "registros" && S.admin) return '<div id="intCorpo">' + telaRegistros() + "</div>";
   const loc = (u) => u.local === "Intensivet";
   const est = S.uni.filter((u) => loc(u) && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao));
   const volta = S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || ""));
   const caminho = S.uni.filter((u) => u.situacao === "transito" && !/CVH/.test(u.local || ""));
   const usadas = S.uni.filter((u) => loc(u) && u.situacao === "utilizada").slice(0, 20);
   const cont = (c) => est.filter((u) => u.componente === c && u.situacao === "disponivel").length;
-  let h = '<div class="kpis">' + ["CH", "PFC", "CRIO", "CP"].map((c) => '<div class="kpi"><b>' + cont(c) + "</b><span>" + c + " disponível na Intensivet</span></div>").join("") + "</div>";
+  let h = (S.admin ? '<div class="bts" style="margin-bottom:10px"><button class="btn" data-a="regAbrir">Registros da Intensivet</button></div>' : "") + '<div id="intCorpo"></div><div class="kpis">' + ["CH", "PFC", "CRIO", "CP"].map((c) => '<div class="kpi"><b>' + cont(c) + "</b><span>" + c + " disponível na Intensivet</span></div>").join("") + "</div>";
   if (volta.length) h += '<div class="cx"><h2>Voltando para o CVH</h2>' + volta.map(linhaUnidade).join("") + "<p><small>Abra a bolsa e confirme a devolução quando chegar.</small></p></div>";
   if (caminho.length) h += '<div class="cx"><h2>A caminho da Intensivet</h2>' + caminho.map(linhaUnidade).join("") + "</div>";
   h += '<div class="cx"><h2>Estoque na Intensivet · ' + est.length + "</h2>" + (est.length ? est.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa.</p>') + "</div>";
@@ -682,6 +726,10 @@ document.addEventListener("click", async (ev) => {
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
   if (a === "camera") return abrirCamera();
+  if (a === "regAbrir") return abrirRegistros(30);
+  if (a === "regDias") return abrirRegistros(+v);
+  if (a === "regSair") { S.intVista = ""; pintar(); return; }
+  if (a === "fotoOk" || a === "fotoProb") { try { b.disabled = true; const obs = (document.getElementById("fo-" + b.dataset.t + v) || {}).value || ""; if (a === "fotoProb" && !obs.trim()) { b.disabled = false; return toast("Descreva o problema no campo da observação."); } await est("estFotoConferir", b.dataset.t, v, { ok: a === "fotoOk", obs }); await abrirRegistros(S.regDias); toast(a === "fotoOk" ? "Foto conferida." : "Problema registrado."); } catch (e) { toast(e.message, 6000); b.disabled = false; } return; }
   if (a === "testeCriar" || a === "testeLimpar") { try { b.disabled = true; if (a === "testeCriar") { const c = await est("estTesteCriar"); await recarregar(); toast("Bolsas " + c + " CH, PFC e CRIO criadas, disponíveis no CVH.", 6000); } else { const r = await est("estTesteLimpar"); await recarregar(); toast("Teste apagado: " + r.unidades + " bolsas, " + r.remessas + " remessas, " + r.atendimentos + " atendimentos.", 6000); } } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } return; }
   if (a === "at") return abrirAtendimento(v);
   if (a === "atNovo") { abrirGaveta("Novo atendimento", formAtendimento({})); return; }
