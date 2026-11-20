@@ -52,6 +52,7 @@ label{display:block;font-size:13px;color:var(--tinta2);margin:8px 0 4px}
 input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:12px;border:1px solid var(--areia2);border-radius:10px;background:#fff;color:var(--tinta);font-size:17px}
 .grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:520px){.grade{grid-template-columns:1fr}}
+.peso{display:flex;gap:8px;align-items:stretch}.peso input{flex:1;min-width:0}.peso .btn{flex:none;padding:0 14px}
 .calc{background:#FFFBF5;border:1px dashed var(--bege);border-radius:12px;padding:12px;margin:10px 0}
 .calc b.big{font-size:26px;color:var(--vinho)}
 .dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:6px 0 12px}
@@ -74,6 +75,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 <body>
 <div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
 <div id="veu"></div>
+<input type="file" id="cam" accept="image/*" capture="environment" hidden>
 <aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
 <script>
 /* Estoque Inteligente CVH · fase 1: produção na bancada, estoque, ficha da bolsa e pendências do dia */
@@ -129,10 +131,12 @@ function alertaValidade(u) {
 const congPendente = (u) => { const c = (u.dados || {}).congelamento; return c && c.inicio && !(c.conferido && c.conferido.congelado) && Date.now() - Date.parse(c.inicio) > 12 * 36e5; };
 
 /* ── produção ── */
-// coletas que aparecem para produzir: fichas dos últimos 21 dias com coleta e volume
+// coletas que aparecem para produzir: fichas com coleta a partir do início do estoque (20/11/2026)
+const INICIO = "2026-11-20";
 function aguardando() {
   const tem = new Set(S.prod.map((p) => p.coleta));
-  return DOA.filter((d) => !d.naoColetado && d.data && dias(d.data, hojeISO()) <= 21 && !tem.has(d.numero.replace(/\s/g, ""))).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  const tem2 = new Set(S.uni.map((u) => u.coleta));
+  return DOA.filter((d) => !d.naoColetado && d.data && d.data >= INICIO && dias(d.data, hojeISO()) <= 21 && !tem.has(d.numero.replace(/\s/g, "")) && !tem2.has(d.numero.replace(/\s/g, ""))).sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
 function sag(p) {
   const P = S.P.sag, peso = num(p.pesoCHsem), htM = num(p.htCHsem), ht = htM != null ? htM : P.htMedioCH;
@@ -150,21 +154,21 @@ function abrirProducao(coleta) {
     (d.lote || d.validade ? "<dt>Bolsa</dt><dd>" + esc([d.lote ? "lote " + d.lote : "", d.validade ? "validade " + br(d.validade) : ""].filter(Boolean).join(" · ")) + "</dd>" : "") + (d.seguimento ? "<dt>Segmento</dt><dd>" + esc(d.seguimento) + "</dd>" : "") + "</dl>";
   let corpo = "";
   if (et === "peso_st") corpo = '<h2>Peso do conjunto completo de ST</h2><p class="nota">Tudo o que vai à balança na entrada da produção: bolsa de coleta com o sangue, bolsa de SAG com a solução, bolsa das plaquetas, plástico, manguitos e conexões.</p>' +
-    '<label>Peso bruto do conjunto (g)</label><input type="number" inputmode="decimal" id="pPesoST" value="' + esc(D.pesoST ?? "") + '"><label>Micro-hematócrito do ST (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtST" value="' + esc(D.htST ?? "") + '">' +
+    '<label>Peso bruto do conjunto (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoST" value="' + esc(D.pesoST ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoST">Foto</button></div><label>Micro-hematócrito do ST (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtST" value="' + esc(D.htST ?? "") + '">' +
     '<p class="nota">Identifique a amostra do ST na IDEXX como <b>ST_BOLSA ' + esc(coleta) + "</b>.</p>" + '<button class="btn grande" data-a="pSalvar" data-v="peso_st">Confirmar peso e seguir</button>';
   else if (et === "centrifugacao") corpo = "<h2>Centrifugações e transferência</h2>" +
     [["c1", "Primeira centrifugação concluída e porção das plaquetas separada"], ["c2", "Segunda centrifugação concluída"], ["tp", "Plasma remanescente transferido para a bolsa das plaquetas"]].map(([k, t]) => '<div class="lin"><div class="t"><b>' + t + "</b><small>" + (D[k] ? "feito " + esc(hora(D[k])) : "pendente") + "</small></div>" + (D[k] ? '<span class="chip ok">feito</span>' : '<button class="btn peq" data-a="pMarca" data-v="' + k + '">Feito</button>') + "</div>").join("") +
     (D.c1 && D.c2 && D.tp ? '<button class="btn grande" data-a="pAvanca" data-v="ch_sem_sag" style="margin-top:12px">Pesar o CH sem SAG</button>' : "");
   else if (et === "ch_sem_sag" || et === "ch_com_sag") {
     const c = sag(D);
-    corpo = '<h2>SAGcalculadora</h2><div class="grade"><div><label>Peso do CH sem SAG (g)</label><input type="number" inputmode="decimal" id="pPesoCH" value="' + esc(D.pesoCHsem ?? "") + '"></div><div><label>Micro-Ht do CH sem SAG (%) <small>opcional</small></label><input type="number" inputmode="decimal" id="pHtCH" value="' + esc(D.htCHsem ?? "") + '"></div></div>' +
+    corpo = '<h2>SAGcalculadora</h2><div class="grade"><div><label>Peso do CH sem SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCH" value="' + esc(D.pesoCHsem ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCH">Foto</button></div></div><div><label>Micro-Ht do CH sem SAG (%) <small>opcional</small></label><input type="number" inputmode="decimal" id="pHtCH" value="' + esc(D.htCHsem ?? "") + '"></div></div>' +
       (c ? '<div class="calc"><small>Volume de SAG a acrescentar</small><br><b class="big">' + fmt(c.calc) + ' mL</b><br><small>CH sem SAG com ' + fmt(c.vol) + " mL · hematócrito " + (c.medido ? "medido " : "pela média do CVH, ") + fmt(c.ht, 1) + "% · alvo " + fmt(S.P.sag.htAlvo) + "%" + (c.suficiente ? "" : " · <b>passa da bolsa de SAG (" + fmt(S.P.sag.sagBolsa) + " mL)</b>") + "</small></div>" : '<p class="nota">Informe o peso para calcular o SAG. Sem micro-Ht, o cálculo usa a média do CVH (' + fmt(S.P.sag.htMedioCH, 1) + "%), e isso fica identificado no histórico.</p>") +
-      '<div class="grade"><div><label>SAG acrescentado (mL)</label><input type="number" inputmode="decimal" id="pSagAd" value="' + esc(D.sagAdicionado ?? (c ? Math.round(c.calc) : "")) + '"></div><div><label>Peso final do CH com SAG (g)</label><input type="number" inputmode="decimal" id="pPesoFinal" value="' + esc(D.pesoCHfinal ?? "") + '"></div></div>' +
+      '<div class="grade"><div><label>SAG acrescentado (mL)</label><input type="number" inputmode="decimal" id="pSagAd" value="' + esc(D.sagAdicionado ?? (c ? Math.round(c.calc) : "")) + '"></div><div><label>Peso final do CH com SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoFinal" value="' + esc(D.pesoCHfinal ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoFinal">Foto</button></div></div></div>' +
       '<label>Micro-Ht do CH com SAG (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtFinal" value="' + esc(D.htCHfinal ?? "") + '">' +
       '<p class="nota">Identifique a amostra na IDEXX como <b>CH_BOLSA ' + esc(coleta) + '</b>.</p><button class="btn grande" data-a="pSalvar" data-v="ch">Salvar CH e seguir para CP e PFC</button>';
   } else if (et === "cp_pfc") {
     const Q = S.P.qc, vcp = volPeso(D.pesoCP, Q.taraCP, Q.densCP), vpl = volPeso(D.pesoPFC, Q.taraPL, Q.densPL);
-    corpo = '<h2>CP e PFC</h2><div class="grade"><div><label>Peso do CP (g)</label><input type="number" inputmode="decimal" id="pPesoCP" value="' + esc(D.pesoCP ?? "") + '"><small class="nota">' + (vcp != null ? "≈ " + fmt(vcp) + " mL" : "") + '</small></div><div><label>Peso do PFC (g)</label><input type="number" inputmode="decimal" id="pPesoPFC" value="' + esc(D.pesoPFC ?? "") + '"><small class="nota">' + (vpl != null ? "≈ " + fmt(vpl) + " mL" : "") + "</small></div></div>" +
+    corpo = '<h2>CP e PFC</h2><div class="grade"><div><label>Peso do CP (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCP" value="' + esc(D.pesoCP ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCP">Foto</button></div><small class="nota">' + (vcp != null ? "≈ " + fmt(vcp) + " mL" : "") + '</small></div><div><label>Peso do PFC (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoPFC" value="' + esc(D.pesoPFC ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoPFC">Foto</button></div><small class="nota">' + (vpl != null ? "≈ " + fmt(vpl) + " mL" : "") + "</small></div></div>" +
       '<label><input type="checkbox" id="pSemCP"' + (D.semCP ? " checked" : "") + '> Não houve CP nesta coleta</label><label><input type="checkbox" id="pCong" checked> Iniciar o congelamento do PFC agora (conferência amanhã)</label>' +
       '<button class="btn grande" data-a="pConcluir" style="margin-top:12px">Concluir a produção e guardar as bolsas</button>';
   } else corpo = '<p class="nota">Produção concluída. As bolsas estão no estoque.</p>' + S.uni.filter((u) => u.coleta === coleta).map(linhaUnidade).join("");
@@ -215,7 +219,8 @@ function abrirUnidade(id) {
     if (["PFC", "CRIO", "PPC"].includes(u.componente)) acoes += D.congelamento && D.congelamento.inicio ? (D.congelamento.conferido && D.congelamento.conferido.congelado ? "" : bt("conferirSim", "Congelado") + bt("conferirNao", "Ainda não congelado")) : bt("congelar", "Iniciar congelamento");
     acoes += bt("descartar", "Descartar", "perigo");
   }
-  const h = '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd>" +
+  const h = '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || D.doador || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd>" +
+    ((D.identificacao || D.loteBolsa) ? "<dt>Identificação</dt><dd>" + esc([D.identificacao, D.loteBolsa].filter(Boolean).join(" · ")) + (u.mae_id ? " <small>(fração da bolsa " + esc(u.mae_id) + ")</small>" : "") + "</dd>" : "") + (D.obs ? "<dt>Observação</dt><dd>" + esc(D.obs) + "</dd>" : "") +
     "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
     "<dt>Validade</dt><dd>" + esc(br(String(u.validade || "").slice(0, 10))) + (al ? ' <span class="chip ' + al.c + '">' + al.t + "</span>" : "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "</dd><dt>Local</dt><dd>" + esc(u.local || "") + (u.equipamento ? " · " + esc(u.equipamento) : "") + "</dd>" +
     (u.componente === "CH" && D.htFinal != null ? "<dt>Ht do CH com SAG</dt><dd>" + fmt(D.htFinal, 1) + "% <small>(micro-Ht)</small></dd>" : "") +
@@ -265,7 +270,7 @@ function telaProd() {
   const A = aguardando(), E = S.prod.filter((p) => p.etapa !== "concluida"), C = S.prod.filter((p) => p.etapa === "concluida").slice(0, 15);
   const it = (c, t, s, ch) => '<div class="lin"><div class="t"><b>' + esc(t) + "</b><small>" + esc(s) + '</small></div><button class="btn peq" data-a="prod" data-v="' + esc(c) + '">' + ch + "</button></div>";
   return '<div class="duas"><div class="cx"><h2>Em produção</h2>' + (E.length ? E.map((p) => { const d = doacao(p.coleta) || {}; return it(p.coleta, "Coleta " + p.coleta + " · " + (d.nome || animalDe(p.animal_id).nome || ""), (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], "Continuar"); }).join("") : '<p class="vazio">Nenhuma produção em andamento.</p>') + "</div>" +
-    '<div class="cx"><h2>Coletas aguardando o peso do ST</h2><p class="nota">Fichas de doação dos últimos 21 dias com coleta. Toque para registrar o peso do conjunto completo.</p>' + (A.length ? A.map((d) => it(d.numero.replace(/\s/g, ""), "Coleta " + d.numero + " · " + (d.nome || ""), br(d.data) + (d.volume ? " · " + d.volume + " mL" : ""), "Registrar peso")).join("") : '<p class="vazio">Nenhuma coleta aguardando.</p>') + "</div></div>" +
+    '<div class="cx"><h2>Coletas aguardando o peso do ST</h2><p class="nota">Fichas de doação com coleta a partir de 20/11. Toque para registrar o peso do conjunto completo.</p>' + (A.length ? A.map((d) => it(d.numero.replace(/\s/g, ""), "Coleta " + d.numero + " · " + (d.nome || ""), br(d.data) + (d.volume ? " · " + d.volume + " mL" : ""), "Registrar peso")).join("") : '<p class="vazio">Nenhuma coleta aguardando.</p>') + "</div></div>" +
     (C.length ? '<div class="cx"><h2>Concluídas</h2>' + C.map((p) => it(p.coleta, "Coleta " + p.coleta, "concluída " + hora(p.atualizado), "Ver")).join("") + "</div>" : "");
 }
 function telaEstoque() {
@@ -301,6 +306,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "prod") return abrirProducao(v);
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
+  if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
   if (a === "uConf") { const t = ($("#uTxt") || {}).value || "", k = PEDE[v][2]; if (!t.trim()) return toast("Preencha o campo."); const o = { [k]: t.trim() }; if (v === "mover") o.equipamento = ($("#uEq") || {}).value || ""; return acaoUnidade(v, o); }
   const c = S.prodAberta; if (!c) return;
   try {
@@ -318,6 +324,24 @@ document.addEventListener("click", async (ev) => {
     if (a === "pConcluir") await concluirProd(c);
   } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
 });
+// peso pela foto do visor da balança: a foto vai reduzida (rápida) e o número entra no campo para conferir
+let ALVO_FOTO = "";
+async function lerPesoFoto(file) {
+  const campo = $("#" + ALVO_FOTO); if (!campo || !file) return;
+  const t0 = Date.now(); toast("Lendo o peso…", 20000);
+  try {
+    const img = await new Promise((ok, erro) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => erro(new Error("Não consegui abrir a foto.")); im.src = u; });
+    const k = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight)), cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    const b64 = cv.toDataURL("image/jpeg", 0.75).split(",")[1];
+    const r = await ponte("iaRapida", "balanca", "image/jpeg", b64);
+    let g = num(r && r.peso); if (g != null && /kg/i.test(r.unidade || "")) g = g * 1000;
+    if (!r || !r.legivel || g == null) throw new Error("Não deu para ler o visor. Tire outra foto, de frente e sem reflexo, ou digite o peso.");
+    campo.value = Math.round(g * 10) / 10; campo.dispatchEvent(new Event("input", { bubbles: true })); campo.focus();
+    toast("Peso identificado: " + fmt(g, g % 1 ? 1 : 0) + " g (" + fmt((Date.now() - t0) / 1000, 1) + " s). Confira antes de confirmar.", 6000);
+  } catch (e) { toast(e.message || String(e), 6000); }
+}
+$("#cam").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; lerPesoFoto(f); });
 document.addEventListener("input", (ev) => { if (["pPesoCH", "pHtCH"].includes(ev.target.id) && S.prodAberta) { const p = S.prod.find((x) => x.coleta === S.prodAberta); if (p) { p.dados = Object.assign({}, p.dados, { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value) }); const y = $("#gvC").scrollTop, el = ev.target.id, pos = ev.target.selectionStart; abrirProducao(S.prodAberta); $("#gvC").scrollTop = y; const n = $("#" + el); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } } });
 window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
 
