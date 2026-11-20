@@ -1867,7 +1867,7 @@ const estado = {
 // usuário sem CRMV com acesso a Laudos: o laudo sai assinado pelo médico veterinário escolhido (o padrão do CVH de início)
 const VETS = Array.isArray(CTX.vets) ? CTX.vets : [];
 const RECEPTORES = Array.isArray(CTX.receptores) ? CTX.receptores : [];
-if (!estado.vet && CTX.liberador && VETS.length) { const v = VETS.find((x) => x.padrao === "1") || VETS[0]; estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv }; estado.liberador = CTX.liberador; }
+if (!estado.vet && CTX.liberador && VETS.length) { const v = VETS.find((x) => x.padrao === "1") || VETS[0]; estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || "" }; estado.liberador = CTX.liberador; }
 const agora = () => { const d = new Date(); return { data: br(hojeISO()), hora: p2(d.getHours()) + ":" + p2(d.getMinutes()) }; };
 const urlVerif = (cod) => (CTX.urlVerificacao || "") + ((CTX.urlVerificacao || "").indexOf("?") >= 0 ? "&" : "?") + "v=" + encodeURIComponent(cod);
 const felino = () => /fel|gat/.test(semAc(estado.paciente.especie));
@@ -2586,6 +2586,20 @@ function notaMetodo() {
   if (t === "tecsa") return "Exames realizados pelo laboratório TECSA" + (estado.exame.doacao ? " sob o registro " + estado.exame.doacao : "") + (x.protocolo ? " (protocolo " + x.protocolo + ")" : "") + (x.liberado ? ", liberados em " + br(x.liberado) : "") + "." + (x.rt ? " Responsável técnica do laboratório " + x.rt + "." : "") + " O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
   return "Exame realizado no CVH. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
 }
+// rubrica do médico veterinário (traço SVG em 300 × 120) desenhada no bloco da assinatura
+function rubricaEls(d, x, y, w, h, cor) {
+  if (!d) return [];
+  const kx = w / 300, ky = h / 120, k = Math.min(kx, ky), ox = x + (w - 300 * k) / 2, oy = y + (h - 120 * k) / 2, P = (a, b) => [ox + a * k, oy + b * k];
+  const out = [], re = /([MLQ])([^MLQ]*)/g; let m, cur = null, ult = null;
+  while ((m = re.exec(d))) {
+    const n = m[2].trim().split(/[\s,]+/).map(Number).filter((v) => isFinite(v));
+    if (m[1] === "M" && n.length >= 2) { if (cur && cur.length > 1) out.push(cur); ult = [n[0], n[1]]; cur = [P(n[0], n[1])]; for (let i = 2; i + 1 < n.length; i += 2) { ult = [n[i], n[i + 1]]; cur.push(P(n[i], n[i + 1])); } }
+    else if (m[1] === "L" && cur) for (let i = 0; i + 1 < n.length; i += 2) { ult = [n[i], n[i + 1]]; cur.push(P(n[i], n[i + 1])); }
+    else if (m[1] === "Q" && cur && ult) for (let i = 0; i + 3 < n.length; i += 4) { const [x0, y0] = ult; for (let t = 0.25; t <= 1.001; t += 0.25) { const u = 1 - t; cur.push(P(u * u * x0 + 2 * u * t * n[i] + t * t * n[i + 2], u * u * y0 + 2 * u * t * n[i + 1] + t * t * n[i + 3])); } ult = [n[i + 2], n[i + 3]]; }
+  }
+  if (cur && cur.length > 1) out.push(cur);
+  return out.map((pts) => E.cam(pts, { s: cor || "#1A2A9C", lw: Math.max(0.45, 1.5 * k) }));
+}
 function blocoAssinatura(x, w, y, celular) {
   const v = estado.vet || {}, el = [], quando = salvo ? salvo.assinadoEm : null;
   // tamanho parecido com o do endereço do CVH no rodapé do papel timbrado
@@ -2597,6 +2611,7 @@ function blocoAssinatura(x, w, y, celular) {
   el.push(T(tx, by + 12, "ASSINADO ELETRONICAMENTE", 5.8, { b: true, c: COR.VERMELHO }));
   el.push(T(tx, by + 23, v.nome || "", 9, { b: true, c: COR.BORDO }));
   el.push(T(tx, by + 32.5, "Médico veterinário  ·  " + (v.crmv || ""), 7.2, { c: COR.TXT2 }));
+  el.push(...rubricaEls(v.rubrica, tx + 84, by + 5, 64, 26));
   const lib = estado.liberador ? (q) => quebrar("Liberado por " + estado.liberador.nome + (q ? " em " + q.data + " às " + q.hora : ""), 6.2, false, w).forEach((l) => { el.push(T(x, y + hh + 7, l, 6.2, { c: COR.MARROM2 })); hh += 8; }) : null;
   let hh = 0;
   if (estado.receptor) {
@@ -3368,7 +3383,7 @@ function ligar() {
     else if (t.dataset.ts) { setCaminho(estado.t, t.dataset.ts, t.type === "checkbox" ? t.checked : t.value); if (t.type === "checkbox") { ajustarNota(); return mudou(true); } }
     else if (t.dataset.pvC) { estado.t.provas[+t.dataset.i][t.dataset.pvC] = t.value; }
     else if (t.dataset.exC) { const e = estado.t.exames.find((x) => x.id === +t.closest("[data-ex]").dataset.ex); if (!e) return; e[t.dataset.exC] = t.type === "checkbox" ? t.checked : t.value; if (t.type === "checkbox") { estado.exame.titulo = tituloPadrao(); return mudou(true); } }
-    else if (t.dataset.vet) { const v = VETS.find((x) => x.id === t.value); if (v) estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv }; }
+    else if (t.dataset.vet) { const v = VETS.find((x) => x.id === t.value); if (v) estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || "" }; }
     else if (t.dataset.rcp) { const r = RECEPTORES[+t.value]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
     else if (t.dataset.rec) { estado.receptor = t.checked; if (t.checked) { estado.animalId = ""; estado.exame.doacao = ""; if (estado.vet && estado.exame.solicitante === estado.vet.nome) estado.exame.solicitante = ""; if (estado.exame.clinica === CLINICA_CVH) estado.exame.clinica = ""; } $("#salvo").hidden = true; return mudou(true); }
     else if (t.dataset.animal) { usarAnimal(t.value); ajustarNota(); return mudou(true); }
