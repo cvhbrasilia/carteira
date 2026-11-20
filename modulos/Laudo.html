@@ -1747,7 +1747,7 @@ function lerCitopetLaudo(paginas) {
   const rtm = t.match(/Respons[áa]vel\s+(.+?)\s+(CRMV[\s-]*[A-Z]{2}\s*\d+)/i);
   const cab = { responsavel: cp("Propriet[áa]rio", "Veterin[áa]rio|Sexo|Idade"), chip: "", nome, codigo: cod, especie: cp("Esp[ée]cie", "Ra[çc]a"), raca: cp("Ra[çc]a", "Sexo"),
     sexo: cp("Sexo", "Idade"), peso: "", idade: cp("Idade", "Propriet[áa]rio"), doutor: cp("Veterin[áa]rio", "Data da Coleta") };
-  const linhas = [], notas = []; let grupoSec = "", obs = false;
+  const linhas = [], notas = [], graf = []; let grupoSec = "", obs = false, ultY = null;
   const add = (rot, op, v, un, pct, rmin, rmax, sec) => {
     const mp = CIT_MAPA.find((x) => x.re.test(rot.trim())), f = mp ? mp.f : 1, cv = (x) => x == null || !isFinite(x) ? null : Math.round(x * f * 1e6) / 1e6;
     const k = (mp ? mp.nome : rot.trim()); if (linhas.some((l) => l.k === k)) return;
@@ -1758,7 +1758,10 @@ function lerCitopetLaudo(paginas) {
     const s = l.t.replace(/μ/g, "µ").trim(); if (!s) continue;
     if (/^Hemograma/i.test(s)) { grupoSec = "hemo"; obs = false; continue; }
     if (/^(An[áa]lise )?Bioqu[íi]mica|^Perfil/i.test(s)) { grupoSec = "bio"; obs = false; continue; }
+    // foto do esfregaço ("Imagem do hemograma"): fica entre a última linha de texto e a legenda
+    if (/^Imagem d/i.test(s) && ultY && ultY.pg === l.pg && ultY.y - l.y > 80) graf.push({ pg: l.pg, yTopo: ultY.y - 6, yFim: l.y + 9, foto: true });
     if (/^(Qd\.|Tel:|Data e hora|Imagem d|P[áa]gina \d|Cliente:|Animal:|Sexo:|Veterin[áa]rio:|N[úu]mero:|M[ée]dic[ao] Veterin)/i.test(s)) { obs = false; continue; }
+    ultY = l;
     let m = s.match(/^Observa[çc][õo]es:\s*(.*)$/i), corpo = m ? m[1] : obs ? s : null;
     if (m) obs = true;
     if (corpo != null) {
@@ -1772,7 +1775,7 @@ function lerCitopetLaudo(paginas) {
   }
   if (!linhas.length) throw new Error("Não encontrei resultados neste PDF do Citopet.");
   linhas.sort((a, b) => GRUPO_ORD.indexOf(a.grupo) - GRUPO_ORD.indexOf(b.grupo));
-  return { cab, secoes: [], linhas, notas, data: isoDe(col) || "", hora: "", equip: "Citopet", graf: [], lab: "citopet",
+  return { cab, secoes: [], linhas, notas, data: isoDe(col) || "", hora: "", equip: "Citopet", graf, lab: "citopet",
     labInfo: { labNome: "Citopet", labNumero: (t.match(/N[úu]mero:\s*(\d+)/i) || [])[1] || "", labLiberado: isoDe(lib[1] || ""), labHora: lib[2] || "",
       labRt: rtm ? rtm[1].trim() + ", " + rtm[2].replace(/\s+/g, " ").replace(/CRMV\s*-?\s*/i, "CRMV-") : "Ana Carolina de Q. Machado, CRMV-DF 4332" } };
 }
@@ -2048,7 +2051,8 @@ async function recortarGraficos(doc, g) {
     y1 = ultimo; x0 = w; x1 = 0;
     for (let yy = y0; yy <= y1; yy += 2) for (let x = 0; x < w; x += 2) { const i = (yy * w + x) * 4; if (dados[i] < 235 || dados[i + 1] < 235 || dados[i + 2] < 235) { if (x < x0) x0 = x; if (x > x1) x1 = x; } }
   }
-  if (y1 - y0 < 70 * esc3 || x1 - x0 < 120 * esc3 || cor < 400) return null;
+  if (!g.foto && (y1 - y0 < 70 * esc3 || x1 - x0 < 120 * esc3 || cor < 400)) return null;
+  if (g.foto && (y1 - y0 < 40 * esc3 || x1 - x0 < 60 * esc3)) return null;
   const m = 12, cw = Math.min(w, x1 - x0 + 2 * m), ch = Math.min(h, y1 - y0 + 2 * m), out = document.createElement("canvas"); out.width = cw; out.height = ch;
   const ox = out.getContext("2d"); ox.fillStyle = "#fff"; ox.fillRect(0, 0, cw, ch); ox.drawImage(cv, Math.max(0, x0 - m), Math.round(top) + Math.max(0, y0 - m), cw, ch, 0, 0, cw, ch);
   return { url: out.toDataURL("image/jpeg", 0.9), w: cw, h: ch };
@@ -2394,7 +2398,7 @@ function blocosResultados(x, w, cel, so) {
 }
 function blocoGraficos(x, w) {
   const ims = Object.keys(IMG_DIN).filter((k) => /^graf/.test(k)); if (!ims.length) return [];
-  return ims.map((id, i) => { const im = IMG_DIN[id], iw = Math.min(w, im.w / 3 * 0.95), ih = iw * im.h / im.w; return { h: ih + (i ? 10 : 30), el: (y) => [...(i ? [] : [T(x, y + 14, "GRÁFICOS DO EQUIPAMENTO", 8.5, { b: true, c: COR.VERMELHO }), E.lin(x, y + 18, x + w, y + 18, { s: COR.LINHA, lw: 0.6 })]), E.img(id, x + (w - iw) / 2, y + (i ? 6 : 26), iw, ih)] }; });
+  return ims.map((id, i) => { const im = IMG_DIN[id], iw = Math.min(w, im.w / 3 * 0.95), ih = iw * im.h / im.w; return { h: ih + (i ? 10 : 30), el: (y) => [...(i ? [] : [T(x, y + 14, (estado.exame.labNome ? "FOTO DO HEMOGRAMA" : "GRÁFICOS DO EQUIPAMENTO"), 8.5, { b: true, c: COR.VERMELHO }), E.lin(x, y + 18, x + w, y + 18, { s: COR.LINHA, lw: 0.6 })]), E.img(id, x + (w - iw) / 2, y + (i ? 6 : 26), iw, ih)] }; });
 }
 const ESP = (h) => ({ h, el: () => [], vazio: true });
 const loteTxt = (l, v) => [l ? "Lote " + l : "", v ? "Validade " + v : ""].filter(Boolean).join("  ·  ");
@@ -3237,7 +3241,7 @@ function montarForm0() {
       (!estado.lido ? "" : caixaExame() + caixaPaciente() +
       `<div class="cx"><h3>Resultados</h3><p class="nota">Valores lidos do PDF. Confira e corrija se precisar. Em vermelho, fora da referência.</p><div class="rcab"><span>Exame</span><span>Resultado</span><span></span><span>Referência</span></div>
         ${GRUPO_ORD.filter((g) => estado.linhas.some((l) => l.grupo === g)).map((g) => `<div class="rg">${esc(g)}</div>` + estado.linhas.filter((l) => l.grupo === g).map(linhaForm).join("")).join("")}</div>
-      <div class="cx"><h3>Gráficos do equipamento</h3>${Object.keys(GRAF).length ? `<label class="chk"><span><input type="checkbox" data-g="1" ${estado.graficos ? "checked" : ""}> Incluir os gráficos de dispersão no laudo</span></label>` : `<p class="nota">Não encontrei os gráficos de dispersão neste PDF.</p>`}</div>
+      <div class="cx"><h3>${estado.exame.labNome ? "Foto do hemograma" : "Gráficos do equipamento"}</h3>${Object.keys(GRAF).length ? `<label class="chk"><span><input type="checkbox" data-g="1" ${estado.graficos ? "checked" : ""}> ${estado.exame.labNome ? "Incluir a foto do esfregaço no laudo" : "Incluir os gráficos de dispersão no laudo"}</span></label>` : `<p class="nota">${estado.exame.labNome ? "Este PDF não tem foto do hemograma." : "Não encontrei os gráficos de dispersão neste PDF."}</p>`}</div>
       <div class="cx"><h3>Notas e interpretação</h3>${campo("Notas do equipamento", `<textarea rows="3" data-p="notas">${esc(estado.notas)}</textarea>`)}${campo("Interpretação (opcional, sai no laudo)", `<textarea rows="4" data-p="interp" placeholder="Comentário do médico veterinário sobre o resultado">${esc(estado.interp)}</textarea>`)}</div>` + caixaObs());
     return;
   }
