@@ -2616,10 +2616,11 @@ function blocoAssinatura(x, w, y, celular) {
   el.push(E.selo(bx, by, bw, h, { s: COR.BEGE, lw: 0.7, r: 7 }));
   el.push(E.img("selo", bx + 7, by + (h - sz) / 2, sz, sz));
   const tx = bx + 7 + sz + 8, qx = bx + bw - 6 - sz;
-  el.push(T(tx, by + 12, "ASSINADO ELETRONICAMENTE", 5.8, { b: true, c: COR.VERMELHO }));
+  el.push(T(tx, by + 12, "ASSINADO ELETRONICAMENTE", 4.6, { b: true, c: COR.VERMELHO }));
   el.push(T(tx, by + 23, v.nome || "", 9, { b: true, c: COR.BORDO }));
   el.push(T(tx, by + 32.5, "Médico veterinário  ·  " + (v.crmv || ""), 7.2, { c: COR.TXT2 }));
-  el.push(...rubricaEls(v.rubrica, tx + 84, by + 5, 64, 26));
+  // rubrica alinhada à direita com o fim da linha do CRMV, logo depois do nome
+  { const fim = tx + largura("Médico veterinário  ·  " + (v.crmv || ""), 7.2), ini = Math.max(tx + largura(v.nome || "", 9, true) + 4, fim - 60); el.push(...rubricaEls(v.rubrica, ini, by + 5, fim - ini, 24)); }
   const lib = estado.liberador ? (q) => quebrar("Liberado por " + estado.liberador.nome + (q ? " em " + q.data + " às " + q.hora : ""), 6.2, false, w).forEach((l) => { el.push(T(x, y + hh + 7, l, 6.2, { c: COR.MARROM2 })); hh += 8; }) : null;
   let hh = 0;
   if (estado.receptor) {

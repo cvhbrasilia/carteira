@@ -563,6 +563,11 @@ a.btn{text-decoration:none}
 .ac-lista li{padding:.62em .75em;border-radius:7px;cursor:pointer;font-size:15px;color:var(--tinta,#2b2320)}
 .ac-lista li:hover,.ac-lista li[aria-selected=true]{background:#f4ece5}
 .mini-bts{display:flex;gap:6px;margin-top:2px}
+@media (min-width:1000px){.tela-lab .tela-c{max-width:1280px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);column-gap:28px;align-items:start}.tela-lab .tela-c>*{grid-column:1}.tela-lab #labRec{grid-column:2;grid-row:1 / span 40;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+#alertaCrit{position:fixed;inset:0;z-index:9999;background:rgba(95,19,15,.92);display:flex;align-items:center;justify-content:center;padding:20px;animation:acPisca 1.2s infinite}
+@keyframes acPisca{50%{background:rgba(168,61,61,.95)}}
+.ac-cx{background:#fff;border-radius:16px;padding:22px;max-width:420px;width:100%;text-align:center}
+.ac-cx b{color:#A83D3D;letter-spacing:.12em;font-size:13px}.ac-cx h2{color:#5F130F;margin:8px 0}.ac-cx p{color:#2b2320}.ac-cx .btn{width:100%;margin-top:10px}
 .lab-it{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #eee3d8;padding:.6em 0}
 .lab-it.novo .t b{color:var(--vinho)}
 .lab-it .t small{display:block}
@@ -808,6 +813,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
       .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
   if (q.get('v')) {
     chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
       function (e) { document.body.textContent = e.message; });
@@ -4939,6 +4946,57 @@ function telaLaudos(aid, busca) {
   };
   $('#buscaLd').oninput = pinta; pinta();
 }
+/* ═════════════ notificações e sons do CVH ═════════════ */
+// sons feitos aqui mesmo (Web Audio): aviso suave em duas notas; alarme crítico em dois tons alternados, insistente
+let AUD = null;
+function somDesbloquear() { try { AUD = AUD || new (window.AudioContext || window.webkitAudioContext)(); if (AUD.state === 'suspended') AUD.resume(); } catch (_) {} }
+function tom(f, ini, dur, vol, tipo) {
+  const o = AUD.createOscillator(), g = AUD.createGain(), t = AUD.currentTime + ini; o.type = tipo || 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(AUD.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function somAviso() { somDesbloquear(); if (!AUD) return; tom(659.3, 0, 0.9, 0.22); tom(1318.5, 0, 0.5, 0.05); tom(880, 0.18, 1.2, 0.2); tom(1760, 0.18, 0.6, 0.04); }
+let ALARME = null;
+function alertaCritico(m) {
+  somDesbloquear();
+  let ov = $('#alertaCrit'); if (!ov) { ov = document.createElement('div'); ov.id = 'alertaCrit'; document.body.appendChild(ov); }
+  ov.innerHTML = '<div class="ac-cx" role="alertdialog" aria-modal="true"><b>ALERTA URGENTE</b><h2>' + esc(m.titulo || '') + '</h2><p>' + esc(m.corpo || '') + '</p><button class="btn" id="acOk">Entendi</button></div>';
+  const parar = () => { clearInterval(ALARME); ALARME = null; ov.remove(); if (navigator.vibrate) navigator.vibrate(0); };
+  $('#acOk').onclick = parar;
+  const ciclo = () => { if (!AUD) return; for (let i = 0; i < 4; i++) { tom(853, i * 0.5, 0.24, 0.35, 'square'); tom(960, i * 0.5 + 0.25, 0.24, 0.35, 'square'); } if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600]); };
+  clearInterval(ALARME); ciclo(); ALARME = setInterval(ciclo, 2600);
+}
+function receberAviso(m) {
+  if (!m || !m.id) return; let ult = 0; try { ult = +localStorage.getItem('cvh_aviso_ult') || 0; } catch (_) {}
+  if (m.id <= ult) return; try { localStorage.setItem('cvh_aviso_ult', String(m.id)); } catch (_) {}
+  if (m.nivel === 'critico') alertaCritico(m); else { somAviso(); toast((m.titulo || '') + (m.corpo ? ' · ' + m.corpo : ''), 7000); }
+}
+// com o app aberto, confere a cada minuto (pega também quem ainda não ligou as notificações)
+async function checarAvisos() {
+  if (!E.sessao || document.hidden) return;
+  try { const L = await api('pushRecentes', E.sessao, ''); L.slice().reverse().forEach(receberAviso); } catch (_) {}
+}
+if (window.CVH_PAINEL) {
+  document.addEventListener('pointerdown', somDesbloquear, { once: true });
+  try { navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.tipo === 'cvh-notificacao') receberAviso(ev.data.m); }); } catch (_) {}
+  setInterval(checarAvisos, 60000); setTimeout(checarAvisos, 8000);
+}
+function notifEstado() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone ? 'No iPhone, as notificações funcionam com o app instalado na tela inicial. Instale o painel e abra por ele.' : 'Este navegador não recebe notificações.';
+  return Notification.permission === 'granted' ? 'Notificações permitidas neste aparelho.' : Notification.permission === 'denied' ? 'As notificações foram bloqueadas neste aparelho. Libere nos ajustes do navegador ou do celular.' : 'Notificações ainda não ativadas neste aparelho.';
+}
+async function ativarNotificacoes() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) throw new Error(notifEstado());
+  somDesbloquear();
+  const p = await Notification.requestPermission(); if (p !== 'granted') throw new Error('Permissão de notificação não concedida.');
+  const reg = await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
+  const chave = await api('pushChave'); if (!chave) throw new Error('O servidor ainda não tem a chave das notificações.');
+  const b = Uint8Array.from(atob(chave.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((chave.length + 3) % 4)), c => c.charCodeAt(0));
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b });
+  const ap = (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : /Mac/.test(navigator.userAgent) ? 'Mac' : /Windows/.test(navigator.userAgent) ? 'Windows' : 'Navegador');
+  await api('pushAssinar', E.sessao, sub.toJSON(), ap);
+}
 function telaConta() {
   const v = vetLogado();
   abrirFolha('Minha conta',
@@ -4950,7 +5008,12 @@ function telaConta() {
     campo('sNova', 'Nova senha', inp('sNova', '', 'type="password" autocomplete="new-password"')) + campo('sNova2', 'Repita', inp('sNova2', '', 'type="password" autocomplete="new-password"')) + '</div>' +
     '<button class="btn sec2 peq" data-acao="trocar-senha">Trocar senha</button><p class="nota">Ao trocar a senha, todos os outros aparelhos conectados com o seu usuário saem na hora.</p></section>' +
     '<section class="cartao"><h3>Aparelhos conectados</h3><p class="nota">Esqueceu o painel aberto em outro computador ou celular? Encerre o acesso de todos os outros aparelhos. Este continua conectado.</p>' +
-    '<button class="btn sec2 peq" data-acao="sair-outros">Sair de todos os outros aparelhos</button></section>');
+    '<button class="btn sec2 peq" data-acao="sair-outros">Sair de todos os outros aparelhos</button></section>' +
+    '<section class="cartao"><h3>Notificações</h3><p class="nota" id="notifEstado">' + esc(notifEstado()) + '</p>' +
+    '<div class="mini-bts" style="flex-wrap:wrap"><button class="btn peq" data-acao="notif-ativar">Ativar notificações neste aparelho</button>' +
+    '<button class="btn sec2 peq" data-acao="notif-teste" data-v="normal">Testar aviso</button><button class="btn sec2 peq" data-acao="notif-teste" data-v="critico">Testar alerta crítico</button></div>' +
+    '<div class="mini-bts" style="margin-top:8px"><button class="mini" data-acao="som-ouvir" data-v="normal">Ouvir o som do aviso</button><button class="mini" data-acao="som-ouvir" data-v="critico">Ouvir o alarme crítico</button></div>' +
+    '<p class="nota">Com o app aberto, os avisos tocam o som do CVH e o alerta crítico toca até alguém tocar em Entendi. Com o app fechado, chega a notificação do celular com o som do aparelho.</p></section>');
 }
 
 /* ═════════════ painel: telas ═════════════ */
@@ -4973,7 +5036,7 @@ function telaInicio(busca) {
   if (cart) E.d.animais.filter(a => a.ativo !== '0').forEach(a => pendencias(regsDe(a.id)).forEach(p => { const n = dias(h, p.data); if (n <= 30 && n >= -90) venc.push(Object.assign({ an: a }, p)); }));
   venc.sort((a, b) => a.data < b.data ? -1 : 1);
   const TIT = { carteiras: ['Carteiras', 'Responsáveis e animais'], cadastro: ['Cadastro', 'Responsáveis e animais'], historico: ['Histórico laboratorial', 'Escolha o animal'], fichas: ['Fichas de doação', 'Escolha o doador'], tcle: ['Termos', 'Escolha o responsável'], receitas: ['Receituário', 'Escolha o animal'], laudos: ['Laudos de exames', 'Escolha o animal'] }[mod];
-  raiz.innerHTML = '<main class="tela"><div class="tela-c">' +
+  raiz.innerHTML = '<main class="tela' + (mod === 'laudos' ? ' tela-lab' : '') + '"><div class="tela-c">' +
     '<div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>' + TIT[0] + '</span><b>' + TIT[1] + '</b></div></header>' +
     (mod === 'historico' ? '<p class="nota">Toque no animal para ver os exames dele na tela. Para incluir exames novos, use Adicionar exames. O PDF vai para o Drive e entra sozinho na carteira dele.</p>' : '') +
@@ -5356,7 +5419,7 @@ const PONTE = {
     guardarRegistro(salvo);
     if (o.rascunhoId) { try { await api('laudoRascunhoApagar', E.sessao, o.rascunhoId); E.rascunhos = null; } catch (_) {} }
     if (origens.length && pode('historico')) setTimeout(() => atualizarHistoricoSozinho(an.id), 300);
-    if (E.ponte && E.ponte.pdfLab && E.ponte.pdfLab.labId) { try { await api('laboratorioMarcar', E.sessao, E.ponte.pdfLab.labId, { situacao: 'feito', registroId: salvo.id, animalId: an.id }); } catch (_) {} }
+    if (E.ponte && E.ponte.pdfLab && E.ponte.pdfLab.labId) { for (const lid of (o.labIds && o.labIds.length ? o.labIds : [E.ponte.pdfLab.labId])) { try { await api('laboratorioMarcar', E.sessao, lid, { situacao: 'feito', registroId: salvo.id, animalId: an.id }); } catch (_) {} } }
     return { id: salvo.id, whats: whatsLaudo(salvo), historico: !!origens.length && pode('historico') };
   },
   salvarReceita: async o => {
@@ -6232,9 +6295,10 @@ const ACOES = {
   'lab-todos': () => pintarLaboratorios(true),
   'lab-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); pintarLaboratorios(); } catch (e) { toast(e.message, 4000); } },
   'lab-laudo': b => { const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (!x) return; const an = animalDoLab(x);
-    if (!an && x.origem !== 'tecsa') return toast('Não achei o animal deste laudo no cadastro. Confira o nome do animal e do responsável.', 5000);
     api('laboratorioMarcar', E.sessao, x.id, { situacao: x.situacao === 'novo' ? 'visto' : x.situacao }).catch(() => {});
-    E.laudoPdfLab = { id: x.arquivoId, origem: x.origem, nome: x.nomeArquivo, labId: x.id }; E.laudoTipo = x.origem === 'tecsa' ? 'tecsa' : 'idexx'; abrirModulo('laudos', an ? an.id : null); },
+    // IDEXX: os outros PDFs do mesmo dia vão junto; o laudo junta os que forem do mesmo paciente
+    const cand = x.origem === 'idexx' ? (E.labRec || []).filter(y => y.origem === 'idexx' && y.id !== x.id && y.data === x.data && y.situacao !== 'feito').map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id })) : [];
+    E.laudoPdfLab = { id: x.arquivoId, origem: x.origem, nome: x.nomeArquivo, labId: x.id, candidatos: cand }; E.laudoTipo = x.origem === 'tecsa' ? 'tecsa' : 'idexx'; abrirModulo('laudos', an ? an.id : null); },
   'laudo-receptor': () => { E.laudoReceptor = true; abrirModulo('laudos', null); },
   'laudo-apagar': async b => { const r = regPorId(b.dataset.id); if (!r || !confirm('Apagar este laudo?')) return; try { await api('excluirRegistro', E.sessao, r.id); E.d.registros = E.d.registros.filter(x => x.id !== r.id); telaLaudos(E.animal); toast('Laudo apagado.'); } catch (e) { toast(e.message, 6000); } },
   'ag-dia': b => telaAgenda(b.dataset.v),
@@ -6345,6 +6409,9 @@ const ACOES = {
   'sair-outros': async b => {
     try { b.disabled = true; const n = await api('encerrarOutrasSessoes', E.sessao); toast(n ? (n === 1 ? 'Um outro aparelho foi desconectado.' : n + ' outros aparelhos foram desconectados.') : 'Nenhum outro aparelho estava conectado.', 4500); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
   },
+  'notif-ativar': async b => { try { b.disabled = true; await ativarNotificacoes(); toast('Notificações ligadas neste aparelho.', 4000); const e = $('#notifEstado'); if (e) e.textContent = notifEstado(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } },
+  'notif-teste': async b => { try { somDesbloquear(); const r = await api('pushTeste', E.sessao, b.dataset.v); toast(r && r.enviadas ? 'Enviado para ' + r.enviadas + (r.enviadas === 1 ? ' aparelho.' : ' aparelhos.') : 'Nenhum aparelho com notificação ligada. Toque em Ativar primeiro.', 5000); setTimeout(checarAvisos, 1500); } catch (e) { toast(e.message, 5000); } },
+  'som-ouvir': b => { somDesbloquear(); b.dataset.v === 'critico' ? alertaCritico({ titulo: 'Teste do alarme crítico', corpo: 'É assim que toca um alerta urgente.' }) : somAviso(); },
   'trocar-senha': async b => {
     if (vl('sNova') !== vl('sNova2')) return toast('As duas senhas novas não são iguais.', 4000);
     try { b.disabled = true; await api('trocarSenha', E.sessao, $('#sAtual').value, $('#sNova').value); toast('Senha alterada. Os outros aparelhos com o seu usuário foram desconectados.', 4500); $('#sAtual').value = $('#sNova').value = $('#sNova2').value = ''; } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
