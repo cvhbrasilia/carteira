@@ -388,6 +388,13 @@ function formTransfusao(uid) {
 async function transfOk(uid, b) {
   const c = document.querySelector('input[name="tCont"]:checked');
   const o = { animal: $("#tAn").value.trim(), peso: $("#tPeso").value.trim(), ht: $("#tHt").value.trim(), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim(), crmv: $("#tCrmv").value.trim(), contato: c ? c.value : "" };
+  if (["animal", "peso", "ht", "telefone", "vet", "crmv"].some((k) => !o[k])) return toast("Preencha todos os dados do paciente e do médico veterinário.", 6000);
+  if (!o.contato) return toast("Escolha a orientação de contato com o responsável.", 6000);
+  // confirmação física: depois de TRANSFUNDIDO, a etiqueta da bolsa usada precisa ser lida; sem a leitura, nada é registrado
+  const t = await lerQR("Leia a etiqueta da bolsa transfundida (" + uid + ")");
+  if (!t) return toast("Transfusão não registrada: a etiqueta não foi lida.", 6000);
+  if (norm(t) !== uid.toUpperCase()) { bip(false); return toast("Esta etiqueta é de outra bolsa (" + norm(t) + "). Transfusão não registrada.", 8000); }
+  o.etiqueta = norm(t);
   b.disabled = true;
   try {
     await srv("intTransfundir", uid, o); somOk();
