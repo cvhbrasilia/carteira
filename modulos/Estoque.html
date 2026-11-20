@@ -551,7 +551,7 @@ function telaHist() {
 function pintar() {
   const nP = pendencias().filter((x) => x.n <= 1).length;
   const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
-  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("tr", "Transporte", S.at.filter((a) => ["pronta", "preparo"].includes(a.etapa)).length) + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
+  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
     ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, tr: telaTransporte, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
 }
 
@@ -851,6 +851,10 @@ document.addEventListener("change", (ev) => { if (/^f(TM|T\d)$/.test(ev.target.i
 document.addEventListener("input", (ev) => { if (["pPesoCH", "pHtCH"].includes(ev.target.id) && S.prodAberta) { const p = S.prod.find((x) => x.coleta === S.prodAberta); if (p) { p.dados = Object.assign({}, p.dados, { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value) }); const y = $("#gvC").scrollTop, el = ev.target.id, pos = ev.target.selectionStart; abrirProducao(S.prodAberta); $("#gvC").scrollTop = y; const n = $("#" + el); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } } });
 window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
 
+function podeAtualizar() { const ae = document.activeElement; return !document.hidden && !$("#gaveta").classList.contains("on") && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) && !(CAM && CAM.vivo) && S.intVista !== "registros"; }
+async function atualizarSozinho() { if (!podeAtualizar()) return; try { const y = window.scrollY; await recarregar(); window.scrollTo(0, y); } catch (e) {} }
+setInterval(atualizarSozinho, 25000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarSozinho(); });
 async function iniciar() {
   try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar(); }
   catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o estoque. ' + esc(e.message || String(e)) + "</div>"; }
