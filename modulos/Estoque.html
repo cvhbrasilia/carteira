@@ -71,11 +71,20 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
 .vazio{color:var(--tinta2);font-size:14px;padding:6px 0}
 @media (min-width:1000px){.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}}
+#camE{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}
+#camE.on{display:flex}
+#camE video{flex:1;width:100%;object-fit:cover;min-height:0}
+#camE .mira{position:absolute;left:50%;top:38%;width:70vmin;height:42vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:16px;pointer-events:none}
+#camE .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
+#camE .flash.on{opacity:1;transition:none}
 </style></head>
 <body>
 <div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
 <div id="veu"></div>
 <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+<div id="camE"><video playsinline muted></video><div class="mira"></div><div class="flash"></div><div class="base"><p id="camEt">Aponte para o código da bolsa</p><div id="camEl" style="font-size:13.5px;max-height:22vh;overflow:auto"></div><button class="btn sec" id="camEsair" style="width:100%;margin-top:8px">Fechar a câmera</button></div></div>
 <aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
 <script>
 /* Estoque Inteligente CVH · fase 1: produção na bancada, estoque, ficha da bolsa e pendências do dia */
@@ -307,7 +316,7 @@ function abrirRemNova() {
   S.sel = {};
   abrirGaveta("Nova remessa", '<label>Destino</label><input type="text" id="rDest" value="Intensivet"><label>Finalidade</label><input type="text" id="rFin" value="Estoque de emergência"><h2 style="margin-top:14px">Bolsas</h2>' +
     (L.length ? L.map((u) => '<label class="op" style="display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:6px 0"><input type="checkbox" data-sel="' + esc(u.id) + '"> <span>' + esc(u.id) + " · " + esc(tipoTxt(animalDe(u.animal_id))) + "<br><small>" + esc(NOME_COMP[u.componente] || u.componente) + " · validade " + esc(br(String(u.validade || "").slice(0, 10))) + (u.situacao === "reservada" ? " · reservada " + esc(u.reserva || "") : "") + "</small></span></label>").join("") : '<p class="vazio">Nenhuma bolsa disponível no CVH.</p>') +
-    '<div class="bts" style="margin-top:12px"><button class="btn" data-a="remCriar">Preparar a remessa</button></div><p><small>Preparar não tira as bolsas do estoque. A saída só vale quando você confirmar a saída física da caixa.</small></p>');
+    '<div class="bts" style="margin-top:12px"><button class="btn" data-a="remCriar">Preparar a remessa</button><button class="btn sec" data-a="camera">Ler as bolsas com a câmera</button></div><p><small>Preparar não tira as bolsas do estoque. A saída só vale quando você confirmar a saída física da caixa.</small></p>');
 }
 async function qrHtml(t) { try { return await ponte("qr", t); } catch (e) { return ""; } }
 async function abrirRem(id) {
@@ -353,7 +362,7 @@ function telaHist() {
 function pintar() {
   const nP = pendencias().filter((x) => x.n <= 1).length;
   const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
-  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
+  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div><nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
     ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
 }
 
@@ -391,13 +400,18 @@ async function imprimirEtiquetas(ids, f) {
   f = f || fmtEtq(); const F = FORMATOS[f]; const us = ids.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); if (!us.length) return toast("Nenhuma bolsa para etiquetar.");
   let h = ""; for (const u of us) h += etiquetaHtml(u, f, await qrHtml(u.id));
   const css = f === "z50" ? CSS_ETQ.z50 : "@page{size:" + F.w + "mm " + F.h + "mm;margin:0}" + CSS_ETQ.g + ".et.g{width:" + F.w + "mm;height:" + F.h + "mm}";
-  imprimirDoc("Etiquetas", "<style>*{box-sizing:border-box}body{margin:0}" + css + "</style>" + h);
+  imprimirDoc("Etiquetas", "<style>#impArea *{box-sizing:border-box}#impArea .et:last-child{page-break-after:auto}" + css + "</style>" + h);
 }
-// impressão por um quadro escondido: não esbarra no bloqueio de janelas e não tira o usuário do painel
+// impressão na própria tela do módulo (como a ficha): só a área da impressão aparece no papel
 function imprimirDoc(titulo, corpo) {
-  let fr = $("#frImp"); if (fr) fr.remove(); fr = document.createElement("iframe"); fr.id = "frImp"; fr.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(fr);
-  const d = fr.contentWindow.document; d.open(); d.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(titulo) + "</title></head><body>" + corpo + "</body></html>"); d.close();
-  setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast("Não consegui abrir a impressão."); } }, 350);
+  let el = $("#impArea"); if (!el) { el = document.createElement("div"); el.id = "impArea"; document.body.appendChild(el); }
+  let st = $("#impEstilo"); if (st) st.remove();
+  st = document.createElement("style"); st.id = "impEstilo"; st.textContent = "@media screen{#impArea{display:none}}@media print{body>*:not(#impArea){display:none!important}#impArea{display:block}html,body{background:#fff!important;margin:0!important;padding:0!important}}";
+  document.head.appendChild(st); el.innerHTML = corpo;
+  const limpar = () => { el.innerHTML = ""; const x = $("#impEstilo"); if (x) x.remove(); window.removeEventListener("afterprint", limpar); };
+  window.addEventListener("afterprint", limpar);
+  const t0 = document.title; document.title = titulo;
+  setTimeout(() => { try { window.print(); } catch (e) { toast("A impressão está bloqueada neste aparelho. Abra o painel pelo navegador.", 7000); } document.title = t0; }, 60);
 }
 function escolherEtiqueta(ids) {
   const f = fmtEtq();
@@ -406,6 +420,7 @@ function escolherEtiqueta(ids) {
 
 /* ── leitor: o leitor de código de barras (USB ou Bluetooth) digita o código e um Enter em poucos milissegundos ── */
 let BIP = null;
+bip.liberar = () => { try { BIP = BIP || new (window.AudioContext || window.webkitAudioContext)(); if (BIP.state === "suspended") BIP.resume(); } catch (e) {} };
 function bip(ok) { try { BIP = BIP || new (window.AudioContext || window.webkitAudioContext)(); if (BIP.state === "suspended") BIP.resume(); const o = BIP.createOscillator(), g = BIP.createGain(), t = BIP.currentTime; o.type = "square"; o.frequency.value = ok === false ? 380 : 2700; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + (ok === false ? 0.35 : 0.09)); o.connect(g); g.connect(BIP.destination); o.start(t); o.stop(t + 0.4); } catch (e) {} }
 const LEIT = { buf: "", t0: 0, ult: 0 };
 document.addEventListener("keydown", (e) => {
@@ -426,6 +441,41 @@ function lido(txt) {
   bip(false); toast("Código não encontrado no estoque: " + c, 5000);
 }
 
+/* ── câmera do celular como leitor: bip na hora, sem confirmar; montando remessa, continua aberta para ler várias ── */
+let JSQR = null;
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta((() => { try { return new URL("bibliotecas/jsQR.js", window.parent.location.href).href; } catch (e) { return "bibliotecas/jsQR.js"; } })(), () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+let CAM = null;
+async function abrirCamera() {
+  bip.liberar && bip.liberar();
+  const cx = $("#camE"), v = cx.querySelector("video"), continua = () => !!document.querySelector("[data-sel]");
+  $("#camEt").textContent = continua() ? "Leia as bolsas da remessa, uma depois da outra" : "Aponte para o código da bolsa"; $("#camEl").innerHTML = ""; cx.classList.add("on");
+  const st = CAM = { vivo: true, fluxo: null, ult: {}, det: null, jq: null };
+  if (!("BarcodeDetector" in window)) carregarJsQR().catch(() => {});
+  const fim = () => { st.vivo = false; CAM = null; cx.classList.remove("on"); if (st.fluxo) st.fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; };
+  $("#camEsair").onclick = fim;
+  try { st.fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false }); v.srcObject = st.fluxo; await v.play(); }
+  catch (e) { fim(); return toast("Não consegui abrir a câmera. Libere o acesso à câmera para o Painel CVH.", 7000); }
+  try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); const q = ["qr_code", "code_128"].filter((x) => f.includes(x)); if (q.length) st.det = new BarcodeDetector({ formats: q }); } } catch (e) { st.det = null; }
+  if (!st.det) { try { st.jq = await carregarJsQR(); } catch (e) { fim(); return toast("Leitor da câmera indisponível agora. Use o leitor de código de barras.", 7000); } }
+  const cv = document.createElement("canvas"), c2 = cv.getContext("2d", { willReadFrequently: true });
+  const achou = (txt) => {
+    const k = String(txt).trim(); if (st.ult[k] && Date.now() - st.ult[k] < 2500) return; st.ult[k] = Date.now();
+    const fl = cx.querySelector(".flash"); fl.classList.add("on"); setTimeout(() => fl.classList.remove("on"), 60); if (navigator.vibrate) navigator.vibrate(50);
+    if (continua()) { lido(k); $("#camEl").insertAdjacentHTML("afterbegin", "<div>" + esc(k) + "</div>"); } else { fim(); lido(k); }
+  };
+  const passo = async () => {
+    if (!st.vivo) return;
+    try {
+      if (v.readyState >= 2) {
+        if (st.det) { const r = await st.det.detect(v); if (r && r[0] && r[0].rawValue) achou(r[0].rawValue); }
+        else { const w = 720, h = Math.round(720 * v.videoHeight / v.videoWidth) || 540; cv.width = w; cv.height = h; c2.drawImage(v, 0, 0, w, h); const r = st.jq(c2.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) achou(r.data); }
+      }
+    } catch (e) {}
+    if (st.vivo) setTimeout(passo, st.det ? 80 : 140);
+  };
+  passo();
+}
+
 /* ── cliques ── */
 document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
@@ -436,6 +486,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "prod") return abrirProducao(v);
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
+  if (a === "camera") return abrirCamera();
   if (a === "rem") return abrirRem(v);
   if (a === "etqFmt") { try { localStorage.setItem("cvh_etq", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "etqImp") return imprimirEtiquetas(v.split("|"));

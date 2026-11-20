@@ -145,7 +145,7 @@ const SILENCIO = {};
 
 /* ── leitor de QR: BarcodeDetector quando o celular tem; senão jsQR; sempre dá para digitar ── */
 let JSQR = null, CAM_FIM = null;
-function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"; s.onload = () => ok(window.jsQR); s.onerror = () => { JSQR = null; erro(new Error("leitor")); }; document.head.appendChild(s); }); return JSQR; }
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
 function lerQR(titulo) {
   return new Promise(async (resolve) => {
     const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
@@ -356,6 +356,7 @@ function lidoLeitor(c) {
   if (u && D.aparelho.setor === "internacao" && u.local === D.aparelho.local && ["disponivel", "reservada"].includes(u.situacao)) { bip(); return confirmarRetirada(u.id); }
   bip(false); toast("Código não reconhecido aqui: " + c, 5000);
 }
+if (!("BarcodeDetector" in window)) setTimeout(() => carregarJsQR().catch(() => {}), 1500);
 carregar();
 </script>
 </body></html>
