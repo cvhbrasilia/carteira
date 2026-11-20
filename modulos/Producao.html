@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Produção CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 14px 90px}
+.topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.topo h1{margin:0;font-size:22px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12px;font-weight:500;color:var(--tinta2)}
+.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:7px 11px;font-size:13.5px;border-radius:10px}
+.btn.grande{width:100%;padding:16px;font-size:17px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px}
+.abas{display:flex;flex-wrap:wrap;gap:2px 4px;overflow-x:auto;border-bottom:1px solid var(--areia2);margin-bottom:14px;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas button{border:0;background:none;padding:10px 12px;font-weight:700;color:var(--tinta2);border-bottom:3px solid transparent;white-space:nowrap}
+.abas button.on{color:var(--vinho);border-color:var(--vinho)}
+.abas b{background:var(--verm);color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;margin-left:4px}
+.cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
+.cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
+.nota{font-size:13px;color:var(--tinta2);margin:4px 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
+.kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--tinta2)}
+.lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
+.lin:first-of-type{border-top:0}
+.lin .t{min-width:0}
+.lin .t b{display:block;color:var(--vinho)}
+.lin .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--areia);color:var(--vinho);white-space:nowrap}
+.chip.ok{background:#E3EFE6;color:var(--ok)}.chip.al{background:#F6DADA;color:#8A1D14}.chip.av{background:#FBF0DC;color:#7A4E0B}.chip.ne{background:#f1ece6;color:#7a6a62}
+.unid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:10px 4px;border-top:1px solid #f0e8df}
+.unid .co{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--vinho)}
+.unid .co.CP{background:#C49A6C}.unid .co.PFC,.unid .co.CRIO,.unid .co.PPC{background:#A83D3D}
+.unid .t b{color:var(--vinho)}.unid .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.unid .d{text-align:right}.unid .d small{display:block;color:var(--tinta2);font-size:12px}
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.filtros button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--tinta2)}
+.filtros button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.passos{display:flex;gap:4px;margin:8px 0 14px;flex-wrap:wrap}
+.passos span{flex:1;min-width:70px;font-size:11px;text-align:center;padding:6px 4px;border-radius:8px;background:#f3ede6;color:#9a8a80;font-weight:700}
+.passos span.feito{background:#E3EFE6;color:var(--ok)}.passos span.agora{background:var(--vinho);color:#fff}
+label{display:block;font-size:13px;color:var(--tinta2);margin:8px 0 4px}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:12px;border:1px solid var(--areia2);border-radius:10px;background:#fff;color:var(--tinta);font-size:17px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.grade{grid-template-columns:1fr}}
+.peso{display:flex;gap:8px;align-items:stretch}.peso input{flex:1;min-width:0}.peso .btn{flex:none;padding:0 14px}
+.calc{background:#FFFBF5;border:1px dashed var(--bege);border-radius:12px;padding:12px;margin:10px 0}
+.calc b.big{font-size:26px;color:var(--vinho)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:6px 0 12px}
+.dl dt{color:var(--tinta2)}.dl dd{margin:0;font-weight:600}
+.ev{font-size:13px;border-left:3px solid var(--areia2);padding:3px 0 3px 10px;margin:6px 0}
+.ev small{color:var(--tinta2)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#veu.on{opacity:1;pointer-events:auto}
+#gaveta{position:fixed;left:0;right:0;bottom:0;max-height:88vh;background:var(--papel);border-radius:18px 18px 0 0;transform:translateY(105%);transition:transform .25s;z-index:21;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.18)}
+#gaveta.on{transform:none}
+@media (min-width:900px){#gaveta{left:auto;top:0;bottom:0;width:520px;max-height:none;border-radius:18px 0 0 18px;transform:translateX(105%)}#gaveta.on{transform:none}}
+.gv-t{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
+.gv-t h3{margin:0;color:var(--vinho);font-size:18px}
+.gv-t button{border:0;background:#fff;border-radius:999px;width:40px;height:40px;font-size:22px;color:var(--vinho);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+#gvC{overflow:auto;padding:0 16px 30px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
+.vazio{color:var(--tinta2);font-size:14px;padding:6px 0}
+@media (min-width:1000px){.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}}
+#camE{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}
+#camE.on{display:flex}
+#camE video{flex:1;width:100%;object-fit:cover;min-height:0}
+#camE .mira{position:absolute;left:50%;top:38%;width:70vmin;height:42vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:16px;pointer-events:none}
+#camE .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
+#camE .flash.on{opacity:1;transition:none}
+.unid.fr{margin-left:28px;width:calc(100% - 28px);background:#FBF3E8;border-left:3px solid var(--cara);border-radius:0 10px 10px 0;padding-left:10px}
+.unid.fr .co{background:#C49A6C!important;width:38px;height:38px;font-size:11.5px}
+.grupo-t{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta2);margin:12px 0 2px}
+</style></head>
+<body>
+<div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
+<div id="veu"></div>
+<input type="file" id="cam" accept="image/*" capture="environment" hidden>
+<div id="camE"><video playsinline muted></video><div class="mira"></div><div class="flash"></div><div class="base"><p id="camEt">Aponte para o código da bolsa</p><div id="camEl" style="font-size:13.5px;max-height:22vh;overflow:auto"></div><button class="btn sec" id="camEsair" style="width:100%;margin-top:8px">Fechar a câmera</button></div></div>
+<aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
+<script>
+/* Estoque Inteligente CVH · fase 1: produção na bancada, estoque, ficha da bolsa e pendências do dia */
+const CTX = window.CVH_CTX || {};
+// o mesmo arquivo serve dois módulos: Estoque (bolsas prontas) e Produção (bancada); os dados e as regras são os mesmos
+const MODO = "producao", PROD = MODO === "producao";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const p2 = (n) => String(n).padStart(2, "0");
+const hojeISO = () => { const d = new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); };
+const br = (d) => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(String(d || "")); return m ? m[3] + "/" + m[2] + "/" + m[1] : (d || ""); };
+const hora = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const num = (x) => { if (x == null || x === "") return null; const n = parseFloat(String(x).replace(/\s/g, "").replace(",", ".")); return isFinite(n) ? n : null; };
+const fmt = (v, c = 0) => v == null || !isFinite(v) ? "" : (+v).toLocaleString("pt-BR", { maximumFractionDigits: c, minimumFractionDigits: c });
+const dias = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+const somaDias = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); };
+const ponte = (metodo, ...args) => {
+  let f = null; try { f = window.parent.CVH_PONTE; } catch (e) { f = null; }
+  if (typeof f !== "function") return Promise.reject(new Error("Abra o estoque pelo Painel CVH."));
+  const copia = (r) => { try { return r == null ? r : JSON.parse(JSON.stringify(r)); } catch (e) { return r; } };
+  return new Promise((ok, erro) => { try { Promise.resolve(f(metodo, JSON.parse(JSON.stringify(args)))).then((r) => ok(copia(r)), (e) => erro(new Error((e && e.message) || String(e)))); } catch (e) { erro(e); } });
+};
+const est = (fn, ...a) => ponte("est", fn, ...a);
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 3500); }
+function abrirGaveta(t, h) { $("#gvT").textContent = t; $("#gvC").innerHTML = h; $("#gvC").scrollTop = 0; $("#gaveta").classList.add("on"); $("#veu").classList.add("on"); $("#gaveta").setAttribute("aria-hidden", "false"); }
+function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); $("#gaveta").setAttribute("aria-hidden", "true"); S.prodAberta = null; S.uniAberta = null; S.remAberta = null; }
+// deslizar a gaveta para baixo no celular fecha
+(() => { let y0 = null; const g = $("#gaveta"); g.addEventListener("touchstart", (e) => { y0 = $("#gvC").scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); g.addEventListener("touchend", (e) => { if (y0 != null && e.changedTouches[0].clientY - y0 > 90) fecharGaveta(); y0 = null; }, { passive: true }); })();
+
+/* ── estado ── */
+const S = { aba: "hoje", at: [], rem: [], eq: [], ap: [], sel: {}, prod: [], uni: [], ev: [], P: null, admin: !!CTX.admin, f: { comp: "", tipo: "", sit: "ativas" }, prodAberta: null, uniAberta: null };
+const DOA = (CTX.doacoes || []).filter((d) => d.numero);
+const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
+const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;
+const animalDe = (id) => ANI[id] || {};
+const tipoTxt = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const ROT_SIT = { quarentena: "Aguardando liberação", disponivel: "Disponível", reservada: "Reservada", transito: "Em trânsito", retirada: "Retirada para transfusão", producao_crio: "Em produção de CRIO", utilizada: "Utilizada", descartada: "Descartada", bloqueada: "Bloqueada" };
+const COR_SIT = { quarentena: "av", disponivel: "ok", reservada: "", transito: "av", retirada: "av", producao_crio: "av", utilizada: "ne", descartada: "ne", bloqueada: "al" };
+const NOME_COMP = { CH: "CH com SAG", CP: "Concentrado de plaquetas", PFC: "Plasma fresco congelado", CRIO: "Crioprecipitado", PPC: "Plasma pobre em crio" };
+const ETAPAS = [["peso_st", "Peso do ST"], ["centrifugacao", "Centrifugação"], ["ch_sem_sag", "CH sem SAG"], ["ch_com_sag", "CH com SAG"], ["cp_pfc", "CP e PFC"], ["concluida", "Concluída"]];
+
+// validade: avisos de 10, 5 e 1 dia, no dia e depois da data impressa
+function alertaValidade(u) {
+  if (!u.validade || ["utilizada", "descartada"].includes(u.situacao)) return null;
+  const n = dias(hojeISO(), String(u.validade).slice(0, 10));
+  if (n < 0) return { t: "DATA DA ETIQUETA VENCIDA", c: "al", n };
+  if (n === 0) return { t: "VENCE HOJE", c: "al", n };
+  if (n === 1) return { t: "VENCE AMANHÃ", c: "al", n };
+  if (n <= 5) return { t: "Vence em " + n + " dias", c: "av", n };
+  if (n <= 10) return { t: "Vence em " + n + " dias", c: "ne", n };
+  return null;
+}
+// plasma no freezer sem a conferência do dia seguinte
+// PFC: conferência no dia seguinte; CRIO: 6 horas depois do início do congelamento (fica pendente até alguém conferir)
+const congPendente = (u) => { const c = (u.dados || {}).congelamento; return c && c.inicio && !(c.conferido && c.conferido.congelado) && Date.now() - Date.parse(c.inicio) > (u.componente === "CRIO" ? 6 : 12) * 36e5; };
+
+/* ── produção ── */
+// coletas que aparecem para produzir: fichas com coleta a partir do início do estoque (20/11/2026)
+const INICIO = "2026-11-20";
+function aguardando() {
+  const tem = new Set(S.prod.map((p) => p.coleta));
+  const tem2 = new Set(S.uni.map((u) => u.coleta));
+  return DOA.filter((d) => !d.naoColetado && d.data && d.data >= INICIO && dias(d.data, hojeISO()) <= 21 && !tem.has(d.numero.replace(/\s/g, "")) && !tem2.has(d.numero.replace(/\s/g, ""))).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+}
+function sag(p) {
+  const P = S.P.sag, peso = num(p.pesoCHsem), htM = num(p.htCHsem), ht = htM != null ? htM : P.htMedioCH;
+  if (peso == null || peso <= P.tara) return null;
+  const vol = (peso - P.tara) / P.densidade, calc = vol * (ht / P.htAlvo - 1);
+  return { vol, calc: Math.max(0, calc), ht, medido: htM != null, suficiente: calc <= P.sagBolsa };
+}
+const volPeso = (peso, tara, dens) => { const p = num(peso); return p == null || p <= tara ? null : (p - tara) / dens; };
+function abrirProducao(coleta) {
+  const p = S.prod.find((x) => x.coleta === coleta) || { coleta, etapa: "peso_st", dados: {} }, d = doacao(coleta) || {}, a = animalDe(d.animalId || p.animal_id);
+  S.prodAberta = coleta;
+  const D = p.dados || {}, et = p.etapa, ie = ETAPAS.findIndex((e) => e[0] === et);
+  const passos = '<div class="passos">' + ETAPAS.slice(0, 5).map((e, i) => '<span class="' + (i < ie || et === "concluida" ? "feito" : i === ie ? "agora" : "") + '">' + e[1] + "</span>").join("") + "</div>";
+  const cab = '<dl class="dl"><dt>Doador</dt><dd>' + esc(a.nome || d.nome || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd><dt>Coleta</dt><dd>" + esc(br(d.data || "")) + (d.volume ? " · " + esc(d.volume) + " mL de ST" : "") + "</dd>" +
+    (d.lote || d.validade ? "<dt>Bolsa</dt><dd>" + esc([d.lote ? "lote " + d.lote : "", d.validade ? "validade " + br(d.validade) : ""].filter(Boolean).join(" · ")) + "</dd>" : "") + (d.seguimento ? "<dt>Segmento</dt><dd>" + esc(d.seguimento) + "</dd>" : "") + "</dl>";
+  let corpo = "";
+  if (et === "peso_st") corpo = '<h2>Peso do conjunto completo de ST</h2><p class="nota">Tudo o que vai à balança na entrada da produção: bolsa de coleta com o sangue, bolsa de SAG com a solução, bolsa das plaquetas, plástico, manguitos e conexões.</p>' +
+    '<label>Peso bruto do conjunto (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoST" value="' + esc(D.pesoST ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoST">Foto</button></div><label>Micro-hematócrito do ST (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtST" value="' + esc(D.htST ?? "") + '">' +
+    '<p class="nota">Identifique a amostra do ST na IDEXX como <b>ST_BOLSA ' + esc(coleta) + "</b>.</p>" + '<button class="btn grande" data-a="pSalvar" data-v="peso_st">Confirmar peso e seguir</button>';
+  else if (et === "centrifugacao") corpo = "<h2>Centrifugações e transferência</h2>" +
+    [["c1", "Primeira centrifugação concluída e porção das plaquetas separada"], ["c2", "Segunda centrifugação concluída"], ["tp", "Plasma remanescente transferido para a bolsa das plaquetas"]].map(([k, t]) => '<div class="lin"><div class="t"><b>' + t + "</b><small>" + (D[k] ? "feito " + esc(hora(D[k])) : "pendente") + "</small></div>" + (D[k] ? '<span class="chip ok">feito</span>' : '<button class="btn peq" data-a="pMarca" data-v="' + k + '">Feito</button>') + "</div>").join("") +
+    (D.c1 && D.c2 && D.tp ? '<button class="btn grande" data-a="pAvanca" data-v="ch_sem_sag" style="margin-top:12px">Pesar o CH sem SAG</button>' : "");
+  else if (et === "ch_sem_sag" || et === "ch_com_sag") {
+    const c = sag(D);
+    corpo = '<h2>SAGcalculadora</h2><div class="grade"><div><label>Peso do CH sem SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCH" value="' + esc(D.pesoCHsem ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCH">Foto</button></div></div><div><label>Micro-Ht do CH sem SAG (%) <small>opcional</small></label><input type="number" inputmode="decimal" id="pHtCH" value="' + esc(D.htCHsem ?? "") + '"></div></div>' +
+      (c ? '<div class="calc"><small>Volume de SAG a acrescentar</small><br><b class="big">' + fmt(c.calc) + ' mL</b><br><small>CH sem SAG com ' + fmt(c.vol) + " mL · hematócrito " + (c.medido ? "medido " : "pela média do CVH, ") + fmt(c.ht, 1) + "% · alvo " + fmt(S.P.sag.htAlvo) + "%" + (c.suficiente ? "" : " · <b>passa da bolsa de SAG (" + fmt(S.P.sag.sagBolsa) + " mL)</b>") + "</small></div>" : '<p class="nota">Informe o peso para calcular o SAG. Sem micro-Ht, o cálculo usa a média do CVH (' + fmt(S.P.sag.htMedioCH, 1) + "%), e isso fica identificado no histórico.</p>") +
+      '<div class="grade"><div><label>SAG acrescentado (mL)</label><input type="number" inputmode="decimal" id="pSagAd" value="' + esc(D.sagAdicionado ?? (c ? Math.round(c.calc) : "")) + '"></div><div><label>Peso final do CH com SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoFinal" value="' + esc(D.pesoCHfinal ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoFinal">Foto</button></div></div></div>' +
+      '<label>Micro-Ht do CH com SAG (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtFinal" value="' + esc(D.htCHfinal ?? "") + '">' +
+      '<p class="nota">Identifique a amostra na IDEXX como <b>CH_BOLSA ' + esc(coleta) + '</b>.</p><button class="btn grande" data-a="pSalvar" data-v="ch">Salvar CH e seguir para CP e PFC</button>';
+  } else if (et === "cp_pfc") {
+    const Q = S.P.qc, vcp = volPeso(D.pesoCP, Q.taraCP, Q.densCP), vpl = volPeso(D.pesoPFC, Q.taraPL, Q.densPL);
+    corpo = '<h2>CP e PFC</h2><div class="grade"><div><label>Peso do CP (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCP" value="' + esc(D.pesoCP ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCP">Foto</button></div><small class="nota">' + (vcp != null ? "≈ " + fmt(vcp) + " mL" : "") + '</small></div><div><label>Peso do PFC (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoPFC" value="' + esc(D.pesoPFC ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoPFC">Foto</button></div><small class="nota">' + (vpl != null ? "≈ " + fmt(vpl) + " mL" : "") + "</small></div></div>" +
+      '<label><input type="checkbox" id="pSemCP"' + (D.semCP ? " checked" : "") + '> Não houve CP nesta coleta</label><label><input type="checkbox" id="pCong" checked> Iniciar o congelamento do PFC agora (conferência amanhã)</label>' +
+      '<button class="btn grande" data-a="pConcluir" style="margin-top:12px">Concluir a produção e guardar as bolsas</button>';
+  } else { const us = S.uni.filter((u) => u.coleta === coleta); corpo = '<p class="nota">Produção concluída. As bolsas estão no estoque.</p>' + us.map(linhaUnidade).join("") + (us.length ? escolherEtiqueta(us.map((u) => u.id)) : ""); if (us.length) setTimeout(() => previaEtiqueta(us[0].id), 50); }
+  abrirGaveta("Produção da coleta " + coleta, passos + cab + corpo);
+}
+async function salvarProd(coleta, etapa, dados, msg) {
+  const d = doacao(coleta) || {};
+  const r = await est("estProducaoSalvar", coleta, { animalId: d.animalId || "", etapa, dados });
+  const i = S.prod.findIndex((x) => x.coleta === coleta); if (i >= 0) S.prod[i] = r; else S.prod.unshift(r);
+  if (msg) toast(msg); pintar(); abrirProducao(coleta);
+}
+async function concluirProd(coleta) {
+  const p = S.prod.find((x) => x.coleta === coleta), D = Object.assign({}, p.dados), d = doacao(coleta) || {}, Q = S.P.qc, V = S.P.validade;
+  D.pesoCP = num($("#pPesoCP").value); D.pesoPFC = num($("#pPesoPFC").value); D.semCP = $("#pSemCP").checked;
+  if (!D.semCP && D.pesoCP == null) return toast("Informe o peso do CP ou marque que não houve CP.");
+  if (D.pesoPFC == null) return toast("Informe o peso do PFC.");
+  await est("estProducaoSalvar", coleta, { etapa: "cp_pfc", dados: { pesoCP: D.pesoCP, pesoPFC: D.pesoPFC, semCP: D.semCP } });
+  const dc = d.data || hojeISO(), Ps = S.P.sag;
+  const U = [{ componente: "CH", peso_g: num(D.pesoCHfinal), volume_ml: volPeso(D.pesoCHfinal, Ps.tara, Ps.densidade), validade: somaDias(dc, V.CH), data_coleta: dc, dados: { htFinal: D.htCHfinal ?? null, sagAdicionado: D.sagAdicionado ?? null, htUsadoNoSag: D.htUsadoSag ?? null, htUsadoMedido: !!D.htMedidoSag } }];
+  if (!D.semCP) U.push({ componente: "CP", peso_g: D.pesoCP, volume_ml: volPeso(D.pesoCP, Q.taraCP, Q.densCP), validade: somaDias(dc, V.CP), data_coleta: dc });
+  U.push({ componente: "PFC", peso_g: D.pesoPFC, volume_ml: volPeso(D.pesoPFC, Q.taraPL, Q.densPL), validade: somaDias(dc, V.PFC), data_coleta: dc });
+  U.forEach((u) => { if (u.volume_ml != null) u.volume_ml = Math.round(u.volume_ml); });
+  const cong = $("#pCong").checked;
+  const R = await est("estProducaoConcluir", coleta, U);
+  if (cong) { const pf = R.find((u) => u.componente === "PFC"); if (pf) { const r2 = await est("estUnidadeAcao", pf.id, "congelar", {}); Object.assign(pf, r2); } }
+  S.uni = S.uni.filter((u) => u.coleta !== coleta).concat(R); p.etapa = "concluida";
+  toast("Produção concluída. " + R.length + " bolsas no estoque, aguardando liberação."); pintar(); abrirProducao(coleta);
+}
+
+/* ── unidade ── */
+function linhaUnidade(u, fr) {
+  const a = animalDe(u.animal_id), al = alertaValidade(u);
+  return '<button class="unid' + (fr ? " fr" : "") + '" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + "</b><small>" + esc([a.nome, tipoTxt(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
+    (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
+}
+// frações logo abaixo da bolsa mãe (sub-linha em outra cor); se a mãe não está na lista, a fração aparece sozinha
+function listaAninhada(L) {
+  const ids = new Set(L.map((u) => u.id)), raiz = (u) => { let m = u; const vis = new Set(); while (m.mae_id && ids.has(m.mae_id) && !vis.has(m.id)) { vis.add(m.id); m = L.find((x) => x.id === m.mae_id); } return m; };
+  const filhos = {}; L.forEach((u) => { const r = raiz(u); if (r.id !== u.id) (filhos[r.id] = filhos[r.id] || []).push(u); });
+  return L.filter((u) => raiz(u).id === u.id).map((u) => linhaUnidade(u) + (filhos[u.id] || []).sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true })).map((f) => linhaUnidade(f, true)).join("")).join("");
+}
+const ORDEM_COMP = ["CH", "PFC", "CRIO", "CP", "PPC"];
+function porComponente(L) {
+  return ORDEM_COMP.concat([...new Set(L.map((u) => u.componente))].filter((c) => !ORDEM_COMP.includes(c))).map((c) => { const G = L.filter((u) => u.componente === c).sort((a, b) => String(a.validade || "9").localeCompare(String(b.validade || "9"))); return G.length ? '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + " · " + G.length + (G.length === 1 ? " bolsa" : " bolsas") + "</div>" + listaAninhada(G) : ""; }).join("");
+}
+function kpisProd() {
+  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
+  return '<div class="kpis">' + k(aguardando().length, "Coletas para produzir", "aba", "prod") + k(S.prod.filter((p) => p.etapa !== "concluida").length, "Produções em andamento", "aba", "prod") + k(S.uni.filter(congPendente).length, "Congelamento a conferir", "aba", "hoje") + k(S.uni.filter((u) => u.situacao === "producao_crio").length, "CRIO em produção", "aba", "hoje") + k(S.uni.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "aba", "hoje") + "</div>";
+}
+function kpis() {
+  if (PROD) return kpisProd();
+  const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && !["utilizada", "descartada"].includes(u.situacao)), disp = cvh.filter((u) => u.situacao === "disponivel"), noInt = S.uni.filter((u) => u.local === "Intensivet" && ["disponivel", "reservada"].includes(u.situacao)).length;
+  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
+  return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis no CVH", "filtro", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis no CVH", "filtro", "PFC") + k(disp.filter((u) => u.componente === "CRIO").length, "CRIO disponíveis no CVH", "filtro", "CRIO") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis no CVH", "filtro", "CP") +
+    k(cvh.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(cvh.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(noInt, "Na Intensivet", "aba", "int") + "</div>";
+}
+function abrirUnidade(id) {
+  const u = S.uni.find((x) => x.id === id); if (!u) return;
+  S.uniAberta = id; const a = animalDe(u.animal_id), D = u.dados || {}, al = alertaValidade(u), fim = ["utilizada", "descartada"].includes(u.situacao);
+  const evs = S.ev.filter((e) => e.unidade_id === id || (e.coleta === u.coleta && !e.unidade_id)).slice(0, 25);
+  const bt = (a2, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="uAcao" data-v="' + a2 + '">' + t + "</button>";
+  let acoes = "";
+  if (!fim) {
+    if (u.situacao === "quarentena") acoes += bt("liberar", "Liberar para uso", " ");
+    if (u.situacao === "disponivel") acoes += bt("reservar", "Reservar");
+    if (u.situacao === "reservada") acoes += bt("cancelarReserva", "Cancelar a reserva");
+    if (u.situacao === "transito" && /CVH/.test(u.local || "")) acoes += '<p style="width:100%;margin:4px 0;font-weight:700">Bolsa conferida e apta a retornar ao estoque?</p>' + bt("devApta", "SIM, LIBERAR", " ") + bt("devBloq", "NÃO, MANTER PENDENTE");
+    if (u.situacao === "bloqueada") acoes += bt("desbloquear", "Desbloquear"); else if (u.situacao !== "retirada") acoes += bt("bloquear", "Bloquear");
+    acoes += bt("mover", "Mudar de local");
+    if (["PFC", "CRIO", "PPC"].includes(u.componente)) acoes += D.congelamento && D.congelamento.inicio ? (D.congelamento.conferido && D.congelamento.conferido.congelado ? "" : bt("conferirSim", "Congelado") + bt("conferirNao", "Ainda não congelado")) : bt("congelar", "Iniciar congelamento");
+    if ((u.local || "CVH") === "CVH" && ["disponivel", "reservada", "quarentena", "bloqueada"].includes(u.situacao)) acoes += bt("fracionar", "Fracionar");
+    if (u.componente === "PFC" && (u.local || "CVH") === "CVH" && ["disponivel", "quarentena"].includes(u.situacao)) acoes += bt("crio", "Iniciar produção de CRIO");
+    if (u.situacao === "producao_crio") acoes += bt("crioConcluir", "Concluir CRIO", " ") + bt("crioCancelar", "Cancelar produção de CRIO");
+    acoes += bt("descartar", "Descartar", "perigo");
+  }
+  if (!fim) acoes += bt("etq", "Etiqueta");
+  const h = '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || D.doador || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd>" +
+    ((D.identificacao || D.loteBolsa) ? "<dt>Identificação</dt><dd>" + esc([D.identificacao, D.loteBolsa].filter(Boolean).join(" · ")) + (u.mae_id ? " <small>(fração da bolsa " + esc(u.mae_id) + ")</small>" : "") + "</dd>" : "") + (D.obs ? "<dt>Observação</dt><dd>" + esc(D.obs) + "</dd>" : "") +
+    "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
+    "<dt>Validade</dt><dd>" + esc(br(String(u.validade || "").slice(0, 10))) + (al ? ' <span class="chip ' + al.c + '">' + al.t + "</span>" : "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "</dd><dt>Local</dt><dd>" + esc(u.local || "") + (u.equipamento ? " · " + esc(u.equipamento) : "") + "</dd>" +
+    (u.componente === "CH" && D.htFinal != null ? "<dt>Ht do CH com SAG</dt><dd>" + fmt(D.htFinal, 1) + "% <small>(micro-Ht)</small></dd>" : "") +
+    ((D.fracionamentos || []).length ? "<dt>Fracionamentos</dt><dd>" + D.fracionamentos.map((c) => esc(hora(c.em)) + " · " + esc(c.por) + "<br><small>inicial " + fmt(c.volumeInicial, 1) + " mL · restante " + fmt(c.volumeRestante, 1) + " mL · " + c.fracoes.map((f) => esc(f.id) + " " + fmt(f.volume, 1) + " mL").join(", ") + ' · <span class="chip ' + (c.nivel === "ok" ? "ok" : c.nivel === "alerta" ? "av" : "al") + '">diferença ' + fmt(c.diferenca, 1) + " mL (" + fmt(c.diferencaPct, 1) + "%)</span></small>").join("<br>") + "</dd>" : "") +
+    (D.fracionamento ? "<dt>Origem</dt><dd>fração de " + esc(D.fracionamento.de) + " · " + esc(hora(D.fracionamento.em)) + "</dd>" : "") +
+    (D.crioDe ? "<dt>Origem</dt><dd>CRIO do plasma " + esc(D.crioDe) + "</dd>" : "") + (D.crio ? "<dt>CRIO</dt><dd>produção iniciada " + esc(hora(D.crio.inicio)) + (D.crio.crio ? " · CRIO " + esc(D.crio.crio) + " · plasma pobre descartado (" + esc(D.crio.ppc.confirmadoPor) + ")" : "") + "</dd>" : "") +
+    (D.congelamento && D.congelamento.inicio ? "<dt>Congelamento</dt><dd>início " + esc(hora(D.congelamento.inicio)) + (D.congelamento.conferido ? " · " + (D.congelamento.conferido.congelado ? "congelado" : "ainda não congelado") + " (" + esc(hora(D.congelamento.conferido.em)) + ")" : " · conferência pendente") + "</dd>" : "") +
+    (D.remessa ? "<dt>Remessa</dt><dd>" + esc(D.remessa) + "</dd>" : "") +
+    (D.guarda ? "<dt>Guarda na Intensivet</dt><dd>" + esc(D.guarda.nome) + " · " + esc(hora(D.guarda.em)) + " · " + esc(D.guarda.por) + (D.guarda.minutos != null ? ' <span class="chip ' + (D.guarda.noPrazo ? "ok" : "al") + '">' + D.guarda.minutos + " min</span>" : "") + (D.guarda.fotoUrl ? ' · <a href="' + esc(D.guarda.fotoUrl) + '" target="_blank" rel="noopener">foto</a>' : D.guarda.foto ? "" : " · sem foto") + "</dd>" : "") +
+    (D.uso ? "<dt>Uso</dt><dd>retirada " + esc(hora(D.uso.retiradaEm)) + (D.uso.transfundidaEm ? "<br>transfundida " + esc(hora(D.uso.transfundidaEm)) + " em " + esc((D.uso.paciente || {}).nome) + " (" + esc((D.uso.paciente || {}).peso) + " kg, Ht " + esc((D.uso.paciente || {}).ht) + "%)<br>" + esc((D.uso.vet || {}).nome) + " · " + esc((D.uso.vet || {}).crmv) + " · tel. responsável " + esc(D.uso.telefone) + "<br>" + (D.uso.contato === "ciente" ? "Responsável ciente, o CVH pode entrar em contato." : "Aguardar o médico veterinário avisar o responsável.") : "") + "</dd>" : "") +
+    (D.uso && D.uso.transfundidaEm ? "</dl>" + blocoContato(u) + '<dl class="dl">' : "") +
+    (D.devolucao ? "<dt>Devolução</dt><dd>" + esc(hora(D.devolucao.saidaEm)) + " · " + esc(D.devolucao.por) + (D.devolucao.recebidaEm ? " · recebida " + esc(hora(D.devolucao.recebidaEm)) + (D.devolucao.apta ? " (apta)" : " (para conferência)") : "") + "</dd>" : "") +
+    (D.descarte ? "<dt>Descarte</dt><dd>" + esc(D.descarte.motivo) + " · " + esc(D.descarte.por) + "</dd>" : "") + (D.bloqueio && u.situacao === "bloqueada" ? "<dt>Bloqueio</dt><dd>" + esc(D.bloqueio.motivo) + "</dd>" : "") + "</dl>" +
+    (acoes ? '<div class="bts">' + acoes + '</div><div id="uForm"></div>' : "") + '<h2 style="margin-top:18px">Histórico</h2>' + (evs.length ? evs.map((e) => '<div class="ev"><b>' + esc(rotEvento(e.tipo)) + "</b> <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + detEvento(e) + "</div>").join("") : '<p class="vazio">Sem registros.</p>');
+  abrirGaveta(u.id + " · " + (NOME_COMP[u.componente] || u.componente), h);
+}
+function blocoContato(u) {
+  const D = u.dados || {}, U = D.uso || {}, P = U.paciente || {}, V = U.vet || {}, C = D.contatoCVH || {};
+  return '<div class="cx" style="margin:10px 0"><h2>Contato com o responsável</h2>' + (U.contato === "ciente" ? "<p><b>Responsável ciente.</b> Telefone ou WhatsApp " + esc(U.telefone || "") + (U.telefone ? ' · <a href="https://wa.me/55' + esc(String(U.telefone).replace(/\D/g, "").replace(/^55/, "")) + '" target="_blank" rel="noopener">WhatsApp</a>' : "") + "</p>" : "<p><b>Aguardando o veterinário avisar o responsável.</b> Não entre em contato ainda.</p>") +
+    '<label>Informações da conversa com o responsável</label><textarea id="ctNotas" rows="4" style="width:100%;border:1px solid var(--areia2);border-radius:10px;padding:10px">' + esc(C.notas || "") + "</textarea>" + (C.em ? "<small>Salvo " + esc(hora(C.em)) + " · " + esc(C.por) + "</small>" : "") +
+    '<div class="bts" style="margin-top:8px"><button class="btn sec peq" data-a="ctSalvar" data-v="' + esc(u.id) + '">Salvar</button><button class="btn peq" data-a="ctCopiar" data-v="' + esc(u.id) + '">Copiar dados para a requisição</button></div></div>';
+}
+function textoRequisicao(u) {
+  const D = u.dados || {}, U = D.uso || {}, P = U.paciente || {}, V = U.vet || {}, a = animalDe(u.animal_id);
+  return ["Requisição de hemocomponente · emergência na Intensivet", "Paciente: " + (P.nome || ""), "Peso: " + (P.peso || "") + " kg", "Hematócrito: " + (P.ht || "") + "%", "Telefone do responsável: " + (U.telefone || ""), "Médico veterinário: " + (V.nome || "") + " · " + (V.crmv || ""),
+    "Bolsa: " + u.id + " · " + (NOME_COMP[u.componente] || u.componente) + (u.volume_ml ? " · " + u.volume_ml + " mL" : "") + (tipoTxt(a) ? " · " + tipoTxt(a) : ""), "Retirada: " + hora(U.retiradaEm), "Transfusão registrada: " + hora(U.transfundidaEm), ((D.contatoCVH || {}).notas ? "Informações do contato:\n" + D.contatoCVH.notas : "")].filter(Boolean).join("\n");
+}
+const ROT_EV = { "unidade:transfusaoCorrigida": "Transfusão corrigida (não usada)", "ocorrencia": "Ocorrência informada", "unidade:contato": "Contato com o responsável", "unidade:saida": "Saiu do CVH na remessa", "unidade:guardada": "Guardada no equipamento", "unidade:fotoGuarda": "Foto da guarda", "unidade:retirada": "Retirada para transfusão", "unidade:retiradaCancelada": "Retirada cancelada", "unidade:transfundida": "Transfundida", "unidade:devolvida": "Devolvida ao CVH", "unidade:receberDevolucao": "Devolução recebida no CVH", "remessa:criada": "Remessa preparada", "remessa:saida": "Saída da remessa", "remessa:entrega": "Remessa entregue", "remessa:recebida": "Remessa recebida", "remessa:cancelar": "Remessa cancelada", "remessa:uber": "Link do Uber", "unidade:criada": "Entrou no estoque", "unidade:liberar": "Liberada", "unidade:reservar": "Reservada", "unidade:cancelarReserva": "Reserva cancelada", "unidade:descartar": "Descartada", "unidade:mover": "Local alterado", "unidade:congelar": "Congelamento iniciado", "unidade:conferirCongelamento": "Congelamento conferido", "unidade:bloquear": "Bloqueada", "unidade:desbloquear": "Desbloqueada", "unidade:editar": "Dados corrigidos", "unidade:corrigida": "Produção corrigida", "producao:peso_st": "Peso do ST", "producao:centrifugacao": "Centrifugação", "producao:ch_sem_sag": "CH sem SAG", "producao:ch_com_sag": "CH com SAG", "producao:cp_pfc": "CP e PFC", "producao:concluida": "Produção concluída" };
+const rotEvento = (t) => ROT_EV[t] || t;
+function detEvento(e) { const d = e.dados || {}, x = [d.texto, d.remessa ? "remessa " + d.remessa : "", d.equipamento, d.minutos != null ? d.minutos + " min" + (d.noPrazo === false ? ", fora do prazo" : "") : "", d.paciente, d.vet, d.reserva, d.motivo, d.local, d.justificativa, d.congelado === true ? "congelado" : d.congelado === false ? "ainda não congelado" : ""].filter(Boolean); return x.length ? "<br><small>" + esc(x.join(" · ")) + "</small>" : ""; }
+const PEDE = { reservar: ["Reservar para", "clínica, paciente ou procedimento", "reserva"], descartar: ["Motivo do descarte", "", "motivo"], bloquear: ["Motivo do bloqueio", "", "motivo"], mover: ["Novo local", "ex.: CVH, Intensivet", "local"] };
+async function acaoUnidade(acao, o) {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  let a = acao; o = o || {};
+  // ações que pedem um texto: o campo aparece na própria ficha
+  if (PEDE[acao] && !o[PEDE[acao][2]]) {
+    const [rot, ph, k] = PEDE[acao];
+    $("#uForm").innerHTML = '<label>' + rot + '</label><input type="text" id="uTxt" placeholder="' + esc(ph) + '" value="' + esc(acao === "mover" ? u.local || "CVH" : "") + '">' + (acao === "mover" ? '<label>Equipamento (refrigerador ou freezer, opcional)</label><input type="text" id="uEq" value="' + esc(u.equipamento || "") + '">' : "") +
+      '<div class="bts" style="margin-top:10px"><button class="btn peq ' + (acao === "descartar" ? "perigo" : "") + '" data-a="uConf" data-v="' + acao + '">Confirmar</button><button class="btn peq sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div>';
+    const t = $("#uTxt"); if (t) t.focus(); return;
+  }
+  if (acao === "fracionar") { S.nFr = 1; $("#uForm").innerHTML = formFracionar(u); calcFracionar(); $("#fPI").focus(); return; }
+  if (acao === "crio") { try { const r = await est("estCrioIniciar", u.id); Object.assign(u, r); toast("Plasma em produção de CRIO. Saiu do saldo de PFC."); pintar(); abrirUnidade(u.id); } catch (e) { toast(e.message, 6000); } return; }
+  if (acao === "crioCancelar") { try { const r = await est("estCrioCancelar", u.id); Object.assign(u, r); toast("Produção de CRIO cancelada."); pintar(); abrirUnidade(u.id); } catch (e) { toast(e.message, 6000); } return; }
+  if (acao === "crioConcluir") { $("#uForm").innerHTML = formCrio(u); return; }
+  if (acao === "etq") { $("#uForm").innerHTML = escolherEtiqueta([u.id]); previaEtiqueta(u.id); return; }
+  if (acao === "devApta" || acao === "devBloq") { a = "receberDevolucao"; o.apta = acao === "devApta"; }
+  if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
+  try { const r = await est("estUnidadeAcao", u.id, a, o); Object.assign(u, r); S.ev.unshift({ quando: new Date().toISOString(), coleta: u.coleta, unidade_id: u.id, tipo: "unidade:" + a, usuario: CTX.usuario || "", dados: o }); toast("Feito."); pintar(); abrirUnidade(u.id); }
+  catch (e) { toast(e.message, 6000); }
+}
+
+/* ── fracionamento por pesagem (4.2 a 4.4) ── */
+const densDe = (c) => c === "CH" ? S.P.sag.densidade : c === "CP" ? S.P.qc.densCP : S.P.qc.densPL;
+const bolsasDe = (c) => (S.P.bolsas || []).filter((b) => !(b.uso || []).length || b.uso.includes(c));
+const optBolsas = (c, pref) => bolsasDe(c).map((b, i) => '<option value="' + b.tara + '"' + ((pref ? b.id === pref : i === 0) ? " selected" : "") + ">" + esc(b.nome) + " · tara " + fmt(b.tara, 1) + " g</option>").join("");
+const campoPeso = (id, rot, ph) => "<label>" + rot + '</label><div style="display:flex;gap:8px"><input type="text" inputmode="decimal" id="' + id + '" placeholder="' + esc(ph || "g") + '" style="flex:1"><button class="btn sec peq" data-a="foto" data-v="' + id + '">Foto</button></div>';
+function formFracionar(u) {
+  const c = u.componente, mae = u.componente === "CH" ? "ch-final" : "satelite";
+  let h = '<div class="cx" style="margin-top:12px"><h2>Fracionar ' + esc(u.id) + "</h2><p><small>Sistema fechado. Pese a bolsa mãe antes, separe a fração orientado pelo peso-alvo e pese tudo no fim.</small></p>" +
+    '<label>Modelo da bolsa mãe</label><select id="fTM">' + optBolsas(c, mae) + "</select>" + campoPeso("fPI", "Peso inicial da bolsa mãe (g)", u.peso_g != null ? "último registro " + fmt(u.peso_g, 1) + " g" : "g") + '<small id="fPIv"></small><div id="fFr">';
+  for (let i = 0; i < (S.nFr || 1); i++) h += '<div class="cx" style="margin:10px 0;background:var(--areia)"><b>Fração ' + (i + 1) + '</b><label>Volume a separar (mL)</label><input type="text" inputmode="decimal" id="fA' + i + '"><label>Modelo da bolsa filha</label><select id="fT' + i + '">' + optBolsas(c, "transferencia") + '</select><div id="fAlvo' + i + '" style="font-weight:800;color:var(--vinho);margin-top:6px"></div>' + campoPeso("fP" + i, "Peso final da fração (g)") + '<label>Identificação física (opcional)</label><input type="text" id="fI' + i + '" placeholder="ex.: 11001"></div>';
+  return h + '</div><button class="btn sec peq" data-a="fMais">Mais uma fração</button>' + campoPeso("fPF", "Peso final da bolsa mãe (g)") + '<div id="fConc" style="margin-top:10px"></div><label>Observação (opcional)</label><input type="text" id="fObs"><div class="bts" style="margin-top:10px"><button class="btn" data-a="fConfirmar">Confirmar fracionamento</button><button class="btn sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div></div>';
+}
+function calcFracionar() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u || !$("#fPI")) return;
+  const d = densDe(u.componente), tM = +$("#fTM").value, pI = num($("#fPI").value), pF = num($("#fPF").value), L = S.P.limites || { fracionamentoMl: 30, criticoMl: 40 };
+  const vol = (p, t) => p == null ? null : (p - t) / d;
+  $("#fPIv").textContent = pI != null ? (pI < tM ? "Peso menor que a tara: confira o modelo." : "Volume estimado " + fmt(vol(pI, tM), 1) + " mL") : "";
+  let soma = 0, todas = true;
+  for (let i = 0; i < (S.nFr || 1); i++) {
+    const a = num($("#fA" + i).value), t = +$("#fT" + i).value, p = num($("#fP" + i).value);
+    $("#fAlvo" + i).textContent = a ? "No visor da balança: " + fmt(t + a * d, 1) + " g (bolsa filha com " + fmt(a) + " mL)" : "";
+    if (p == null) todas = false; else soma += vol(p, t);
+  }
+  if (pI == null || pF == null || !todas) { $("#fConc").innerHTML = ""; return; }
+  const vI = vol(pI, tM), vF = vol(pF, tM), dif = vI - vF - soma, pct = vI ? dif / vI * 100 : 0, cl = dif > L.criticoMl ? "al" : dif > L.fracionamentoMl ? "av" : "ok";
+  $("#fConc").innerHTML = '<dl class="dl"><dt>Volume inicial da bolsa mãe</dt><dd>' + fmt(vI, 1) + " mL</dd><dt>Volume restante na bolsa mãe</dt><dd>" + fmt(vF, 1) + " mL</dd><dt>Volume das frações</dt><dd>" + fmt(soma, 1) + ' mL</dd><dt>Diferença não conciliada</dt><dd><span class="chip ' + cl + '">' + fmt(dif, 1) + " mL (" + fmt(pct, 1) + "%)</span></dd></dl>" + (dif < 0 ? "<p><small>As pesagens indicam ganho de volume. Confira os modelos e pese de novo.</small></p>" : cl !== "ok" ? "<p><small>Diferença acima do limite de " + L.fracionamentoMl + " mL. Será registrada e o CVH será avisado.</small></p>" : "");
+}
+async function confirmarFracionar() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  const fr = []; for (let i = 0; i < (S.nFr || 1); i++) fr.push({ peso: $("#fP" + i).value, tara: $("#fT" + i).value, identificacao: $("#fI" + i).value, alvo: $("#fA" + i).value });
+  const r = await est("estFracionar", u.id, { pesoInicial: $("#fPI").value, taraMae: $("#fTM").value, pesoFinalMae: $("#fPF").value, fracoes: fr, obs: $("#fObs").value });
+  Object.assign(u, r.mae); S.uni = S.uni.concat(r.filhas); pintar(); abrirUnidade(u.id);
+  $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px"><h2>Fracionamento registrado</h2><p>' + r.filhas.map((f) => esc(f.id) + " · " + fmt(f.volume_ml, 1) + " mL").join("<br>") + "</p><p>Bolsa mãe com " + fmt(r.mae.volume_ml, 1) + " mL. Diferença " + fmt(r.conciliacao.diferenca, 1) + " mL.</p></div>" + escolherEtiqueta([u.id].concat(r.filhas.map((f) => f.id)));
+  previaEtiqueta(r.filhas[0].id); toast("Fracionamento registrado.");
+}
+function formCrio(u) {
+  return '<div class="cx" style="margin-top:12px"><h2>Concluir CRIO de ' + esc(u.id) + '</h2><label>Modelo da bolsa do CRIO</label><select id="cTara">' + optBolsas("CRIO", "satelite") + "</select>" + campoPeso("cPeso", "Peso do CRIO (g)") + '<small id="cVol"></small>' + campoPeso("cPPC", "Peso do plasma pobre, antes do descarte (opcional)") +
+    '<label>Identificação física do CRIO (opcional)</label><input type="text" id="cId"><label class="op" style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;font-weight:600"><input type="checkbox" id="cDesc"> O plasma pobre em crioprecipitado foi descartado.</label><div class="bts" style="margin-top:10px"><button class="btn" data-a="cConfirmar">Registrar o CRIO</button></div><p><small>Depois, na ficha do CRIO, toque em Iniciar congelamento. O aviso Verificar CRIO aparece 6 horas depois.</small></p></div>';
+}
+async function confirmarCrio() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  const r = await est("estCrioConcluir", u.id, { pesoCrio: $("#cPeso").value, taraCrio: $("#cTara").value, pesoPPC: $("#cPPC").value, identificacao: $("#cId").value, ppcDescartado: $("#cDesc").checked });
+  Object.assign(u, r.pfc); S.uni.push(r.crio); pintar(); abrirUnidade(r.crio.id); toast("CRIO " + r.crio.id + " registrado com " + fmt(r.crio.volume_ml, 1) + " mL.", 6000);
+}
+
+/* ── telas ── */
+function pendencias() {
+  const L = [];
+  aguardando().slice(0, 30).forEach((d) => L.push({ g: "p", n: 1, t: "Coleta " + d.numero + " aguardando o peso do conjunto de ST", s: (d.nome || "") + " · " + br(d.data), a: "prod", v: d.numero.replace(/\s/g, "") }));
+  S.prod.filter((p) => p.etapa !== "concluida").forEach((p) => L.push({ g: "p", n: 1, t: "Produção da coleta " + p.coleta + " em andamento", s: (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], a: "prod", v: p.coleta }));
+  S.uni.filter(congPendente).forEach((u) => L.push({ g: "p", n: 0, t: (u.componente === "CRIO" ? "Verificar CRIO " : "Verificar congelamento do plasma ") + u.id, s: "congelamento iniciado " + hora(u.dados.congelamento.inicio) + (u.componente === "CRIO" ? " · 6 horas completas " + hora(Date.parse(u.dados.congelamento.inicio) + 216e5) : ""), a: "uni", v: u.id }));
+  S.uni.filter((u) => u.situacao === "producao_crio").forEach((u) => L.push({ g: "p", n: 1, t: "CRIO em produção a partir de " + u.id, s: "iniciado " + hora(u.dados.crio.inicio), a: "uni", v: u.id }));
+  S.uni.forEach((u) => { const al = alertaValidade(u); if (al && al.n <= 5) L.push({ g: "e", n: al.n <= 1 ? 0 : 2, t: u.id + " · " + al.t, s: ROT_SIT[u.situacao] + " · " + (u.local || ""), a: "uni", v: u.id }); });
+  S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ g: "e", n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
+  return L.filter((x) => x.g === (PROD ? "p" : "e")).sort((a, b) => a.n - b.n);
+}
+function telaHojeProd() {
+  const P = pendencias(), andam = S.prod.filter((p) => p.etapa !== "concluida"), hoje = hojeISO();
+  const feitasHoje = S.prod.filter((p) => p.etapa === "concluida" && String(p.atualizado || "").slice(0, 10) === hoje);
+  const congel = S.uni.filter((u) => ["PFC", "CRIO", "PPC"].includes(u.componente) && (u.dados || {}).congelamento && u.dados.congelamento.inicio && !(u.dados.congelamento.conferido && u.dados.congelamento.conferido.congelado));
+  return '<div class="cx"><h2>Para fazer hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente na bancada.</p>') + "</div>" +
+    '<div class="duas"><div class="cx"><h2>Congelando · ' + congel.length + "</h2>" + (congel.length ? listaAninhada(congel) : '<p class="vazio">Nenhum plasma ou CRIO congelando.</p>') + "</div>" +
+    '<div class="cx"><h2>Produções concluídas hoje · ' + feitasHoje.length + "</h2>" + (feitasHoje.length ? feitasHoje.map((p) => '<div class="lin"><div class="t"><b>Coleta ' + esc(p.coleta) + "</b><small>" + esc(S.uni.filter((u) => u.coleta === p.coleta).map((u) => u.componente).join(", ")) + '</small></div><button class="btn sec peq" data-a="prod" data-v="' + esc(p.coleta) + '">Ver</button></div>').join("") : '<p class="vazio">Nenhuma ainda.</p>') + "</div></div>" +
+    '<div class="cx"><h2>Aguardando liberação · ' + S.uni.filter((u) => u.situacao === "quarentena").length + '</h2><p class="nota">As bolsas produzidas ficam aqui até os exames do CVH. A liberação acontece sozinha quando o TECSA sai negativo e completo, ou no Estoque.</p>' + listaAninhada(S.uni.filter((u) => u.situacao === "quarentena")) + "</div>";
+}
+function telaHoje() {
+  const P = pendencias(), vivas = ["disponivel", "reservada"];
+  const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && vivas.includes(u.situacao)), intv = S.uni.filter((u) => u.local === "Intensivet" && vivas.concat(["bloqueada", "retirada"]).includes(u.situacao)), caminho = S.uni.filter((u) => u.situacao === "transito");
+  return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente agora.</p>') + "</div>" +
+    '<div class="duas"><div class="cx"><h2>Bolsas disponíveis no CVH · ' + cvh.length + "</h2>" + (cvh.length ? porComponente(cvh) : '<p class="vazio">Nenhuma bolsa disponível.</p>') + "</div>" +
+    '<div class="cx"><h2>Bolsas na Intensivet · ' + intv.length + "</h2>" + (intv.length ? porComponente(intv) : '<p class="vazio">Nenhuma bolsa na Intensivet.</p>') + (caminho.length ? '<div class="grupo-t">Em trânsito · ' + caminho.length + "</div>" + listaAninhada(caminho) : "") + "</div></div>";
+}
+// fracionamento: escolher a bolsa, fracionar pela pesagem e imprimir as etiquetas novas
+function telaFrac() {
+  const ok = S.uni.filter((u) => (u.local || "CVH") === "CVH" && ["disponivel", "reservada", "quarentena"].includes(u.situacao));
+  const feitos = S.uni.filter((u) => (u.dados || {}).fracionamentos && u.dados.fracionamentos.length).flatMap((u) => u.dados.fracionamentos.map((c) => ({ u, c }))).sort((a, b) => String(b.c.em).localeCompare(String(a.c.em))).slice(0, 30);
+  const lin = (u, fr) => '<div class="lin' + (fr ? '" style="margin-left:28px;background:#FBF3E8;border-left:3px solid var(--cara);padding-left:10px' : "") + '"><div class="t"><b>' + esc(u.id) + "</b><small>" + esc([(animalDe(u.animal_id) || {}).nome, tipoTxt(animalDe(u.animal_id)), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "", "validade " + br(String(u.validade || "").slice(0, 10)), ROT_SIT[u.situacao]].filter(Boolean).join(" · ")) + '</small></div><button class="btn peq" data-a="fracAbrir" data-v="' + esc(u.id) + '">Fracionar</button></div>';
+  const grupos = ORDEM_COMP.map((c) => { const G = ok.filter((u) => u.componente === c).sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true })); if (!G.length) return ""; const ids = new Set(G.map((u) => u.id)); return '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + "</div>" + G.filter((u) => !u.mae_id || !ids.has(u.mae_id)).map((u) => lin(u) + G.filter((f) => f.mae_id === u.id).map((f) => lin(f, true)).join("")).join(""); }).join("");
+  return '<div class="cx"><h2>Fracionar uma bolsa</h2><p class="nota">Sistema fechado. Escolha a bolsa: o app pede a pesagem da mãe, mostra o peso-alvo da fração, confere a diferença e gera as etiquetas novas.</p>' + (grupos || '<p class="vazio">Nenhuma bolsa no CVH.</p>') + "</div>" +
+    '<div class="cx"><h2>Últimos fracionamentos</h2>' + (feitos.length ? feitos.map(({ u, c }) => '<div class="lin"><div class="t"><b>' + esc(u.id) + " → " + esc(c.fracoes.map((f) => f.id).join(", ")) + "</b><small>" + esc(hora(c.em)) + " · " + esc(c.por) + " · inicial " + fmt(c.volumeInicial, 1) + " mL · restante " + fmt(c.volumeRestante, 1) + " mL · frações " + c.fracoes.map((f) => fmt(f.volume, 1) + " mL").join(", ") + '</small><small><span class="chip ' + (c.nivel === "ok" ? "ok" : c.nivel === "alerta" ? "av" : "al") + '">diferença ' + fmt(c.diferenca, 1) + " mL (" + fmt(c.diferencaPct, 1) + '%)</span></small></div><button class="btn sec peq" data-a="fracEtq" data-v="' + esc([u.id].concat(c.fracoes.map((f) => f.id)).join("|")) + '">Etiquetas</button></div>').join("") + '<div id="fracEtqBox"></div>' : '<p class="vazio">Nenhum fracionamento ainda.</p>') + "</div>";
+}
+function telaProd() {
+  const A = aguardando(), E = S.prod.filter((p) => p.etapa !== "concluida"), C = S.prod.filter((p) => p.etapa === "concluida").slice(0, 15);
+  const it = (c, t, s, ch) => '<div class="lin"><div class="t"><b>' + esc(t) + "</b><small>" + esc(s) + '</small></div><button class="btn peq" data-a="prod" data-v="' + esc(c) + '">' + ch + "</button></div>";
+  return '<div class="duas"><div class="cx"><h2>Em produção</h2>' + (E.length ? E.map((p) => { const d = doacao(p.coleta) || {}; return it(p.coleta, "Coleta " + p.coleta + " · " + (d.nome || animalDe(p.animal_id).nome || ""), (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], "Continuar"); }).join("") : '<p class="vazio">Nenhuma produção em andamento.</p>') + "</div>" +
+    '<div class="cx"><h2>Coletas aguardando o peso do ST</h2><p class="nota">Fichas de doação com coleta a partir de 20/11. Toque para registrar o peso do conjunto completo.</p>' + (A.length ? A.map((d) => it(d.numero.replace(/\s/g, ""), "Coleta " + d.numero + " · " + (d.nome || ""), br(d.data) + (d.volume ? " · " + d.volume + " mL" : ""), "Registrar peso")).join("") : '<p class="vazio">Nenhuma coleta aguardando.</p>') + "</div></div>" +
+    (C.length ? '<div class="cx"><h2>Concluídas</h2>' + C.map((p) => it(p.coleta, "Coleta " + p.coleta, "concluída " + hora(p.atualizado), "Ver")).join("") + "</div>" : "") + (S.admin ? cadastroBolsas() : "");
+}
+// 4.1 e 5.1: modelos de bolsa com tara e limites de diferença (só administrador altera)
+function cadastroBolsas() {
+  const B = S.P.bolsas || [], L = S.P.limites || {}, comps = ["CH", "CP", "PFC", "CRIO", "PPC"];
+  return '<div class="cx"><h2>Modelos de bolsa e taras</h2><p class="nota">O conjunto que vai à balança em cada etapa. Confira as taras com a balança do CVH.</p>' + B.concat([{ nome: "", tara: "", uso: [] }]).map((b, i) =>
+    '<div class="lin" style="flex-wrap:wrap;gap:6px" data-bolsa="' + i + '"><input type="text" class="bN" value="' + esc(b.nome) + '" placeholder="Novo modelo" style="flex:2;min-width:180px"><input type="text" inputmode="decimal" class="bT" value="' + esc(b.tara) + '" placeholder="tara g" style="width:90px;flex:0 0 90px"><input type="hidden" class="bI" value="' + esc(b.id || "") + '"><span style="display:flex;gap:6px;flex-wrap:wrap">' + comps.map((c) => '<label style="font-size:12.5px;font-weight:600"><input type="checkbox" class="bU" value="' + c + '"' + ((b.uso || []).includes(c) ? " checked" : "") + "> " + c + "</label>").join("") + "</span></div>").join("") +
+    '<h2 style="margin-top:14px">Diferença no fracionamento</h2><div style="display:flex;gap:10px;flex-wrap:wrap"><label>Alerta acima de (mL)<input type="text" inputmode="decimal" id="limA" value="' + esc(L.fracionamentoMl) + '"></label><label>Crítico acima de (mL)<input type="text" inputmode="decimal" id="limC" value="' + esc(L.criticoMl) + '"></label><label>Ganho tolerado (mL)<input type="text" inputmode="decimal" id="limG" value="' + esc(L.ganhoMl) + '"></label></div><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="bolsasSalvar">Salvar</button></div></div>';
+}
+function telaEstoque() {
+  const f = S.f, tipoDe = (u) => tipoTxt(animalDe(u.animal_id));
+  let L = S.uni.filter((u) => f.sit === "todas" ? true : f.sit === "ativas" ? !["utilizada", "descartada"].includes(u.situacao) : u.situacao === f.sit);
+  if (f.comp) L = L.filter((u) => u.componente === f.comp);
+  if (f.tipo) L = L.filter((u) => { const t = tipoDe(u); return f.tipo === "DEA1-" ? /DEA 1 −/.test(t) : f.tipo === "DEA1+" ? /DEA 1 \+/.test(t) : f.tipo === "DAL-" ? /DAL −/.test(t) : f.tipo === "DAL+" ? /DAL \+/.test(t) : t.indexOf(f.tipo) >= 0; });
+  L.sort((a, b) => String(a.validade || "9").localeCompare(String(b.validade || "9")));
+  const fb = (campo, v, t) => '<button class="' + (f[campo] === v ? "on" : "") + '" data-a="f" data-c="' + campo + '" data-v="' + v + '">' + t + "</button>";
+  const vol = L.reduce((s, u) => s + (+u.volume_ml || 0), 0);
+  return '<div class="filtros">' + fb("comp", "", "Todos") + fb("comp", "CH", "CH") + fb("comp", "CP", "CP") + fb("comp", "PFC", "PFC") + fb("comp", "CRIO", "CRIO") + "</div>" +
+    '<div class="filtros">' + fb("tipo", "", "Qualquer tipagem") + fb("tipo", "DEA1-", "DEA 1 −") + fb("tipo", "DEA1+", "DEA 1 +") + fb("tipo", "DAL-", "DAL −") + fb("tipo", "DAL+", "DAL +") + "</div>" +
+    '<div class="filtros">' + fb("sit", "ativas", "No estoque") + fb("sit", "disponivel", "Disponíveis") + fb("sit", "reservada", "Reservadas") + fb("sit", "quarentena", "Aguardando liberação") + fb("sit", "bloqueada", "Bloqueadas") + fb("sit", "todas", "Todas, inclusive as que saíram") + "</div>" +
+    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " bolsa" : " bolsas") + (vol ? " · " + fmt(vol) + " mL" : "") + (L.length ? ' <button class="btn sec peq" style="float:right" data-a="etqLista" data-v="' + esc(L.map((u) => u.id).join("|")) + '">Etiquetas</button>' : "") + '</h2><div id="etqBox"></div>' + (L.length ? listaAninhada(L) : '<p class="vazio">Nenhuma bolsa com esses filtros.</p>') + "</div>";
+}
+/* ── transporte (item 23): atendimentos, avisos ao motoboy e Uber ── */
+const ROT_AT = { aberto: "Aberto", possivel: "Possível venda", autorizado: "Autorizado · link de pagamento solicitado", pago: "Pagamento confirmado", testes: "Testes concluídos · laudo em elaboração", fracionamento: "Fracionamento da bolsa", preparo: "Em preparação para envio", pronta: "Embalagem pronta para retirada", retirada: "Retirada · em entrega", entregue: "Entregue", concluido: "Concluído", cancelado: "Cancelado",
+  amostraChegou: "Amostra chegou no CVH", amostraBuscada: "Amostra buscada pelo motoboy", amostraEntregue: "Amostra entregue pelo motoboy", retirei: "Retirada pelo motoboy", entreguei: "Entrega registrada pelo motoboy", uber: "Link do Uber", uberFim: "Corrida encerrada", cancelar: "Cancelado", reabrir: "Reaberto" };
+const COR_AT = { pronta: "al", preparo: "av", fracionamento: "av", retirada: "av", entregue: "ok", concluido: "ok", cancelado: "ne" };
+function telaTransporte() {
+  const at = S.at.filter((a) => !["concluido", "cancelado"].includes(a.etapa)), fim = S.at.filter((a) => ["concluido", "cancelado"].includes(a.etapa)).slice(0, 20);
+  const lin = (a) => '<div class="lin" data-a="at" data-v="' + esc(a.id) + '" style="cursor:pointer"><div class="t"><b>' + esc(a.destino) + (a.paciente ? " · " + esc(a.paciente) : "") + "</b><small>" + (a.modalidade === "uber" ? "Uber" : "Motoboy") + (a.remessa_id ? " · caixa " + esc(a.remessa_id) : "") + " · " + esc(hora(a.criado)) + '</small></div><span class="chip ' + (COR_AT[a.etapa] || "") + '">' + esc(ROT_AT[a.etapa] || a.etapa) + "</span></div>";
+  return '<div class="bts" style="margin-bottom:12px"><button class="btn" data-a="atNovo">Novo atendimento</button>' + (S.admin ? '<button class="btn sec" data-a="apNovo" data-v="motoboy">Ativar celular do motoboy</button>' : "") + '</div><div id="apLink"></div>' +
+    '<div class="cx"><h2>Em andamento</h2>' + (at.length ? at.map(lin).join("") : '<p class="vazio">Nenhum atendimento em andamento.</p>') + "</div>" + (fim.length ? '<div class="cx"><h2>Encerrados</h2>' + fim.map(lin).join("") + "</div>" : "");
+}
+function formAtendimento(a) {
+  a = a || {}; const rems = S.rem.filter((r) => ["preparo", "transito"].includes(r.situacao) || r.id === a.remessa_id);
+  return '<label>Destino</label><input type="text" id="atDest" value="' + esc(a.destino || "") + '" placeholder="Clínica ou Intensivet"><label>Endereço</label><input type="text" id="atEnd" value="' + esc(a.endereco || "") + '"><label>Paciente</label><input type="text" id="atPac" value="' + esc(a.paciente || "") + '"><label>Médico veterinário solicitante</label><input type="text" id="atSol" value="' + esc(a.solicitante || "") + '">' +
+    '<label>Transporte</label><div class="filtros" style="margin:0"><button class="' + (a.modalidade !== "uber" ? "on" : "") + '" data-a="atMod" data-v="motoboy">Motoboy terceirizado</button><button class="' + (a.modalidade === "uber" ? "on" : "") + '" data-a="atMod" data-v="uber">Uber</button></div>' +
+    '<label>Caixa da remessa (opcional)</label><select id="atRem"><option value="">Sem remessa</option>' + rems.map((r) => '<option value="' + esc(r.id) + '"' + (r.id === a.remessa_id ? " selected" : "") + ">" + esc(r.id) + " · " + esc(r.destino) + " · " + r.unidades.length + " bolsa(s)</option>").join("") + "</select>" +
+    '<div class="bts" style="margin-top:12px"><button class="btn" data-a="atSalvar" data-v="' + esc(a.id || "") + '">' + (a.id ? "Salvar" : "Abrir atendimento") + "</button></div>";
+}
+const dtLocal = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "T" + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+function abrirAtendimento(id) {
+  const a = S.at.find((x) => x.id === id); if (!a) return; S.atAberto = id; const am = a.amostra || {}, r = S.rem.find((x) => x.id === a.remessa_id), moto = a.modalidade !== "uber";
+  const B = (et, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="atEt" data-id="' + esc(a.id) + '" data-v="' + et + '">' + t + "</button>";
+  let ac = "";
+  if (a.etapa === "aberto") ac = B("possivel", "Avisar possível venda") + B("autorizado", "Autorizado · link de pagamento solicitado", " ");
+  if (a.etapa === "possivel") ac = B("autorizado", "Autorizado · link de pagamento solicitado", " ");
+  if (a.etapa === "autorizado") ac = S.admin ? '<button class="btn peq" data-a="atPago" data-v="' + esc(a.id) + '">Pagamento confirmado</button>' : "<small>Aguardando o Plínio confirmar o pagamento.</small>";
+  if (["pago", "testes", "fracionamento", "preparo"].includes(a.etapa) && am.buscar && !am.chegouEm) ac += B("amostraChegou", "Amostra chegou no CVH");
+  if (a.etapa === "pago") ac += B("testes", "Testes concluídos · laudo em elaboração", " ");
+  if (a.etapa === "testes") ac += B("fracionamento", "Fracionamento da bolsa escolhida") + B("preparo", "Em preparação para envio", " ");
+  if (a.etapa === "fracionamento") ac += B("preparo", "Em preparação para envio", " ");
+  if (a.etapa === "preparo") ac += B("pronta", "Embalagem pronta para retirada", " ");
+  if (a.etapa === "pronta") ac += B("retirada", "Registrar a retirada", " ");
+  if (a.etapa === "retirada" && moto) ac += B("entregue", "Marcar entregue");
+  if (["preparo", "pronta", "retirada"].includes(a.etapa) && !moto) ac += '<div style="width:100%"><label>Colar link do Uber</label><input type="text" id="atUber" value="' + esc(a.link_uber || "") + '"></div>' + B("uber", "Salvar o link");
+  if (["retirada", "entregue"].includes(a.etapa) && !moto && !a.uber_fim) ac += '<div style="width:100%"><label>Horário do encerramento da corrida (ver no Uber)</label><input type="datetime-local" id="atUberFim" value="' + dtLocal() + '"></div>' + B("uberFim", "Confirmar encerramento da corrida", " ");
+  if (a.etapa === "entregue") ac += B("concluido", "Concluir");
+  if (!["concluido", "cancelado"].includes(a.etapa)) ac += B("cancelar", "Cancelar atendimento", "perigo"); else ac += B("reabrir", "Reabrir");
+  const avisoUber = !moto && ["preparo", "pronta"].includes(a.etapa) && !a.link_uber ? '<div class="cx" style="background:#FBF0DC;margin:8px 0"><b>Esta entrega será por Uber. Chamar o Uber e acrescentar o link da corrida.</b></div>' : "";
+  abrirGaveta("Atendimento " + a.id, avisoUber + '<dl class="dl"><dt>Destino</dt><dd>' + esc(a.destino) + (a.endereco ? "<br><small>" + esc(a.endereco) + "</small>" : "") + "</dd>" + (a.paciente ? "<dt>Paciente</dt><dd>" + esc(a.paciente) + "</dd>" : "") + (a.solicitante ? "<dt>Solicitante</dt><dd>" + esc(a.solicitante) + "</dd>" : "") + "<dt>Transporte</dt><dd>" + (moto ? "Motoboy terceirizado" : "Uber") + (a.link_uber ? ' · <a href="' + esc(a.link_uber) + '" target="_blank" rel="noopener">abrir a corrida</a>' : "") + "</dd><dt>Etapa</dt><dd>" + esc(ROT_AT[a.etapa] || a.etapa) + "</dd>" +
+    (am.buscar != null ? "<dt>Amostra</dt><dd>" + (am.buscar ? "buscar em " + esc(am.local || "") + (am.prazoBusca ? " até " + esc(hora(am.prazoBusca)) : "") : "já estava no CVH") + (am.buscadaEm ? "<br><small>buscada " + esc(hora(am.buscadaEm)) + "</small>" : "") + (am.chegouEm ? "<br><small>chegou " + esc(hora(am.chegouEm)) + "</small>" : "") + (am.previsaoTestes ? "<br><small>testes previstos " + esc(hora(am.previsaoTestes)) + "</small>" : "") + "</dd>" : "") +
+    (r ? "<dt>Caixa</dt><dd>" + esc(r.id) + " · " + esc(ROT_REM[r.situacao] || r.situacao) + (r.recebida_em ? "<br><small>QR lido pela " + esc(r.destino) + " " + esc(hora(r.recebida_em)) + "</small>" : "") + "</dd>" : "") + (a.uber_fim ? "<dt>Corrida encerrada</dt><dd>" + esc(hora(a.uber_fim)) + "</dd>" : "") + "</dl>" +
+    '<div class="bts">' + ac + '</div><div id="atForm"></div><h2 style="margin-top:16px">Linha do tempo</h2>' + (a.linha || []).slice().reverse().map((x) => '<div class="ev"><b>' + esc(ROT_AT[x.etapa] || x.etapa) + "</b> <small>" + esc(hora(x.em)) + " · " + esc(x.por) + "</small></div>").join("") +
+    '<h2 style="margin-top:16px">Dados</h2>' + formAtendimento(a));
+}
+
+/* ── remessas e Intensivet ── */
+const ROT_REM = { preparo: "Em preparo", transito: "Em trânsito", entregue: "Entregue, aguardando leitura da caixa", recebida: "Recebida, guardando", concluida: "Concluída", cancelada: "Cancelada" };
+const COR_REM = { preparo: "", transito: "av", entregue: "al", recebida: "av", concluida: "ok", cancelada: "ne" };
+const ativaRem = (r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao);
+function telaRemessas() {
+  const L = S.rem;
+  return '<div class="bts" style="margin-bottom:12px"><button class="btn" data-a="remNova">Nova remessa</button></div><div class="cx"><h2>Remessas</h2>' + (L.length ? L.map((r) => '<div class="linha" data-a="rem" data-v="' + esc(r.id) + '" style="cursor:pointer;padding:10px 0;border-top:1px solid var(--areia)"><b>' + esc(r.id) + "</b> · " + esc(r.destino) + " · " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ' <span class="chip ' + COR_REM[r.situacao] + '">' + esc(ROT_REM[r.situacao] || r.situacao) + "</span><br><small>" + esc(r.unidades.join(", ")) + " · " + esc(hora(r.criado)) + "</small></div>").join("") : '<p class="vazio">Nenhuma remessa nos últimos 30 dias.</p>') + "</div>";
+}
+function abrirRemNova() {
+  const L = S.uni.filter((u) => ["disponivel", "reservada"].includes(u.situacao) && (u.local || "CVH") === "CVH" && !S.rem.some((r) => ativaRem(r) && r.unidades.includes(u.id)));
+  S.sel = {};
+  abrirGaveta("Nova remessa", '<label>Destino</label><input type="text" id="rDest" value="Intensivet"><label>Finalidade</label><input type="text" id="rFin" value="Estoque de emergência"><h2 style="margin-top:14px">Bolsas</h2>' +
+    (L.length ? L.map((u) => '<label class="op" style="display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:6px 0"><input type="checkbox" data-sel="' + esc(u.id) + '"> <span>' + esc(u.id) + " · " + esc(tipoTxt(animalDe(u.animal_id))) + "<br><small>" + esc(NOME_COMP[u.componente] || u.componente) + " · validade " + esc(br(String(u.validade || "").slice(0, 10))) + (u.situacao === "reservada" ? " · reservada " + esc(u.reserva || "") : "") + "</small></span></label>").join("") : '<p class="vazio">Nenhuma bolsa disponível no CVH.</p>') +
+    '<div class="bts" style="margin-top:12px"><button class="btn" data-a="remCriar">Preparar a remessa</button><button class="btn sec" data-a="camera">Ler as bolsas com a câmera</button></div><p><small>Preparar não tira as bolsas do estoque. A saída só vale quando você confirmar a saída física da caixa.</small></p>');
+}
+async function qrHtml(t) { try { return await ponte("qr", t); } catch (e) { return ""; } }
+async function abrirRem(id) {
+  const r = S.rem.find((x) => x.id === id); if (!r) return; S.remAberta = id;
+  const bt = (a, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="' + a + '" data-v="' + esc(r.id) + '">' + t + "</button>";
+  let ac = "";
+  if (r.situacao === "preparo") ac = bt("remSaida", "Confirmar a saída da caixa", " ") + bt("remCancelar", "Cancelar", "perigo");
+  if (r.situacao === "transito") ac = bt("remEntrega", "Marcar entregue agora") + bt("remUber", "Link do Uber");
+  if (r.situacao === "preparo" || r.situacao === "transito") ac += bt("remQR", "Etiqueta do QR da caixa");
+  const us = r.unidades.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean);
+  abrirGaveta("Remessa " + r.id, '<dl class="dl"><dt>Destino</dt><dd>' + esc(r.destino) + "</dd><dt>Finalidade</dt><dd>" + esc(r.finalidade || "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_REM[r.situacao] || r.situacao) + "</dd><dt>Preparada</dt><dd>" + esc(hora(r.criado)) + " · " + esc(r.criado_por) + "</dd>" +
+    (r.saida_em ? "<dt>Saída</dt><dd>" + esc(hora(r.saida_em)) + (r.modalidade ? " · " + esc(r.modalidade) : "") + "</dd>" : "") + (r.link_uber ? '<dt>Uber</dt><dd><a href="' + esc(r.link_uber) + '" target="_blank" rel="noopener">acompanhar</a></dd>' : "") +
+    (r.entrega_em ? "<dt>Entrega</dt><dd>" + esc(hora(r.entrega_em)) + "</dd>" : "") + (r.recebida_em ? "<dt>Recebida</dt><dd>" + esc(hora(r.recebida_em)) + " · " + esc(r.recebida_por) + " (" + (r.recebida_setor === "recepcao" ? "recepção" : "internação") + ")" + (r.fotoUrl ? '<br><a href="' + esc(r.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(r.fotoUrl) + '" alt="Foto de quem recebeu" style="width:110px;height:110px;object-fit:cover;border-radius:12px;margin-top:6px;border:1px solid var(--areia2)"></a><br><small>Foto de quem recebeu (acesso restrito). Toque para ampliar.</small>' : r.recebida_em && S.admin && !r.foto_recebimento ? "<br><small>Sem foto (a câmera da frente não abriu no celular)</small>" : "") + "</dd>" : "") + "</dl>" +
+    '<div class="bts">' + ac + '</div><div id="rForm"></div><h2 style="margin-top:16px">Bolsas</h2>' + us.map((u) => { const g = (u.dados || {}).guarda; return '<div class="ev" data-a="uni" data-v="' + esc(u.id) + '" style="cursor:pointer"><b>' + esc(u.id) + "</b> · " + esc(ROT_SIT[u.situacao] || u.situacao) + (g ? "<br><small>" + esc(g.nome) + (g.minutos != null ? " · " + g.minutos + " min" + (g.noPrazo ? "" : ", fora do prazo") : "") + (g.foto ? " · com foto" : " · falta a foto") + "</small>" : "") + "</div>"; }).join(""));
+}
+function imprimir(titulo, corpo) {
+  imprimirDoc(titulo, '<style>@page{size:A4;margin:14mm}body{font-family:"Proza Libre",Georgia,serif;color:#2b2320;margin:0}.et{display:inline-block;width:88mm;border:1px dashed #C6B098;border-radius:4mm;padding:6mm;margin:0 4mm 6mm 0;text-align:center;vertical-align:top;page-break-inside:avoid}.et svg{width:52mm;height:52mm}.et b{display:block;font-size:20pt;color:#5F130F;letter-spacing:.06em}.et small{display:block;font-size:10pt;margin-top:2mm}</style>' + corpo);
+}
+// etiquetas de QR (caixa da remessa e equipamentos) em PDF no tamanho da etiqueta: funciona no iPhone (Compartilhar, Imprimir)
+async function pdfQrEtiquetas(itens, f) {
+  const L = await carregarPdfLib(), F = FORMATOS[f], K = 72 / 25.4, doc = await L.PDFDocument.create();
+  const fn = await doc.embedFont(L.StandardFonts.Helvetica), fb = await doc.embedFont(L.StandardFonts.HelveticaBold), preto = L.rgb(0, 0, 0);
+  for (const it of itens) {
+    const pg = doc.addPage([F.w * K, F.h * K]), H = F.h, mg = f === "z50" ? 2 : 6;
+    const tx = (t, x, y, tam, b, centro) => { t = txtPdf(t); const fo = b ? fb : fn; let w = fo.widthOfTextAtSize(t, tam); const max = (centro ? F.w - 2 * mg : F.w - x - mg) * K; if (w > max) { tam *= max / w; w = max; } pg.drawText(t, { x: centro ? (F.w * K - w) / 2 : x * K, y: (H - y) * K, size: tam, font: fo, color: preto }); };
+    const ret = (x, y, w, h) => pg.drawRectangle({ x: x * K, y: (H - y - h) * K, width: w * K, height: h * K, color: preto });
+    const qr = async (x, y, lado) => { const sv = await qrHtml(it.codigo), n = +((sv.match(/viewBox="-1 -1 (\d+)/) || [])[1] || 0) - 2; if (!n) return; const m = lado / (n + 2); for (const r of sv.matchAll(/M(\d+) (\d+)h(\d+)/g)) ret(x + (+r[1] + 1) * m, y + (+r[2] + 1) * m, +r[3] * m, m); };
+    if (f === "z50") { await qr(1.5, 1.5, 27); tx("CVH", 30, 6, 8, true); tx(it.codigo, 30, 13.5, 12, true); (it.linhas || []).slice(0, 3).forEach((l, i) => tx(l, 30, 18.5 + i * 3.4, 6.2)); }
+    else { const lq = Math.min(F.w - 2 * mg, F.h - 50); tx("CVH · Centro Veterinário de Hemoterapia", 0, mg + 6, 11, true, true); await qr((F.w - lq) / 2, mg + 10, lq); let y = mg + 14 + lq; tx(it.codigo, 0, y + 9, 28, true, true); y += 16; (it.linhas || []).forEach((l) => { tx(l, 0, y, 11, false, true); y += 6; }); }
+  }
+  return doc.saveAsBase64();
+}
+function escolherQr(tipo, id) {
+  const f = fmtEtq();
+  return '<div class="cx" style="margin-top:12px"><h2>' + (tipo === "caixa" ? "QR da caixa " + esc(id) : id ? "QR do equipamento " + esc(id) : "QR dos equipamentos") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="qrFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><div class="bts"><button class="btn peq" data-a="qrPdf" data-t="' + tipo + '" data-v="' + esc(id || "") + '">Gerar PDF para imprimir</button><button class="btn sec peq" data-a="qrDireto" data-t="' + tipo + '" data-v="' + esc(id || "") + '">Imprimir direto (computador)</button></div><p><small>No celular, abra o PDF e use Compartilhar, Imprimir. Cole a etiqueta do lado de fora da caixa.</small></p></div>';
+}
+const itensQr = (tipo, id) => tipo === "caixa" ? (() => { const r = S.rem.find((x) => x.id === id); return r ? [{ codigo: r.id, linhas: ["Destino " + r.destino, r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas"), "Leia o QR antes de abrir"] }] : []; })() : S.eq.filter((e) => e.ativo && (!id || e.id === id)).map((e) => ({ codigo: e.id, linhas: [e.nome, e.local, (e.aceita || []).join(", ")] }));
+async function gerarPdfQr(tipo, id) {
+  const it = itensQr(tipo, id); if (!it.length) return toast("Nada para imprimir.");
+  toast("Gerando o PDF…", 15000);
+  try { const b64 = await pdfQrEtiquetas(it, fmtEtq()); await ponte("baixar", (tipo === "caixa" ? "Caixa " + id : id ? "QR " + id : "QR dos equipamentos") + " " + FORMATOS[fmtEtq()].nome.replace(/ × /g, "x") + ".pdf", b64); toast("PDF pronto. Imprima em tamanho real (100%).", 6000); } catch (e) { toast(e.message || String(e), 7000); }
+}
+async function imprimirQRRem(r) { const q = await qrHtml(r.id); imprimir("Caixa " + r.id, '<div class="et">' + q + "<b>" + esc(r.id) + "</b><small>CVH · " + esc(r.destino) + "<br>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + " · leia o QR antes de abrir a caixa</small></div>"); }
+async function imprimirQREq(lista) { let h = ""; for (const e of lista) h += '<div class="et">' + (await qrHtml(e.id)) + "<b>" + esc(e.id) + "</b><small>" + esc(e.nome) + " · " + esc(e.local) + "<br>" + esc((e.aceita || []).join(", ")) + "</small></div>"; imprimir("QR dos equipamentos", h); }
+/* ── registros da Intensivet (só administrador): recebimentos, guardas, estoque, uso e conferência das fotos ── */
+const ROT_EVI = { "remessa:criada": "Remessa preparada", "remessa:saida": "Saída da caixa", "remessa:entrega": "Entrega registrada", "remessa:recebida": "Caixa recebida", "remessa:uber": "Link do Uber", "remessa:cancelar": "Remessa cancelada", "unidade:saida": "Bolsa saiu do CVH", "unidade:guardada": "Guardada", "unidade:fotoGuarda": "Foto da guarda", "unidade:retirada": "Retirada para uso", "unidade:retiradaCancelada": "Retirada cancelada", "unidade:transfusaoCorrigida": "Transfundido corrigido", "unidade:transfundida": "Transfundida", "unidade:devolvida": "Devolvida ao CVH", "unidade:receberDevolucao": "Devolução conferida no CVH", "ocorrencia": "Ocorrência" };
+const minEntre = (a, b) => a && b ? Math.round((Date.parse(b) - Date.parse(a)) / 6e4) : null;
+async function abrirRegistros(dias) {
+  S.intVista = "registros"; S.regDias = dias || S.regDias || 30;
+  $("#app").querySelector("#intCorpo").innerHTML = '<p class="vazio">Carregando os registros…</p>';
+  try { S.reg = await est("estRegistrosIntensivet", S.regDias); pintar(); } catch (e) { toast(e.message, 6000); S.intVista = ""; pintar(); }
+}
+function fotoCard(tipo, id, src, titulo, linhas, conf) {
+  return '<div class="cx" style="padding:10px;margin:0"><a href="' + esc(src) + '" target="_blank" rel="noopener"><img src="' + esc(src) + '" alt="' + esc(titulo) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:var(--areia)"></a><b style="display:block;margin-top:6px">' + esc(titulo) + "</b><small>" + linhas.map(esc).join("<br>") + "</small>" +
+    (conf ? '<div style="margin-top:6px"><span class="chip ' + (conf.ok ? "ok" : "al") + '">' + (conf.ok ? "Conferida" : "Problema") + "</span> <small>" + esc(conf.por) + " · " + esc(hora(conf.em)) + (conf.obs ? "<br>" + esc(conf.obs) : "") + "</small></div>" : '<input type="text" id="fo-' + esc(tipo + id) + '" placeholder="Observação (opcional)" style="margin-top:6px;padding:8px;font-size:14px"><div class="bts" style="margin-top:6px"><button class="btn peq" data-a="fotoOk" data-t="' + tipo + '" data-v="' + esc(id) + '">Conferida</button><button class="btn perigo peq" data-a="fotoProb" data-t="' + tipo + '" data-v="' + esc(id) + '">Problema</button></div>') + "</div>";
+}
+function telaRegistros() {
+  const R = S.reg; if (!R) return '<p class="vazio">Carregando…</p>';
+  const uniR = (id) => R.unidades.find((u) => u.id === id), setor = (x) => x === "recepcao" ? "recepção" : x === "internacao" ? "internação" : x || "";
+  const filtro = '<div class="filtros">' + [7, 30, 90, 365].map((d) => '<button class="' + (R.dias === d ? "on" : "") + '" data-a="regDias" data-v="' + d + '">' + (d === 365 ? "1 ano" : d + " dias") + "</button>").join("") + "</div>";
+  // fotos
+  const fotos = [];
+  R.remessas.filter((r) => r.foto_recebimento).forEach((r) => fotos.push({ conf: (r.dados || {}).fotoConferida, h: fotoCard("recebimento", r.id, r.fotoUrl, "Recebeu: " + (r.recebida_por || ""), ["Caixa " + r.id + " · " + setor(r.recebida_setor), hora(r.recebida_em)], (r.dados || {}).fotoConferida) }));
+  R.unidades.filter((u) => u.dados && u.dados.guarda && u.dados.guarda.foto).forEach((u) => { const g = u.dados.guarda; fotos.push({ conf: g.conferida, h: fotoCard("guarda", u.id, g.fotoUrl, "Guarda: " + u.id, [g.nome + " · " + hora(g.em), (g.minutos != null ? g.minutos + " min " + (g.noPrazo ? "(no prazo)" : "(fora do prazo)") : "") + " · " + (g.por || "")], g.conferida) }); });
+  const pend = fotos.filter((f) => !f.conf);
+  let h = '<div class="bts" style="margin-bottom:10px"><button class="btn sec peq" data-a="regSair">‹ Voltar à Intensivet</button></div><div class="cx" style="border-color:var(--vinho)"><h2>Registros da Intensivet</h2><p class="nota">Área restrita ao administrador. As fotos de quem recebeu ficam só aqui.</p>' + filtro + "</div>";
+  h += '<div class="cx"><h2>Fotos para conferir · ' + pend.length + '</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">' + (pend.length ? pend.map((f) => f.h).join("") : '<p class="vazio">Nenhuma foto pendente.</p>') + "</div>" +
+    (fotos.length > pend.length ? '<details style="margin-top:10px"><summary>Fotos já conferidas · ' + (fotos.length - pend.length) + '</summary><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px">' + fotos.filter((f) => f.conf).map((f) => f.h).join("") + "</div></details>" : "") + "</div>";
+  // recebimentos
+  h += '<div class="cx"><h2>Recebimentos</h2>' + (R.remessas.length ? R.remessas.map((r) => {
+    const us = (r.unidades || []).map(uniR).filter(Boolean), d = r.dados || {}, espera = minEntre(r.entrega_em, r.recebida_em);
+    return '<div class="ev"><b>Caixa ' + esc(r.id) + "</b> · " + esc(r.destino) + " · " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ' <span class="chip ' + (COR_REM[r.situacao] || "") + '">' + esc(ROT_REM[r.situacao] || r.situacao) + "</span><br><small>" +
+      ["Preparada " + hora(r.criado) + " · " + r.criado_por, r.saida_em ? "Saída " + hora(r.saida_em) + (r.modalidade ? " · " + r.modalidade : "") : "", d.uberFim ? "Corrida encerrada " + hora(d.uberFim) : r.entrega_em ? "Entrega " + hora(r.entrega_em) : "", r.recebida_em ? "QR da caixa lido " + hora(r.recebida_em) + " · " + (r.recebida_por || "") + " (" + setor(r.recebida_setor) + ")" + (espera != null && espera > 0 ? " · " + espera + " min depois da entrega" : "") : ""].filter(Boolean).map(esc).join("<br>") +
+      (us.length ? "<br>" + us.map((u) => { const g = (u.dados || {}).guarda; return esc(u.id) + (g ? " → " + esc(g.nome) + " " + esc(hora(g.em)) + (g.minutos != null ? ' <span class="chip ' + (g.noPrazo ? "ok" : "al") + '">' + g.minutos + " min</span>" : "") + (g.foto ? "" : " · sem foto") : u.situacao === "transito" ? " · guarda pendente" : ""); }).join("<br>") : "") + "</small></div>";
+  }).join("") : '<p class="vazio">Nenhuma remessa no período.</p>') + "</div>";
+  // estoque atual
+  const est = R.unidades.filter((u) => u.local === "Intensivet" && !["utilizada", "descartada"].includes(u.situacao));
+  h += '<div class="cx"><h2>Estoque na Intensivet · ' + est.length + "</h2>" + (est.length ? est.map((u) => { const g = (u.dados || {}).guarda || {}; return '<div class="ev" data-a="uni" data-v="' + esc(u.id) + '" style="cursor:pointer"><b>' + esc(u.id) + "</b> · " + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "<br><small>" + esc(u.equipamento || "") + (g.em ? " · entrou " + esc(hora(g.em)) : "") + " · validade " + esc(br(String(u.validade || "").slice(0, 10))) + (u.volume_ml ? " · " + fmt(u.volume_ml) + " mL" : "") + "</small></div>"; }).join("") : '<p class="vazio">Nenhuma bolsa.</p>') + "</div>";
+  // uso, devoluções e ocorrências
+  const usos = R.eventos.filter((e) => /retirada|transfund|Corrigida|devolvida|receberDevolucao|ocorrencia/.test(e.tipo));
+  h += '<div class="cx"><h2>Uso, devoluções e ocorrências</h2>' + (usos.length ? usos.map((e) => { const d = e.dados || {}; return '<div class="ev"><b>' + esc(ROT_EVI[e.tipo] || e.tipo) + "</b> · " + esc(e.unidade_id || d.alvo || "") + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + ([d.paciente, d.vet, d.contato === "ciente" ? "responsável ciente" : d.contato === "aguardar" ? "aguardar o veterinário" : "", d.texto].filter(Boolean).length ? "<br><small>" + esc([d.paciente, d.vet, d.contato === "ciente" ? "responsável ciente" : d.contato === "aguardar" ? "aguardar o veterinário" : "", d.texto].filter(Boolean).join(" · ")) + "</small>" : "") + "</div>"; }).join("") : '<p class="vazio">Nada no período.</p>') + "</div>";
+  // linha do tempo completa
+  h += '<details class="cx"><summary><b>Todos os registros do período · ' + R.eventos.length + "</b></summary>" + R.eventos.map((e) => '<div class="ev"><b>' + esc(ROT_EVI[e.tipo] || e.tipo) + "</b> · " + esc(e.unidade_id || (e.dados || {}).remessa || "") + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small></div>").join("") + "</details>";
+  // celulares
+  h += '<div class="cx"><h2>Celulares ativados</h2>' + R.aparelhos.map((a) => '<div class="ev"><b>' + esc(a.nome) + "</b> · " + esc(setor(a.setor)) + (a.ativo ? "" : " · desativado") + " <small>ativado " + esc(hora(a.criado)) + (a.ultimo_uso ? " · último uso " + esc(hora(a.ultimo_uso)) : "") + "</small></div>").join("") + "</div>";
+  return h;
+}
+function telaIntensivet() {
+  if (S.intVista === "registros" && S.admin) return '<div id="intCorpo">' + telaRegistros() + "</div>";
+  const loc = (u) => u.local === "Intensivet";
+  const est = S.uni.filter((u) => loc(u) && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao));
+  const volta = S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || ""));
+  const caminho = S.uni.filter((u) => u.situacao === "transito" && !/CVH/.test(u.local || ""));
+  const usadas = S.uni.filter((u) => loc(u) && u.situacao === "utilizada").slice(0, 20);
+  const cont = (c) => est.filter((u) => u.componente === c && u.situacao === "disponivel").length;
+  let h = (S.admin ? '<div class="bts" style="margin-bottom:10px"><button class="btn" data-a="regAbrir">Registros da Intensivet</button></div>' : "") + '<div id="intCorpo"></div><div class="kpis">' + ["CH", "PFC", "CRIO", "CP"].map((c) => '<div class="kpi"><b>' + cont(c) + "</b><span>" + c + " disponível na Intensivet</span></div>").join("") + "</div>";
+  if (volta.length) h += '<div class="cx"><h2>Voltando para o CVH</h2>' + volta.map(linhaUnidade).join("") + "<p><small>Abra a bolsa e confirme a devolução quando chegar.</small></p></div>";
+  if (caminho.length) h += '<div class="cx"><h2>A caminho da Intensivet</h2>' + caminho.map(linhaUnidade).join("") + "</div>";
+  h += '<div class="cx"><h2>Estoque na Intensivet · ' + est.length + "</h2>" + (est.length ? est.map(linhaUnidade).join("") : '<p class="vazio">Nenhuma bolsa.</p>') + "</div>";
+  if (usadas.length) h += '<div class="cx"><h2>Transfundidas</h2>' + usadas.map(linhaUnidade).join("") + "</div>";
+  h += '<div class="cx"><h2>Equipamentos e câmaras de conservação</h2>' + S.eq.map((e) => '<div class="ev"><b>' + esc(e.nome) + "</b> · " + esc(e.local) + " <small>" + esc(e.id) + " · " + esc((e.aceita || []).join(", ")) + (e.ativo ? "" : " · desativado") + "</small>" + (S.admin ? ' <button class="btn sec peq" data-a="eqEditar" data-v="' + esc(e.id) + '">Editar</button>' : "") + ' <button class="btn sec peq" data-a="eqQR1" data-v="' + esc(e.id) + '">QR</button></div>').join("") + '<div class="bts">' + (S.admin ? '<button class="btn peq" data-a="eqNovo">Novo equipamento</button>' : "") + '<button class="btn sec peq" data-a="eqQR">QR de todos para imprimir</button></div><div id="eqQrBox"></div></div>';
+  if (S.admin) { const nt = S.uni.filter((u) => /^TESTE-/.test(u.id)).length; h += '<div class="cx" style="border-style:dashed"><h2>Teste do fluxo</h2><p class="nota">Cria três bolsas de teste (CH, PFC e CRIO, código TESTE-…) para treinar a remessa, os celulares da Intensivet e o motoboy sem mexer no estoque real. No fim, apague tudo do teste.</p><div class="bts"><button class="btn peq" data-a="testeCriar">Criar bolsas de teste</button>' + (nt ? '<button class="btn perigo peq" data-a="testeLimpar">Apagar tudo do teste (' + nt + " bolsas)</button>" : "") + "</div></div>"; }
+  if (S.admin) h += '<div class="cx"><h2>Celulares da Intensivet</h2>' + (S.ap.filter((a) => a.ativo).map((a) => '<div class="ev"><b>' + esc(a.nome) + "</b> · " + (a.setor === "recepcao" ? "recepção" : "internação") + " <small>ativado " + esc(hora(a.criado)) + (a.ultimo_uso ? " · último uso " + esc(hora(a.ultimo_uso)) : " · ainda não usado") + '</small> <button class="btn perigo peq" data-a="apDesativar" data-v="' + esc(a.token) + '">Desativar</button></div>').join("") || '<p class="vazio">Nenhum celular ativado.</p>') +
+    '<div class="bts"><button class="btn peq" data-a="apNovo" data-v="recepcao">Ativar celular da recepção</button><button class="btn peq" data-a="apNovo" data-v="internacao">Ativar celular da internação</button></div><div id="apLink"></div></div>';
+  return h;
+}
+async function recarregar() { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; pintar(); }
+
+function telaHist() {
+  return '<div class="cx"><h2>Últimos registros</h2>' + (S.ev.length ? S.ev.slice(0, 120).map((e) => '<div class="ev"><b>' + esc(rotEvento(e.tipo)) + "</b> · " + esc(e.unidade_id || "coleta " + e.coleta) + " <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + detEvento(e) + "</div>").join("") : '<p class="vazio">Sem registros.</p>') + "</div>";
+}
+function pintar() {
+  const nP = pendencias().filter((x) => x.n <= 1).length;
+  const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
+  const abas = PROD ? aba("hoje", "Para fazer hoje", nP) + aba("prod", "Coletas") + aba("frac", "Fracionamento") + aba("hist", "Histórico")
+    : aba("hoje", "Resolver hoje", nP) + aba("estoque", "Bolsas") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico");
+  const ok = PROD ? ["hoje", "prod", "frac", "hist"] : ["hoje", "estoque", "rem", "int", "hist"]; if (!ok.includes(S.aba)) S.aba = "hoje";
+  $("#app").innerHTML = '<div class="topo"><h1>' + (PROD ? "Produção<small>Bancada: coletas, fracionamento, CRIO, congelamento e etiquetas</small>" : "Estoque<small>Bolsas prontas, liberação, validades, remessas e Intensivet</small>") + '</h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div>' + kpis() + '<nav class="abas">' + abas + "</nav>" +
+    ({ hoje: PROD ? telaHojeProd : telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
+}
+
+/* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
+const C128 = "212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112".split(" ");
+// Code 128 B: lido por qualquer leitor de código de barras; o QR ao lado é para a câmera do celular
+function code128Larg(txt) {
+  const v = [104]; for (const ch of String(txt)) { const c = ch.charCodeAt(0) - 32; if (c < 0 || c > 94) continue; v.push(c); }
+  v.push(v.reduce((s, x, i) => s + x * (i || 1), 0) % 103); v.push(106);
+  return v.map((x) => C128[x]).join("").split("").map(Number);
+}
+function code128Svg(txt, alt) {
+  const larg = code128Larg(txt), tot = larg.reduce((a, b) => a + b, 0) + 20;
+  let x = 10, d = ""; larg.forEach((w, i) => { if (i % 2 === 0) d += "M" + x + " 0h" + w + "v40h-" + w + "z"; x += w; });
+  return '<svg class="bc" viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="height:' + (alt || 8) + 'mm"><rect width="' + tot + '" height="40" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+}
+const FORMATOS = {
+  z50: { nome: "Zebra 50 × 30 mm", w: 50, h: 30 },
+  zg: { nome: "Zebra grande 100 × 150 mm", w: 100, h: 150 },
+  b100: { nome: "Brother 100 × 100 mm", w: 100, h: 100 },
+};
+const fmtEtq = () => { try { return localStorage.getItem("cvh_etq") || "z50"; } catch (e) { return "z50"; } };
+const CONSERVA = { CH: "Conservar entre 2 e 6 °C", PFC: "Conservar a −18 °C ou menos", CRIO: "Conservar a −18 °C ou menos", PPC: "Conservar a −18 °C ou menos", CP: "Conservar entre 20 e 24 °C, sob agitação" };
+function etiquetaHtml(u, f, qr) {
+  const a = animalDe(u.animal_id), D = u.dados || {}, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a);
+  const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
+  if (f === "z50") return '<div class="et p"><div class="l1"><b>CVH</b><span>' + esc(NOME_COMP[u.componente] || u.componente) + '</span></div><div class="id">' + esc(u.id) + '</div><div class="l2">' + esc(esp + (tipo ? " · " + tipo : "")) + '</div><div class="l2">' + esc([vol, col ? "col. " + col : ""].filter(Boolean).join(" · ")) + '</div><div class="l3">Validade ' + esc(val) + '</div><div class="cod">' + code128Svg(u.id, 6.2) + '<span class="q">' + qr + "</span></div></div>";
+  const g = f === "zg";
+  return '<div class="et g ' + f + '"><div class="cab"><b>CVH</b><span>Centro Veterinário de Hemoterapia<br>Brasília, DF · uso veterinário</span></div><div class="comp">' + esc(NOME_COMP[u.componente] || u.componente) + '</div><div class="id">' + esc(u.id) + '</div>' +
+    '<table><tr><td>Espécie</td><td>' + esc(esp) + "</td></tr><tr><td>Tipo sanguíneo</td><td><b>" + esc(tipo || "não informado") + "</b></td></tr><tr><td>Volume</td><td>" + esc(vol || "não informado") + (u.peso_g != null ? " (" + fmt(u.peso_g) + " g)" : "") + "</td></tr>" + (u.componente === "CH" && D.htFinal != null ? "<tr><td>Hematócrito</td><td>" + fmt(D.htFinal, 1) + "%</td></tr>" : "") +
+    "<tr><td>Coleta</td><td>" + esc(col) + "</td></tr><tr><td>Validade</td><td><b>" + esc(val) + "</b></td></tr>" + (u.mae_id ? "<tr><td>Fração de</td><td>" + esc(u.mae_id) + "</td></tr>" : "") + '</table><div class="cons">' + esc(CONSERVA[u.componente] || "") + '</div><div class="cod">' + code128Svg(u.id, g ? 14 : 11) + '<span class="q">' + qr + '</span></div><div class="rt">Responsável técnico Plínio Rossi · CRMV-DF 2703</div></div>';
+}
+const CSS_ETQ = {
+  z50: "@page{size:50mm 30mm;margin:0}.et.p{width:50mm;height:30mm;padding:1.4mm 2mm;overflow:hidden;page-break-after:always;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column}.p .l1{display:flex;justify-content:space-between;font-size:6.6pt;line-height:1.1}.p .l1 b{font-size:7.5pt;letter-spacing:.08em}.p .id{font-size:13pt;font-weight:800;line-height:1.05}.p .l2{font-size:6.6pt;line-height:1.15}.p .l3{font-size:7.4pt;font-weight:800;line-height:1.2}.p .cod{display:flex;align-items:flex-end;gap:1mm;margin-top:auto}.p .bc{flex:1;width:0}.p .q svg{width:9mm;height:9mm;display:block}",
+  g: ".et.g{padding:5mm;overflow:hidden;page-break-after:always;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column}.g .cab{display:flex;gap:3mm;align-items:center;border-bottom:.4mm solid #000;padding-bottom:2mm}.g .cab b{font-size:20pt;letter-spacing:.1em}.g .cab span{font-size:8pt;line-height:1.2}.g .comp{font-size:13pt;font-weight:800;margin-top:2mm}.g .id{font-size:24pt;font-weight:800;line-height:1.05}.g table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-top:1.5mm}.g td{padding:.6mm 0;border-bottom:.2mm solid #999}.g td:first-child{width:38%;color:#333}.g .cons{font-size:9.5pt;font-weight:800;margin-top:2mm}.g .cod{display:flex;align-items:flex-end;gap:3mm;margin-top:auto}.g .bc{flex:1;width:0}.g .q svg{width:22mm;height:22mm;display:block}.g .rt{font-size:7.5pt;margin-top:1.5mm}",
+};
+// etiqueta em PDF no tamanho exato (vetorial: texto, barras e QR nítidos na térmica). No iPhone abre a tela do PDF com Compartilhar > Imprimir.
+let PDFLIB = null;
+function carregarPdfLib() { if (window.PDFLib) return Promise.resolve(window.PDFLib); if (PDFLIB) return PDFLIB; PDFLIB = new Promise((ok, erro) => { const tenta = (src, depois) => { const sc = document.createElement("script"); sc.src = src; sc.onload = () => window.PDFLib ? ok(window.PDFLib) : depois(); sc.onerror = depois; document.head.appendChild(sc); }; let local = "bibliotecas/pdf-lib.min.js"; try { local = new URL(local, window.parent.location.href).href; } catch (e) {} tenta(local, () => tenta("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js", () => { PDFLIB = null; erro(new Error("Não consegui carregar o gerador de PDF. Confira a internet.")); })); }); return PDFLIB; }
+const tipoEtq = (a) => tipoTxt(a).replace(/\s*−/g, " NEG").replace(/\s*\+/g, " POS");
+const txtPdf = (t) => String(t == null ? "" : t).replace(/[−–—]/g, "-").replace(/[^\x20-\x7E -ÿ]/g, "");
+async function pdfEtiquetas(us, f) {
+  const L = await carregarPdfLib(), F = FORMATOS[f], K = 72 / 25.4, doc = await L.PDFDocument.create();
+  const fn = await doc.embedFont(L.StandardFonts.Helvetica), fb = await doc.embedFont(L.StandardFonts.HelveticaBold), preto = L.rgb(0, 0, 0);
+  doc.setTitle("Etiquetas CVH"); doc.setCreator("Painel CVH");
+  for (const u of us) {
+    const pg = doc.addPage([F.w * K, F.h * K]), H = F.h;
+    const tx = (t, x, y, tam, b, dir) => { t = txtPdf(t); const fo = b ? fb : fn; let w = fo.widthOfTextAtSize(t, tam); const max = (F.w - 2 * mg) * K; if (w > max) { tam = tam * max / w; w = max; } pg.drawText(t, { x: (dir ? x * K - w : x * K), y: (H - y) * K, size: tam, font: fo, color: preto }); };
+    const ret = (x, y, w, h) => pg.drawRectangle({ x: x * K, y: (H - y - h) * K, width: w * K, height: h * K, color: preto });
+    const barras = (x, y, w, h) => { const lg = code128Larg(u.id), tot = lg.reduce((a, b) => a + b, 0) + 8, m = w / tot; let p = x + 4 * m; lg.forEach((l, i) => { if (i % 2 === 0) ret(p, y, l * m, h); p += l * m; }); };
+    const qr = async (x, y, lado) => { const sv = await qrHtml(u.id), n = +((sv.match(/viewBox="-1 -1 (\d+)/) || [])[1] || 0) - 2; if (!n) return; const m = lado / (n + 2); for (const r of sv.matchAll(/M(\d+) (\d+)h(\d+)/g)) ret(x + (+r[1] + 1) * m, y + (+r[2] + 1) * m, +r[3] * m, m); };
+    const a = animalDe(u.animal_id), D = u.dados || {}, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoEtq(a), comp = NOME_COMP[u.componente] || u.componente;
+    const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
+    var mg = f === "z50" ? 2 : 5;
+    if (f === "z50") {
+      tx("CVH", 2, 4.2, 7.5, true); tx(comp, 48, 4.2, 6.2, false, true);
+      tx(u.id, 2, 9.6, 13, true);
+      tx(esp + (tipo ? " · " + tipo : ""), 2, 12.8, 6.6, true);
+      tx([vol, col ? "col. " + col : ""].filter(Boolean).join(" · "), 2, 15.6, 6.4);
+      tx("Validade " + val, 2, 18.9, 7.4, true);
+      barras(2, 20.6, 36, 7.6); await qr(39.2, 19.6, 9);
+    } else {
+      const g = F.h > 120;
+      tx("CVH", 5, 12, 22, true); tx("Centro Veterinário de Hemoterapia", 30, 8.5, 8.5); tx("Brasília, DF · uso veterinário", 30, 12.3, 8.5);
+      ret(5, 15, F.w - 10, 0.4);
+      tx(comp, 5, 22.5, 13, true); tx(u.id, 5, 33, 26, true);
+      const lin = [["Espécie", esp], ["Tipo sanguíneo", tipo || "não informado"], ["Volume", (vol || "não informado") + (u.peso_g != null ? " (" + fmt(u.peso_g) + " g)" : "")]];
+      if (u.componente === "CH" && D.htFinal != null) lin.push(["Hematócrito", fmt(D.htFinal, 1) + "%"]);
+      lin.push(["Coleta", col], ["Validade", val]); if (u.mae_id) lin.push(["Fração de", u.mae_id]);
+      let y = 39; const passo = g ? 7.2 : 5.6;
+      for (const [k, v] of lin) { y += passo; tx(k, 5, y, g ? 11 : 9.5); tx(v, 40, y, g ? 11 : 9.5, k === "Tipo sanguíneo" || k === "Validade"); pg.drawLine({ start: { x: 5 * K, y: (H - y - 1.6) * K }, end: { x: (F.w - 5) * K, y: (H - y - 1.6) * K }, thickness: 0.4, color: L.rgb(0.6, 0.6, 0.6) }); }
+      tx(CONSERVA[u.componente] || "", 5, y + passo + 1.5, g ? 11 : 9.5, true);
+      const lq = g ? 30 : 22; await qr(F.w - 5 - lq, H - 10 - lq, lq); barras(5, H - 10 - (g ? 18 : 13), F.w - 15 - lq, g ? 18 : 13);
+      tx("Responsável técnico Plínio Rossi · CRMV-DF 2703", 5, H - 5, 7.5);
+    }
+  }
+  return doc.saveAsBase64();
+}
+async function imprimirEtiquetas(ids, f) {
+  f = f || fmtEtq(); const us = ids.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); if (!us.length) return toast("Nenhuma bolsa para etiquetar.");
+  toast("Gerando o PDF das etiquetas…", 15000);
+  try {
+    const b64 = await pdfEtiquetas(us, f), nome = "Etiquetas " + (us.length === 1 ? us[0].id : us.length + " bolsas") + " " + FORMATOS[f].nome.replace(/ × /g, "x") + ".pdf";
+    await ponte("baixar", nome, b64); toast("PDF pronto. Imprima em tamanho real (100%), na impressora de etiquetas.", 7000);
+  } catch (e) { toast(e.message || String(e), 7000); }
+}
+async function imprimirDireto(ids, f) {
+  f = f || fmtEtq(); const F = FORMATOS[f]; const us = ids.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); if (!us.length) return toast("Nenhuma bolsa para etiquetar.");
+  let h = ""; for (const u of us) h += etiquetaHtml(u, f, await qrHtml(u.id));
+  const css = f === "z50" ? CSS_ETQ.z50 : "@page{size:" + F.w + "mm " + F.h + "mm;margin:0}" + CSS_ETQ.g + ".et.g{width:" + F.w + "mm;height:" + F.h + "mm}";
+  imprimirDoc("Etiquetas", "<style>#impArea *{box-sizing:border-box}#impArea .et:last-child{page-break-after:auto}" + css + "</style>" + h);
+}
+// prévia na própria ficha
+async function previaEtiqueta(id, f) {
+  const el = $("#etqPrev"), u = S.uni.find((x) => x.id === id); if (!el || !u) return; f = f || fmtEtq(); const F = FORMATOS[f];
+  const css = (f === "z50" ? CSS_ETQ.z50 : CSS_ETQ.g + ".et.g{width:" + F.w + "mm;height:" + F.h + "mm}").replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "");
+  el.innerHTML = '<style>#etqPrev *{box-sizing:border-box}#etqPrev .et{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.18);margin:8px auto}' + css.replace(/\.(et|p|g)\b/g, (m) => m) + "</style>" + etiquetaHtml(u, f, await qrHtml(u.id));
+  const et = el.querySelector(".et"), larg = el.clientWidth - 4, w = et.getBoundingClientRect().width; if (w > larg) { et.style.transform = "scale(" + (larg / w) + ")"; et.style.transformOrigin = "top left"; el.style.height = et.getBoundingClientRect().height + 20 + "px"; }
+}
+// impressão na própria tela do módulo (como a ficha): só a área da impressão aparece no papel
+function imprimirDoc(titulo, corpo) {
+  let el = $("#impArea"); if (!el) { el = document.createElement("div"); el.id = "impArea"; document.body.appendChild(el); }
+  let st = $("#impEstilo"); if (st) st.remove();
+  st = document.createElement("style"); st.id = "impEstilo"; st.textContent = "@media screen{#impArea{display:none}}@media print{body>*:not(#impArea){display:none!important}#impArea{display:block}html,body{background:#fff!important;margin:0!important;padding:0!important}}";
+  document.head.appendChild(st); el.innerHTML = corpo;
+  const limpar = () => { el.innerHTML = ""; const x = $("#impEstilo"); if (x) x.remove(); window.removeEventListener("afterprint", limpar); };
+  window.addEventListener("afterprint", limpar);
+  const t0 = document.title; document.title = titulo;
+  setTimeout(() => { try { window.print(); } catch (e) { toast("A impressão está bloqueada neste aparelho. Abra o painel pelo navegador.", 7000); } document.title = t0; }, 60);
+}
+function escolherEtiqueta(ids) {
+  const f = fmtEtq();
+  return '<div class="cx" style="margin-top:12px"><h2>Etiquetas · ' + ids.length + (ids.length === 1 ? " bolsa" : " bolsas") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="etqFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><div id="etqPrev" data-id="' + esc(ids[0]) + '"></div><div class="bts"><button class="btn peq" data-a="etqImp" data-v="' + esc(ids.join("|")) + '">Gerar PDF para imprimir</button><button class="btn sec peq" data-a="etqDireto" data-v="' + esc(ids.join("|")) + '">Imprimir direto (computador)</button></div><p><small>' + (ids.length > 1 ? "A prévia mostra a primeira bolsa. " : "") + 'No celular, abra o PDF e use Compartilhar, Imprimir. No computador, imprima em tamanho real (100%).</small></p></div>';
+}
+
+/* ── leitor: o leitor de código de barras (USB ou Bluetooth) digita o código e um Enter em poucos milissegundos ── */
+let BIP = null;
+bip.liberar = () => { try { BIP = BIP || new (window.AudioContext || window.webkitAudioContext)(); if (BIP.state === "suspended") BIP.resume(); } catch (e) {} };
+function bip(ok) { try { BIP = BIP || new (window.AudioContext || window.webkitAudioContext)(); if (BIP.state === "suspended") BIP.resume(); const o = BIP.createOscillator(), g = BIP.createGain(), t = BIP.currentTime; o.type = "square"; o.frequency.value = ok === false ? 380 : 2700; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + (ok === false ? 0.35 : 0.09)); o.connect(g); g.connect(BIP.destination); o.start(t); o.stop(t + 0.4); } catch (e) {} }
+const LEIT = { buf: "", t0: 0, ult: 0 };
+document.addEventListener("keydown", (e) => {
+  const agora = performance.now();
+  if (e.key === "Enter") { const c = LEIT.buf; LEIT.buf = ""; if (c.length >= 4 && agora - LEIT.t0 < 40 * c.length + 120) { e.preventDefault(); if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) { const el = document.activeElement; el.value = el.value.slice(0, Math.max(0, el.value.length - c.length)); } lido(c); } return; }
+  if (e.key.length !== 1) return;
+  if (agora - LEIT.ult > 60) { LEIT.buf = ""; LEIT.t0 = agora; }
+  LEIT.ult = agora; LEIT.buf += e.key;
+}, true);
+function lido(txt) {
+  const c = String(txt).trim().replace(/^.*[?&](?:u|c|e)=/, ""), C = c.toUpperCase().replace(/\s+/g, " ");
+  const u = S.uni.find((x) => x.id.toUpperCase() === C), r = S.rem.find((x) => x.id === C);
+  // remessa em montagem: a leitura marca a bolsa
+  const cx = document.querySelector('[data-sel="' + (u ? u.id.replace(/"/g, "") : "") + '"]');
+  if (u && cx) { if (cx.checked) { bip(false); return toast(u.id + " já está na remessa."); } cx.checked = true; bip(); return toast(u.id + " marcada para a remessa.", 1500); }
+  if (u) { bip(); return abrirUnidade(u.id); }
+  if (r) { bip(); return abrirRem(r.id); }
+  bip(false); toast("Código não encontrado no estoque: " + c, 5000);
+}
+
+/* ── câmera do celular como leitor: bip na hora, sem confirmar; montando remessa, continua aberta para ler várias ── */
+let JSQR = null;
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta((() => { try { return new URL("bibliotecas/jsQR.js", window.parent.location.href).href; } catch (e) { return "bibliotecas/jsQR.js"; } })(), () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+
+// código de barras (Code 128) pela câmera quando o celular não tem leitor próprio (iPhone): ZXing na faixa do meio da imagem
+let ZXP = null;
+function carregarZX() {
+  if (window.ZXing) return Promise.resolve(window.ZXing); if (ZXP) return ZXP;
+  ZXP = new Promise((ok, erro) => { const tenta = (src, depois) => { const sc = document.createElement("script"); sc.src = src; sc.onload = () => window.ZXing ? ok(window.ZXing) : depois(); sc.onerror = depois; document.head.appendChild(sc); }; let local = "bibliotecas/zxing.min.js"; try { if (window.parent !== window) local = new URL(local, window.parent.location.href).href; } catch (e) {} tenta(local, () => tenta("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js", () => { ZXP = null; erro(new Error("zxing")); })); });
+  return ZXP;
+}
+function leitorBarras(Z) {
+  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); const r = new Z.MultiFormatReader(); r.setHints(h);
+  const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height);
+    try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
+}
+let CAM = null;
+async function abrirCamera() {
+  bip.liberar && bip.liberar();
+  const cx = $("#camE"), v = cx.querySelector("video"), continua = () => !!document.querySelector("[data-sel]");
+  $("#camEt").textContent = continua() ? "Leia as bolsas da remessa, uma depois da outra" : "Aponte para o código da bolsa"; $("#camEl").innerHTML = ""; cx.classList.add("on");
+  const st = CAM = { vivo: true, fluxo: null, ult: {}, det: null, jq: null };
+  if (!("BarcodeDetector" in window)) { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }
+  const fim = () => { st.vivo = false; CAM = null; cx.classList.remove("on"); if (st.fluxo) st.fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; };
+  $("#camEsair").onclick = fim;
+  try { st.fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false }); v.srcObject = st.fluxo; await v.play(); }
+  catch (e) { fim(); return toast("Não consegui abrir a câmera. Libere o acesso à câmera para o Painel CVH.", 7000); }
+  try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); const q = ["qr_code", "code_128"].filter((x) => f.includes(x)); if (q.length) st.det = new BarcodeDetector({ formats: q }); } } catch (e) { st.det = null; }
+  if (!st.det) { try { st.jq = await carregarJsQR(); } catch (e) { st.jq = null; } try { st.zx = leitorBarras(await carregarZX()); } catch (e) { st.zx = null; } if (!st.jq && !st.zx) { fim(); return toast("Leitor da câmera indisponível agora. Use o leitor de código de barras.", 7000); } }
+  const cv = document.createElement("canvas"), c2 = cv.getContext("2d", { willReadFrequently: true });
+  const achou = (txt) => {
+    const k = String(txt).trim(); if (st.ult[k] && Date.now() - st.ult[k] < 2500) return; st.ult[k] = Date.now();
+    const fl = cx.querySelector(".flash"); fl.classList.add("on"); setTimeout(() => fl.classList.remove("on"), 60); if (navigator.vibrate) navigator.vibrate(50);
+    if (continua()) { lido(k); $("#camEl").insertAdjacentHTML("afterbegin", "<div>" + esc(k) + "</div>"); } else { fim(); lido(k); }
+  };
+  const passo = async () => {
+    if (!st.vivo) return;
+    try {
+      if (v.readyState >= 2) {
+        if (st.det) { const r = await st.det.detect(v); if (r && r[0] && r[0].rawValue) achou(r[0].rawValue); }
+        else { st.n = (st.n || 0) + 1; let t = null; if (st.zx && (st.n % 2 || !st.jq)) t = st.zx(v); else if (st.jq) { const w = 720, h = Math.round(720 * v.videoHeight / v.videoWidth) || 540; cv.width = w; cv.height = h; c2.drawImage(v, 0, 0, w, h); const r = st.jq(c2.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); t = r && r.data; } if (t) achou(t); }
+      }
+    } catch (e) {}
+    if (st.vivo) setTimeout(passo, st.det ? 80 : 40);
+  };
+  passo();
+}
+
+/* ── cliques ── */
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  if (a === "fechar" || ev.target.id === "veu") return fecharGaveta();
+  if (a === "aba") { S.aba = v; pintar(); window.scrollTo(0, 0); return; }
+  if (a === "filtro") { S.aba = "estoque"; if (["CH", "CP", "PFC", "CRIO"].includes(v)) { S.f.comp = v; S.f.sit = "disponivel"; } else { S.f.comp = ""; S.f.sit = v; } pintar(); return; }
+  if (a === "f") { S.f[b.dataset.c] = v; pintar(); return; }
+  if (a === "prod") return abrirProducao(v);
+  if (a === "uni") return abrirUnidade(v);
+  if (a === "uAcao") return acaoUnidade(v);
+  if (a === "camera") return abrirCamera();
+  if (a === "fracAbrir") { abrirUnidade(v); return acaoUnidade("fracionar"); }
+  if (a === "fracEtq") { const el = $("#fracEtqBox"); if (el) { el.innerHTML = escolherEtiqueta(v.split("|")); previaEtiqueta(v.split("|")[1] || v.split("|")[0]); el.scrollIntoView({ block: "nearest" }); } return; }
+  if (a === "eqNovo" || a === "eqEditar") { const e = S.eq.find((x) => x.id === v) || { id: "", nome: "", local: "CVH", aceita: [], ativo: true }; $("#eqQrBox").innerHTML = '<div class="cx" style="margin-top:10px"><h2>' + (e.id ? "Editar " + esc(e.id) : "Novo equipamento") + '</h2><label>Código do QR (letras, números e hífen)</label><input type="text" id="eqId" value="' + esc(e.id) + '"' + (e.id ? " readonly" : ' placeholder="ex.: CVH-GEL-01"') + '><label>Nome</label><input type="text" id="eqNome" value="' + esc(e.nome) + '" placeholder="ex.: Câmara de conservação de CH"><label>Local</label><input type="text" id="eqLocal" value="' + esc(e.local) + '" placeholder="CVH ou Intensivet"><label>Hemocomponentes que guarda</label><div style="display:flex;gap:10px;flex-wrap:wrap">' + ["CH", "PFC", "CRIO", "PPC", "CP"].map((c) => '<label style="font-weight:600"><input type="checkbox" class="eqC" value="' + c + '"' + ((e.aceita || []).includes(c) ? " checked" : "") + "> " + c + "</label>").join("") + '</div><label style="font-weight:600"><input type="checkbox" id="eqAtivo"' + (e.ativo !== false ? " checked" : "") + '> Ativo</label><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="eqSalvar">Salvar</button></div></div>'; return; }
+  if (a === "eqSalvar") { try { b.disabled = true; S.eq = await est("estEquipamentoSalvar", { id: $("#eqId").value, nome: $("#eqNome").value, local: $("#eqLocal").value.trim() || "CVH", aceita: [...document.querySelectorAll(".eqC:checked")].map((x) => x.value), ativo: $("#eqAtivo").checked }); toast("Equipamento salvo. Imprima o QR e cole no equipamento.", 6000); pintar(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } return; }
+  if (a === "eqQR1") { $("#eqQrBox").innerHTML = escolherQr("equip", v); return; }
+  if (a === "regAbrir") return abrirRegistros(30);
+  if (a === "regDias") return abrirRegistros(+v);
+  if (a === "regSair") { S.intVista = ""; pintar(); return; }
+  if (a === "fotoOk" || a === "fotoProb") { try { b.disabled = true; const obs = (document.getElementById("fo-" + b.dataset.t + v) || {}).value || ""; if (a === "fotoProb" && !obs.trim()) { b.disabled = false; return toast("Descreva o problema no campo da observação."); } await est("estFotoConferir", b.dataset.t, v, { ok: a === "fotoOk", obs }); await abrirRegistros(S.regDias); toast(a === "fotoOk" ? "Foto conferida." : "Problema registrado."); } catch (e) { toast(e.message, 6000); b.disabled = false; } return; }
+  if (a === "testeCriar" || a === "testeLimpar") { try { b.disabled = true; if (a === "testeCriar") { const c = await est("estTesteCriar"); await recarregar(); toast("Bolsas " + c + " CH, PFC e CRIO criadas, disponíveis no CVH.", 6000); } else { const r = await est("estTesteLimpar"); await recarregar(); toast("Teste apagado: " + r.unidades + " bolsas, " + r.remessas + " remessas, " + r.atendimentos + " atendimentos.", 6000); } } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } return; }
+  if (a === "at") return abrirAtendimento(v);
+  if (a === "atNovo") { abrirGaveta("Novo atendimento", formAtendimento({})); return; }
+  if (a === "atMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "atPago") { $("#atForm").innerHTML = '<div class="cx" style="margin-top:10px"><h2>Pagamento confirmado</h2><label class="op" style="display:flex;gap:10px;font-weight:600"><input type="checkbox" id="pgBuscar"> Há amostra a buscar</label><label>Local da busca</label><input type="text" id="pgLocal"><label>Prazo para a busca</label><input type="datetime-local" id="pgPrazo"><label>Previsão de chegada da amostra no CVH</label><input type="datetime-local" id="pgCheg"><label>Previsão para concluir os testes</label><input type="datetime-local" id="pgTestes"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="atPagoOk" data-v="' + esc(v) + '">Confirmar o pagamento</button></div></div>'; return; }
+  if (["atSalvar", "atEt", "atPagoOk"].includes(a)) {
+    try {
+      b.disabled = true; let r;
+      const iso = (id) => { const el = $("#" + id); return el && el.value ? new Date(el.value).toISOString() : null; };
+      if (a === "atSalvar") { const m = (document.querySelector('[data-a="atMod"].on') || {}).dataset || {}; r = await est("estAtendimentoSalvar", { id: v || undefined, destino: $("#atDest").value, endereco: $("#atEnd").value, paciente: $("#atPac").value, solicitante: $("#atSol").value, modalidade: m.v || "motoboy", remessa: $("#atRem").value }); }
+      if (a === "atPagoOk") r = await est("estAtendimentoEtapa", v, "pago", { buscar: $("#pgBuscar").checked, local: $("#pgLocal").value, prazoBusca: iso("pgPrazo"), previsaoChegada: iso("pgCheg"), previsaoTestes: iso("pgTestes") });
+      if (a === "atEt") { const et = v, o = {}; if (et === "uber") o.link = $("#atUber").value; if (et === "uberFim") o.quando = iso("atUberFim"); r = await est("estAtendimentoEtapa", b.dataset.id, et, o); }
+      const i = S.at.findIndex((x) => x.id === r.id); if (i >= 0) S.at[i] = r; else S.at.unshift(r);
+      if (a === "atEt" && ["retirada", "uberFim"].includes(v)) await recarregar(); else pintar();
+      abrirAtendimento(r.id); toast(a === "atSalvar" && !v ? "Atendimento aberto." : "Registrado." + (r.modalidade === "motoboy" && a !== "atSalvar" && ["possivel", "autorizado", "pago", "testes", "fracionamento", "pronta"].includes(r.etapa) ? " O motoboy foi avisado." : ""), 4000);
+    } catch (e) { toast(e.message || String(e), 7000); } finally { b.disabled = false; }
+    return;
+  }
+
+  if (a === "bolsasSalvar") { try { const bolsas = [...document.querySelectorAll("[data-bolsa]")].map((r) => ({ id: r.querySelector(".bI").value, nome: r.querySelector(".bN").value, tara: num(r.querySelector(".bT").value), uso: [...r.querySelectorAll(".bU:checked")].map((x) => x.value) })).filter((x) => x.nome.trim() && x.tara != null); S.P = await est("estParametros", { bolsas, limites: { fracionamentoMl: num($("#limA").value), criticoMl: num($("#limC").value), ganhoMl: num($("#limG").value) } }); toast("Salvo."); pintar(); } catch (e) { toast(e.message, 6000); } return; }
+  if (a === "fMais") { const v0 = {}; document.querySelectorAll("#uForm input, #uForm select").forEach((x) => { v0[x.id] = x.value; }); S.nFr = (S.nFr || 1) + 1; const u = S.uni.find((x) => x.id === S.uniAberta); $("#uForm").innerHTML = formFracionar(u); Object.entries(v0).forEach(([k, val]) => { const el = document.getElementById(k); if (el) el.value = val; }); calcFracionar(); return; }
+  if (a === "fConfirmar" || a === "cConfirmar") { try { b.disabled = true; await (a === "fConfirmar" ? confirmarFracionar() : confirmarCrio()); } catch (e) { toast(e.message || String(e), 7000); } finally { b.disabled = false; } return; }
+  if (a === "ctSalvar") { try { const r = await est("estUnidadeAcao", v, "contato", { notas: $("#ctNotas").value }); const u = S.uni.find((x) => x.id === v); if (u) Object.assign(u, r); toast("Salvo."); abrirUnidade(v); } catch (e) { toast(e.message, 6000); } return; }
+  if (a === "ctCopiar") { const u = S.uni.find((x) => x.id === v); if (!u) return; const t = textoRequisicao(Object.assign({}, u, { dados: Object.assign({}, u.dados, { contatoCVH: { notas: ($("#ctNotas") || {}).value || "" } }) })); try { await navigator.clipboard.writeText(t); toast("Dados copiados. Cole no formulário da requisição.", 5000); } catch (e) { $("#ctNotas").value += "\n\n" + t; toast("Não consegui copiar sozinho. Os dados foram para o campo; selecione e copie.", 7000); } return; }
+  if (a === "rem") return abrirRem(v);
+  if (a === "etqFmt") { try { localStorage.setItem("cvh_etq", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const pv = $("#etqPrev"); if (pv) previaEtiqueta(pv.dataset.id, v); return; }
+  if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
+  if (a === "etqDireto") return imprimirDireto(v.split("|"));
+  if (a === "etqLista") { const ids = v.split("|"); const el = document.getElementById("etqBox"); if (el) { el.innerHTML = escolherEtiqueta(ids); previaEtiqueta(ids[0]); } return; }
+  if (a === "remNova") return abrirRemNova();
+  if (a === "eqQR") { const el = $("#eqQrBox"); if (el) el.innerHTML = escolherQr("equip"); return; }
+  if (a === "qrFmt") { try { localStorage.setItem("cvh_etq", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "qrPdf") return gerarPdfQr(b.dataset.t, v);
+  if (a === "qrDireto") return b.dataset.t === "caixa" ? imprimirQRRem(S.rem.find((x) => x.id === v)) : imprimirQREq(S.eq.filter((e) => e.ativo));
+  if (["remCriar", "remSaida", "remSaidaOk", "remEntrega", "remCancelar", "remUber", "remUberOk", "remQR", "apNovo", "apDesativar"].includes(a)) {
+    try {
+      b.disabled = true; const r = S.rem.find((x) => x.id === v);
+      if (a === "remCriar") { const ids = [...document.querySelectorAll("[data-sel]:checked")].map((x) => x.dataset.sel); if (!ids.length) throw new Error("Marque as bolsas da remessa."); const n = await est("estRemessaCriar", { unidades: ids, destino: $("#rDest").value.trim() || "Intensivet", finalidade: $("#rFin").value.trim() }); await recarregar(); S.aba = "rem"; pintar(); await abrirRem(n.id); toast("Remessa " + n.id + " preparada. Imprima o QR e cole do lado de fora da caixa.", 6000); return; }
+      if (a === "remQR") { $("#rForm").innerHTML = escolherQr("caixa", v); return; }
+      if (a === "remSaida") { $("#rForm").innerHTML = '<label>Quem leva</label><div class="filtros" style="margin:0"><button class="on" data-a="remMod" data-v="motoboy">Motoboy</button><button data-a="remMod" data-v="uber">Uber</button><button data-a="remMod" data-v="retirada">Retirada pela Intensivet</button></div><label>Link do Uber (se for o caso)</label><input type="text" id="rUber"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remSaidaOk" data-v="' + esc(v) + '">A caixa saiu agora</button></div>'; return; }
+      if (a === "remSaidaOk") { const m = (document.querySelector('[data-a="remMod"].on') || {}).dataset || {}; await est("estRemessaAcao", v, "saida", { modalidade: m.v || "motoboy", linkUber: ($("#rUber") || {}).value || "" }); toast("Saída registrada. A Intensivet foi avisada no app.", 5000); }
+      if (a === "remEntrega") await est("estRemessaAcao", v, "entrega", {});
+      if (a === "remUber") { $("#rForm").innerHTML = '<label>Link do Uber</label><input type="text" id="rUber" value="' + esc((r && r.link_uber) || "") + '"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remUberOk" data-v="' + esc(v) + '">Salvar</button></div>'; return; }
+      if (a === "remUberOk") await est("estRemessaAcao", v, "uber", { link: $("#rUber").value.trim() });
+      if (a === "remCancelar") await est("estRemessaAcao", v, "cancelar", {});
+      if (a === "apNovo") { const o = await est("estAparelhoCriar", { setor: v }); const base = await ponte("origem"); const link = base + (v === "motoboy" ? "motoboy.html" : "intensivet.html") + "?k=" + o.token; await recarregar(); $("#apLink").innerHTML = '<label>Abra este link no celular ' + (v === "recepcao" ? "da recepção" : v === "motoboy" ? "do motoboy" : "da internação") + ' (uma vez só) e adicione à tela inicial</label><input type="text" readonly value="' + esc(link) + '" onclick="this.select()"><div class="bts"><button class="btn sec peq" data-a="copiar" data-v="' + esc(link) + '">Copiar o link</button></div>'; return; }
+      if (a === "apDesativar") { await est("estAparelhoDesativar", v); await recarregar(); toast("Celular desativado."); return; }
+      await recarregar(); if (S.remAberta && $("#gaveta").classList.contains("on")) await abrirRem(S.remAberta);
+    } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
+    return;
+  }
+  if (a === "remMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado."); } catch (e) { toast("Selecione o link e copie."); } return; }
+  if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
+  if (a === "uConf") { const t = ($("#uTxt") || {}).value || "", k = PEDE[v][2]; if (!t.trim()) return toast("Preencha o campo."); const o = { [k]: t.trim() }; if (v === "mover") o.equipamento = ($("#uEq") || {}).value || ""; return acaoUnidade(v, o); }
+  const c = S.prodAberta; if (!c) return;
+  try {
+    b.disabled = true;
+    if (a === "pSalvar" && v === "peso_st") { const p = num($("#pPesoST").value); if (p == null || p <= 0) throw new Error("Informe o peso do conjunto em gramas."); await salvarProd(c, "centrifugacao", { pesoST: p, htST: num($("#pHtST").value), volumeST: num((doacao(c) || {}).volume) }, "Peso do ST registrado."); }
+    if (a === "pMarca") await salvarProd(c, "centrifugacao", { [v]: new Date().toISOString() });
+    if (a === "pAvanca") await salvarProd(c, v, {});
+    if (a === "pSalvar" && v === "ch") {
+      const D = { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value), sagAdicionado: num($("#pSagAd").value), pesoCHfinal: num($("#pPesoFinal").value), htCHfinal: num($("#pHtFinal").value) };
+      if (D.pesoCHsem == null) throw new Error("Informe o peso do CH sem SAG.");
+      const cs = sag(D); if (cs) { D.sagCalculado = Math.round(cs.calc); D.htUsadoSag = cs.ht; D.htMedidoSag = cs.medido; }
+      if (D.pesoCHfinal == null) { await salvarProd(c, "ch_com_sag", D, "CH sem SAG registrado. Falta o peso final."); return; }
+      await salvarProd(c, "cp_pfc", D, "CH com SAG registrado.");
+    }
+    if (a === "pConcluir") await concluirProd(c);
+  } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
+});
+// peso pela foto do visor da balança: a foto vai reduzida (rápida) e o número entra no campo para conferir
+let ALVO_FOTO = "";
+async function lerPesoFoto(file) {
+  const campo = $("#" + ALVO_FOTO); if (!campo || !file) return;
+  const t0 = Date.now(); toast("Lendo o peso…", 20000);
+  try {
+    const img = await new Promise((ok, erro) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => erro(new Error("Não consegui abrir a foto.")); im.src = u; });
+    const k = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight)), cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    const b64 = cv.toDataURL("image/jpeg", 0.75).split(",")[1];
+    const r = await ponte("iaRapida", "balanca", "image/jpeg", b64);
+    let g = num(r && r.peso); if (g != null && /kg/i.test(r.unidade || "")) g = g * 1000;
+    if (!r || !r.legivel || g == null) throw new Error("Não deu para ler o visor. Tire outra foto, de frente e sem reflexo, ou digite o peso.");
+    campo.value = Math.round(g * 10) / 10; campo.dispatchEvent(new Event("input", { bubbles: true })); campo.focus();
+    toast("Peso identificado: " + fmt(g, g % 1 ? 1 : 0) + " g (" + fmt((Date.now() - t0) / 1000, 1) + " s). Confira antes de confirmar.", 6000);
+  } catch (e) { toast(e.message || String(e), 6000); }
+}
+$("#cam").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; lerPesoFoto(f); });
+document.addEventListener("input", (ev) => { if (/^f(PI|PF|A\d|P\d)$/.test(ev.target.id)) calcFracionar(); if (ev.target.id === "cPeso") { const p = num(ev.target.value), t = +$("#cTara").value; $("#cVol").textContent = p != null && p >= t ? "Volume estimado " + fmt((p - t) / S.P.qc.densPL, 1) + " mL" : ""; } });
+document.addEventListener("change", (ev) => { if (/^f(TM|T\d)$/.test(ev.target.id)) calcFracionar(); });
+document.addEventListener("input", (ev) => { if (["pPesoCH", "pHtCH"].includes(ev.target.id) && S.prodAberta) { const p = S.prod.find((x) => x.coleta === S.prodAberta); if (p) { p.dados = Object.assign({}, p.dados, { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value) }); const y = $("#gvC").scrollTop, el = ev.target.id, pos = ev.target.selectionStart; abrirProducao(S.prodAberta); $("#gvC").scrollTop = y; const n = $("#" + el); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } } } });
+window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
+
+function podeAtualizar() { const ae = document.activeElement; return !document.hidden && !$("#gaveta").classList.contains("on") && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) && !(CAM && CAM.vivo) && S.intVista !== "registros"; }
+async function atualizarSozinho() { if (!podeAtualizar()) return; try { const y = window.scrollY; await recarregar(); window.scrollTo(0, y); } catch (e) {} }
+setInterval(atualizarSozinho, 25000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarSozinho(); });
+async function iniciar() {
+  try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar(); }
+  catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o estoque. ' + esc(e.message || String(e)) + "</div>"; }
+}
+iniciar();
+</script>
+<!--CVH-ESTOQUE-COMPLETO-->
+</body></html>

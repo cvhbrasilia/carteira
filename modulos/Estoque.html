@@ -92,6 +92,8 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 <script>
 /* Estoque Inteligente CVH · fase 1: produção na bancada, estoque, ficha da bolsa e pendências do dia */
 const CTX = window.CVH_CTX || {};
+// o mesmo arquivo serve dois módulos: Estoque (bolsas prontas) e Produção (bancada); os dados e as regras são os mesmos
+const MODO = /*__MODO__*/"estoque", PROD = MODO === "producao";
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const p2 = (n) => String(n).padStart(2, "0");
@@ -227,11 +229,16 @@ const ORDEM_COMP = ["CH", "PFC", "CRIO", "CP", "PPC"];
 function porComponente(L) {
   return ORDEM_COMP.concat([...new Set(L.map((u) => u.componente))].filter((c) => !ORDEM_COMP.includes(c))).map((c) => { const G = L.filter((u) => u.componente === c).sort((a, b) => String(a.validade || "9").localeCompare(String(b.validade || "9"))); return G.length ? '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + " · " + G.length + (G.length === 1 ? " bolsa" : " bolsas") + "</div>" + listaAninhada(G) : ""; }).join("");
 }
+function kpisProd() {
+  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
+  return '<div class="kpis">' + k(aguardando().length, "Coletas para produzir", "aba", "prod") + k(S.prod.filter((p) => p.etapa !== "concluida").length, "Produções em andamento", "aba", "prod") + k(S.uni.filter(congPendente).length, "Congelamento a conferir", "aba", "hoje") + k(S.uni.filter((u) => u.situacao === "producao_crio").length, "CRIO em produção", "aba", "hoje") + k(S.uni.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "aba", "hoje") + "</div>";
+}
 function kpis() {
+  if (PROD) return kpisProd();
   const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && !["utilizada", "descartada"].includes(u.situacao)), disp = cvh.filter((u) => u.situacao === "disponivel"), noInt = S.uni.filter((u) => u.local === "Intensivet" && ["disponivel", "reservada"].includes(u.situacao)).length;
   const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
   return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis no CVH", "filtro", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis no CVH", "filtro", "PFC") + k(disp.filter((u) => u.componente === "CRIO").length, "CRIO disponíveis no CVH", "filtro", "CRIO") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis no CVH", "filtro", "CP") +
-    k(cvh.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(cvh.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(noInt, "Na Intensivet", "aba", "int") + k(aguardando().length + S.prod.filter((p) => p.etapa !== "concluida").length, "Coletas para produzir", "aba", "prod") + "</div>";
+    k(cvh.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(cvh.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(noInt, "Na Intensivet", "aba", "int") + "</div>";
 }
 function abrirUnidade(id) {
   const u = S.uni.find((x) => x.id === id); if (!u) return;
@@ -355,13 +362,22 @@ async function confirmarCrio() {
 /* ── telas ── */
 function pendencias() {
   const L = [];
-  aguardando().slice(0, 30).forEach((d) => L.push({ n: 1, t: "Coleta " + d.numero + " aguardando o peso do conjunto de ST", s: (d.nome || "") + " · " + br(d.data), a: "prod", v: d.numero.replace(/\s/g, "") }));
-  S.prod.filter((p) => p.etapa !== "concluida").forEach((p) => L.push({ n: 1, t: "Produção da coleta " + p.coleta + " em andamento", s: (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], a: "prod", v: p.coleta }));
-  S.uni.filter(congPendente).forEach((u) => L.push({ n: 0, t: (u.componente === "CRIO" ? "Verificar CRIO " : "Verificar congelamento do plasma ") + u.id, s: "congelamento iniciado " + hora(u.dados.congelamento.inicio) + (u.componente === "CRIO" ? " · 6 horas completas " + hora(Date.parse(u.dados.congelamento.inicio) + 216e5) : ""), a: "uni", v: u.id }));
-  S.uni.filter((u) => u.situacao === "producao_crio").forEach((u) => L.push({ n: 1, t: "CRIO em produção a partir de " + u.id, s: "iniciado " + hora(u.dados.crio.inicio), a: "uni", v: u.id }));
-  S.uni.forEach((u) => { const al = alertaValidade(u); if (al && al.n <= 5) L.push({ n: al.n <= 1 ? 0 : 2, t: u.id + " · " + al.t, s: ROT_SIT[u.situacao] + " · " + (u.local || ""), a: "uni", v: u.id }); });
-  S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
-  return L.sort((a, b) => a.n - b.n);
+  aguardando().slice(0, 30).forEach((d) => L.push({ g: "p", n: 1, t: "Coleta " + d.numero + " aguardando o peso do conjunto de ST", s: (d.nome || "") + " · " + br(d.data), a: "prod", v: d.numero.replace(/\s/g, "") }));
+  S.prod.filter((p) => p.etapa !== "concluida").forEach((p) => L.push({ g: "p", n: 1, t: "Produção da coleta " + p.coleta + " em andamento", s: (ETAPAS.find((e) => e[0] === p.etapa) || [0, p.etapa])[1], a: "prod", v: p.coleta }));
+  S.uni.filter(congPendente).forEach((u) => L.push({ g: "p", n: 0, t: (u.componente === "CRIO" ? "Verificar CRIO " : "Verificar congelamento do plasma ") + u.id, s: "congelamento iniciado " + hora(u.dados.congelamento.inicio) + (u.componente === "CRIO" ? " · 6 horas completas " + hora(Date.parse(u.dados.congelamento.inicio) + 216e5) : ""), a: "uni", v: u.id }));
+  S.uni.filter((u) => u.situacao === "producao_crio").forEach((u) => L.push({ g: "p", n: 1, t: "CRIO em produção a partir de " + u.id, s: "iniciado " + hora(u.dados.crio.inicio), a: "uni", v: u.id }));
+  S.uni.forEach((u) => { const al = alertaValidade(u); if (al && al.n <= 5) L.push({ g: "e", n: al.n <= 1 ? 0 : 2, t: u.id + " · " + al.t, s: ROT_SIT[u.situacao] + " · " + (u.local || ""), a: "uni", v: u.id }); });
+  S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ g: "e", n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
+  return L.filter((x) => x.g === (PROD ? "p" : "e")).sort((a, b) => a.n - b.n);
+}
+function telaHojeProd() {
+  const P = pendencias(), andam = S.prod.filter((p) => p.etapa !== "concluida"), hoje = hojeISO();
+  const feitasHoje = S.prod.filter((p) => p.etapa === "concluida" && String(p.atualizado || "").slice(0, 10) === hoje);
+  const congel = S.uni.filter((u) => ["PFC", "CRIO", "PPC"].includes(u.componente) && (u.dados || {}).congelamento && u.dados.congelamento.inicio && !(u.dados.congelamento.conferido && u.dados.congelamento.conferido.congelado));
+  return '<div class="cx"><h2>Para fazer hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente na bancada.</p>') + "</div>" +
+    '<div class="duas"><div class="cx"><h2>Congelando · ' + congel.length + "</h2>" + (congel.length ? listaAninhada(congel) : '<p class="vazio">Nenhum plasma ou CRIO congelando.</p>') + "</div>" +
+    '<div class="cx"><h2>Produções concluídas hoje · ' + feitasHoje.length + "</h2>" + (feitasHoje.length ? feitasHoje.map((p) => '<div class="lin"><div class="t"><b>Coleta ' + esc(p.coleta) + "</b><small>" + esc(S.uni.filter((u) => u.coleta === p.coleta).map((u) => u.componente).join(", ")) + '</small></div><button class="btn sec peq" data-a="prod" data-v="' + esc(p.coleta) + '">Ver</button></div>').join("") : '<p class="vazio">Nenhuma ainda.</p>') + "</div></div>" +
+    '<div class="cx"><h2>Aguardando liberação · ' + S.uni.filter((u) => u.situacao === "quarentena").length + '</h2><p class="nota">As bolsas produzidas ficam aqui até os exames do CVH. A liberação acontece sozinha quando o TECSA sai negativo e completo, ou no Estoque.</p>' + listaAninhada(S.uni.filter((u) => u.situacao === "quarentena")) + "</div>";
 }
 function telaHoje() {
   const P = pendencias(), vivas = ["disponivel", "reservada"];
@@ -578,8 +594,11 @@ function telaHist() {
 function pintar() {
   const nP = pendencias().filter((x) => x.n <= 1).length;
   const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
-  $("#app").innerHTML = '<div class="topo"><h1>Estoque<small>Produção, bolsas e pendências do CVH</small></h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div>' + kpis() + '<nav class="abas">' + aba("hoje", "Resolver hoje", nP) + aba("prod", "Produção") + aba("estoque", "Estoque") + aba("frac", "Fracionamento") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico") + "</nav>" +
-    ({ hoje: telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, tr: telaTransporte, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
+  const abas = PROD ? aba("hoje", "Para fazer hoje", nP) + aba("prod", "Coletas") + aba("frac", "Fracionamento") + aba("hist", "Histórico")
+    : aba("hoje", "Resolver hoje", nP) + aba("estoque", "Bolsas") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico");
+  const ok = PROD ? ["hoje", "prod", "frac", "hist"] : ["hoje", "estoque", "rem", "int", "hist"]; if (!ok.includes(S.aba)) S.aba = "hoje";
+  $("#app").innerHTML = '<div class="topo"><h1>' + (PROD ? "Produção<small>Bancada: coletas, fracionamento, CRIO, congelamento e etiquetas</small>" : "Estoque<small>Bolsas prontas, liberação, validades, remessas e Intensivet</small>") + '</h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div>' + kpis() + '<nav class="abas">' + abas + "</nav>" +
+    ({ hoje: PROD ? telaHojeProd : telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
 }
 
 /* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
