@@ -813,6 +813,15 @@ function imprimirDoc(titulo, corpo) {
   const t0 = document.title; document.title = titulo;
   setTimeout(() => { try { window.print(); } catch (e) { toast("A impressão está bloqueada neste aparelho. Abra o painel pelo navegador.", 7000); } document.title = t0; }, 60);
 }
+// embalagem de um atendimento (vindo do preparo): etiqueta nova da bolsa e etiqueta (QR) da caixa de isopor
+function embalagem(E0) {
+  const u = S.uni.find((x) => x.id === E0.unidade); if (!u) return toast("Bolsa " + E0.unidade + " não encontrada no estoque.", 6000);
+  const at = S.at.find((x) => x.id === E0.atendimento) || {}, r = at.remessa_id ? S.rem.find((x) => x.id === at.remessa_id) : null;
+  abrirUnidade(u.id);
+  $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px;border-color:var(--vinho)"><h2>Embalagem · atendimento ' + esc(at.id || E0.atendimento) + (at.paciente ? " · " + esc(at.paciente) : "") + '</h2><p class="nota">1. Imprima a etiqueta nova da bolsa (abaixo). 2. Imprima a etiqueta da caixa de isopor, com o QR que a Intensivet lê ao receber.</p>' +
+    (r ? '<div class="bts"><button class="btn" data-a="embCaixaImp" data-v="' + esc(r.id) + '">Etiqueta da caixa ' + esc(r.id) + "</button></div>" : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa e imprimir a etiqueta</button></div>') + "</div>" + escolherEtiqueta([u.id]);
+  previaEtiqueta(u.id);
+}
 function escolherEtiqueta(ids) {
   const f = fmtEtq();
   return '<div class="cx" style="margin-top:12px"><h2>Etiquetas · ' + ids.length + (ids.length === 1 ? " bolsa" : " bolsas") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="etqFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><div id="etqPrev" data-id="' + esc(ids[0]) + '"></div><div class="bts"><button class="btn peq" data-a="etqImp" data-v="' + esc(ids.join("|")) + '">Gerar PDF para imprimir</button><button class="btn sec peq" data-a="etqDireto" data-v="' + esc(ids.join("|")) + '">Imprimir direto (computador)</button></div><p><small>' + (ids.length > 1 ? "A prévia mostra a primeira bolsa. " : "") + 'No celular, abra o PDF e use Compartilhar, Imprimir. No computador, imprima em tamanho real (100%).</small></p></div>';
@@ -1013,6 +1022,12 @@ document.addEventListener("click", async (ev) => {
   if (a === "ctSalvar") { try { const r = await est("estUnidadeAcao", v, "contato", { notas: $("#ctNotas").value }); const u = S.uni.find((x) => x.id === v); if (u) Object.assign(u, r); toast("Salvo."); abrirUnidade(v); } catch (e) { toast(e.message, 6000); } return; }
   if (a === "ctCopiar") { const u = S.uni.find((x) => x.id === v); if (!u) return; const t = textoRequisicao(Object.assign({}, u, { dados: Object.assign({}, u.dados, { contatoCVH: { notas: ($("#ctNotas") || {}).value || "" } }) })); try { await navigator.clipboard.writeText(t); toast("Dados copiados. Cole no formulário da requisição.", 5000); } catch (e) { $("#ctNotas").value += "\n\n" + t; toast("Não consegui copiar sozinho. Os dados foram para o campo; selecione e copie.", 7000); } return; }
   if (a === "rem") return abrirRem(v);
+  if (a === "embCaixaImp") { const r = S.rem.find((x) => x.id === v); if (r) return imprimirQRRem(r); return; }
+  if (a === "embCaixa") { b.disabled = true; try { const at = S.at.find((x) => x.id === b.dataset.at) || {};
+      const r = await est("estRemessaCriar", { unidades: [v], destino: at.destino || "Intensivet", finalidade: at.id ? "Atendimento " + at.id + (at.paciente ? " · " + at.paciente : "") : "Transfusão", modalidade: at.modalidade || "" });
+      if (at.id) await est("estAtendimentoSalvar", { id: at.id, destino: at.destino, endereco: at.endereco, paciente: at.paciente, solicitante: at.solicitante, modalidade: at.modalidade, remessa: r.id });
+      await recarregar(); toast("Caixa " + r.id + " criada e ligada ao atendimento.", 5000); embalagem({ unidade: v, atendimento: at.id }); return imprimirQRRem(S.rem.find((x) => x.id === r.id) || r); }
+    catch (e) { b.disabled = false; return toast(e.message, 7000); } }
   if (a === "etqFmt") { try { localStorage.setItem("cvh_etq", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const pv = $("#etqPrev"); if (pv) previaEtiqueta(pv.dataset.id, v); return; }
   if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
   if (a === "etqDireto") return imprimirDireto(v.split("|"));
@@ -1102,6 +1117,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) atua
 async function iniciar() {
   try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar();
     // vindo da HemoCalculadora (14.2): abre a bolsa escolhida já no fracionamento, com o volume da dose e da margem
+    if (CTX.embalar && CTX.embalar.unidade) embalagem(CTX.embalar);
     const F = CTX.fracionar; if (F && F.unidade && S.uni.some((u) => u.id === F.unidade)) { S.fracAt = F; abrirUnidade(F.unidade); S.nFr = 1; $("#uForm").innerHTML = formFracionar(S.uni.find((u) => u.id === F.unidade)); if (F.volume) $("#fA0").value = String(F.volume); calcFracionar(); const fp = $("#fPI"); if (fp) { fp.focus(); fp.scrollIntoView({ block: "center" }); } } }
   catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o estoque. ' + esc(e.message || String(e)) + "</div>"; }
 }

@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121201242';
+  var VERSAO = '20261121201612';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5194,6 +5194,7 @@ async function preparoTx(b, modo) {
   try {
     await api('estAtendimentoPreparo', E.sessao, P.id, { unidade: uid, modo, provaConfirmada: conf }); E.txEst = null;
     if (modo === 'fracionar') { E.fracAbrir = { unidade: uid, volume: P.alvo, atendimento: P.id, paciente: P.paciente }; const k = pode('estoque') || pode('admin') ? 'estoque' : 'producao'; E.modulo = k; toast('Atendimento em fracionamento. O motoboy foi avisado.', 5000); return abrirModulo(k); }
+    if (pode('estoque') || pode('admin')) { toast('Bolsa ' + uid + ' reservada para o atendimento. Imprima a etiqueta da bolsa e a da caixa de isopor.', 6000); E.embAbrir = { atendimento: P.id, unidade: uid }; E.modulo = 'estoque'; return abrirModulo('estoque'); }
     toast('Bolsa ' + uid + ' reservada para o atendimento. Siga para a embalagem.', 5000); E.pedAbrir = P.id; E.modulo = 'transporte'; return abrirModulo('transporte');
   } catch (e) { b.disabled = false; toast(e.message, 7000); }
 }
@@ -5917,7 +5918,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.base = E.receitaBase ? E.receitaBase.itens : null; E.ponte.baseOrient = E.receitaBase ? E.receitaBase.orient : '';
   }
   if (nome === 'transporte') { E.ponte.abrirPedido = E.pedAbrir || null; E.pedAbrir = null; }
-  if (nome === 'estoque' || nome === 'producao') { E.ponte.fracionar = E.fracAbrir || null; E.fracAbrir = null; }
+  if (nome === 'estoque' || nome === 'producao') { E.ponte.fracionar = E.fracAbrir || null; E.fracAbrir = null; E.ponte.embalar = E.embAbrir || null; E.embAbrir = null; }
   if (nome === 'estoque' || nome === 'producao') {
     // fichas de doação com coleta: código, doador, volume de ST, lote e validade da bolsa, segmento
     E.ponte.doacoes = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}, f = d.ficha || {}, a = animalDe(r.animalId) || {};
@@ -6008,6 +6009,7 @@ const PONTE = {
   laudoPedido: o => { setTimeout(() => laudoDoPedido(String((o || {}).id || ''), String((o || {}).tipo || 'compat'), (o || {}).escolhidas ? [].concat((o || {}).bolsas || []) : undefined), 0); return true; },
   hemocalcPreparo: id => { setTimeout(() => telaPreparoTx(String(id || '')), 0); return true; },
   // depois do laudo da prova: testes concluídos e preparo da bolsa testada (embalagem na caixa de isopor)
+  embalagem: o => { E.embAbrir = { atendimento: String((o || {}).id || ''), unidade: String((o || {}).unidade || '') }; setTimeout(() => { E.modulo = 'estoque'; abrirModulo('estoque'); }, 0); return true; },
   seguirPreparo: async o => { const id = String((o || {}).id || ''), d = await estoqueTx(true), a = (d.atendimentos || []).find(x => x.id === id); if (!a) throw new Error('Atendimento não encontrado.');
     if (['aberto', 'possivel', 'autorizado'].includes(a.etapa)) throw new Error('O atendimento ainda não está pago (etapa: ' + (ETAPA_AT_TX[a.etapa] || a.etapa) + '). Confirme o pagamento no Motoboy antes do preparo.');
     if (a.etapa === 'pago') await api('estAtendimentoEtapa', E.sessao, id, 'testes', {});

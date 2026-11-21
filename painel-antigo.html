@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121200700';
+  var VERSAO = '20261121201242';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6008,6 +6008,11 @@ const PONTE = {
   pedidoParaLaudo: o => montarPedidoLaudo(String((o || {}).id || ''), String((o || {}).tipo || 'compat')).then(r => { E.laudoPedido = null; return r; }),
   laudoPedido: o => { setTimeout(() => laudoDoPedido(String((o || {}).id || ''), String((o || {}).tipo || 'compat'), (o || {}).escolhidas ? [].concat((o || {}).bolsas || []) : undefined), 0); return true; },
   hemocalcPreparo: id => { setTimeout(() => telaPreparoTx(String(id || '')), 0); return true; },
+  // depois do laudo da prova: testes concluídos e preparo da bolsa testada (embalagem na caixa de isopor)
+  seguirPreparo: async o => { const id = String((o || {}).id || ''), d = await estoqueTx(true), a = (d.atendimentos || []).find(x => x.id === id); if (!a) throw new Error('Atendimento não encontrado.');
+    if (['aberto', 'possivel', 'autorizado'].includes(a.etapa)) throw new Error('O atendimento ainda não está pago (etapa: ' + (ETAPA_AT_TX[a.etapa] || a.etapa) + '). Confirme o pagamento no Motoboy antes do preparo.');
+    if (a.etapa === 'pago') await api('estAtendimentoEtapa', E.sessao, id, 'testes', {});
+    E.txEst = null; setTimeout(() => { E.modulo = 'transfusao'; telaPreparoTx(id); }, 0); return true; },
   salvarRascunho: async o => {
     const r = await api('fichaAndamentoSalvar', E.sessao, { id: o.id, animalId: E.animal, ficha: o.ficha });
     E.d.fichasAndamento = (E.d.fichasAndamento || []).filter(x => x.id !== r.id).concat([r]);
