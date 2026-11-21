@@ -819,7 +819,7 @@ function embalagem(E0) {
   const at = S.at.find((x) => x.id === E0.atendimento) || {}, r = at.remessa_id ? S.rem.find((x) => x.id === at.remessa_id) : null;
   abrirUnidade(u.id);
   $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px;border-color:var(--vinho)"><h2>Embalagem · atendimento ' + esc(at.id || E0.atendimento) + (at.paciente ? " · " + esc(at.paciente) : "") + '</h2><p class="nota">1. Imprima a etiqueta nova da bolsa (abaixo). 2. Imprima a etiqueta da caixa de isopor, com o QR que a Intensivet lê ao receber.</p>' +
-    (r ? '<div class="bts"><button class="btn" data-a="embCaixaImp" data-v="' + esc(r.id) + '">Etiqueta da caixa ' + esc(r.id) + "</button></div>" : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa e imprimir a etiqueta</button></div>') + "</div>" + escolherEtiqueta([u.id]);
+    (r ? "<p><b>Caixa " + esc(r.id) + "</b> criada para este atendimento. A etiqueta da caixa está logo abaixo da etiqueta da bolsa.</p>" : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa de isopor</button></div>') + "</div>" + escolherEtiqueta([u.id]) + (r ? escolherQr("caixa", r.id) : "");
   previaEtiqueta(u.id);
 }
 function escolherEtiqueta(ids) {
@@ -1026,7 +1026,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "embCaixa") { b.disabled = true; try { const at = S.at.find((x) => x.id === b.dataset.at) || {};
       const r = await est("estRemessaCriar", { unidades: [v], destino: at.destino || "Intensivet", finalidade: at.id ? "Atendimento " + at.id + (at.paciente ? " · " + at.paciente : "") : "Transfusão", modalidade: at.modalidade || "" });
       if (at.id) await est("estAtendimentoSalvar", { id: at.id, destino: at.destino, endereco: at.endereco, paciente: at.paciente, solicitante: at.solicitante, modalidade: at.modalidade, remessa: r.id });
-      await recarregar(); toast("Caixa " + r.id + " criada e ligada ao atendimento.", 5000); embalagem({ unidade: v, atendimento: at.id }); return imprimirQRRem(S.rem.find((x) => x.id === r.id) || r); }
+      await recarregar(); toast("Caixa " + r.id + " criada e ligada ao atendimento. A etiqueta da caixa está abaixo da etiqueta da bolsa.", 6000); embalagem({ unidade: v, atendimento: at.id }); return; }
     catch (e) { b.disabled = false; return toast(e.message, 7000); } }
   if (a === "etqFmt") { try { localStorage.setItem("cvh_etq", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const pv = $("#etqPrev"); if (pv) previaEtiqueta(pv.dataset.id, v); return; }
   if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
