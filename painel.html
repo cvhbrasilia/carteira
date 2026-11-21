@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121180148';
+  var VERSAO = '20261121180656';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5025,6 +5025,24 @@ async function escolherAtTx(id, abrir) {
   const fr = $('#modulo'), w = fr && fr.contentWindow; if (!w || typeof w.lidoLeitor !== 'function') return;
   const t = performance.now(); if (e.key === 'Enter') { const c = L.buf; L.buf = ''; if (c.length >= 3 && t - L.t0 < 45 * c.length + 150) { e.preventDefault(); w.lidoLeitor(c.trim()); } return; }
   if (e.key.length !== 1) return; if (t - L.ult > 60) { L.buf = ''; L.t0 = t; } L.ult = t; L.buf += e.key; }, true); })();
+// "Enviar ao CVH" em qualquer módulo com escolha de arquivo (laudos, histórico, qualidade, ficha): o PDF do Compartilhar
+// entra no campo de arquivo da tela aberta, como se tivesse sido escolhido
+function alvoArquivo(w, mime) {
+  try { if (typeof w.CVH_ALVO_ARQUIVO === 'function') return w.CVH_ALVO_ARQUIVO(mime); } catch (_) { return null; }
+  const pdf = /pdf/i.test(mime || ''), L = [...w.document.querySelectorAll('input[type=file]')].filter(i => !i.disabled && (pdf ? /pdf/i.test(i.accept || '') : /image/i.test(i.accept || '') || !i.accept));
+  return L[0] || null;
+}
+(() => { let ocupado = false;
+  const olhar = async () => {
+    const fr = $('#modulo'), w = fr && fr.contentWindow; if (ocupado || document.hidden || !w || !E.sessao) return;
+    let doc; try { doc = w.document; } catch (_) { return; } if (!doc || !doc.querySelector('input[type=file]')) return;
+    ocupado = true;
+    try { const x = await api('caixaPegar', E.sessao); if (x && x.b64) { const alvo = alvoArquivo(w, x.mime);
+        if (!alvo) { toast('Chegou ' + x.nome + ' pelo Compartilhar, mas esta tela não recebe esse arquivo agora. Escolha o tipo de laudo e envie de novo.', 8000); }
+        else { const u8 = Uint8Array.from(atob(x.b64), c => c.charCodeAt(0)), dt = new w.DataTransfer(); dt.items.add(new w.File([u8], x.nome, { type: x.mime })); alvo.files = dt.files; alvo.dispatchEvent(new w.Event('change', { bubbles: true })); toast('PDF recebido pelo Compartilhar: ' + x.nome, 5000); } } } catch (_) {}
+    ocupado = false;
+  };
+  setInterval(olhar, 4000); document.addEventListener('visibilitychange', olhar); })();
 async function laudoDoPedido(id, tipo) {
   let d; try { d = await estoqueTx(true); } catch (e) { toast(e.message, 6000); return; }
   const a = (d.atendimentos || []).find(x => x.id === id); if (!a) { toast('Atendimento não encontrado.'); return; }

@@ -91,6 +91,15 @@ html,body{overflow-x:hidden;max-width:100%}
 .sugere{margin-top:8px;border-radius:10px;background:#F7F2EC;padding:9px 10px;font-size:13.5px}.sugere p{margin:0 0 6px}
 .ac-pai{position:relative}.ac-lista{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;margin:2px 0 0;padding:4px 0;list-style:none;background:#fff;border:1px solid var(--areia2);border-radius:10px;box-shadow:0 6px 18px rgba(95,19,15,.12);max-height:240px;overflow:auto}
 .ac-lista.on{display:block}.ac-lista li{padding:7px 10px;font-size:14px;font-weight:400;color:var(--tinta);cursor:pointer}.ac-lista li:hover,.ac-lista li.sel{background:#FBF6F1}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+#cam .linha{display:flex;gap:8px;margin:8px 0}#cam .linha input{flex:1;border:1px solid #C6B098;border-radius:10px;padding:10px;font-size:16px}#cam #camT{margin:0 0 4px;font-weight:700;color:#5F130F}#cam .bts .btn{width:100%}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -3222,7 +3231,7 @@ function caixaExame() {
   const doa = estado.receptor ? "" : campo("Doação", sel('data-x="doacao"', X.doacao, opDoa));
   return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}${lab ? campo("Laboratório", inp('data-x="labNome"', X.labNome)) + campo("Número no laboratório", inp('data-x="labNumero"', X.labNumero || "")) + campo("Liberado em", inp('data-x="labLiberado" type="date"', X.labLiberado || "")) + campo("Hora da liberação", inp('data-x="labHora" type="time"', X.labHora || "")) + campo("Liberado por (laboratório)", inp('data-x="labRt"', X.labRt || "", 'placeholder="nome e CRMV de quem liberou no laboratório"'), "larga") : ""}
     ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="obrigatório (do cadastro, se for do CVH)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH && !estado.receptor && estado.tipo !== "compat" ? "" : X.clinica || "", estado.receptor || estado.tipo === "compat" ? 'placeholder="obrigatória: clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
-    <p class="nota larga" style="margin:0">Leitor de código de barras: passe a etiqueta do tubo ou da bolsa. O painel bipa e preenche o número${estado.tipo === "compat" ? " da doação na prova" : " da amostra"}.</p>
+    <div class="larga"><button type="button" class="btn sec mini" data-a="lerCodigo">Ler a etiqueta com a câmera (código de barras ou QR)</button><span class="nota"> Ou passe a etiqueta no leitor de código de barras. O painel bipa e preenche o número${estado.tipo === "compat" ? " da doação na prova" : " da amostra"}.</span></div>
     ${CTX.temGemini ? `<div class="larga"><button type="button" class="btn sec mini" data-a="etiqueta">Ler a etiqueta da amostra</button><span class="nota" id="stEtq"> Com a foto da etiqueta do tubo ou do cartão, o painel preenche paciente, responsável, clínica, número, data da coleta e idade.</span></div>` : ""}
     ${estado.liberador ? campo("Assinado por", sel('data-vet="1"', estado.vet ? estado.vet.id : "", VETS.map((v) => [v.id, v.nome + (v.crmv ? " · " + v.crmv : "")])), "larga") + `<p class="nota larga">Você libera o laudo, que sai assinado pelo médico veterinário escolhido. Seu nome aparece discreto abaixo da assinatura.</p>` : ""}</div></div>`;
 }
@@ -3527,6 +3536,7 @@ function ligar() {
     if (a === "pdf-mais") { $("#arq").dataset.somar = "1"; $("#arq").click(); }
     if (a === "pdf-tecsa") $("#arqT").click();
     if (a === "foto") { const i = $("#arqFoto"); i.dataset.alvo = b.dataset.alvo; i.click(); }
+    if (a === "lerCodigo") { const t = await lerQR(estado.tipo === "compat" ? "Leia a etiqueta da bolsa" : "Leia a etiqueta da amostra"); if (t) lidoLeitor(codigo(t)); return; }
     if (a === "etiqueta") { const i = $("#arqFoto"); i.dataset.alvo = "etiqueta"; i.click(); }
     if (a === "tirar-foto") { const k3 = b.dataset.alvo; delete estado.fotos[k3]; if (k3 === "tubo") AMOSTRA_IMG.tubo = null; if (/^gel\d+$/.test(k3)) AMOSTRA_IMG.gel[+k3.slice(3)] = null; mudou(true); }
     if (a === "tirar-foto") { delete estado.fotos[b.dataset.alvo]; mudou(true); }
@@ -3612,8 +3622,59 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Enter") { const c = LEIT.buf; LEIT.buf = ""; if (c.length >= 3 && t - LEIT.t0 < 45 * c.length + 150) { e.preventDefault(); const el = document.activeElement; if (el && /INPUT|TEXTAREA/.test(el.tagName) && el.value.endsWith(c)) { el.value = el.value.slice(0, el.value.length - c.length); el.dispatchEvent(new Event("input", { bubbles: true })); } lidoLeitor(c.trim()); } return; }
   if (e.key.length !== 1) return; if (t - LEIT.ult > 60) { LEIT.buf = ""; LEIT.t0 = t; } LEIT.ult = t; LEIT.buf += e.key;
 }, true);
+/* ── leitura da etiqueta pela câmera (iPhone sem leitor USB): código de barras ou QR, com bipe ── */
+let JSQR = null, CAM_FIM = null;
+const toast = (m) => { const st = $("#st"); if (st) { st.className = "st"; st.textContent = m; } };
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+function lerQR(titulo) {
+  return new Promise(async (resolve) => {
+    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
+    let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
+    $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
+    $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
+    try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
+    catch (e) { if (!vivo) return; toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
+    let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
+    const passo = async () => {
+      if (!vivo) return;
+      try {
+        if (v.readyState >= 2) {
+          if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(60); return fim(r[0].rawValue); } }
+          else if (zx && (++n % 2 || !jq)) { const t = zx(v); if (t) { if (navigator.vibrate) navigator.vibrate(60); return fim(t); } }
+          else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(60); return fim(r.data); } }
+        }
+      } catch (e) {}
+      setTimeout(passo, det ? 90 : 40);
+    };
+    passo();
+  });
+}
+
+// código de barras (Code 128) pela câmera quando o celular não tem leitor próprio (iPhone): ZXing na faixa do meio da imagem
+let ZXP = null;
+function carregarZX() {
+  if (window.ZXing) return Promise.resolve(window.ZXing); if (ZXP) return ZXP;
+  ZXP = new Promise((ok, erro) => { const tenta = (src, depois) => { const sc = document.createElement("script"); sc.src = src; sc.onload = () => window.ZXing ? ok(window.ZXing) : depois(); sc.onerror = depois; document.head.appendChild(sc); }; let local = "bibliotecas/zxing.min.js"; try { if (window.parent !== window) local = new URL(local, window.parent.location.href).href; } catch (e) {} tenta(local, () => tenta("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js", () => { ZXP = null; erro(new Error("zxing")); })); });
+  return ZXP;
+}
+function leitorBarras(Z) {
+  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); const r = new Z.MultiFormatReader(); r.setHints(h);
+  const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height);
+    try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
+}
+// o QR pode trazer só o código ou um endereço com ?u= / ?c= / ?e=
+const codigo = (t) => { t = String(t || "").trim(); const m = t.match(/[?&](?:u|c|e)=([^&#]+)/); return (m ? decodeURIComponent(m[1]) : t).trim(); };
+const norm = (t) => codigo(t).toUpperCase().replace(/\s+/g, " ");
+
 window.lidoLeitor = lidoLeitor;
+// "Enviar ao CVH": qual campo recebe o PDF que chegou pelo Compartilhar (TECSA, IDEXX ou Citopet; foto da amostra)
+window.CVH_ALVO_ARQUIVO = (mime) => { if (/pdf/i.test(mime || "")) { if (estado.tipo === "tecsa") return $("#arqT"); if (!estado.tipo || estado.tipo === "idexx") { if (!estado.tipo) iniciarTipo("idexx"), montarForm(), renderPrevia(); return $("#arq"); } return null; } return null; };
 function lidoLeitor(c) {
+  if (CAM_FIM) return CAM_FIM(c);
   const st = $("#st"), msg = (t, erro) => { if (st) { st.className = "st" + (erro ? " erro" : ""); st.textContent = t; } };
   if (!estado.tipo) { bipe(false); return msg("Escolha o tipo de laudo antes de ler a etiqueta.", true); }
   const m = c.toUpperCase().replace(/\s+/g, " ").match(/^(\d{1,6}-\d{1,2})(?:\s+(CH|PFC|CRIO|CP|PPC|ST))?$/);
@@ -3686,5 +3747,6 @@ if (CTX.pdfLab && CTX.pdfLab.id) (async () => {
   document.addEventListener('focusin', function (e) { var x = e.target; if (x && (x.tagName === 'INPUT' || x.tagName === 'TEXTAREA') && !x.hasAttribute('autocomplete') && x.type !== 'password') x.setAttribute('autocomplete', 'off'); }, true); })();
 
 </script>
+<div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
 </body></html>
 <!--CVH-LAUDO-COMPLETO-->
