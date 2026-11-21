@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121165429';
+  var VERSAO = '20261121170842';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -507,12 +507,16 @@ function aplicarExame(d) {
   return marcados.length;
 }
 // colar: PDF ou foto copiados (WhatsApp, e-mail, Arquivos) entram sem precisar salvar no celular
-function arquivosDoColar(dt) { return [...((dt || {}).items || [])].filter((x) => x.kind === "file" && /^(image\/|application\/pdf)/.test(x.type)).map((x) => x.getAsFile()).filter(Boolean).map((f, i) => f.name && f.name !== "image.png" ? f : new File([f], f.type === "application/pdf" ? "Exame colado.pdf" : "Foto colada " + (i + 1) + ".jpg", { type: f.type })); }
-document.addEventListener("paste", (ev) => { if (!$("#exArq") || !$("#modal").classList.contains("on")) return; const L = arquivosDoColar(ev.clipboardData); const z = $("#exColarZona"); if (z) setTimeout(() => { z.textContent = "ou toque e segure aqui e escolha Colar"; }, 0); if (!L.length) { if (ev.target === z) { ev.preventDefault(); toast("Não encontrei PDF nem foto copiada. Copie o arquivo e tente de novo.", 5000); } return; } ev.preventDefault(); toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L); });
+function arquivosDoColar(dt) {
+  if (!dt) return []; const L = [...(dt.files || [])], vistos = new Set(L.map((f) => f.name + f.size)); [...(dt.items || [])].filter((x) => x.kind === "file").map((x) => x.getAsFile()).filter(Boolean).forEach((f) => { if (!vistos.has(f.name + f.size)) L.push(f); });
+  return L.filter((f) => /^image\/|pdf/i.test(f.type || "") || /\.(pdf|jpe?g|png|heic)$/i.test(f.name || "")).map((f, i) => { const pdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || ""); return pdf ? new File([f], /\.pdf$/i.test(f.name || "") ? f.name : "Exame colado.pdf", { type: "application/pdf" }) : f.name && f.name !== "image.png" ? f : new File([f], "Foto colada " + (i + 1) + ".jpg", { type: f.type || "image/jpeg" }); });
+}
+const tiposColados = (dt) => { const t = [...((dt || {}).items || [])].map((x) => x.kind + ":" + (x.type || "?")); return t.length ? t.join(", ") : "nada"; };
+document.addEventListener("paste", (ev) => { if (!$("#exArq") || !$("#modal").classList.contains("on")) return; const L = arquivosDoColar(ev.clipboardData); const z = $("#exColarZona"); if (z) setTimeout(() => { z.textContent = "ou toque e segure aqui e escolha Colar"; }, 0); if (!L.length) { if (ev.target === z || (z && z.contains(ev.target))) { ev.preventDefault(); toast("O iPhone não entregou o arquivo ao colar (" + tiposColados(ev.clipboardData) + "). Use Anexar hemograma ou requisição.", 8000); } return; } ev.preventDefault(); toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L); });
 async function colarExames() {
   try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = [];
-    for (const c of await navigator.clipboard.read()) { const t = c.types.find((x) => /^(image\/|application\/pdf)/.test(x)); if (t) L.push(new File([await c.getType(t)], t === "application/pdf" ? "Exame colado.pdf" : "Foto colada.jpg", { type: t })); }
-    if (!L.length) return toast("Não encontrei PDF nem foto copiada. Copie o arquivo e tente de novo.", 5000);
+    let tipos = []; for (const c of await navigator.clipboard.read()) { tipos = tipos.concat(c.types); const t = c.types.find((x) => /^image\/|pdf/i.test(x)); if (t) { const pdf = /pdf/i.test(t); L.push(new File([await c.getType(t)], pdf ? "Exame colado.pdf" : "Foto colada.jpg", { type: pdf ? "application/pdf" : t })); } }
+    if (!L.length) { const z = $("#exColarZona"); if (z) z.focus(); return toast("O botão só recebe imagem no iPhone" + (tipos.length ? " (veio " + tipos.join(", ") + ")" : "") + ". Para PDF, toque e segure no quadro tracejado e escolha Colar.", 8000); }
     toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L);
   } catch (_) { const z = $("#exColarZona"); if (z) { z.focus(); toast("Toque e segure no quadro tracejado e escolha Colar.", 5000); } }
 }
