@@ -3325,6 +3325,7 @@ function montarForm0() {
   }
   if (estado.tipo === "tecsa") { $("#form").innerHTML = topo + formTipo() + (estado.t.lido ? caixaExame() + caixaPaciente() + caixaObs() : ""); return; }
   $("#form").innerHTML = topo + caixaExame() + caixaPaciente() + formTipo() + caixaObs();
+  if (estado.tipo === "compat" && !(estado.t || {}).doadorExterno) pintarProvasRes();
 }
 
 /* ═════════════ sugestões de raça ao digitar ═════════════ */
@@ -3536,6 +3537,7 @@ function ligar() {
     if (a === "pdf-mais") { $("#arq").dataset.somar = "1"; $("#arq").click(); }
     if (a === "pdf-tecsa") $("#arqT").click();
     if (a === "foto") { const i = $("#arqFoto"); i.dataset.alvo = b.dataset.alvo; i.click(); }
+    if (a === "usarProva") { await usarProva(+b.dataset.v); return; }
     if (a === "lerCodigo") { const t = await lerQR(estado.tipo === "compat" ? "Leia a etiqueta da bolsa" : "Leia a etiqueta da amostra"); if (t) lidoLeitor(codigo(t)); return; }
     if (a === "etiqueta") { const i = $("#arqFoto"); i.dataset.alvo = "etiqueta"; i.click(); }
     if (a === "tirar-foto") { const k3 = b.dataset.alvo; delete estado.fotos[k3]; if (k3 === "tubo") AMOSTRA_IMG.tubo = null; if (/^gel\d+$/.test(k3)) AMOSTRA_IMG.gel[+k3.slice(3)] = null; mudou(true); }
@@ -3686,6 +3688,23 @@ function lidoLeitor(c) {
   const f = aplicarEtiqueta({ amostra: m ? m[1] : c });
   if (f.length) { bipe(); mudou(true); return msg("Etiqueta lida: " + f.join(", ") + "."); }
   bipe(false); msg("Código lido (" + c + "), mas não reconheci a etiqueta.", true);
+}
+// bolsas separadas para a prova (HemoCalculadora ou fracionamento): um toque põe a doação na prova e, se a bolsa é de um pedido, traz o paciente
+let PROVAS_RES = null;
+async function pintarProvasRes() {
+  const alvo = document.querySelector("#form .cx:last-of-type"); if (!alvo || document.querySelector("#provasRes")) return;
+  const box = document.createElement("div"); box.className = "cx"; box.id = "provasRes"; box.innerHTML = '<h3>Bolsas separadas para a prova</h3><p class="nota">Carregando…</p>';
+  const ref = document.querySelector("#form [data-comxm], #form [data-tb]"); (ref ? ref.closest(".cx") : alvo).insertAdjacentElement("beforebegin", box);
+  try { if (!PROVAS_RES) PROVAS_RES = await ponte("provasReservadas"); } catch (_) { PROVAS_RES = []; }
+  const em = (estado.t.provas || []).map((p) => p.doador);
+  box.innerHTML = PROVAS_RES.length ? '<h3>Bolsas separadas para a prova</h3><p class="nota">Toque para usar na prova. Se a bolsa é de um pedido, o paciente, o solicitante e a clínica vêm junto.</p><div class="mini-bts" style="flex-wrap:wrap">' +
+    PROVAS_RES.map((x, i) => '<button type="button" class="btn sec mini" data-a="usarProva" data-v="' + i + '"' + (em.includes(x.doacao) ? " disabled" : "") + ">" + esc(x.unidade + (x.volume ? " · " + x.volume + " mL" : "") + (x.paciente ? " · " + x.paciente : "") + (em.includes(x.doacao) ? " ✓" : "")) + "</button>").join("") + "</div>" : '<h3>Bolsas separadas para a prova</h3><p class="nota">Nenhuma bolsa reservada para prova no estoque. Digite o número da doação ou leia a etiqueta.</p>';
+}
+async function usarProva(i) {
+  const x = (PROVAS_RES || [])[i]; if (!x) return; const L = estado.t.provas;
+  let p = L.find((y) => !String(y.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); } p.doador = x.doacao;
+  if (x.atendimento && !String(estado.paciente.nome || "").trim()) { try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) estado.exame.solicitante = o.solicitante || ""; if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
+  mudou(true); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Doação " + x.doacao + " na prova" + (x.paciente ? ", paciente " + x.paciente : "") + ". Confira."; }
 }
 window.CVH_LAUDO_TESTE = (lidos) => { if (estado.tipo !== "idexx") iniciarTipo("idexx"); aplicarLeitura(lidos); montarForm(); renderPrevia(); };
 window.CVH_LAUDO = { lerFitaDea, imagemDe, desenharFita, estado, iniciarTipo, aplicarTecsa, lerTecsa, montarForm, renderPrevia, foto: (alvo, f) => { estado.fotos[alvo] = f; montarForm(); renderPrevia(); } };
