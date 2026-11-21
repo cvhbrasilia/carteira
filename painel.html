@@ -825,7 +825,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121104734';
+  var VERSAO = '20261121104935';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5625,6 +5625,9 @@ const PONTE = {
   labQualidade: async () => (await api('laboratoriosListar', E.sessao, false)).filter(x => ehQualidade(x) && x.situacao !== 'feito' && x.situacao !== 'ignorado').map(x => ({ labId: x.id, arquivoId: x.arquivoId, nome: x.nomeArquivo })),
   labFeito: async ids => { for (const id of ids || []) { try { await api('laboratorioMarcar', E.sessao, id, { situacao: 'feito' }); } catch (_) {} } return true; },
   // botões do laudo recém-assinado: últimos exames da carteira e Histórico Laboratorial, separados
+  // pedidos da Intensivet ainda abertos (para mandar o laudo do receptor de volta para a internação)
+  pedidosIntensivet: async () => { const d = await api('estDados', E.sessao); return (d.atendimentos || []).filter(a => (a.dados || {}).pedido && !['cancelado'].includes(a.etapa)).slice(0, 20).map(a => ({ id: a.id, paciente: a.paciente, criado: a.criado, pede: ((a.dados.pedido.bolsas || []).map(b => b.qtd + ' ' + b.componente).concat((a.dados.pedido.testes || []).map(t => ({ tipagem: 'tipagem', prova: 'prova de compatibilidade', coombs: 'Coombs' }[t] || t)))).join(' + ') })); },
+  laudoParaPedido: async o => { const r = (E.d.laudosReceptor || []).concat(E.d.registros).find(x => x.id === o.regId); if (!r) throw new Error('Laudo não encontrado.'); const d = r.dados || {}; await api('estPedidoResultado', E.sessao, o.pedido, { titulo: d.titulo || 'Laudo', url: (d.cel || {}).url || '', urlA4: (d.a4 || {}).url || '', codigo: r.codigo || r.id }); return true; },
   laudoEnvio: async o => {
     const r = await api('laudoEnvio', E.sessao, o.id, 'carteira' in o ? { carteira: !!o.carteira } : { historico: !!o.historico }); guardarRegistro(r);
     if (o.historico) setTimeout(() => atualizarHistoricoSozinho(r.animalId), 300);
