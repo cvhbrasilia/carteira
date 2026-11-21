@@ -217,7 +217,7 @@ async function concluirProd(coleta) {
 function linhaUnidade(u, fr) {
   const a = animalDe(u.animal_id), al = alertaValidade(u);
   return '<button class="unid' + (fr ? " fr" : "") + '" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + "</b><small>" + esc([a.nome, tipoTxt(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
-    (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
+    (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + ((u.dados || {}).qcPendente ? '<small><span class="chip al">Qualidade: aguarda decisão</span></small>' : "") + ((u.dados || {}).desleucocitacao ? '<small><span class="chip">desleucocitada</span></small>' : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
 }
 // frações logo abaixo da bolsa mãe (sub-linha em outra cor); se a mãe não está na lista, a fração aparece sozinha
 function listaAninhada(L) {
@@ -257,6 +257,9 @@ function abrirUnidade(id) {
     if ((u.local || "CVH") === "CVH" && ["disponivel", "reservada", "quarentena", "bloqueada"].includes(u.situacao)) acoes += bt("fracionar", "Fracionar");
     if (u.componente === "PFC" && (u.local || "CVH") === "CVH" && ["disponivel", "quarentena"].includes(u.situacao)) acoes += bt("crio", "Iniciar produção de CRIO");
     if (u.situacao === "producao_crio") acoes += bt("crioConcluir", "Concluir CRIO", " ") + bt("crioCancelar", "Cancelar produção de CRIO");
+    if (u.componente === "CH" && (u.local || "CVH") === "CVH" && !D.desleucocitacao) acoes += bt("desleuco", "Desleucocitar");
+    if (["CP", "PFC"].includes(u.componente) && (u.local || "CVH") === "CVH") acoes += bt("cor", D.qcPedido === "novaFoto" ? "Nova foto da coloração (pedida)" : "Avaliar coloração por foto", D.qcPedido === "novaFoto" ? " " : "sec");
+    if (!D.indicacaoDescarte && !D.qcPendente) acoes += bt("indicar", "Indicar para descarte");
     acoes += bt("descartar", "Descartar", "perigo");
   }
   if (!fim) acoes += bt("etq", "Etiqueta");
@@ -274,7 +277,12 @@ function abrirUnidade(id) {
     (D.uso ? "<dt>Uso</dt><dd>retirada " + esc(hora(D.uso.retiradaEm)) + (D.uso.transfundidaEm ? "<br>transfundida " + esc(hora(D.uso.transfundidaEm)) + " em " + esc((D.uso.paciente || {}).nome) + " (" + esc((D.uso.paciente || {}).peso) + " kg, Ht " + esc((D.uso.paciente || {}).ht) + "%)<br>" + esc((D.uso.vet || {}).nome) + " · " + esc((D.uso.vet || {}).crmv) + " · tel. responsável " + esc(D.uso.telefone) + "<br>" + (D.uso.contato === "ciente" ? "Responsável ciente, o CVH pode entrar em contato." : "Aguardar o médico veterinário avisar o responsável.") : "") + "</dd>" : "") +
     (D.uso && D.uso.transfundidaEm ? "</dl>" + blocoContato(u) + '<dl class="dl">' : "") +
     (D.devolucao ? "<dt>Devolução</dt><dd>" + esc(hora(D.devolucao.saidaEm)) + " · " + esc(D.devolucao.por) + (D.devolucao.recebidaEm ? " · recebida " + esc(hora(D.devolucao.recebidaEm)) + (D.devolucao.apta ? " (apta)" : " (para conferência)") : "") + "</dd>" : "") +
+    (D.desleucocitacao ? "<dt>Desleucocitação</dt><dd>" + esc(D.desleucocitacao.filtro) + " · " + fmt(D.desleucocitacao.antes) + " → " + fmt(D.desleucocitacao.depois) + " mL · diferença " + fmt(D.desleucocitacao.diferenca) + " mL (esperado " + fmt(D.desleucocitacao.esperado) + ' mL) <span class="chip ' + (D.desleucocitacao.alerta ? "al" : "ok") + '">' + (D.desleucocitacao.divergencia > 0 ? "+" : "") + fmt(D.desleucocitacao.divergencia) + " mL</span><br><small>" + esc(hora(D.desleucocitacao.em)) + " · " + esc(D.desleucocitacao.por) + "</small></dd>" : "") +
+    ((D.coloracoes || []).length ? "<dt>Coloração</dt><dd>" + D.coloracoes.map((c) => '<span class="chip ' + (c.resultado === "normal" ? "ok" : "al") + '">' + (c.resultado === "normal" ? "dentro do padrão" : c.resultado === "inadequada" ? "foto inadequada" : "fora do padrão") + "</span> " + esc(c.motivo || "") + " <small>" + esc(hora(c.em)) + " · " + esc(c.por) + "</small>" + (c.fotoUrl ? ' · <a href="' + esc(c.fotoUrl) + '" target="_blank" rel="noopener">foto</a>' : "")).join("<br>") + "</dd>" : "") +
+    (D.indicacaoDescarte ? "<dt>Indicação de descarte</dt><dd>" + esc(D.indicacaoDescarte.motivo) + " <small>" + esc(D.indicacaoDescarte.por) + " · " + esc(hora(D.indicacaoDescarte.em)) + "</small></dd>" : "") +
+    ((D.decisoesQC || []).length ? "<dt>Decisões de qualidade</dt><dd>" + D.decisoesQC.map((x) => esc({ liberar: "Liberada para uso", novaFoto: "Pediu nova foto", descartar: "Descarte determinado" }[x.decisao] || x.decisao) + (x.nota ? ": " + esc(x.nota) : "") + " <small>" + esc(x.por) + " · " + esc(hora(x.em)) + "</small>").join("<br>") + "</dd>" : "") +
     (D.descarte ? "<dt>Descarte</dt><dd>" + esc(D.descarte.motivo) + " · " + esc(D.descarte.por) + "</dd>" : "") + (D.bloqueio && u.situacao === "bloqueada" ? "<dt>Bloqueio</dt><dd>" + esc(D.bloqueio.motivo) + "</dd>" : "") + "</dl>" +
+    (D.qcPendente && S.admin && !fim ? '<div class="cx" style="margin:10px 0;border-color:var(--verm)"><h2>Decisão do controle de qualidade</h2><p><small>Enquanto a decisão estiver pendente, a bolsa fica fora das sugestões da HemoCalculadora.</small></p><label>Nota (opcional)</label><textarea id="qcNota" rows="2" style="width:100%;border:1px solid var(--areia2);border-radius:10px;padding:8px"></textarea><div class="bts" style="margin-top:8px"><button class="btn peq" data-a="qcDec" data-v="liberar">Liberar para uso</button><button class="btn sec peq" data-a="qcDec" data-v="novaFoto">Pedir nova foto</button><button class="btn perigo peq" data-a="qcDec" data-v="descartar">Determinar descarte</button></div></div>' : "") +
     (acoes ? '<div class="bts">' + acoes + '</div><div id="uForm"></div>' : "") + '<h2 style="margin-top:18px">Histórico</h2>' + (evs.length ? evs.map((e) => '<div class="ev"><b>' + esc(rotEvento(e.tipo)) + "</b> <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small>" + detEvento(e) + "</div>").join("") : '<p class="vazio">Sem registros.</p>');
   abrirGaveta(u.id + " · " + (NOME_COMP[u.componente] || u.componente), h);
 }
@@ -289,13 +297,14 @@ function textoRequisicao(u) {
   return ["Requisição de hemocomponente · emergência na Intensivet", "Paciente: " + (P.nome || ""), "Peso: " + (P.peso || "") + " kg", "Hematócrito: " + (P.ht || "") + "%", "Telefone do responsável: " + (U.telefone || ""), "Médico veterinário: " + (V.nome || "") + " · " + (V.crmv || ""),
     "Bolsa: " + u.id + " · " + (NOME_COMP[u.componente] || u.componente) + (u.volume_ml ? " · " + u.volume_ml + " mL" : "") + (tipoTxt(a) ? " · " + tipoTxt(a) : ""), "Retirada: " + hora(U.retiradaEm), "Transfusão registrada: " + hora(U.transfundidaEm), ((D.contatoCVH || {}).notas ? "Informações do contato:\n" + D.contatoCVH.notas : "")].filter(Boolean).join("\n");
 }
-const ROT_EV = { "unidade:transfusaoCorrigida": "Transfusão corrigida (não usada)", "ocorrencia": "Ocorrência informada", "unidade:contato": "Contato com o responsável", "unidade:saida": "Saiu do CVH na remessa", "unidade:guardada": "Guardada no equipamento", "unidade:fotoGuarda": "Foto da guarda", "unidade:retirada": "Retirada para transfusão", "unidade:retiradaCancelada": "Retirada cancelada", "unidade:transfundida": "Transfundida", "unidade:devolvida": "Devolvida ao CVH", "unidade:receberDevolucao": "Devolução recebida no CVH", "remessa:criada": "Remessa preparada", "remessa:saida": "Saída da remessa", "remessa:entrega": "Remessa entregue", "remessa:recebida": "Remessa recebida", "remessa:cancelar": "Remessa cancelada", "remessa:uber": "Link do Uber", "unidade:criada": "Entrou no estoque", "unidade:liberar": "Liberada", "unidade:reservar": "Reservada", "unidade:cancelarReserva": "Reserva cancelada", "unidade:descartar": "Descartada", "unidade:mover": "Local alterado", "unidade:congelar": "Congelamento iniciado", "unidade:conferirCongelamento": "Congelamento conferido", "unidade:bloquear": "Bloqueada", "unidade:desbloquear": "Desbloqueada", "unidade:editar": "Dados corrigidos", "unidade:corrigida": "Produção corrigida", "producao:peso_st": "Peso do ST", "producao:centrifugacao": "Centrifugação", "producao:ch_sem_sag": "CH sem SAG", "producao:ch_com_sag": "CH com SAG", "producao:cp_pfc": "CP e PFC", "producao:concluida": "Produção concluída" };
+const ROT_EV = { "unidade:desleucocitar": "Desleucocitada", "unidade:coloracao": "Coloração avaliada por foto", "unidade:indicarDescarte": "Indicada para descarte", "unidade:decisaoQC": "Decisão de qualidade", "conferencia": "Conferência física", "unidade:transfusaoCorrigida": "Transfusão corrigida (não usada)", "ocorrencia": "Ocorrência informada", "unidade:contato": "Contato com o responsável", "unidade:saida": "Saiu do CVH na remessa", "unidade:guardada": "Guardada no equipamento", "unidade:fotoGuarda": "Foto da guarda", "unidade:retirada": "Retirada para transfusão", "unidade:retiradaCancelada": "Retirada cancelada", "unidade:transfundida": "Transfundida", "unidade:devolvida": "Devolvida ao CVH", "unidade:receberDevolucao": "Devolução recebida no CVH", "remessa:criada": "Remessa preparada", "remessa:saida": "Saída da remessa", "remessa:entrega": "Remessa entregue", "remessa:recebida": "Remessa recebida", "remessa:cancelar": "Remessa cancelada", "remessa:uber": "Link do Uber", "unidade:criada": "Entrou no estoque", "unidade:liberar": "Liberada", "unidade:reservar": "Reservada", "unidade:cancelarReserva": "Reserva cancelada", "unidade:descartar": "Descartada", "unidade:mover": "Local alterado", "unidade:congelar": "Congelamento iniciado", "unidade:conferirCongelamento": "Congelamento conferido", "unidade:bloquear": "Bloqueada", "unidade:desbloquear": "Desbloqueada", "unidade:editar": "Dados corrigidos", "unidade:corrigida": "Produção corrigida", "producao:peso_st": "Peso do ST", "producao:centrifugacao": "Centrifugação", "producao:ch_sem_sag": "CH sem SAG", "producao:ch_com_sag": "CH com SAG", "producao:cp_pfc": "CP e PFC", "producao:concluida": "Produção concluída" };
 const rotEvento = (t) => ROT_EV[t] || t;
 function detEvento(e) { const d = e.dados || {}, x = [d.texto, d.remessa ? "remessa " + d.remessa : "", d.equipamento, d.minutos != null ? d.minutos + " min" + (d.noPrazo === false ? ", fora do prazo" : "") : "", d.paciente, d.vet, d.reserva, d.motivo, d.local, d.justificativa, d.congelado === true ? "congelado" : d.congelado === false ? "ainda não congelado" : ""].filter(Boolean); return x.length ? "<br><small>" + esc(x.join(" · ")) + "</small>" : ""; }
-const PEDE = { reservar: ["Reservar para", "clínica, paciente ou procedimento", "reserva"], descartar: ["Motivo do descarte", "", "motivo"], bloquear: ["Motivo do bloqueio", "", "motivo"], mover: ["Novo local", "ex.: CVH, Intensivet", "local"] };
+const PEDE = { indicar: ["Motivo da indicação para descarte", "ex.: plasma avermelhado, coágulo, vazamento", "motivo"], reservar: ["Reservar para", "clínica, paciente ou procedimento", "reserva"], descartar: ["Motivo do descarte", "", "motivo"], bloquear: ["Motivo do bloqueio", "", "motivo"], mover: ["Novo local", "ex.: CVH, Intensivet", "local"] };
 async function acaoUnidade(acao, o) {
   const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
   let a = acao; o = o || {};
+  if (acao === "indicarDescarte") acao = "indicar";
   // ações que pedem um texto: o campo aparece na própria ficha
   if (PEDE[acao] && !o[PEDE[acao][2]]) {
     const [rot, ph, k] = PEDE[acao];
@@ -303,6 +312,9 @@ async function acaoUnidade(acao, o) {
       '<div class="bts" style="margin-top:10px"><button class="btn peq ' + (acao === "descartar" ? "perigo" : "") + '" data-a="uConf" data-v="' + acao + '">Confirmar</button><button class="btn peq sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div>';
     const t = $("#uTxt"); if (t) t.focus(); return;
   }
+  if (acao === "indicar") a = "indicarDescarte";
+  if (acao === "desleuco") { $("#uForm").innerHTML = formDesleuco(u); calcDesleuco(); return; }
+  if (acao === "cor") { $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px"><h2>Coloração de ' + esc(u.id) + '</h2><p><small>Foto do ' + esc(u.componente) + ' sobre fundo branco, com boa luz e sem reflexo. A foto não vai para a galeria do celular.</small></p><input type="file" id="corArq" accept="image/*" capture="environment" hidden><button class="btn" data-a="corFoto">Tirar a foto</button><div id="corRes"></div></div>'; return; }
   if (acao === "fracionar") { S.nFr = 1; $("#uForm").innerHTML = formFracionar(u); calcFracionar(); $("#fPI").focus(); return; }
   if (acao === "crio") { try { const r = await est("estCrioIniciar", u.id); Object.assign(u, r); toast("Plasma em produção de CRIO. Saiu do saldo de PFC."); pintar(); abrirUnidade(u.id); } catch (e) { toast(e.message, 6000); } return; }
   if (acao === "crioCancelar") { try { const r = await est("estCrioCancelar", u.id); Object.assign(u, r); toast("Produção de CRIO cancelada."); pintar(); abrirUnidade(u.id); } catch (e) { toast(e.message, 6000); } return; }
@@ -312,6 +324,41 @@ async function acaoUnidade(acao, o) {
   if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
   try { const r = await est("estUnidadeAcao", u.id, a, o); Object.assign(u, r); S.ev.unshift({ quando: new Date().toISOString(), coleta: u.coleta, unidade_id: u.id, tipo: "unidade:" + a, usuario: CTX.usuario || "", dados: o }); toast("Feito."); pintar(); abrirUnidade(u.id); }
   catch (e) { toast(e.message, 6000); }
+}
+
+/* ── desleucocitação (5.2): filtros Fresenius; o estoque fica com o volume depois do filtro ── */
+const FILTROS = [["BioR 01 plus/max", 33], ["BioR 02 plus", 50]];
+function formDesleuco(u) {
+  return '<div class="cx" style="margin-top:12px"><h2>Desleucocitar ' + esc(u.id) + '</h2><label>Filtro</label><select id="dlF">' + FILTROS.map(([n, v]) => '<option value="' + n + '">' + n + " · retém ±" + v + " mL</option>").join("") + "</select>" +
+    '<label>Volume antes (mL)</label><input type="text" inputmode="decimal" id="dlA" value="' + (u.volume_ml != null ? fmt(u.volume_ml) : "") + '"><label>Volume depois (mL)</label><input type="text" inputmode="decimal" id="dlD"><p id="dlR"></p>' +
+    '<div class="bts"><button class="btn peq" data-a="dlConf">Registrar</button><button class="btn sec peq" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div></div>';
+}
+function calcDesleuco() {
+  const a = num(($("#dlA") || {}).value), d = num(($("#dlD") || {}).value), f = FILTROS.find((x) => x[0] === ($("#dlF") || {}).value) || FILTROS[0], r = $("#dlR"); if (!r) return;
+  if (a == null || d == null) { r.innerHTML = "<small>O filtro retém cerca de " + f[1] + " mL. O estoque fica com o volume depois.</small>"; return; }
+  const dif = a - d, div = dif - f[1];
+  r.innerHTML = "Diferença observada <b>" + fmt(dif) + " mL</b> · esperada " + f[1] + ' mL · divergência <span class="chip ' + (Math.abs(div) > 10 ? "al" : "ok") + '">' + (div > 0 ? "+" : "") + fmt(div) + " mL</span>";
+}
+document.addEventListener("input", (ev) => { if (["dlA", "dlD", "dlF"].includes(ev.target.id)) calcDesleuco(); });
+document.addEventListener("change", (ev) => { if (ev.target.id === "dlF") calcDesleuco(); if (ev.target.id === "corArq") avaliarCor(ev.target.files[0]); });
+// coloração (5.6): cor média do centro da foto; plasma esperado amarelo (sem tom vermelho nem verde)
+let COR_AV = null;
+async function avaliarCor(file) {
+  const u = S.uni.find((x) => x.id === S.uniAberta), box = $("#corRes"); if (!u || !file || !box) return;
+  const img = await new Promise((ok, erro) => { const url = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(url); ok(im); }; im.onerror = () => erro(new Error("Não consegui abrir a foto.")); im.src = url; }).catch((e) => { toast(e.message); return null; }); if (!img) return;
+  const k = Math.min(1, 1000 / Math.max(img.naturalWidth, img.naturalHeight)), cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+  const cx = cv.getContext("2d"); cx.drawImage(img, 0, 0, cv.width, cv.height);
+  const w = cv.width, h = cv.height, px = cx.getImageData(Math.round(w * 0.3), Math.round(h * 0.3), Math.max(1, Math.round(w * 0.4)), Math.max(1, Math.round(h * 0.4))).data;
+  let R = 0, G = 0, B = 0, n = 0; for (let i = 0; i < px.length; i += 16) { R += px[i]; G += px[i + 1]; B += px[i + 2]; n++; } R /= n; G /= n; B /= n;
+  const lum = (R + G + B) / 3, hsl = (() => { const r = R / 255, g = G / 255, b = B / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b); let hh = 0; if (mx !== mn) { const dd = mx - mn; hh = mx === r ? ((g - b) / dd) % 6 : mx === g ? (b - r) / dd + 2 : (r - g) / dd + 4; hh *= 60; if (hh < 0) hh += 360; } return hh; })();
+  let resultado = "normal", motivo = "tom amarelado, dentro do padrão";
+  if (lum < 45 || lum > 248) { resultado = "inadequada"; motivo = lum < 45 ? "foto escura demais" : "foto clara demais"; }
+  else if (R - G > 45 && hsl < 30) { resultado = "fora"; motivo = "tom avermelhado (possível hemólise)"; }
+  else if (hsl > 75 && hsl < 180 && G > R) { resultado = "fora"; motivo = "tom esverdeado"; }
+  else if (lum < 90 && R > G) { resultado = "fora"; motivo = "cor escura (avaliar hemólise ou contaminação)"; }
+  COR_AV = { b64: cv.toDataURL("image/jpeg", 0.8).split(",")[1], resultado, motivo, cor: { r: Math.round(R), g: Math.round(G), b: Math.round(B), h: Math.round(hsl) } };
+  box.innerHTML = '<img src="data:image/jpeg;base64,' + COR_AV.b64 + '" style="max-width:100%;border-radius:10px;margin:8px 0"><p><span class="chip ' + (resultado === "normal" ? "ok" : "al") + '">' + (resultado === "normal" ? "Dentro do padrão" : resultado === "inadequada" ? "Foto inadequada" : "Fora do padrão") + "</span> " + esc(motivo) + "</p>" +
+    (resultado === "inadequada" ? '<p><small>Tire outra foto com mais luz, sobre fundo branco.</small></p><button class="btn sec peq" data-a="corFoto">Tirar outra foto</button>' : '<p><small>A avaliação automática apoia, mas não descarta sozinha. ' + (resultado === "fora" ? "O Plínio recebe o aviso com a foto." : "") + '</small></p><div class="bts"><button class="btn peq" data-a="corSalvar">Registrar a avaliação</button><button class="btn sec peq" data-a="corFoto">Tirar outra foto</button></div>');
 }
 
 /* ── fracionamento por pesagem (4.2 a 4.4) ── */
@@ -367,6 +414,8 @@ function pendencias() {
   S.uni.filter(congPendente).forEach((u) => L.push({ g: "p", n: 0, t: (u.componente === "CRIO" ? "Verificar CRIO " : "Verificar congelamento do plasma ") + u.id, s: "congelamento iniciado " + hora(u.dados.congelamento.inicio) + (u.componente === "CRIO" ? " · 6 horas completas " + hora(Date.parse(u.dados.congelamento.inicio) + 216e5) : ""), a: "uni", v: u.id }));
   S.uni.filter((u) => u.situacao === "producao_crio").forEach((u) => L.push({ g: "p", n: 1, t: "CRIO em produção a partir de " + u.id, s: "iniciado " + hora(u.dados.crio.inicio), a: "uni", v: u.id }));
   S.uni.forEach((u) => { const al = alertaValidade(u); if (al && al.n <= 5) L.push({ g: "e", n: al.n <= 1 ? 0 : 2, t: u.id + " · " + al.t, s: ROT_SIT[u.situacao] + " · " + (u.local || ""), a: "uni", v: u.id }); });
+  S.uni.filter((u) => (u.dados || {}).qcPendente && !["utilizada", "descartada"].includes(u.situacao)).forEach((u) => L.push({ g: "e", n: 0, t: u.id + " · qualidade aguarda decisão", s: ((u.dados.indicacaoDescarte || {}).motivo || ((u.dados.coloracoes || []).slice(-1)[0] || {}).motivo || ""), a: "uni", v: u.id }));
+  S.uni.filter((u) => (u.dados || {}).qcPedido === "novaFoto" && !["utilizada", "descartada"].includes(u.situacao)).forEach((u) => L.push({ g: "p", n: 1, t: "Nova foto da coloração de " + u.id, s: "pedida pelo Plínio", a: "uni", v: u.id }));
   S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ g: "e", n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
   return L.filter((x) => x.g === (PROD ? "p" : "e")).sort((a, b) => a.n - b.n);
 }
@@ -605,10 +654,10 @@ function pintar() {
   const nP = pendencias().filter((x) => x.n <= 1).length;
   const aba = (k, t, b) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (b ? "<b>" + b + "</b>" : "") + "</button>";
   const abas = PROD ? aba("hoje", "Para fazer hoje", nP) + aba("prod", "Coletas") + aba("frac", "Fracionamento") + aba("hist", "Histórico")
-    : aba("hoje", "Resolver hoje", nP) + aba("estoque", "Bolsas") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("hist", "Histórico");
-  const ok = PROD ? ["hoje", "prod", "frac", "hist"] : ["hoje", "estoque", "rem", "int", "hist"]; if (!ok.includes(S.aba)) S.aba = "hoje";
+    : aba("hoje", "Resolver hoje", nP) + aba("estoque", "Bolsas") + aba("rem", "Remessas", S.rem.filter((r) => ["preparo", "transito", "entregue", "recebida"].includes(r.situacao)).length) + aba("int", "Intensivet", S.uni.filter((u) => u.situacao === "transito" && /CVH/.test(u.local || "")).length) + aba("conf", "Conferência") + aba("rel", "Relatórios") + aba("hist", "Histórico");
+  const ok = PROD ? ["hoje", "prod", "frac", "hist"] : ["hoje", "estoque", "rem", "int", "conf", "rel", "hist"]; if (!ok.includes(S.aba)) S.aba = "hoje";
   $("#app").innerHTML = '<div class="topo"><h1>' + (PROD ? "Produção<small>Bancada: coletas, fracionamento, CRIO, congelamento e etiquetas</small>" : "Estoque<small>Bolsas prontas, liberação, validades, remessas e Intensivet</small>") + '</h1><button class="btn sec peq" data-a="camera">Ler com a câmera</button></div>' + kpis() + '<nav class="abas">' + abas + "</nav>" +
-    ({ hoje: PROD ? telaHojeProd : telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, rem: telaRemessas, int: telaIntensivet, hist: telaHist }[S.aba] || telaHoje)();
+    ({ hoje: PROD ? telaHojeProd : telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, rem: telaRemessas, int: telaIntensivet, conf: telaConf, rel: telaRel, hist: telaHist }[S.aba] || telaHoje)();
 }
 
 /* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
@@ -737,6 +786,7 @@ document.addEventListener("keydown", (e) => {
 }, true);
 function lido(txt) {
   const c = String(txt).trim().replace(/^.*[?&](?:u|c|e)=/, ""), C = c.toUpperCase().replace(/\s+/g, " ");
+  if (S.aba === "conf" && S.conf && !$("#gaveta").classList.contains("on")) return lidoConf(C);
   const u = S.uni.find((x) => x.id.toUpperCase() === C), r = S.rem.find((x) => x.id === C);
   // remessa em montagem: a leitura marca a bolsa
   const cx = document.querySelector('[data-sel="' + (u ? u.id.replace(/"/g, "") : "") + '"]');
@@ -745,6 +795,82 @@ function lido(txt) {
   if (r) { bip(); return abrirRem(r.id); }
   bip(false); toast("Código não encontrado no estoque: " + c, 5000);
 }
+
+/* ── conferência física (19): escolher o local, ler as bolsas em sequência e comparar com o sistema ── */
+function locaisConf() { return [...new Set(["CVH", "Intensivet"].concat(S.uni.map((u) => u.local || "CVH"), S.eq.map((e) => e.local)))].filter(Boolean); }
+function telaConf() {
+  const C = S.conf = S.conf || { local: "CVH", equipamento: "", lidos: [], res: null };
+  const eqs = S.eq.filter((e) => e.local === C.local && e.ativo !== false);
+  const ult = S.ev.filter((e) => e.tipo === "conferencia").slice(0, 8);
+  return '<div class="cx"><h2>Conferência física do estoque</h2><p class="nota">Escolha o local, leia as bolsas que estão lá (leitor, câmera ou digitando) e toque em Comparar. Nada muda sozinho: divergências ficam para você conferir.</p>' +
+    '<div class="duas"><div><label>Local</label><select id="cfLocal">' + locaisConf().map((l) => '<option' + (l === C.local ? " selected" : "") + ">" + esc(l) + "</option>").join("") + '</select></div><div><label>Equipamento (opcional; o QR do equipamento também escolhe)</label><select id="cfEq"><option value="">Todos do local</option>' + eqs.map((e) => '<option value="' + esc(e.id) + '"' + (e.id === C.equipamento ? " selected" : "") + ">" + esc(e.nome) + "</option>").join("") + "</select></div></div>" +
+    '<label>Ler ou digitar o código da bolsa</label><div style="display:flex;gap:8px"><input type="text" id="cfCod" placeholder="ex.: 912-3 CH" autocomplete="off" style="flex:1"><button class="btn sec peq" data-a="cfAdd">Incluir</button><button class="btn sec peq" data-a="camera">Câmera</button></div>' +
+    '<p><b>' + C.lidos.length + (C.lidos.length === 1 ? " bolsa lida" : " bolsas lidas") + "</b>" + (C.lidos.length ? ' · <button class="btn sec peq" data-a="cfLimpar">Recomeçar</button>' : "") + "</p>" + (C.lidos.length ? '<div class="chips">' + C.lidos.map((x) => '<span class="chip">' + esc(x) + "</span>").join(" ") + "</div>" : "") +
+    '<div class="bts" style="margin-top:10px"><button class="btn" data-a="cfComparar"' + (C.lidos.length ? "" : " disabled") + ">Comparar com o sistema</button></div>" + (C.res ? htmlConf(C.res) : "") + "</div>" +
+    (ult.length ? '<div class="cx"><h2>Últimas conferências</h2>' + ult.map((e) => { const d = e.dados || {}; return '<div class="ev"><b>' + esc(d.local || "") + (d.equipamento ? " · " + esc(d.equipamento) : "") + "</b> <small>" + esc(hora(e.quando)) + " · " + esc(e.usuario) + "</small><br><small>" + (d.encontradas || []).length + " encontradas · " + (d.faltando || []).length + " não encontradas · " + (d.outroLocal || []).length + " em outro local · " + (d.desconhecidas || []).length + " desconhecidas</small></div>"; }).join("") + "</div>" : "");
+}
+function htmlConf(r) {
+  const lista = (t, L, cls, f) => L.length ? '<h3 style="margin:12px 0 4px">' + t + " · " + L.length + "</h3>" + L.map((x) => '<div class="lin"><div class="t"><b>' + esc(typeof x === "string" ? x : x.id) + "</b><small>" + esc(f ? f(x) : "") + '</small></div><span class="chip ' + cls + '">' + (cls === "ok" ? "ok" : "conferir") + "</span></div>").join("") : "";
+  const uni = (id) => S.uni.find((u) => u.id === id) || {};
+  return '<div style="margin-top:12px">' + lista("Encontradas", r.encontradas, "ok", (id) => { const u = uni(id), al = alertaValidade(u); return [ROT_SIT[u.situacao], u.equipamento, al ? al.t : ""].filter(Boolean).join(" · "); }) +
+    lista("Esperadas e não encontradas", r.faltando, "al", (id) => { const u = uni(id); return [ROT_SIT[u.situacao], u.equipamento].filter(Boolean).join(" · "); }) +
+    lista("Lidas aqui, mas o sistema diz outro local", r.outroLocal, "al", (x) => [x.local, x.equipamento, ROT_SIT[x.situacao]].filter(Boolean).join(" · ")) +
+    lista("Lidas aqui com situação diferente", r.situacao, "al", (x) => ROT_SIT[x.situacao] || x.situacao) +
+    lista("Códigos que não existem no estoque", r.desconhecidas, "al", () => "confira a etiqueta") +
+    (r.faltando.length || r.outroLocal.length || r.situacao.length || r.desconhecidas.length ? "" : '<p><span class="chip ok">Tudo confere</span></p>') +
+    '<div class="bts" style="margin-top:10px"><button class="btn sec peq" data-a="cfRegistrar">Registrar esta conferência no histórico</button></div></div>';
+}
+function lidoConf(C) {
+  const C2 = S.conf; if (!C2) return;
+  const eq = S.eq.find((e) => String(e.id).toUpperCase() === C); if (eq) { C2.local = eq.local; C2.equipamento = eq.id; bip(); toast("Equipamento: " + eq.nome); return pintar(); }
+  if (C2.lidos.includes(C)) { bip(false); return toast(C + " já foi lida."); }
+  const u = S.uni.find((x) => x.id.toUpperCase() === C); C2.lidos.push(u ? u.id : C); C2.res = null; bip(!!u); if (!u) toast("Código não encontrado: " + C, 3000);
+  pintar();
+}
+document.addEventListener("change", (ev) => { if (!S.conf) return; if (ev.target.id === "cfLocal") { S.conf.local = ev.target.value; S.conf.equipamento = ""; S.conf.res = null; pintar(); } if (ev.target.id === "cfEq") { S.conf.equipamento = ev.target.value; S.conf.res = null; pintar(); } });
+document.addEventListener("keydown", (ev) => { if (ev.target.id === "cfCod" && ev.key === "Enter") { ev.preventDefault(); ev.stopPropagation(); const v = ev.target.value.trim(); if (v) lidoConf(v.toUpperCase().replace(/\s+/g, " ")); setTimeout(() => { const i = $("#cfCod"); if (i) i.focus(); }, 30); } }, true);
+
+/* ── relatórios (20): período, posição, produção, movimentos, qualidade e rastreabilidade; planilha e impressão ── */
+function telaRel() {
+  const R = S.rel = S.rel || { ini: hojeISO().slice(0, 8) + "01", fim: hojeISO(), d: null, q: "" };
+  return '<div class="cx"><h2>Relatórios do estoque</h2><div class="duas"><div><label>De</label><input type="date" id="rlIni" value="' + R.ini + '"></div><div><label>Até</label><input type="date" id="rlFim" value="' + R.fim + '"></div></div>' +
+    '<div class="bts" style="margin-top:10px"><button class="btn" data-a="rlGerar">Gerar</button>' + (R.d ? '<button class="btn sec" data-a="rlCsv">Planilha (CSV)</button><button class="btn sec" data-a="rlImp">Imprimir (computador)</button>' : "") + "</div></div>" +
+    (R.d ? htmlRel(R) : '<p class="vazio">Escolha o período e toque em Gerar.</p>');
+}
+function secoesRel(R) {
+  const d = R.d, U = d.unidades, vivas = S.uni.filter((u) => !["utilizada", "descartada"].includes(u.situacao)), noPer = (x) => { const t = String(x || "").slice(0, 10); return t >= d.ini && t <= d.fim; };
+  const conta = (L, f) => { const o = {}; L.forEach((x) => { const k = f(x) || "não informado"; o[k] = (o[k] || 0) + 1; }); return Object.entries(o).sort((a, b) => b[1] - a[1]); };
+  const vol = (L) => Math.round(L.reduce((t, u) => t + (+u.volume_ml || 0), 0));
+  const S2 = [];
+  S2.push(["Posição atual do estoque", conta(vivas, (u) => (NOME_COMP[u.componente] || u.componente) + " · " + (ROT_SIT[u.situacao] || u.situacao)).map(([k, n]) => [k, n])]);
+  S2.push(["Por local e equipamento", conta(vivas, (u) => (u.local || "CVH") + (u.equipamento ? " · " + u.equipamento : "")).map(([k, n]) => [k, n])]);
+  S2.push(["Por tipo sanguíneo", conta(vivas, (u) => u.componente + " · " + (tipoTxt(animalDe(u.animal_id)) || "tipagem não informada")).map(([k, n]) => [k, n])]);
+  S2.push(["Por hemocomponente (volume total)", ["CH", "CP", "PFC", "CRIO", "PPC"].map((c) => { const L = vivas.filter((u) => u.componente === c); return [NOME_COMP[c], L.length + " bolsas · " + vol(L) + " mL"]; }).filter((x) => !/^0 /.test(x[1]))]);
+  S2.push(["Vencem em até 10 dias", vivas.filter((u) => { const al = alertaValidade(u); return al && al.n <= 10; }).map((u) => [u.id, br(String(u.validade).slice(0, 10)) + " · " + (ROT_SIT[u.situacao] || "") + " · " + (u.local || "CVH")])]);
+  S2.push(["Produção no período (bolsas criadas)", conta(U.filter((u) => noPer(u.criado)), (u) => NOME_COMP[u.componente] || u.componente).map(([k, n]) => [k, n]).concat([["Coletas processadas", d.producao.length]])]);
+  const fr = U.flatMap((u) => ((u.dados || {}).fracionamentos || []).filter((c) => noPer(c.em)).map((c) => [u.id, br(String(c.em).slice(0, 10)) + " · inicial " + fmt(c.volumeInicial, 1) + " mL · " + c.fracoes.map((f) => f.id + " " + fmt(f.volume, 1) + " mL").join(", ") + " · restante " + fmt(c.volumeRestante, 1) + " mL" + (c.nivel && c.nivel !== "ok" ? " · " + c.nivel : "")]));
+  S2.push(["Fracionamentos", fr]);
+  S2.push(["Diferenças de volume nos processamentos", U.flatMap((u) => ((u.dados || {}).fracionamentos || []).filter((c) => noPer(c.em) && c.nivel && c.nivel !== "ok").map((c) => [u.id, "fracionamento · " + c.nivel + (c.diferenca != null ? " · " + fmt(c.diferenca, 1) + " mL" : "")])).concat(U.filter((u) => (u.dados || {}).desleucocitacao && u.dados.desleucocitacao.alerta && noPer(u.dados.desleucocitacao.em)).map((u) => [u.id, "desleucocitação · divergência " + fmt(u.dados.desleucocitacao.divergencia) + " mL"]))]);
+  S2.push(["Desleucocitação", U.filter((u) => (u.dados || {}).desleucocitacao && noPer(u.dados.desleucocitacao.em)).map((u) => { const x = u.dados.desleucocitacao; return [u.id, x.filtro + " · " + fmt(x.antes) + " → " + fmt(x.depois) + " mL · retido " + fmt(x.diferenca) + " mL (esperado " + x.esperado + ")"]; })]);
+  S2.push(["Reservas atuais", vivas.filter((u) => u.situacao === "reservada").map((u) => [u.id, u.reserva || ""])]);
+  S2.push(["Remessas no período", d.remessas.map((r) => [r.id, (r.destino || "") + " · " + (r.unidades || []).length + " bolsas · " + r.situacao + (r.saida_em ? " · saiu " + hora(r.saida_em) : "") + (r.recebida_em ? " · recebida " + hora(r.recebida_em) + " (" + (r.recebida_por || "") + ")" : "")])]);
+  S2.push(["Tempos de guarda na Intensivet", U.filter((u) => (u.dados || {}).guarda && noPer(u.dados.guarda.em)).map((u) => [u.id, u.dados.guarda.minutos != null ? u.dados.guarda.minutos + " min" + (u.dados.guarda.noPrazo === false ? " · fora do prazo" : "") : "sem tempo"])]);
+  S2.push(["Transfusões", U.filter((u) => u.situacao === "utilizada" && noPer(((u.dados || {}).uso || {}).transfundidaEm || u.atualizado)).map((u) => { const x = (u.dados || {}).uso || {}; return [u.id, (x.paciente || {}).nome ? x.paciente.nome + " · " + (x.vet || {}).nome : "transfundida"]; })]);
+  S2.push(["Descartes", U.filter((u) => u.situacao === "descartada" && noPer(((u.dados || {}).descarte || {}).em || u.atualizado)).map((u) => [u.id, ((u.dados || {}).descarte || {}).motivo || ""])]);
+  S2.push(["Cancelamentos e devoluções", d.eventos.filter((e) => /retiradaCancelada|transfusaoCorrigida|devolucao|receberDevolucao/.test(e.tipo)).map((e) => [e.unidade_id || "", rotEvento(e.tipo) + " · " + hora(e.quando)])]);
+  S2.push(["Liberações", d.eventos.filter((e) => /liberar|liberacao/.test(e.tipo)).map((e) => [e.unidade_id || "", hora(e.quando) + " · " + e.usuario + ((e.dados || {}).justificativa ? " · " + e.dados.justificativa : "")])]);
+  S2.push(["Conferências físicas", d.eventos.filter((e) => e.tipo === "conferencia").map((e) => { const x = e.dados || {}; return [(x.local || "") + (x.equipamento ? " · " + x.equipamento : ""), hora(e.quando) + " · " + (x.encontradas || []).length + " ok, " + (x.faltando || []).length + " não encontradas, " + (x.outroLocal || []).length + " em outro local"]; })]);
+  S2.push(["Coloração do CP e do PFC", U.flatMap((u) => ((u.dados || {}).coloracoes || []).filter((c) => noPer(c.em)).map((c) => [u.id, (c.resultado === "normal" ? "dentro do padrão" : c.resultado) + (c.motivo ? " · " + c.motivo : "") + " · " + c.por])).concat(U.filter((u) => (u.dados || {}).indicacaoDescarte && noPer(u.dados.indicacaoDescarte.em)).map((u) => [u.id, "indicada para descarte por " + u.dados.indicacaoDescarte.por + ": " + u.dados.indicacaoDescarte.motivo])).concat(U.flatMap((u) => ((u.dados || {}).decisoesQC || []).filter((x) => noPer(x.em)).map((x) => [u.id, "decisão: " + x.decisao + (x.nota ? " · " + x.nota : "")])))]);
+  S2.push(["Controle de qualidade da produção", d.producao.map((p) => { const D = p.dados || {}, sag = D.ch || D.sag || {}; return [p.coleta, [D.peso_st ? "ST " + fmt((D.peso_st || {}).peso || D.peso_st, 1) + " g" : "", sag.volumeSag != null ? "SAG " + fmt(sag.volumeSag, 1) + " mL" : "", sag.htMedio != null ? "Ht usado " + fmt(sag.htMedio, 1) + "%" : "", D.htFinal != null ? "micro-Ht " + fmt(D.htFinal, 1) + "%" : "", p.etapa].filter(Boolean).join(" · ")]; })]);
+  return S2;
+}
+function htmlRel(R) {
+  const q = R.q, d = R.d, trilha = q ? d.unidades.filter((u) => [u.id, u.coleta, (u.dados || {}).segmento, (u.dados || {}).identificacao, (animalDe(u.animal_id) || {}).nome].join(" ").toUpperCase().includes(q.toUpperCase())) : [];
+  return '<div class="cx"><h2>Rastreabilidade</h2><label>Buscar por coleta, bolsa, segmento ou doador</label><input type="text" id="rlBusca" value="' + esc(q) + '" placeholder="ex.: 573-8, manguito, nome do doador">' +
+    (q ? (trilha.length ? trilha.map((u) => '<div class="lin"><div class="t"><b>' + esc(u.id) + "</b><small>" + esc([NOME_COMP[u.componente], ROT_SIT[u.situacao] || u.situacao, u.local, u.mae_id ? "fração de " + u.mae_id : ""].filter(Boolean).join(" · ")) + "</small><small>" + d.eventos.filter((e) => e.unidade_id === u.id).map((e) => esc(rotEvento(e.tipo)) + " " + esc(hora(e.quando))).join(" → ") + '</small></div><button class="btn sec peq" data-a="uni" data-v="' + esc(u.id) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada encontrado no período.</p>') : "") + "</div>" +
+    secoesRel(R).map(([t, L]) => '<div class="cx"><h2>' + esc(t) + (L.length ? " · " + L.length : "") + "</h2>" + (L.length ? L.map(([k, v]) => '<div class="lin"><div class="t"><b>' + esc(k) + "</b><small>" + esc(v) + "</small></div></div>").join("") : '<p class="vazio">Nada no período.</p>') + "</div>").join("");
+}
+document.addEventListener("input", (ev) => { if (ev.target.id === "rlBusca" && S.rel) { S.rel.q = ev.target.value; clearTimeout(S.rel.t); S.rel.t = setTimeout(() => { pintar(); const i = $("#rlBusca"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 350); } if ((ev.target.id === "rlIni" || ev.target.id === "rlFim") && S.rel) S.rel[ev.target.id === "rlIni" ? "ini" : "fim"] = ev.target.value; });
 
 /* ── câmera do celular como leitor: bip na hora, sem confirmar; montando remessa, continua aberta para ler várias ── */
 let JSQR = null;
@@ -766,7 +892,7 @@ function leitorBarras(Z) {
 let CAM = null;
 async function abrirCamera() {
   bip.liberar && bip.liberar();
-  const cx = $("#camE"), v = cx.querySelector("video"), continua = () => !!document.querySelector("[data-sel]");
+  const cx = $("#camE"), v = cx.querySelector("video"), continua = () => !!document.querySelector("[data-sel]") || (S.aba === "conf" && !!S.conf);
   $("#camEt").textContent = continua() ? "Leia as bolsas da remessa, uma depois da outra" : "Aponte para o código da bolsa"; $("#camEl").innerHTML = ""; cx.classList.add("on");
   const st = CAM = { vivo: true, fluxo: null, ult: {}, det: null, jq: null };
   if (!("BarcodeDetector" in window)) { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }
@@ -870,6 +996,17 @@ document.addEventListener("click", async (ev) => {
   if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
   if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado."); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
+  if (a === "cfAdd") { const i = $("#cfCod"); if (i && i.value.trim()) lidoConf(i.value.trim().toUpperCase().replace(/\s+/g, " ")); return; }
+  if (a === "cfLimpar") { S.conf.lidos = []; S.conf.res = null; return pintar(); }
+  if (a === "cfComparar" || a === "cfRegistrar") { try { S.conf.res = await est("estConferencia", { local: S.conf.local, equipamento: S.conf.equipamento, lidos: S.conf.lidos, registrar: a === "cfRegistrar" }); if (a === "cfRegistrar") { await recarregar(); toast("Conferência registrada no histórico."); } pintar(); } catch (e) { toast(e.message, 6000); } return; }
+  if (a === "rlGerar") { b.disabled = true; try { S.rel.d = await est("estRelatorio", S.rel.ini, S.rel.fim); pintar(); } catch (e) { toast(e.message, 6000); } b.disabled = false; return; }
+  if (a === "rlCsv") { const q = (x) => '"' + String(x == null ? "" : x).replace(/"/g, '""') + '"', L = ["Relatório do estoque CVH;" + br(S.rel.ini) + " a " + br(S.rel.fim)]; secoesRel(S.rel).forEach(([t, R]) => { L.push(""); L.push(q(t)); R.forEach(([k, v]) => L.push(q(k) + ";" + q(v))); }); L.push(""); L.push(q("Bolsas do período")); L.push(["Bolsa", "Hemocomponente", "Coleta", "Situação", "Local", "Equipamento", "Volume (mL)", "Validade", "Reserva", "Bolsa mãe"].map(q).join(";")); S.rel.d.unidades.forEach((u) => L.push([u.id, u.componente, u.coleta, ROT_SIT[u.situacao] || u.situacao, u.local, u.equipamento, u.volume_ml, String(u.validade || "").slice(0, 10), u.reserva, u.mae_id].map(q).join(";")));
+    const txt = "\ufeff" + L.join("\r\n"), b64 = btoa(unescape(encodeURIComponent(txt))); try { await ponte("baixar", "Relatório estoque CVH " + S.rel.ini + " a " + S.rel.fim + ".csv", b64); } catch (e) { toast(e.message, 5000); } return; }
+  if (a === "rlImp") return imprimirDoc("Relatório do estoque CVH", '<div style="font:12px/1.4 Arial;color:#2b2320;padding:20px"><h1 style="color:#5F130F;font-size:20px">Relatório do estoque CVH · ' + br(S.rel.ini) + " a " + br(S.rel.fim) + "</h1>" + secoesRel(S.rel).map(([t, L]) => '<h2 style="color:#A83D3D;font-size:14px;margin:14px 0 4px">' + esc(t) + "</h2>" + (L.length ? '<table style="width:100%;border-collapse:collapse">' + L.map(([k, v]) => '<tr><td style="border-bottom:1px solid #EEE5DB;padding:3px 6px;width:30%"><b>' + esc(k) + '</b></td><td style="border-bottom:1px solid #EEE5DB;padding:3px 6px">' + esc(v) + "</td></tr>").join("") + "</table>" : "<p>Nada no período.</p>")).join("") + "</div>");
+  if (a === "dlConf") { const u = S.uni.find((x) => x.id === S.uniAberta); return acaoUnidade("desleucocitar", { filtro: $("#dlF").value, volAntes: num($("#dlA").value), volDepois: num($("#dlD").value) }); }
+  if (a === "corFoto") { const f = $("#corArq"); if (f) { f.value = ""; f.click(); } return; }
+  if (a === "corSalvar") { if (!COR_AV) return; const o = { foto: COR_AV.b64, resultado: COR_AV.resultado, motivo: COR_AV.motivo, cor: COR_AV.cor }; COR_AV = null; return acaoUnidade("coloracao", o); }
+  if (a === "qcDec") { if (v === "descartar" && !confirm("Determinar o descarte desta bolsa?")) return; return acaoUnidade("decisaoQC", { decisao: v, nota: ($("#qcNota") || {}).value || "" }); }
   if (a === "uConf") { const t = ($("#uTxt") || {}).value || "", k = PEDE[v][2]; if (!t.trim()) return toast("Preencha o campo."); const o = { [k]: t.trim() }; if (v === "mover") o.equipamento = ($("#uEq") || {}).value || ""; return acaoUnidade(v, o); }
   const c = S.prodAberta; if (!c) return;
   try {

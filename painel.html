@@ -825,7 +825,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121011415';
+  var VERSAO = '20261121104226';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5613,7 +5613,7 @@ const PONTE = {
     return pr;
   },
   cep: c => api('apiCep', c),
-  baixar: (nome, b64) => { const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([bytesDeB64(b64)], { type: 'application/pdf' })); l.download = nome; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 30000); return true; },
+  baixar: (nome, b64) => { const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([bytesDeB64(b64)], { type: /\.csv$/i.test(nome) ? 'text/csv;charset=utf-8' : /\.png$/i.test(nome) ? 'image/png' : 'application/pdf' })); l.download = nome; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 30000); return true; },
   voltarReceitas: () => { E.modSujo = false; sairModulo(); return true; },
   voltarLaudos: () => { E.modSujo = false; sairModulo(); return true; },
   abrirHistorico: () => { const aid = E.animal; if (!aid || !pode('historico')) throw new Error('Sem acesso ao Histórico Laboratorial.'); E.modSujo = false; E.ponte = null; E.modAberto = null; E.modulo = 'historico'; abrirModulo('historico', aid); return true; },
