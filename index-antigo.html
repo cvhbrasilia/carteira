@@ -462,6 +462,7 @@ a.btn{text-decoration:none}
 .ct-mini{display:flex;align-items:center;gap:14px;cursor:pointer}.ct-mini .ct-ano{width:62px;height:62px;filter:none}.ct-mini small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-mini b{display:block;font-size:17px;color:var(--vinho)}.ct-mini span{font-size:13px;color:#7A6A62}
 .ct-oc{margin-top:16px}.ct-oc-l{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFE6DC}
 .av-i.lido{opacity:.55}
+.cf-fis{margin:.5em 0 .2em;padding:.5em .7em;border:1px dashed var(--areia,#EEE5DB);border-radius:.6em;font-size:.82em;color:var(--vinho)}.cf-fis p{margin:0 0 .3em}.cf-fis .mini.on{background:var(--vinho);color:#fff}
 .ct-cart{display:flex;gap:.8em;align-items:center;background:#fff;border:1px solid var(--areia,#EEE5DB);border-radius:.8em;padding:.55em .8em;margin:.4em 0;cursor:pointer}.ct-cart .ct-ano{width:3.6em;height:3.6em;filter:none}
 .ct-cart small{display:block;font-size:.62em;letter-spacing:.14em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-cart b{display:block;font-size:.9em;color:var(--vinho)}
 .ct-lks{display:flex;gap:.4em;margin-top:.35em}.ct-lks button{font:inherit;font-size:.68em;font-weight:700;color:var(--vinho);background:#F5EFE7;border:0;border-radius:99px;padding:.3em .8em;cursor:pointer}
@@ -820,7 +821,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121002832';
+  var VERSAO = '20261121003530';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -936,9 +937,14 @@ function chip(prox) {
   if (n <= 30) return '<span class="chip alerta">Vence em ' + n + (n > 1 ? ' dias' : ' dia') + '</span>';
   return '<span class="chip ok">Em dia</span>';
 }
-const COR_TIPO = { vacina: '#A83D3D', vermifugo: '#C49A6C', ecto: '#2F7D4F', reforco: '#E0A21B' };
-function pendencias(regs) {
+const COR_TIPO = { vacina: '#A83D3D', vermifugo: '#C49A6C', ecto: '#2F7D4F', reforco: '#E0A21B', doacao: '#5F130F' };
+// próxima coleta do doador: 3 meses depois da última doação (o mesmo dia do mês)
+function proximaColeta(r) { const an = animalDe(r.animalId), d = r.dados || {}; if (!an || an.doador !== '1' || an.aposentadoEm || d.naoColetado || (d.ficha && d.ficha.tempo === 'NC') || !/^\d{4}-\d{2}-\d{2}$/.test(r.data || '')) return ''; return r.proxima || somaMeses(r.data, 3); }
+function pendencias(regs, comColeta) {
   const u = ultimos(regs), h = hoje(), out = [];
+  // próxima coleta: só da doação mais recente
+  const ultDoa = comColeta ? regs.filter(r => r.tipo === 'doacao').sort((a, b) => (a.data || '').localeCompare(b.data || '')).pop() : null;
+  if (ultDoa) { const px = proximaColeta(ultDoa); if (px) out.push({ r: ultDoa, tipo: 'doacao', data: px, rot: 'Próxima coleta', det: '3 meses depois da doação de ' + br(ultDoa.data) }); }
   regs.forEach(r => {
     if (!u.has(r.id)) return;
     const d = r.dados || {};
@@ -2456,7 +2462,8 @@ function pgIdent(an, regs) {
   const agTodos = ((E.d && E.d.agenda) || []).filter(a => a.animalId === an.id).sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora)), proxDoa = agTodos.find(a => a.tipo === 'doacao' && a.data >= hoje());
   const ag = agTodos.filter(a => a !== proxDoa).slice(0, 2);
   const agHtml = ag.map(a => '<li class="ag-prox" style="--c:' + (AG_TIPO[a.tipo] || AG_TIPO.outro)[1] + '"><i class="bola"></i><div class="txt"><b>' + (AG_TIPO[a.tipo] || AG_TIPO.outro)[0] + (a.tipo === 'retorno' || a.tipo === 'outro' ? ' agendado' : ' agendada') + '</b><small>' + br(a.data) + ' às ' + esc(a.hora) + (a.status === 'confirmado' ? ' · confirmado' : '') + '</small></div></li>').join('');
-  const pend = pendencias(regs);
+  // com a próxima doação já marcada na agenda, a sugestão de 3 meses sai da lista
+  const pend = pendencias(regs, true).filter(p => !(p.tipo === 'doacao' && proxDoa));
   const lista0 = pend.length ? '<ul class="prox">' + pend.slice(0, 5).map(p => '<li style="--c:' + COR_TIPO[p.tipo] + '"><i class="bola"></i><div class="txt"><b>' + esc(p.rot) + '</b><small>' + esc(p.det) + '</small></div><div class="dt">' + br(p.data) + '<br>' + chip(p.data) + '</div></li>').join('') + '</ul>' : '<p class="nada">Nenhuma data agendada.</p>';
   // a próxima doação agendada aparece em destaque, acima de todos os outros avisos
   const destaque = proxDoa ? '<div class="prox-doa"><span>Próxima doação agendada</span><b>' + br(proxDoa.data) + (proxDoa.hora ? ' às ' + esc(proxDoa.hora) : '') + '</b><small>' + (d => d <= 0 ? 'É hoje' : d === 1 ? 'É amanhã' : 'Faltam ' + d + ' dias')(Math.round((new Date(proxDoa.data + 'T12:00') - new Date(hoje() + 'T12:00')) / 864e5)) + (proxDoa.status === 'confirmado' ? ' · confirmada' : '') + '</small></div>' : '';
@@ -2465,7 +2472,15 @@ function pgIdent(an, regs) {
     c('Espécie', esc(an.especie)) + c('Raça', esc(an.raca)) + c('Sexo', esc(an.sexo)) + c('Nascimento', an.nascimento ? br(an.nascimento) + ' <small>· ' + idade(an.nascimento) + '</small>' : '') +
     c('Microchip', esc(an.microchip), 'larga mono') + c('Responsável', esc(rp.nome), 'larga') + (an.doador === '1' ? c('Doações registradas', String(nDoa)) : '') +
     (an.doador === '1' && an.aposentadoEm ? c('Clube do Doador', 'Aposentado em ' + br(an.aposentadoEm) + (an.aposentadoMotivo ? ' <small>· ' + esc(an.aposentadoMotivo.toLowerCase()) + '</small>' : ''), 'larga') : '') +
-    '</div><div class="sec"><h2>Próximas datas</h2></div>' + destaque + (destaque && lista0.indexOf('class="nada"') >= 0 && !agHtml ? '' : lista));
+    '</div>' + cartaoFisicoHtml(an) + '<div class="sec"><h2>Próximas datas</h2></div>' + destaque + (destaque && lista0.indexOf('class="nada"') >= 0 && !agHtml ? '' : lista));
+}
+// cartão de vacina físico: aviso na carteira e, para o médico veterinário no painel, os botões para marcar onde está
+function cartaoFisicoHtml(an) {
+  const cf = an.cartaoFisico || '', vet = E.modo === 'painel' && !E.previa && E.u && E.u.vetId;
+  const txt = cf === 'cvh' ? 'O cartão de vacina em papel está guardado no CVH.' : cf === 'responsavel' ? 'O cartão de vacina em papel está com o responsável.' : '';
+  if (!txt && !vet) return '';
+  return '<div class="cf-fis">' + (txt ? '<p>' + txt + '</p>' : '<p>Cartão de vacina em papel: não informado.</p>') +
+    (vet ? '<div class="mini-bts"><button class="mini' + (cf === 'responsavel' ? ' on' : '') + '" data-acao="cartao-fisico" data-id="' + an.id + '" data-v="responsavel">Com o responsável</button><button class="mini' + (cf === 'cvh' ? ' on' : '') + '" data-acao="cartao-fisico" data-id="' + an.id + '" data-v="cvh">No CVH</button></div>' : '') + '</div>';
 }
 function pgSecao(an, s, cartoes, add) {
   let corpo = '<div class="sec"><h2>' + s.titulo + '</h2></div>' + cartoes.join('');
@@ -3301,7 +3316,9 @@ function avisosDe(aid) {
     if (r.tipo === 'doacao' && !(d.naoColetado) && !d.certOculto) novos.push({ tit: 'Certificado de doação disponível', det: 'Veja na aba Certificados.', data: r.data, t: 'cert', cert: r.id });
   });
   const lembretes = [], doador = an.doador === '1' && !an.aposentadoEm;
-  pendencias(regs).filter(p => p.data <= somaDiasIso(h, 30)).forEach(p => {
+  const agDoa = ((E.d && E.d.agenda) || []).some(a => a.animalId === aid && a.tipo === 'doacao' && a.data >= h);
+  pendencias(regs, !agDoa).filter(p => p.data <= somaDiasIso(h, 30)).forEach(p => {
+    if (p.tipo === 'doacao') { if (p.data >= h) lembretes.push({ tit: 'Próxima coleta', det: 'A partir de ' + br(p.data) + '. Fale com o CVH para agendar.', classe: 'prev', rot: 'Clube do Doador', venc: false }); return; }
     const obrig = p.tipo === 'vacina', venc = p.data < h;
     lembretes.push({ tit: p.rot + (p.det ? ' · ' + p.det : ''), det: (venc ? 'Venceu em ' : 'Vence em ') + br(p.data), classe: obrig ? 'obrig' : 'prev', rot: obrig ? (doador ? 'Obrigatória para doar' : 'Obrigação') : 'Recomendação preventiva', venc });
   });
@@ -5204,7 +5221,7 @@ function telaInicio(busca) {
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
     (mod === 'tcle' ? termosTipos() + '<p class="nota">Toque no responsável para preparar o TCLE com os dados do cadastro. Para ver os termos em andamento e os que aguardam a assinatura do CVH, use o botão abaixo.</p><button class="btn sec2" data-acao="tcle-todos">Ver todos os termos</button>' : '') +
-    (cart ? '<section class="cartao"><h3>Próximos 30 dias</h3>' + (venc.length ? venc.map(v => '<button class="venc" data-acao="abrir-animal" data-id="' + v.an.id + '"><div class="t"><b>' + esc(v.an.nome) + '</b> · ' + esc(v.rot) + '<small>' + esc(v.det) + ' · ' + br(v.data) + '</small></div>' + chip(v.data) + '</button>').join('') : '<p class="vazio-p">Nada vencendo nos próximos 30 dias.</p>') + '</section>' : '') +
+    (cart ? cartaoVerm() : '') + (cart ? '<section class="cartao"><h3>Próximos 30 dias</h3>' + (venc.length ? venc.map(v => '<button class="venc" data-acao="abrir-animal" data-id="' + v.an.id + '"><div class="t"><b>' + esc(v.an.nome) + '</b> · ' + esc(v.rot) + '<small>' + esc(v.det) + ' · ' + br(v.data) + '</small></div>' + chip(v.data) + '</button>').join('') : '<p class="vazio-p">Nada vencendo nos próximos 30 dias.</p>') + '</section>' : '') +
     '<div class="busca"><input id="busca" type="search" placeholder="Buscar animal, responsável ou microchip" value="' + esc(busca || '') + '" aria-label="Buscar"></div>' +
     (pode(['cadastro', 'carteiras']) ? '<button class="btn" data-acao="novo-resp">+ Novo responsável</button>' : '') +
     '<section class="cartao" id="lista"></section></div></main>' + '';
@@ -5635,7 +5652,8 @@ const PONTE = {
     const doa = regsDe(an.id).filter(r => r.tipo === 'doacao');
     const igual = (o.numero ? doa.find(r => r.dados && r.dados.numero === o.numero) : null) || doa.find(r => r.data === o.data && !(r.dados && r.dados.ficha));
     const fotoAnt = igual && igual.dados && igual.dados.foto;
-    guardarRegistro(await api('salvarRegistro', E.sessao, { id: igual ? igual.id : '', vetId: o.vetId || '', animalId: an.id, tipo: 'doacao', grupo: 'doacao', data: o.data, proxima: '', dados: Object.assign({}, o.dados, { cel, a4 }, foto ? { foto } : fotoAnt ? { foto: fotoAnt } : {}) }));
+    const px = (o.dados || {}).naoColetado || ((o.dados || {}).ficha || {}).tempo === 'NC' || an.doador !== '1' || an.aposentadoEm ? '' : somaMeses(o.data, 3);
+    guardarRegistro(await api('salvarRegistro', E.sessao, { id: igual ? igual.id : '', vetId: o.vetId || '', animalId: an.id, tipo: 'doacao', grupo: 'doacao', data: o.data, proxima: px, dados: Object.assign({}, o.dados, { cel, a4 }, foto ? { foto } : fotoAnt ? { foto: fotoAnt } : {}) }));
     if (o.rascunhoId) { try { await api('fichaAndamentoExcluir', E.sessao, o.rascunhoId); } catch (_) {} E.d.fichasAndamento = (E.d.fichasAndamento || []).filter(x => x.id !== o.rascunhoId); }
     return { atualizado: !!igual, animal: an.nome, fichas: fichasDe(an.id) };
   }
@@ -5692,6 +5710,37 @@ addEventListener('message', async ev => {
 });
 
 /* ── registros ── */
+// vermífugo pelo peso: comprimidos sugeridos pela dose do produto (kg por comprimido); só entra na carteira depois de confirmado no formulário
+const VERM_KG_CP = { 'Vermicanis Plus': 30 };
+const pesoNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) && n > 0 ? n : 0; };
+function compPorPeso(prod, peso) {
+  const kg = VERM_KG_CP[prod], p = pesoNum(peso); if (!kg || !p) return '';
+  const n = Math.max(0.5, Math.ceil(p / kg / 1.1 * 2) / 2) /* para cima em meio comprimido, com 10% de tolerância */, int = Math.floor(n), meio = n - int >= 0.5;
+  return (int ? String(int) : '') + (meio ? (int ? ' e ' : '') + '1/2' : '');
+}
+const vermDispLocal = () => { try { return JSON.parse(localStorage.getItem('cvh_verm_disp') || '[]'); } catch (_) { return []; } };
+// doações (ficha com peso) e receitas com vermífugo dos últimos 30 dias que ainda não viraram vermífugo na carteira
+function vermParaConfirmar() {
+  const h = hoje(), lim = somaDiasIso(h, -30), out = [], disp = vermDispLocal();
+  E.d.animais.filter(a => a.ativo !== '0').forEach(a => {
+    const regs = regsDe(a.id), ultV = regs.filter(r => r.tipo === 'vermifugo').map(r => r.data).sort().pop() || '';
+    regs.filter(r => r.tipo === 'doacao' && r.data >= lim && r.data > ultV && a.doador === '1' && pesoNum((r.dados || {}).peso) && !(r.dados || {}).naoColetado && !(r.dados || {}).vermDispensado)
+      .forEach(r => out.push({ an: a, r, origem: 'ficha', data: r.data, peso: r.dados.peso, produto: 'Vermicanis Plus' }));
+    regs.filter(r => r.tipo === 'receita' && r.data >= lim && r.data > ultV && !disp.includes(r.id)).forEach(r => {
+      const it = ((r.dados || {}).docs || []).flatMap(d => d.itens || []).find(i => VERMIFUGOS.some(v => semAc(i.med || '').includes(semAc(v)))); if (!it) return;
+      const prod = VERMIFUGOS.filter(v => semAc(it.med).includes(semAc(v))).sort((x, y) => y.length - x.length)[0];
+      out.push({ an: a, r, origem: 'receita', data: r.data, peso: ultimoPeso(a.id), produto: prod, dose: [it.qtd, it.posologia].filter(Boolean).join(' · ') });
+    });
+  });
+  return out.sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+}
+function cartaoVerm() {
+  if (!pode('carteiras')) return '';
+  const L = vermParaConfirmar(); if (!L.length) return '';
+  return '<section class="cartao"><h3>Vermífugo para confirmar · ' + L.length + '</h3><p class="nota">Calculado pelo peso da ficha do dia ou tirado da receita. Só entra na carteira depois que você confere e salva.</p>' + L.map(x => { const cp = compPorPeso(x.produto, x.peso);
+    return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.an.nome) + '</b> · ' + esc(x.produto) + (cp ? ', ' + esc(cp) + (cp === '1' ? ' comprimido' : ' comprimidos') : '') + '<small>' + esc([x.origem === 'ficha' ? 'Ficha de doação de ' + br(x.data) : 'Receita de ' + br(x.data), x.peso ? 'peso ' + String(x.peso).replace('.', ',') + ' kg' : '', VERM_KG_CP[x.produto] ? '1 cp a cada ' + VERM_KG_CP[x.produto] + ' kg' : '', x.dose || ''].filter(Boolean).join(' · ')) + '</small></div>' +
+      '<div class="mini-bts"><button class="mini" data-acao="verm-confirmar" data-aid="' + x.an.id + '" data-rid="' + x.r.id + '">Conferir e lançar</button><button class="mini" data-acao="verm-dispensar" data-rid="' + x.r.id + '" data-o="' + x.origem + '">Dispensar</button></div></div>'; }).join('') + '</section>';
+}
 const VERMIFUGOS = ['Vermicanis', 'Vermicanis Plus', 'Drontal Plus', 'Milbemax C', 'Endogard', 'Canex Plus 3', 'Basken Plus', 'Drontal Gatos', 'Milbemax G'];
 const ECTOS = { 'Bravecto': [84, 'Comprimido'], 'NexGard': [30, 'Comprimido'], 'NexGard Spectra': [30, 'Comprimido'], 'Simparic': [35, 'Comprimido'], 'Credeli': [30, 'Comprimido'], 'Seresto': [240, 'Coleira'], 'Revolution': [30, 'Pipeta'], 'Advocate': [30, 'Pipeta'], 'Frontline Plus': [30, 'Pipeta'] };
 const TITULOS = { vacina: 'vacina', vermifugo: 'vermifugação', ecto: 'antiparasitário', doacao: 'doação de sangue', obs: 'observação', historico: 'histórico laboratorial', tcle: 'termo de consentimento' };
@@ -5803,6 +5852,9 @@ function abrirFormRegistro(r, pre) {
       const ref = $('#fRef'), tem = $('#fTemRef');
       const sync = () => { ref.disabled = !tem.checked; if (tem.checked && !ref.value && fData.value) ref.value = somaDias(fData.value, 15); };
       tem.onchange = sync; sync();
+      // comprimidos pelo peso, para os vermífugos com dose conhecida (o valor sugerido pode ser trocado)
+      let compAuto = compPorPeso(vl('fProd'), vl('fPeso')) === vl('fComp') ? vl('fComp') : ''; const calcComp = () => { const c = compPorPeso(vl('fProd'), vl('fPeso')), i = $('#fComp'); if (!i || !c) return; if (!i.value.trim() || i.value.trim() === compAuto) { i.value = c; compAuto = c; } };
+      ['fProd', 'fPeso'].forEach(k => { const el = $('#' + k); if (el) { el.addEventListener('change', calcComp); el.addEventListener('input', calcComp); } }); calcComp();
       fData.oninput = fData.onchange = () => { if (!fData.value) return; if (tem.checked) ref.value = somaDias(fData.value, 15); $('#fProx').value = somaMeses(fData.value, 3); };
     }
     if (tipo === 'ecto') {
@@ -6402,6 +6454,20 @@ const ACOES = {
   fechar: fecharFolha,
   'como-resp': () => verComoResponsavel(E.resp),
   'voltar-painel': voltarAoPainel,
+  'cartao-fisico': async b => {
+    const an = animalDe(b.dataset.id); if (!an) return; const v = an.cartaoFisico === b.dataset.v ? '' : b.dataset.v; b.disabled = true;
+    try { const at = await api('animalCartaoFisico', E.sessao, an.id, v); Object.assign(an, at); reabrir(); toast(v === 'cvh' ? 'Marcado: cartão no CVH.' : v === 'responsavel' ? 'Marcado: cartão com o responsável.' : 'Marcação retirada.'); } catch (e) { b.disabled = false; toast(e.message, 5000); }
+  },
+  'verm-confirmar': b => {
+    const x = vermParaConfirmar().find(v => v.r.id === b.dataset.rid); if (!x) return;
+    E.animal = x.an.id; E.resp = x.an.responsavelId;
+    abrirFormRegistro({ tipo: 'vermifugo', animalId: x.an.id }, { data: x.data, proxima: somaMeses(x.data, 3), dados: { produto: x.produto, comprimidos: compPorPeso(x.produto, x.peso), peso: x.peso || '' } });
+  },
+  'verm-dispensar': async b => {
+    if (b.dataset.o === 'ficha') { try { guardarRegistro(await api('anexarFichaDoacao', E.sessao, b.dataset.rid, null, { vermDispensado: true })); } catch (e) { return toast(e.message, 5000); } }
+    else { const L = vermDispLocal(); L.push(b.dataset.rid); try { localStorage.setItem('cvh_verm_disp', JSON.stringify(L.slice(-200))); } catch (_) {} }
+    telaInicio();
+  },
   'av-lidas': b => { const aid = b.dataset.aid, a = avisosDe(aid); try { localStorage.setItem(chaveLidos(aid), JSON.stringify(a.lembretes.map(chaveLemb))); } catch (_) {} telaAvisos(aid); },
   'teclado-comp': b => {
     const i = $('#fComp'); if (!i) return;
