@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121155245';
+  var VERSAO = '20261121164754';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -101,6 +101,13 @@ input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;b
 .op.on{border-color:#5F130F;background:#5F130F;color:#fff}
 input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .tipos{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+.esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
+.esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
+.tipag{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tipag .esc{flex-direction:column}.tipag .esc .op{flex:none}.tipag h4{margin:6px 0 0;font-size:13px;color:var(--tinta2)}
+.ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}
+.pesoV{display:inline-block;margin-top:6px;font-weight:800;color:#5F130F}
+.ac-pai{position:relative}.ac-lista{position:absolute;left:0;right:0;top:100%;z-index:40;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid var(--areia2);border-radius:10px;box-shadow:0 10px 28px rgba(60,20,15,.18);max-height:264px;overflow:auto;display:none}.ac-lista.on{display:block}.ac-lista li{padding:.7em .75em;border-radius:7px;cursor:pointer;font-size:15px}.ac-lista li:hover{background:#f4ece3}.ac-lista li small{display:block;color:var(--tinta2)}
+.orienta{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
 .tipo-exp{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
 .tipo-exp small{display:block;margin-top:6px;color:#6b5a52}
 .prazo{display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border-radius:999px;background:#fdf3f1;color:#A83D3D;font-weight:700;font-size:13px}
@@ -418,10 +425,46 @@ const ETAPA_PED = { aberto: "Recebido pelo CVH", possivel: "Em análise", autori
 const TIPO_PED = { rotina: "Rotina", reserva: "Reserva", urgente: "Urgência", emergencia: "Emergência" };
 const TIPO_TXT = {
   rotina: "Sem pressa. O CVH responde dentro do horário de funcionamento.",
-  reserva: "Bolsa separada para um procedimento programado, como uma cirurgia. Informe a data e a hora do procedimento.",
-  urgente: "O responsável tem até 30 minutos para pagar depois de receber o link de pagamento. O CVH envia a bolsa em até 3 horas, contadas a partir do recebimento da amostra.",
-  emergencia: "O responsável tem até 10 minutos para pagar depois de receber o link de pagamento. O CVH pode enviar a bolsa antes de receber a amostra. Mesmo assim, colete a amostra antes de iniciar a transfusão e envie ao CVH. Faremos a tipagem e a prova de compatibilidade para confirmar.<small>Por que enviar a amostra mesmo assim? Depois da transfusão o sangue do paciente se mistura com o do doador e os testes deixam de ser confiáveis. Com a amostra pré-transfusional o resultado fica registrado no prontuário e orienta as próximas transfusões. Se aparecer incompatibilidade, avisamos a tempo de suspender a transfusão.</small>",
+  reserva: "Bolsa separada para um procedimento programado, como uma cirurgia. Informe a data e a hora ou marque a definir, se ainda não houver agendamento.",
+  urgente: "Depois de receber o link, o responsável tem até 30 minutos para autorizar o atendimento e concluir o pagamento. O CVH envia a bolsa em até 3 horas, contadas a partir da chegada da amostra.",
+  emergencia: "O CVH pode enviar a bolsa antes de receber a amostra do paciente. Colete a amostra antes de iniciar a transfusão e envie ao CVH para tipagem sanguínea e prova de compatibilidade.<br><br>Depois de receber o link, o responsável tem até 10 minutos para autorizar o atendimento e concluir o pagamento.<small>A coleta antes da transfusão evita que as hemácias da bolsa interfiram na tipagem do receptor. Os resultados ficam registrados no prontuário e orientam as próximas transfusões. Se houver incompatibilidade, o CVH comunica o resultado à equipe assistente, que avalia a necessidade de interromper a transfusão, caso ainda esteja em curso.</small>",
 };
+const CVH_WHATS = "(61) 9 8237-2772";
+const ORIENTA_TXT = "Oriente o responsável a falar com o CVH pelo WhatsApp " + CVH_WHATS + ". O CVH combina com ele a autorização e o pagamento, sem precisar ligar.";
+const CONTATO_TXT = { orientado: "Já orientado", orientar: "Vou orientar agora" };
+const RACAS_CAO = ["SRD (sem raça definida)","Afghan Hound","Airedale Terrier","Akita Americano","Akita Inu","American Bully","American Pit Bull Terrier","American Staffordshire Terrier","Basenji","Basset Hound","Beagle","Bearded Collie","Bichon Bolonhês","Bichon Frisé","Bloodhound","Boerboel","Boiadeiro Australiano","Boiadeiro Bernês","Border Collie","Border Terrier","Borzoi","Boston Terrier","Boxer","Braco Alemão de Pelo Curto","Bull Terrier","Bull Terrier Miniatura","Bulldog Americano","Bulldog Campeiro","Bulldog Francês","Bulldog Inglês","Bullmastiff","Cane Corso","Cão da Serra da Estrela","Cão de Água Português","Cão de Crista Chinês","Cavalier King Charles Spaniel","Chesapeake Bay Retriever","Chihuahua","Chow Chow","Cocker Spaniel Americano","Cocker Spaniel Inglês","Collie","Coton de Tuléar","Dachshund","Dálmata","Doberman","Dogo Argentino","Dogue Alemão","Dogue de Bordeaux","Fila Brasileiro","Fox Paulistinha (Terrier Brasileiro)","Fox Terrier","Galgo Inglês (Greyhound)","Galgo Italiano","Golden Retriever","Goldendoodle","Havanês","Husky Siberiano","Jack Russell Terrier","Kelpie Australiano","Labradoodle","Labrador Retriever","Leonberger","Lhasa Apso","Lulu da Pomerânia (Spitz Alemão Anão)","Malamute do Alasca","Maltês","Mastiff","Mastim Napolitano","Mastim Tibetano","Old English Sheepdog","Ovelheiro Gaúcho","Papillon","Pastor Alemão","Pastor Australiano","Pastor Belga Groenendael","Pastor Belga Malinois","Pastor Branco Suíço","Pastor da Anatólia","Pastor de Shetland","Pastor do Cáucaso","Pastor Holandês","Pastor Maremano Abruzês","Pequinês","Perdigueiro Português","Pinscher Miniatura","Podengo Português","Pointer Inglês","Poodle Toy","Poodle Miniatura","Poodle Médio","Poodle Gigante","Presa Canário","Pug","Rhodesian Ridgeback","Rottweiler","Samoieda","São Bernardo","Schnauzer Miniatura","Schnauzer Standard","Schnauzer Gigante","Setter Irlandês","Shar-Pei","Shiba Inu","Shih Tzu","Spitz Alemão","Spitz Japonês","Springer Spaniel Inglês","Staffordshire Bull Terrier","Terra Nova","Veadeiro Pampeano","Weimaraner","Welsh Corgi Pembroke","West Highland White Terrier","Whippet","Yorkshire Terrier"];
+const RACAS_GATO = ["SRD (sem raça definida)","Abissínio","Angorá","Azul Russo","Bengal","British Shorthair","Devon Rex","Exótico","Himalaio","Maine Coon","Norueguês da Floresta","Persa","Ragdoll","Sagrado da Birmânia","Scottish Fold","Siamês","Siberiano","Sphynx"];
+
+// escolhas de um toque (sem abrir lista): espécie, sexo, tipagem, primeira transfusão, contato
+const ESC = {};
+const escolha = (k, op, extra) => '<div class="esc" data-k="' + k + '"' + (extra || "") + ">" + op.map((v) => '<button type="button" class="op' + (ESC[k] === v ? " on" : "") + '" data-a="esc" data-k="' + k + '" data-v="' + esc(v) + '">' + esc(v) + "</button>").join("") + "</div>";
+function marcar(k, v, lido) { ESC[k] = v; document.querySelectorAll('.esc[data-k="' + k + '"] .op').forEach((x) => { x.classList.toggle("on", x.dataset.v === v); if (lido) x.classList.toggle("lido", x.dataset.v === v); }); if (k === "esp") pintarTipagem(); }
+function pintarTipagem() { const el = $("#sTipag"); if (!el) return; const gato = ESC.esp === "Felina";
+  el.innerHTML = gato ? "<h4>Tipo sanguíneo felino</h4>" + escolha("fel", ["Tipo A", "Tipo B", "Tipo AB", "Não tipado"]) : '<div class="tipag"><div><h4>DEA 1</h4>' + escolha("dea1", ["DEA 1 negativo", "DEA 1 positivo", "Não tipado"]) + "</div><div><h4>DAL</h4>" + escolha("dal", ["DAL negativo", "DAL positivo", "Não tipado"]) + "</div></div>"; }
+// peso: vírgula ou ponto; abaixo de 1 kg com duas casas, acima com uma
+const numBr = (v) => { const n = parseFloat(String(v || "").replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(n) ? n : null; };
+const fmtPeso = (v) => { const n = numBr(v); if (!n) return ""; return (n < 1 ? n.toFixed(2) : (Math.round(n * 10) / 10).toFixed(1).replace(/\.0$/, "")).replace(".", ","); };
+const limparNum = (el) => { const c = el.value.replace(/[^\d.,]/g, ""), i = c.search(/[.,]/); el.value = i < 0 ? c : c.slice(0, i + 1) + c.slice(i + 1).replace(/[.,]/g, ""); };
+// sugestões ao digitar (raça, médico veterinário)
+function sugerir(inp, lista, aoEscolher) {
+  if (!inp || inp._ac) return; inp._ac = 1; const nz = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const ul = document.createElement("ul"); ul.className = "ac-lista"; inp.parentElement.classList.add("ac-pai"); inp.insertAdjacentElement("afterend", ul);
+  const fechar = () => ul.classList.remove("on");
+  const mostrar = () => { const q = nz(inp.value); if (!q) return fechar(); const L = lista().filter((r) => nz(r.t).split(/\s+/).some((w) => w.startsWith(q)) || nz(r.t).startsWith(q) || (q.length > 2 && nz(r.t).includes(q))).slice(0, 7); if (!L.length || (L.length === 1 && nz(L[0].t) === q && !L[0].s)) return fechar(); ul.innerHTML = L.map((r, i) => '<li data-i="' + i + '">' + esc(r.t) + (r.s ? "<small>" + esc(r.s) + "</small>" : "") + "</li>").join(""); ul._L = L; ul.classList.add("on"); };
+  const tocar = (e) => { const li = e.target.closest("li"); if (!li) return; e.preventDefault(); const r = ul._L[+li.dataset.i]; inp.value = r.t; fechar(); if (aoEscolher) aoEscolher(r); };
+  ul.addEventListener("mousedown", tocar); ul.addEventListener("touchstart", tocar, { passive: false });
+  inp.addEventListener("input", mostrar); inp.addEventListener("focus", mostrar); inp.addEventListener("blur", () => setTimeout(fechar, 200));
+}
+const crmvNum = (v) => String(v || "").replace(/^\s*CRMV\s*[-/]?\s*[A-Z]{2}\s*/i, "").replace(/\D/g, "");
+const crmvTxt = (v) => { const m = String(v || "").match(/CRMV\s*[-/]?\s*([A-Z]{2})/i), n = crmvNum(v); return n ? "CRMV-" + (m ? m[1].toUpperCase() : "DF") + " " + n : ""; };
+function todosVets() { const L = [], visto = new Set(); vets().concat(D.vets || []).forEach((v) => { const k = String(v.nome || "").toLowerCase().trim(); if (!k || visto.has(k)) return; visto.add(k); L.push({ nome: v.nome.trim(), crmv: v.crmv || "" }); }); return L; }
+function ligarVet() { sugerir($("#tVet"), () => todosVets().map((v) => ({ t: v.nome, s: crmvTxt(v.crmv), v })), (r) => { $("#tCrmv").value = crmvNum(r.v.crmv); }); }
+function checarVet(nome) { const conhecido = todosVets().some((v) => v.nome.toLowerCase() === nome.toLowerCase()); return conhecido || nome.trim().split(/\s+/).filter((w) => w.length > 1).length >= 2; }
+function guardarVet(nome, crmv) { try { const V = vets().filter((v) => v.nome.toLowerCase() !== nome.toLowerCase()); V.unshift({ nome, crmv }); localStorage.setItem("cvh_int_vets", JSON.stringify(V.slice(0, 30))); } catch (e) {} }
+function blocoOrienta() { return '<div class="orienta">' + ORIENTA_TXT + "</div>" + escolha("contato", Object.values(CONTATO_TXT)); }
+const contatoEsc = () => Object.keys(CONTATO_TXT).find((k) => CONTATO_TXT[k] === ESC.contato) || "";
+function ligarNumeros() { document.querySelectorAll("input[data-num]").forEach((el) => { el.addEventListener("input", () => { limparNum(el); const o = $("#" + el.id + "V"); if (o) o.textContent = el.value && el.dataset.num === "peso" ? fmtPeso(el.value) + " kg" : ""; }); el.addEventListener("blur", () => { if (el.dataset.num === "peso" && el.value) el.value = fmtPeso(el.value); }); }); }
+
 // situação do pedido para quem pediu: espera da abertura, prazo de pagamento e de envio
 function infoPedido(x, p) {
   const z = (x.dados || {}).prazos || {}, t = [];
@@ -432,7 +475,6 @@ function infoPedido(x, p) {
 }
 const oQuePedido = (p) => (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => ({ tipagem: "tipagem", prova: "prova de compatibilidade", coombs: "Coombs" }[t] || t))).join(" + ");
 let ASS = null, EXAMES = [];
-const PRIM = { v: "" };
 // exames anexados: o PDF vira texto aqui no celular (rápido) e o servidor devolve os dados do cabeçalho
 const LIB_PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", LIB_PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const carregarJs = (src) => new Promise((ok, erro) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => erro(new Error("Sem internet para abrir o PDF.")); document.head.appendChild(sc); });
@@ -455,10 +497,11 @@ function pintarExames() { const el = $("#exLista"); if (!el) return; el.innerHTM
 function aplicarExame(d) {
   const P = d.paciente || {}, R = d.responsavel || {}, V = d.vet || {}, X = d.valores || {}, marcados = [];
   const pre = (id, v) => { const el = $("#" + id); if (!el || v == null || String(v).trim() === "" || String(el.value || "").trim()) return; el.value = String(v).trim(); el.classList.add("lido"); marcados.push(id); };
-  pre("sAn", P.nome); pre("sRaca", P.raca); pre("sIdade", P.idade); pre("sPeso", String(P.peso || "").replace(",", ".").replace(/[^\d.]/g, "")); pre("sHt", String(X.ht || "").replace(",", ".").replace(/[^\d.]/g, ""));
-  pre("sResp", R.nome); pre("tTel", R.telefone); pre("tVet", V.nome); pre("tCrmv", V.crmv);
-  const esp = $("#sEsp"); if (esp && P.especie && /fel/i.test(P.especie)) { esp.value = "Felina"; esp.classList.add("lido"); }
-  const sx = $("#sSexo"); if (sx && !sx.value && P.sexo) { sx.value = /f/i.test(P.sexo) ? "Fêmea" : "Macho"; sx.classList.add("lido"); }
+  pre("sAn", P.nome); pre("sRaca", P.raca); pre("sIdade", P.idade); pre("sPeso", String(P.peso || "").replace(/[^\d.,]/g, "")); pre("sHt", String(X.ht || "").replace(/[^\d.,]/g, ""));
+  pre("sResp", R.nome); pre("tTel", R.telefone); pre("tVet", V.nome); pre("tCrmv", crmvNum(V.crmv));
+  if (P.especie && /fel|gat/i.test(P.especie)) marcar("esp", "Felina", true); else if (P.especie && /can|cão|cao/i.test(P.especie)) marcar("esp", "Canina", true);
+  if (P.sexo && !ESC.sexo) marcar("sexo", /^f/i.test(P.sexo) ? "Fêmea" : "Macho", true);
+  const pz = $("#sPeso"); if (pz && pz.classList.contains("lido")) { pz.value = fmtPeso(pz.value); const o = $("#sPesoV"); if (o) o.textContent = pz.value + " kg"; }
   const obs = []; if (X.hb) obs.push("Hb " + X.hb + " g/dL"); if (X.plaquetas) obs.push("plaquetas " + X.plaquetas + " mil/µL"); if (X.ppt) obs.push("PPT " + X.ppt + " g/dL");
   if (obs.length || d.laboratorio || d.data) { const el = $("#sObs"); if (el && !el.value.trim()) { el.value = "Exame" + (d.laboratorio ? " " + d.laboratorio : "") + (d.data ? " de " + d.data : "") + (obs.length ? ": " + obs.join(", ") : "") + "."; el.classList.add("lido"); } }
   return marcados.length;
@@ -478,30 +521,37 @@ async function anexarExames(files) {
   }
 }
 function formSolicitar() {
-  const V = vets(), Hr = D.horario || {}, fechado = Hr.aberto === false;
+  const Hr = D.horario || {}, fechado = Hr.aberto === false;
+  Object.keys(ESC).forEach((k) => delete ESC[k]); ESC.esp = "Canina";
   modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. No horário de funcionamento o pedido chega na hora para a equipe do CVH.</small></p>" +
+    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF ou foto). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
     "<label>O que precisa</label>" + ["CH", "PFC", "CRIO", "CP"].map((c) => '<label class="op" style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="sB" value="' + c + '"> <span style="flex:1">' + { CH: "CH · concentrado de hemácias", PFC: "PFC · plasma fresco congelado", CRIO: "CRIO · crioprecipitado", CP: "CP · concentrado de plaquetas" }[c] + '</span><input type="number" inputmode="numeric" min="1" max="10" value="1" class="sQ" data-c="' + c + '" style="width:70px" aria-label="quantidade"></label>').join("") +
     TESTES_PED.map(([k, t]) => '<label class="op"><input type="checkbox" class="sT" value="' + k + '"> ' + t + "</label>").join("") +
     '<p id="sAmHint" hidden><small>Para prova de compatibilidade, tipagem e Coombs, colete sangue do paciente em tubo de EDTA (1 mL) e identifique com o nome.</small></p>' +
     '<label class="op" id="sAmLb" hidden><input type="checkbox" id="sAm"> A amostra do paciente já está coletada para o motoboy buscar</label>' +
     '<label>Tipo do pedido</label><div class="tipos">' + Object.keys(TIPO_PED).map((k) => { const off = fechado && (k === "urgente" || k === "emergencia"); return '<label class="op' + (off ? " off" : "") + '"><input type="radio" name="sUrg" value="' + k + '"' + (off ? " disabled" : "") + "> " + TIPO_PED[k] + "</label>"; }).join("") + "</div>" +
     (fechado ? '<p class="tipo-exp">O CVH está fora do horário. Infelizmente não poderemos atender urgência ou emergência agora. Rotina e reserva chegam à equipe ' + esc(Hr.quando || "na abertura") + ".</p>" : "") +
-    '<div class="tipo-exp" id="sTipoExp" hidden></div><div id="sResWrap" hidden><label>Data e hora do procedimento</label><input type="datetime-local" id="sResQ"></div>' +
-    '<h2 style="margin-top:14px">Exames do paciente</h2><p><small>Anexe o PDF ou a foto do hemograma ou de outros exames. Os dados do animal, do responsável e o hematócrito são lidos e preenchidos sozinhos. Confira antes de enviar.</small></p>' +
-    '<div class="bts" style="margin-top:0"><button class="btn sec" data-a="exAnexar">Anexar PDF ou foto dos exames</button></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
-    '<h2 style="margin-top:14px">Paciente</h2><label>Nome</label><input type="text" id="sAn"><label>Espécie</label><select id="sEsp"><option>Canina</option><option>Felina</option></select><label>Raça</label><input type="text" id="sRaca"><label>Sexo</label><select id="sSexo"><option value="">não informado</option><option>Macho</option><option>Fêmea</option></select><label>Idade</label><input type="text" id="sIdade" placeholder="ex.: 6 anos">' +
-    '<label>Peso (kg)</label><input type="number" inputmode="decimal" id="sPeso"><label>Hematócrito atual (%)</label><input type="number" inputmode="decimal" id="sHt"><label>Tipagem conhecida (se tiver)</label><input type="text" id="sTip" placeholder="ex.: DEA 1 negativo">' +
-    '<label>Primeira transfusão?</label><div class="tipos" id="sPrim"><button type="button" class="op" data-a="prim" data-v="Sim">Sim</button><button type="button" class="op" data-a="prim" data-v="Não">Não</button></div>' +
-    '<label>Suspeita clínica (opcional)</label><textarea id="sInd" rows="3" style="width:100%" placeholder="ex.: anemia hemolítica imunomediada, hemorragia por trauma"></textarea>' +
-    '<h2 style="margin-top:14px">Responsável</h2><label>Nome</label><input type="text" id="sResp"><label>Telefone ou WhatsApp</label><input type="tel" id="tTel">' +
-    '<label class="op"><input type="radio" name="tCont" value="ciente"> O responsável está ciente. O CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Favor aguardar. O responsável ainda não foi avisado.</label>' +
-    '<h2 style="margin-top:14px">Médico veterinário solicitante</h2>' + (V.length ? '<div class="bts" style="margin-top:0">' + V.map((v, i) => '<button class="btn sec peq" data-a="vetUsar" data-v="' + i + '">' + esc(v.nome) + "</button>").join("") + "</div>" : "") +
-    '<label>Nome</label><input type="text" id="tVet"><label>CRMV/UF</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
+    '<div class="tipo-exp" id="sTipoExp" hidden></div><div id="sResWrap" hidden><label>Data e hora do procedimento</label><input type="datetime-local" id="sResQ">' + escolha("resDef", ["A definir"], ' style="margin-top:8px"') + "</div>" +
+    '<h2 style="margin-top:14px">Paciente</h2><label>Nome</label><input type="text" id="sAn">' +
+    "<label>Espécie</label>" + escolha("esp", ["Canina", "Felina"]) +
+    '<label>Raça</label><input type="text" id="sRaca" placeholder="comece a digitar">' +
+    "<label>Sexo</label>" + escolha("sexo", ["Macho", "Fêmea"]) +
+    '<label>Idade</label><input type="text" id="sIdade" placeholder="ex.: 6 anos">' +
+    '<label>Peso (kg)</label><input type="text" inputmode="decimal" id="sPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="sPesoV"></span>' +
+    '<label>Hematócrito atual (%)</label><input type="text" inputmode="decimal" id="sHt" data-num="ht">' +
+    '<label>Tipagem sanguínea</label><div id="sTipag"></div>' +
+    "<label>Primeira transfusão?</label>" + escolha("prim", ["Sim", "Não"]) +
+    '<label>Indicação clínica e diagnóstico (opcional)</label><textarea id="sInd" rows="3" style="width:100%" placeholder="ex.: anemia hemolítica imunomediada, hemorragia por trauma"></textarea>' +
+    '<h2 style="margin-top:14px">Responsável</h2><label>Nome</label><input type="text" id="sResp"><label>Telefone ou WhatsApp</label><input type="tel" id="tTel">' + blocoOrienta() +
+    '<h2 style="margin-top:14px">Médico veterinário solicitante</h2>' +
+    '<label>Nome e sobrenome</label><input type="text" id="tVet" placeholder="digite a primeira letra"><label>CRMV-DF</label><input type="text" inputmode="numeric" id="tCrmv" placeholder="00000">' +
     '<label>Assinatura da requisição</label><p><small>Assine com o dedo no quadro. Se já tiver a requisição em PDF, anexe no lugar da assinatura.</small></p><canvas id="sAss" width="600" height="200" style="width:100%;height:140px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff"></canvas>' +
     '<div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="assLimpar">Limpar assinatura</button><button class="btn sec peq" data-a="sAnexar">Anexar requisição em PDF</button></div><input type="file" id="sArq" accept="application/pdf,image/*" hidden><p id="sArqNome"></p>' +
-    '<label>Observações (texto livre)</label><textarea id="sObs" rows="4" style="width:100%" placeholder="o que quiser contar ao CVH sobre o paciente ou o pedido"></textarea>' +
+    '<label>Observações</label><p style="margin:0 0 4px"><small>Alguma observação que considera importante para o CVH?</small></p><textarea id="sObs" rows="4" style="width:100%"></textarea>' +
     '<div class="bts"><button class="btn" data-a="solicitarOk">Enviar pedido ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
-  EXAMES = []; PRIM.v = "";
+  EXAMES = []; pintarTipagem(); ligarNumeros(); ligarVet();
+  sugerir($("#sRaca"), () => (ESC.esp === "Felina" ? RACAS_GATO : RACAS_CAO).map((t) => ({ t })));
+  $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
   ASS = { tracos: 0, anexo: null }; const cv = $("#sAss"), cx = cv.getContext("2d"); cx.lineWidth = 3; cx.lineCap = "round"; cx.strokeStyle = "#2b2320";
   let des = false; const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
   cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
@@ -510,40 +560,47 @@ function formSolicitar() {
   const amostra = () => { const t = [...document.querySelectorAll(".sT:checked")].length; $("#sAmHint").hidden = $("#sAmLb").hidden = !t; };
   document.querySelectorAll(".sT").forEach((x) => (x.onchange = amostra));
   document.querySelectorAll('input[name="sUrg"]').forEach((x) => (x.onchange = () => { $("#sTipoExp").hidden = false; $("#sTipoExp").innerHTML = TIPO_TXT[x.value]; $("#sResWrap").hidden = x.value !== "reserva"; }));
+  $("#sResQ").addEventListener("input", () => { if ($("#sResQ").value) marcar("resDef", ""); });
   document.querySelectorAll(".sQ").forEach((x) => (x.oninput = () => { const c = document.querySelector('.sB[value="' + x.dataset.c + '"]'); if (c) c.checked = true; }));
   $("#sArq").onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 7e6) return toast("Arquivo grande demais.", 5000); const u8 = new Uint8Array(await f.arrayBuffer()); let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); ASS.anexo = { nome: f.name, mime: f.type || "application/pdf", b64: btoa(b) }; $("#sArqNome").innerHTML = "<small>Anexo: " + esc(f.name) + "</small>"; };
 }
+function tipagemTxt() {
+  if (ESC.esp === "Felina") return ESC.fel && ESC.fel !== "Não tipado" ? ESC.fel : ESC.fel ? "não tipado" : "";
+  const L = [ESC.dea1 && ESC.dea1 !== "Não tipado" ? ESC.dea1 : "", ESC.dal && ESC.dal !== "Não tipado" ? ESC.dal : ""].filter(Boolean);
+  return L.length ? L.join(" · ") : ESC.dea1 || ESC.dal ? "não tipado" : "";
+}
 async function solicitarOk(b) {
-  const val = (id) => ($("#" + id) || {}).value ? $("#" + id).value.trim() : "", c = document.querySelector('input[name="tCont"]:checked'), urg = document.querySelector('input[name="sUrg"]:checked');
-  const o = { bolsas: [...document.querySelectorAll(".sB:checked")].map((x) => ({ componente: x.value, qtd: +(document.querySelector('.sQ[data-c="' + x.value + '"]') || {}).value || 1 })), testes: [...document.querySelectorAll(".sT:checked")].map((x) => x.value), urgencia: urg ? urg.value : "", reservaPara: val("sResQ"),
-    paciente: { nome: val("sAn"), especie: val("sEsp"), raca: val("sRaca"), sexo: val("sSexo"), idade: val("sIdade"), peso: val("sPeso"), ht: val("sHt"), tipagem: val("sTip"), primeira: PRIM.v, transfundido: PRIM.v === "Sim" ? "Não" : PRIM.v === "Não" ? "Sim" : "" }, indicacao: val("sInd"), obs: val("sObs"), exames: EXAMES.map((x) => ({ nome: x.nome, mime: x.mime, b64: x.b64 })), lidoDoExame: EXAMES.some((x) => x.lido),
-    responsavel: { nome: val("sResp"), telefone: val("tTel"), contato: c ? c.value : "" }, vet: { nome: val("tVet"), crmv: val("tCrmv") }, amostra: { coletada: !!($("#sAm") || {}).checked } };
+  const val = (id) => ($("#" + id) || {}).value ? $("#" + id).value.trim() : "", urg = document.querySelector('input[name="sUrg"]:checked'), gato = ESC.esp === "Felina";
+  const o = { bolsas: [...document.querySelectorAll(".sB:checked")].map((x) => ({ componente: x.value, qtd: +(document.querySelector('.sQ[data-c="' + x.value + '"]') || {}).value || 1 })), testes: [...document.querySelectorAll(".sT:checked")].map((x) => x.value), urgencia: urg ? urg.value : "", reservaPara: ESC.resDef ? "" : val("sResQ"), reservaAdefinir: !!ESC.resDef,
+    paciente: { nome: val("sAn"), especie: ESC.esp || "", raca: val("sRaca"), sexo: ESC.sexo || "", idade: val("sIdade"), peso: fmtPeso(val("sPeso")), ht: val("sHt").replace(".", ","), tipagem: tipagemTxt(), dea1: gato ? "" : ESC.dea1 || "", dal: gato ? "" : ESC.dal || "", felino: gato ? ESC.fel || "" : "", primeira: ESC.prim || "", transfundido: ESC.prim === "Sim" ? "Não" : ESC.prim === "Não" ? "Sim" : "" }, indicacao: val("sInd"), obs: val("sObs"), exames: EXAMES.map((x) => ({ nome: x.nome, mime: x.mime, b64: x.b64 })), lidoDoExame: EXAMES.some((x) => x.lido),
+    responsavel: { nome: val("sResp"), telefone: val("tTel"), contato: contatoEsc() }, vet: { nome: val("tVet").replace(/\s+/g, " "), crmv: crmvTxt(val("tCrmv")) }, amostra: { coletada: !!($("#sAm") || {}).checked } };
   if (!o.bolsas.length && !o.testes.length) return toast("Escolha o que precisa, bolsa ou teste.", 5000);
   if (!o.urgencia) return toast("Escolha o tipo do pedido.", 5000);
-  if (o.urgencia === "reserva" && !o.reservaPara) return toast("Informe a data e a hora do procedimento.", 5000);
+  if (o.urgencia === "reserva" && !o.reservaPara && !o.reservaAdefinir) return toast("Informe a data e a hora do procedimento ou marque A definir.", 5000);
   if (!o.paciente.nome || !o.paciente.peso) return toast("Informe o nome e o peso do paciente.", 5000);
-  if (!o.vet.nome || !o.vet.crmv) return toast("Informe o médico veterinário e o CRMV.", 5000);
-  if (!o.responsavel.contato) return toast("Escolha a orientação de contato com o responsável.", 5000);
+  if (!o.vet.nome || !o.vet.crmv) return toast("Informe o médico veterinário e o número do CRMV.", 5000);
+  if (!checarVet(o.vet.nome)) return toast("No primeiro pedido, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (!o.responsavel.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 5000);
   if (ASS.tracos < 8 && !ASS.anexo) return toast("Assine a requisição no quadro ou anexe a requisição em PDF.", 6000);
   if (ASS.tracos >= 8) o.assinatura = $("#sAss").toDataURL("image/png").split(",")[1]; if (ASS.anexo) o.anexo = ASS.anexo;
   b.disabled = true; b.textContent = "Enviando…";
-  try { await srv("intSolicitar", o); try { const V = vets().filter((v) => v.nome.toLowerCase() !== o.vet.nome.toLowerCase()); V.unshift({ nome: o.vet.nome, crmv: o.vet.crmv }); localStorage.setItem("cvh_int_vets", JSON.stringify(V.slice(0, 12))); } catch (e) {}
+  try { await srv("intSolicitar", o); guardarVet(o.vet.nome, o.vet.crmv);
     fechar(); toast("Pedido enviado ao CVH. Acompanhe aqui em Pedidos ao CVH.", 6000); await carregar(); }
   catch (e) { b.disabled = false; b.textContent = "Enviar pedido ao CVH"; toast(e.message || String(e), 7000); }
 }
 function formTransfusao(uid) {
-  const V = vets();
-  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="number" inputmode="decimal" id="tPeso"><label>Hematócrito do paciente (%)</label><input type="number" inputmode="decimal" id="tHt"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
-    (V.length ? '<label>Médico veterinário</label><div class="bts" style="margin-top:0">' + V.map((v, i) => '<button class="btn sec peq" data-a="vetUsar" data-v="' + i + '">' + esc(v.nome) + "</button>").join("") + "</div>" : "") +
-    '<label>Nome do médico veterinário</label><input type="text" id="tVet"><label>CRMV/UF</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
-    '<label>Contato com o responsável</label><label class="op"><input type="radio" name="tCont" value="ciente"> O responsável já está ciente da transfusão. O CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Favor aguardar para entrar em contato. O responsável ainda não foi avisado.</label>' +
+  Object.keys(ESC).forEach((k) => delete ESC[k]);
+  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="text" inputmode="decimal" id="tPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="tPesoV"></span><label>Hematócrito do paciente (%)</label><input type="text" inputmode="decimal" id="tHt" data-num="ht"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
+    '<label>Nome e sobrenome do médico veterinário</label><input type="text" id="tVet" placeholder="digite a primeira letra"><label>CRMV-DF</label><input type="text" inputmode="numeric" id="tCrmv" placeholder="00000">' +
+    "<label>Responsável</label>" + blocoOrienta() +
     '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">TRANSFUNDIDO</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  ligarNumeros(); ligarVet(); $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
 }
 async function transfOk(uid, b) {
-  const c = document.querySelector('input[name="tCont"]:checked');
-  const o = { animal: $("#tAn").value.trim(), peso: $("#tPeso").value.trim(), ht: $("#tHt").value.trim(), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim(), crmv: $("#tCrmv").value.trim(), contato: c ? c.value : "" };
+  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc() };
   if (["animal", "peso", "ht", "telefone", "vet", "crmv"].some((k) => !o[k])) return toast("Preencha todos os dados do paciente e do médico veterinário.", 6000);
-  if (!o.contato) return toast("Escolha a orientação de contato com o responsável.", 6000);
+  if (!checarVet(o.vet)) return toast("Na primeira vez, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (!o.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 6000);
   // confirmação física: depois de TRANSFUNDIDO, a etiqueta da bolsa usada precisa ser lida; sem a leitura, nada é registrado
   const t = await lerQR("Leia a etiqueta da bolsa transfundida (" + uid + ")");
   if (!t) return toast("Transfusão não registrada: a etiqueta não foi lida.", 6000);
@@ -552,7 +609,7 @@ async function transfOk(uid, b) {
   b.disabled = true;
   try {
     await srv("intTransfundir", uid, o); somOk();
-    try { const V = vets().filter((v) => v.nome.toLowerCase() !== o.vet.toLowerCase()); V.unshift({ nome: o.vet, crmv: o.crmv }); localStorage.setItem("cvh_int_vets", JSON.stringify(V.slice(0, 12))); } catch (e) {}
+    guardarVet(o.vet, o.crmv);
     fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar();
   } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
 }
@@ -581,7 +638,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "solicitar") return formSolicitar();
     if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
     if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
-    if (a === "prim") { PRIM.v = PRIM.v === v ? "" : v; document.querySelectorAll("#sPrim [data-a=prim]").forEach((x) => x.classList.toggle("on", x.dataset.v === PRIM.v)); return; }
+    if (a === "esc") { const k = b.dataset.k; marcar(k, ESC[k] === v && k !== "esp" ? "" : v); if (k === "resDef" && ESC.resDef) $("#sResQ").value = ""; return; }
     if (a === "solicitarOk") return solicitarOk(b);
     if (a === "assLimpar") { const cv = $("#sAss"); cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); ASS.tracos = 0; return; }
     if (a === "sAnexar") return $("#sArq").click();
@@ -600,7 +657,6 @@ document.addEventListener("click", async (ev) => {
     if (a === "retirarQR") return retirarQR();
     if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
     if (a === "transfundir") return formTransfusao(v);
-    if (a === "vetUsar") { const x = vets()[+v]; if (x) { $("#tVet").value = x.nome; $("#tCrmv").value = x.crmv; } return; }
     if (a === "transfOk") return transfOk(v, b);
     if (a === "cancelar") return cancelarUso(v);
     if (a === "cancelarOk") { const c = $("#cSem"); if (c && !c.checked) return toast("Marque a confirmação."); b.disabled = true; await srv("intCancelarRetirada", v, { semUso: !!c }); fechar(); await carregar(); toast("Retirada cancelada. Agora leia o QR do equipamento.", 6000); return lerEquip(v); }

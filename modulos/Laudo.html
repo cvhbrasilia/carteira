@@ -1918,6 +1918,7 @@ const TIPOS = {
   coombs: { nome: "Teste de Coombs", sub: "Teste de antiglobulina direta" },
   compat: { nome: "Prova de compatibilidade", sub: "Em gel ou imunocromatográfica" },
   compatExt: { nome: "Prova de compatibilidade externa", sub: "Amostras de doador e receptor enviadas por médico veterinário de fora do CVH" },
+  requisicao: { nome: "Requisição de hemocomponentes e testes", sub: "Pedido da internação registrado no CVH", oculto: true },
 };
 const extDoador = () => estado.tipo === "compat" && !!(estado.t && estado.t.doadorExterno);
 const GRAUS = ["", "+", "++", "+++"];
@@ -1987,6 +1988,7 @@ function comTip0() { const g = [estado.t, estado.tipo]; estado.tipo = "tipagem";
 function tituloPadrao() {
   const t = estado.tipo;
   if (t === "compat" && estado.tip) return "Tipagem e prova de compatibilidade";
+  if (t === "requisicao") return "Requisição de hemocomponentes e testes";
   if (t === "tipagem") return "Tipagem sanguínea";
   if (t === "fiv") return "Teste rápido FIV e FeLV";
   if (t === "coombs") return "Teste de Coombs";
@@ -2017,6 +2019,7 @@ function iniciarTipo(k) {
   if (k === "fiv") estado.t = Object.assign({ fiv: "Não reagente", felv: "Não reagente", kit: "alere", lote: "", codigo: "", validade: "", amostra: "Sangue total", tipoTeste: "Imunocromatografia, anticorpos contra FIV e antígeno de FeLV" }, KITS_FIV.alere);
   if (k === "coombs") estado.t = { res: "Negativo", grau: "", metodo: g ? "Imunocromatografia, Feline DAT Test (ALVEDIA LAB TEST)" : "Imunocromatografia, Canine DAT Test (ALVEDIA LAB TEST)", lote: "", validade: "", material: "Sangue com EDTA", nota: NOTA_COOMBS };
   if (k === "compat") estado.t = novaCompat();
+  if (k === "requisicao") estado.t = { linhas: [], solicitante: null };
   if (k === "tecsa") estado.t = { lido: false, exames: [], protocolo: "", liberado: "", rt: "Maria Cecilia C. Ferreira Martins, CRMV-MG 14208", arquivo: "", avisos: [] };
   if (k === "idexx") { estado.lido = false; estado.linhas = []; estado.notas = ""; estado.interp = ""; estado.avisos = []; estado.arquivos = []; GRAF = {}; LIDOS = []; }
   estado.exame.titulo = tituloPadrao(); ajustarNota(); kitsNoLaudo();
@@ -2630,10 +2633,23 @@ function blocosCorpo(x, w, cel) {
   else if (t === "coombs") B = blocosCoombs(x, w, cel);
   else if (t === "compat") B = [...(estado.tip ? [...comTip(() => blocosTipagem(x, w, cel)), ESP(10), { h: 0, quebra: true, el: () => [] }] : []), ...blocosCompat(x, w, cel)];
   else if (t === "tecsa") B = blocosTecsa(x, w, cel);
+  else if (t === "requisicao") B = blocosRequisicao(x, w, cel);
   return [...B, ...blocoTexto("OBSERVAÇÕES", estado.obs, x, w, cel ? 9.2 : 9.6)];
+}
+// requisição: as partes do pedido em faixas e a assinatura do médico veterinário solicitante feita no celular da internação
+function blocosRequisicao(x, w, cel) {
+  const t = estado.t, B = [], tam = cel ? 9.2 : 9.6;
+  (t.linhas || []).forEach(([rot, txt]) => B.push(...blocoTexto(String(rot).toUpperCase(), txt, x, w, tam)));
+  const S = t.solicitante || {}, im = IMG_DIN.assSol;
+  if (S.nome || im) {
+    const iw = im ? Math.min(cel ? w * 0.6 : 190, im.w / 3) : 0, ih = im ? iw * im.h / im.w : 0, h = 22 + ih + 34;
+    B.push({ h, el: (y) => [T(x, y + 14, "ASSINATURA DO MÉDICO VETERINÁRIO SOLICITANTE", 7.5, { b: true, c: COR.OURO }), ...(im ? [E.img("assSol", x, y + 20, iw, ih)] : []), E.ret(x, y + 22 + ih, Math.max(iw, 190), 0.6, { f: COR.LINHA }), T(x, y + 33 + ih, S.nome || "", 9, { b: true, c: COR.BORDO }), T(x, y + 43 + ih, [S.crmv, S.quando].filter(Boolean).join("  ·  "), 7.2, { c: COR.TXT2 })] });
+  }
+  return B;
 }
 function notaMetodo() {
   const t = estado.tipo, x = estado.t;
+  if (t === "requisicao") return "Requisição feita pelo médico veterinário solicitante e registrada no CVH. Os resultados dos testes saem em laudos próprios.";
   if (t === "idexx" && estado.misto) { const X = estado.exame; return "Resultados do analisador " + (String(X.equip || "IDEXX").replace(/\s*e Citopet$/, "")) + ", no CVH, e do laboratório Citopet" + (X.labNumero ? " sob o número " + X.labNumero : "") + (X.data ? ", com coleta em " + br(X.data) : "") + (X.labLiberado ? ", liberado em " + br(X.labLiberado) + (X.labHora ? " às " + X.labHora : "") : "") + ". Cada resultado traz a referência do seu método. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico."; }
   if (t === "idexx" && estado.exame.labNome) { const X = estado.exame; return "Exame realizado pelo laboratório " + X.labNome + (X.labNumero ? " sob o número " + X.labNumero : "") + (X.data ? ", com coleta em " + br(X.data) : "") + (X.labLiberado ? ", liberado em " + br(X.labLiberado) + (X.labHora ? " às " + X.labHora : "") : "") + (X.labRt ? " por " + X.labRt : "") + ". Intervalos de referência do laboratório. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico."; }
   if (t === "idexx") return "Exame realizado no CVH, no analisador " + (estado.exame.equip || "IDEXX") + ". Intervalos de referência do fabricante para a espécie. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
@@ -2662,7 +2678,7 @@ function blocoAssinatura(x, w, y, celular) {
   el.push(E.selo(bx, by, bw, h, { s: COR.BEGE, lw: 0.7, r: 7 }));
   el.push(E.img("selo", bx + 7, by + (h - sz) / 2, sz, sz));
   const tx = bx + 7 + sz + 8, qx = bx + bw - 6 - sz;
-  el.push(T(tx, by + 12, "ASSINADO ELETRONICAMENTE", 4.6, { b: true, c: COR.VERMELHO }));
+  el.push(T(tx, by + 12, estado.tipo === "requisicao" ? "REGISTRADA PELO CVH" : "ASSINADO ELETRONICAMENTE", 4.6, { b: true, c: COR.VERMELHO }));
   el.push(T(tx, by + 23, v.nome || "", 9, { b: true, c: COR.BORDO }));
   el.push(T(tx, by + 32.5, "Médico veterinário  ·  " + (v.crmv || ""), 7.2, { c: COR.TXT2 }));
   // rubrica alinhada à direita com o fim da linha do CRMV, logo depois do nome
@@ -2737,6 +2753,7 @@ function sincronizarImagens() {
   if (tp && !felino() && tp.dal && tp.dal.on && estado.fotos.dal) IMG_DIN.fotoDal = estado.fotos.dal;
   if (tp && !felino() && tp.dea1 && tp.dea1.on && estado.fotos.dea) IMG_DIN.fotoDea = estado.fotos.dea;
   if (estado.tipo === "fiv" && estado.fotos.fiv) IMG_DIN.fotoFiv = estado.fotos.fiv;
+  if (estado.tipo === "requisicao" && estado.fotos.assSol) IMG_DIN.assSol = estado.fotos.assSol;
 }
 
 /* ═════════════ leitura automática da fita de DEA 1 (ALVEDIA) ═════════════ */
@@ -3205,6 +3222,7 @@ function caixaExame() {
   const doa = estado.receptor ? "" : campo("Doação", sel('data-x="doacao"', X.doacao, opDoa));
   return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}${lab ? campo("Laboratório", inp('data-x="labNome"', X.labNome)) + campo("Número no laboratório", inp('data-x="labNumero"', X.labNumero || "")) + campo("Liberado em", inp('data-x="labLiberado" type="date"', X.labLiberado || "")) + campo("Hora da liberação", inp('data-x="labHora" type="time"', X.labHora || "")) + campo("Liberado por (laboratório)", inp('data-x="labRt"', X.labRt || "", 'placeholder="nome e CRMV de quem liberou no laboratório"'), "larga") : ""}
     ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="obrigatório (do cadastro, se for do CVH)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH && !estado.receptor && estado.tipo !== "compat" ? "" : X.clinica || "", estado.receptor || estado.tipo === "compat" ? 'placeholder="obrigatória: clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
+    <p class="nota larga" style="margin:0">Leitor de código de barras: passe a etiqueta do tubo ou da bolsa. O painel bipa e preenche o número${estado.tipo === "compat" ? " da doação na prova" : " da amostra"}.</p>
     ${CTX.temGemini ? `<div class="larga"><button type="button" class="btn sec mini" data-a="etiqueta">Ler a etiqueta da amostra</button><span class="nota" id="stEtq"> Com a foto da etiqueta do tubo ou do cartão, o painel preenche paciente, responsável, clínica, número, data da coleta e idade.</span></div>` : ""}
     ${estado.liberador ? campo("Assinado por", sel('data-vet="1"', estado.vet ? estado.vet.id : "", VETS.map((v) => [v.id, v.nome + (v.crmv ? " · " + v.crmv : "")])), "larga") + `<p class="nota larga">Você libera o laudo, que sai assinado pelo médico veterinário escolhido. Seu nome aparece discreto abaixo da assinatura.</p>` : ""}</div></div>`;
 }
@@ -3217,6 +3235,7 @@ function caixaFoto(alvo, rot, dica) {
 function comTipForm() { const a = SUB; SUB = true; try { return formTipo(); } finally { SUB = a; } }
 function formTipo() {
   const t = estado.t, k = estado.tipo;
+  if (k === "requisicao") return `<div class="cx"><h3>Requisição</h3><p class="nota">Dados do pedido feito pela internação. Confira e ajuste o texto se precisar.</p>${(t.linhas || []).map(([rot, txt], i) => `<label>${esc(rot)}<textarea data-rq="${i}" rows="${Math.min(6, String(txt).split("\n").length + 1)}">${esc(txt)}</textarea></label>`).join("")}${estado.fotos.assSol ? `<p class="nota">Assinatura do solicitante: ${esc((t.solicitante || {}).nome || "")}, guardada na requisição.</p>` : `<p class="nota">A requisição não tem assinatura feita no celular${(t.solicitante || {}).anexo ? ". Ela veio em arquivo, que fica no pedido." : "."}</p>`}</div>`;
   if (k === "tipagem" && !SUB) return `<div class="cx"><h3>Prova de compatibilidade no mesmo laudo</h3><label class="chk"><span><input type="checkbox" data-comxm="1"> Incluir a prova de compatibilidade deste paciente (sai um laudo só, com a tipagem e a prova de compatibilidade)</span></label></div>` + comTipForm();
   if (k === "tipagem") {
     if (felino()) return `<div class="cx"><h3>Tipagem felina</h3><label>Grupo sanguíneo</label>${segm('data-a="tg" data-c="grupo"', t.grupo, ["A", "B", "AB"])}
@@ -3275,7 +3294,7 @@ function formTipo() {
 function montarForm() { montarForm0(); autoRaca(); }
 function montarForm0() {
   if (!estado.tipo) {
-    const g = felino(), tipos = Object.entries(TIPOS).filter(([, v]) => !(v.so === "gato" && estado.paciente.especie && !g));
+    const g = felino(), tipos = Object.entries(TIPOS).filter(([, v]) => !v.oculto && !(v.so === "gato" && estado.paciente.especie && !g));
     $("#form").innerHTML = `<div class="cx"><h3>Novo laudo${estado.paciente.nome ? " de " + esc(estado.paciente.nome) : ""}</h3><p class="nota">Escolha o tipo de laudo. Todos saem no padrão do CVH, em A4 e para celular, assinados com o seu CRMV.${estado.receptor ? " Paciente receptor, sem cadastro: você digita os dados e o laudo fica salvo e assinado no painel de laudos." : ""}</p>
       <div class="tipos">${tipos.map(([k, v]) => `<button type="button" class="tipo" data-a="tipo" data-v="${k}"><b>${esc(v.nome)}</b><small>${esc(v.sub)}</small></button>`).join("")}</div></div>`;
     $("#salvar").parentElement.hidden = true; return;
@@ -3419,13 +3438,13 @@ function mostrarSalvo(res) {
   $("#salvo").innerHTML = `<h3>Laudo salvo e assinado</h3><div class="sv-doc"><div><b>${esc(estado.exame.titulo)} de ${esc(estado.paciente.nome)}</b><small>Código ${esc(salvo.codigo)}. Fica na seção Laudos de exames do painel.</small></div>
     <div class="sv-bts"><button type="button" class="btn sec mini" data-a="baixar" data-v="a4">PDF digital</button><button type="button" class="btn sec mini" data-a="baixar" data-v="imp">Impressão</button><button type="button" class="btn sec mini" data-a="baixar" data-v="cel">Celular</button></div></div>
     ${res && res.whats ? `<a class="btn" target="_blank" rel="noopener" href="${esc(res.whats)}">Enviar ao responsável por WhatsApp</a>` : estado.receptor ? `<p class="nota">Envie o PDF do celular para a clínica pelo botão acima. O laudo fica no painel de laudos, em ${esc(TIPOS[estado.tipo].nome)}.</p>` : `<p class="nota">O responsável não tem telefone no cadastro. Envie o PDF do celular pelo botão acima.</p>`}
-    ${res && res.id && estado.receptor ? `<div class="cx" style="margin-top:10px" id="pedInt"><h3>Mandar para a Intensivet</h3><p class="nota">Se este laudo responde a um pedido feito pelo celular da internação, escolha o pedido. O laudo aparece lá e a equipe recebe o aviso.</p><select id="pedSel" style="width:100%"><option value="">Carregando os pedidos…</option></select><button type="button" class="btn sec" data-a="pedEnviar" style="margin-top:8px">Enviar o laudo para a Intensivet</button><p class="st" id="stPed"></p></div>` : ""}
+    ${res && res.id && estado.receptor && estado.tipo !== "requisicao" ? `<div class="cx" style="margin-top:10px" id="pedInt"><h3>Mandar para a Intensivet</h3><p class="nota">Se este laudo responde a um pedido feito pelo celular da internação, escolha o pedido. O laudo aparece lá e a equipe recebe o aviso.</p><select id="pedSel" style="width:100%"><option value="">Carregando os pedidos…</option></select><button type="button" class="btn sec" data-a="pedEnviar" style="margin-top:8px">Enviar o laudo para a Intensivet</button><p class="st" id="stPed"></p></div>` : ""}
     ${res && res.id && !estado.receptor ? `<div class="cx" style="margin-top:10px"><h3>Enviar este laudo</h3><p class="nota">O laudo fica fora da carteira até você escolher. Os dois são independentes.</p>
       <button type="button" class="btn" data-a="env-carteira">Salvar na carteira (últimos exames)</button>${res.historico ? `<button type="button" class="btn sec" data-a="env-historico" style="margin-top:8px">Acrescentar ao Histórico Laboratorial</button>` : ""}<p class="st" id="stEnv"></p></div>` : ""}
     ${res && res.historico ? `<button type="button" class="btn sec" data-a="historico">Abrir o Histórico Laboratorial para conferir</button>` : ""}
     <button type="button" class="btn sec" data-a="voltar">Voltar para os laudos</button>`;
   $("#salvo").hidden = false; subirAoSalvo();
-  if (estado.receptor && $("#pedSel")) ponte("pedidosIntensivet").then((L) => { const sel = $("#pedSel"); if (!sel) return; if (!L.length) { $("#pedInt").hidden = true; return; } const nome = semAc(estado.paciente.nome || ""); sel.innerHTML = '<option value="">Escolha o pedido</option>' + L.map((x) => '<option value="' + esc(x.id) + '"' + (nome && semAc(x.paciente) === nome ? " selected" : "") + ">" + esc(x.paciente + " · " + x.pede + " · " + String(x.criado).slice(8, 10) + "/" + String(x.criado).slice(5, 7)) + "</option>").join(""); }).catch(() => { const p = $("#pedInt"); if (p) p.hidden = true; });
+  if (estado.receptor && $("#pedSel")) ponte("pedidosIntensivet").then((L) => { const sel = $("#pedSel"); if (!sel) return; if (!L.length) { $("#pedInt").hidden = true; return; } const nome = semAc(estado.paciente.nome || ""); sel.innerHTML = '<option value="">Escolha o pedido</option>' + L.map((x) => '<option value="' + esc(x.id) + '"' + ((estado.pedidoId ? x.id === estado.pedidoId : nome && semAc(x.paciente) === nome) ? " selected" : "") + ">" + esc(x.paciente + " · " + x.pede + " · " + String(x.criado).slice(8, 10) + "/" + String(x.criado).slice(5, 7)) + "</option>").join(""); }).catch(() => { const p = $("#pedInt"); if (p) p.hidden = true; });
   avisoUltimo();
 }
 // depois de salvar, a tela sobe até o resultado (no iPhone o deslizar suave dentro do módulo às vezes não acontece)
@@ -3449,6 +3468,7 @@ function ligar() {
     if (t.dataset.comxm) { if (estado.tipo !== "tipagem") return; const antes = tituloPadrao(); estado.tip = estado.t; estado.tipo = "compat"; estado.t = novaCompat(); kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.closest && t.closest('[data-sub="tip"]')) entrarSub();
     if (t.dataset.x) { estado.exame[t.dataset.x] = t.dataset.x === "clinica" && /^\s*cvh\s*$/i.test(t.value) ? CLINICA_CVH : t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
+    else if (t.dataset.rq != null && estado.tipo === "requisicao") { estado.t.linhas[+t.dataset.rq][1] = t.value; mudou(false); }
     else if (t.dataset.pa) { estado.paciente[t.dataset.pa] = t.value; if (t.dataset.pa === "especie" && estado.tipo) { const x = estado.t; if (estado.tipo === "tipagem" && !felino() && x.dea1 && !x.dea1.on && !x.dal.on) { x.dea1.on = true; x.dal.on = true; } kitsNoLaudo(); ajustarNota(); return mudou(true); } }
     else if (t.dataset.r) estado.resp[t.dataset.r] = t.value;
     else if (t.dataset.p) estado[t.dataset.p] = t.value;
@@ -3574,6 +3594,38 @@ async function guardarEdicao(silencioso) {
     if (!silencioso) st.textContent = "Guardado em Laudos em edição. Fica disponível para editar por 15 dias.";
   } catch (e) { if (!silencioso) { st.className = "st erro"; st.textContent = "Não consegui guardar. " + (e.message || e); } }
 }
+// pedido da Intensivet: paciente receptor, solicitante, clínica e as bolsas reservadas para a prova
+function aplicarPedido(p) {
+  estado.receptor = true; estado.pedidoId = p.id; Object.assign(estado.paciente, p.paciente || {}); estado.resp.nome = p.resp || estado.resp.nome;
+  const k = CTX.tipo && TIPOS[CTX.tipo] ? CTX.tipo : "compat"; iniciarTipo(k);
+  estado.exame.solicitante = p.solicitante || ""; estado.exame.clinica = p.clinica || "";
+  if (k === "requisicao" && p.req) { estado.t.linhas = p.req.linhas || []; estado.t.solicitante = p.req.solicitante || null; if (p.req.assinatura) estado.fotos.assSol = p.req.assinatura; estado.exame.data = p.req.data || estado.exame.data; estado.exame.hora = p.req.hora || ""; }
+  if (k === "compat" && (p.provas || []).length) estado.t.provas = p.provas.map((x) => Object.assign({ bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }, { bolsa: x.bolsa || "", doador: x.doador || "" }));
+  estado.exame.titulo = tituloPadrao();
+}
+/* leitor de código de barras (USB ou Bluetooth): digita o código e um Enter em poucos milissegundos; o painel bipa e preenche */
+let AUDIO = null;
+function bipe(ok) { try { AUDIO = AUDIO || new (window.AudioContext || window.webkitAudioContext)(); const o = AUDIO.createOscillator(), g = AUDIO.createGain(); o.type = "square"; o.frequency.value = ok === false ? 220 : 1760; g.gain.setValueAtTime(0.12, AUDIO.currentTime); g.gain.exponentialRampToValueAtTime(0.001, AUDIO.currentTime + (ok === false ? 0.45 : 0.14)); o.connect(g).connect(AUDIO.destination); o.start(); o.stop(AUDIO.currentTime + (ok === false ? 0.45 : 0.14)); } catch (_) {} }
+const LEIT = { buf: "", t0: 0, ult: 0 };
+document.addEventListener("keydown", (e) => {
+  const t = performance.now();
+  if (e.key === "Enter") { const c = LEIT.buf; LEIT.buf = ""; if (c.length >= 3 && t - LEIT.t0 < 45 * c.length + 150) { e.preventDefault(); const el = document.activeElement; if (el && /INPUT|TEXTAREA/.test(el.tagName) && el.value.endsWith(c)) { el.value = el.value.slice(0, el.value.length - c.length); el.dispatchEvent(new Event("input", { bubbles: true })); } lidoLeitor(c.trim()); } return; }
+  if (e.key.length !== 1) return; if (t - LEIT.ult > 60) { LEIT.buf = ""; LEIT.t0 = t; } LEIT.ult = t; LEIT.buf += e.key;
+}, true);
+window.lidoLeitor = lidoLeitor;
+function lidoLeitor(c) {
+  const st = $("#st"), msg = (t, erro) => { if (st) { st.className = "st" + (erro ? " erro" : ""); st.textContent = t; } };
+  if (!estado.tipo) { bipe(false); return msg("Escolha o tipo de laudo antes de ler a etiqueta.", true); }
+  const m = c.toUpperCase().replace(/\s+/g, " ").match(/^(\d{1,6}-\d{1,2})(?:\s+(CH|PFC|CRIO|CP|PPC|ST))?$/);
+  if (estado.tipo === "compat" && m) {
+    const L = estado.t.provas; if (L.some((p) => p.doador === m[1])) { bipe(); return msg("A doação " + m[1] + " já está na prova."); }
+    let p = L.find((x) => !String(x.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); }
+    p.doador = m[1]; bipe(); mudou(true); return msg("Etiqueta lida: doação " + m[1] + (m[2] ? " (" + m[2] + ")" : "") + " na prova de compatibilidade. Confira o segmento da bolsa.");
+  }
+  const f = aplicarEtiqueta({ amostra: m ? m[1] : c });
+  if (f.length) { bipe(); mudou(true); return msg("Etiqueta lida: " + f.join(", ") + "."); }
+  bipe(false); msg("Código lido (" + c + "), mas não reconheci a etiqueta.", true);
+}
 window.CVH_LAUDO_TESTE = (lidos) => { if (estado.tipo !== "idexx") iniciarTipo("idexx"); aplicarLeitura(lidos); montarForm(); renderPrevia(); };
 window.CVH_LAUDO = { lerFitaDea, imagemDe, desenharFita, estado, iniciarTipo, aplicarTecsa, lerTecsa, montarForm, renderPrevia, foto: (alvo, f) => { estado.fotos[alvo] = f; montarForm(); renderPrevia(); } };
 let avisoAbertura = "";
@@ -3583,8 +3635,10 @@ if (CTX.edicao && CTX.edicao.texto) {
     if (CTX.edicao.regId) { estado.regId = CTX.edicao.regId; estado.rascunhoId = ""; const mud = atualizarDoCadastro(); avisoAbertura = "Laudo salvo reaberto para correção." + (mud.length ? " Atualizei pelo cadastro: " + mud.join(", ") + "." : "") + (/"antigo":true/.test(CTX.edicao.texto.slice(0, 60)) ? (estado.tipo === "idexx" ? " Como ele é de antes da correção de laudos, os gráficos da IDEXX precisam ser lidos de novo do PDF original." : " Como ele é de antes da correção de laudos, as fotos precisam ser anexadas de novo.") : "") + " Ao salvar, ele substitui o anterior."; }
     else { estado.rascunhoId = CTX.edicao.id || ""; estado.regId = ""; avisoAbertura = "Laudo em edição reaberto."; }
   } catch (e) { avisoAbertura = e.message || String(e); if (CTX.tipo && TIPOS[CTX.tipo]) iniciarTipo(CTX.tipo); }
-} else if (CTX.tipo && TIPOS[CTX.tipo]) iniciarTipo(CTX.tipo);
+} else if (CTX.pedido && CTX.pedido.id) aplicarPedido(CTX.pedido);
+else if (CTX.tipo && TIPOS[CTX.tipo]) iniciarTipo(CTX.tipo);
 montarForm(); ligar(); renderPrevia();
+if (CTX.pedido && CTX.pedido.id && !avisoAbertura) avisoAbertura = "Laudo do pedido " + CTX.pedido.id + " da " + (CTX.pedido.clinica || "Intensivet") + ". Paciente, solicitante" + ((CTX.pedido.provas || []).length && estado.tipo === "compat" ? " e bolsas da prova" : "") + " já preenchidos. Confira.";
 if (avisoAbertura) { $("#st").className = "st"; $("#st").textContent = avisoAbertura; }
 // laudo que chegou sozinho do laboratório (TECSA, Citopet ou IDEXX): abre o PDF original e preenche o laudo do CVH
 if (CTX.pdfLab && CTX.pdfLab.id) (async () => {
