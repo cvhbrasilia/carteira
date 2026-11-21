@@ -214,7 +214,7 @@ const ROT_AT = { aberto: "Aberto", possivel: "Possível venda", autorizado: "Aut
 const COR_AT = { pronta: "al", preparo: "av", fracionamento: "av", retirada: "av", entregue: "ok", concluido: "ok", cancelado: "ne" };
 function telaTransporte() {
   const at = S.at.filter((a) => !["concluido", "cancelado"].includes(a.etapa)), fim = S.at.filter((a) => ["concluido", "cancelado"].includes(a.etapa)).slice(0, 20);
-  const lin = (a) => '<div class="lin" data-a="at" data-v="' + esc(a.id) + '" style="cursor:pointer"><div class="t"><b>' + esc(a.destino) + (a.paciente ? " · " + esc(a.paciente) : "") + "</b><small>" + (a.modalidade === "uber" ? "Uber" : "Motoboy") + (a.remessa_id ? " · caixa " + esc(a.remessa_id) : "") + " · " + esc(hora(a.criado)) + '</small></div><span class="chip ' + (COR_AT[a.etapa] || "") + '">' + esc(ROT_AT[a.etapa] || a.etapa) + "</span></div>";
+  const lin = (a) => '<div class="lin" data-a="at" data-v="' + esc(a.id) + '" style="cursor:pointer"><div class="t"><b>' + esc(a.destino) + (a.paciente ? " · " + esc(a.paciente) : "") + ((a.dados || {}).pedido ? ' <span class="chip ' + (a.dados.pedido.urgencia === "emergencia" ? "al" : "av") + '">pedido pelo app · ' + esc(URG_PED[a.dados.pedido.urgencia] || "") + "</span>" : "") + ((a.dados || {}).requisicao && a.dados.requisicao.pendente ? ' <span class="chip av">aguardando assinatura</span>' : "") + "</b><small>" + (a.modalidade === "uber" ? "Uber" : "Motoboy") + (a.remessa_id ? " · caixa " + esc(a.remessa_id) : "") + " · " + esc(hora(a.criado)) + '</small></div><span class="chip ' + (COR_AT[a.etapa] || "") + '">' + esc(ROT_AT[a.etapa] || a.etapa) + "</span></div>";
   return '<div class="bts" style="margin-bottom:12px"><button class="btn" data-a="atNovo">Novo atendimento</button>' + '</div><div id="apLink"></div>' +
     '<div class="cx"><h2>Em andamento</h2>' + (at.length ? at.map(lin).join("") : '<p class="vazio">Nenhum atendimento em andamento.</p>') + "</div>" + (fim.length ? '<div class="cx"><h2>Encerrados</h2>' + fim.map(lin).join("") + "</div>" : "");
 }
@@ -226,6 +226,42 @@ function formAtendimento(a) {
     '<div class="bts" style="margin-top:12px"><button class="btn" data-a="atSalvar" data-v="' + esc(a.id || "") + '">' + (a.id ? "Salvar" : "Abrir atendimento") + "</button></div>";
 }
 const dtLocal = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "T" + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+/* ── pedido da Intensivet e requisição (10.13 a 10.15) ── */
+const TESTES_PED = { tipagem: "Tipagem sanguínea", prova: "Prova de compatibilidade", coombs: "Teste de Coombs (antiglobulina direto)" };
+const URG_PED = { rotina: "Rotina", urgente: "Urgente", emergencia: "Emergência" };
+function textoPedido(a) {
+  const p = (a.dados || {}).pedido || {}, P = p.paciente || {}, R = p.responsavel || {}, V = p.vet || {};
+  return [
+    "Atendimento " + a.id + " · " + a.destino + " · " + hora(a.criado),
+    "Pedido: " + (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES_PED[t] || t)).join(", ") + (p.urgencia ? " · " + URG_PED[p.urgencia] : ""),
+    "Paciente: " + [P.nome, P.especie, P.raca, P.sexo, P.idade].filter(Boolean).join(", ") + (P.peso ? " · " + P.peso + " kg" : "") + (P.ht ? " · Ht " + P.ht + "%" : "") + (P.tipagem ? " · tipagem " + P.tipagem : "") + (P.transfundido ? " · transfundido antes: " + P.transfundido : ""),
+    p.indicacao ? "Indicação: " + p.indicacao : "",
+    "Responsável: " + [R.nome, R.telefone].filter(Boolean).join(" · ") + (R.contato === "ciente" ? " (ciente, o CVH pode entrar em contato)" : R.contato ? " (aguardar o veterinário avisar)" : ""),
+    "Médico veterinário: " + [V.nome || a.solicitante, V.crmv].filter(Boolean).join(" · "),
+    p.amostra && p.amostra.coletada ? "Amostra do paciente coletada para buscar." : "",
+    p.obs ? "Observações: " + p.obs : "",
+  ].filter(Boolean).join("\n");
+}
+function htmlPedidoReq(a) {
+  const d = a.dados || {}, p = d.pedido, r = d.requisicao;
+  let h = "";
+  if (p) { const P = p.paciente || {}, R = p.responsavel || {};
+    h += '<div class="cx" style="margin:8px 0;' + (p.urgencia === "emergencia" ? "border-color:#A83D3D" : "") + '"><h2>Pedido da ' + esc(a.destino) + " · " + esc(URG_PED[p.urgencia] || "") + "</h2><dl class=\"dl\"><dt>Pede</dt><dd>" + esc((p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES_PED[t] || t)).join(" · ")) + "</dd>" +
+      "<dt>Paciente</dt><dd>" + esc([P.nome, P.especie, P.raca, P.sexo, P.idade].filter(Boolean).join(", ")) + "<br><small>" + esc([P.peso ? P.peso + " kg" : "", P.ht ? "Ht " + P.ht + "%" : "", P.tipagem ? "tipagem " + P.tipagem : "", P.transfundido ? "transfundido antes: " + P.transfundido : ""].filter(Boolean).join(" · ")) + "</small></dd>" +
+      (p.indicacao ? "<dt>Indicação</dt><dd>" + esc(p.indicacao) + "</dd>" : "") +
+      "<dt>Responsável</dt><dd>" + esc([R.nome, R.telefone].filter(Boolean).join(" · ")) + "<br><small>" + (R.contato === "ciente" ? "Ciente. O CVH pode entrar em contato." : "Aguardando o veterinário avisar o responsável.") + "</small>" + (R.contato === "ciente" && R.telefone ? ' <a href="https://wa.me/55' + esc(String(R.telefone).replace(/\D/g, "").replace(/^55/, "")) + '" target="_blank" rel="noopener">WhatsApp</a>' : "") + "</dd>" +
+      "<dt>Solicitante</dt><dd>" + esc([p.vet.nome, p.vet.crmv].join(" · ")) + "</dd>" + (p.amostra && p.amostra.coletada ? "<dt>Amostra</dt><dd>coletada, para o motoboy buscar</dd>" : "") + (p.obs ? "<dt>Observações</dt><dd>" + esc(p.obs) + "</dd>" : "") + "</dl></div>";
+  }
+  h += '<div class="cx" style="margin:8px 0"><h2>Requisição</h2>';
+  if (r && r.tipo === "assinada") h += "<p>Assinada no " + esc(r.no || "celular") + " por <b>" + esc(r.nome) + "</b> (" + esc(r.crmv) + ") " + esc(hora(r.assinadoEm)) + "</p>" + (r.assinaturaUrl ? '<a class="btn sec peq" href="' + esc(r.assinaturaUrl) + '" target="_blank" rel="noopener">Ver assinatura</a>' : "");
+  else if (r && r.tipo === "pdf") h += "<p>Requisição recebida em PDF " + esc(hora(r.recebidaEm)) + (r.por ? " · " + esc(r.por) : "") + "</p>" + (r.arquivoUrl ? '<a class="btn sec peq" href="' + esc(r.arquivoUrl) + '" target="_blank" rel="noopener">Abrir a requisição</a>' : "");
+  else if (r && r.tipo === "link") h += r.pendente ? '<p><span class="chip av">Aguardando assinatura do veterinário</span> <small>gerada ' + esc(hora(r.geradaEm)) + " por " + esc(r.geradaPor) + '</small></p><div class="bts"><button class="btn sec peq" data-a="reqCopiar" data-v="' + esc(r.token) + '">Copiar o link</button><button class="btn sec peq" data-a="reqEnviar" data-v="' + esc(r.token) + '">Enviar</button></div>'
+    : "<p>Assinada pelo link por <b>" + esc(r.nome) + "</b> (" + esc(r.crmv) + ") " + esc(hora(r.assinadoEm)) + "</p>" + (r.assinaturaUrl ? '<a class="btn sec peq" href="' + esc(r.assinaturaUrl) + '" target="_blank" rel="noopener">Ver assinatura</a>' : "");
+  else h += '<p><small>Ainda sem requisição. Se o veterinário já enviou, anexe o PDF. Senão, gere a requisição e mande o link para ele assinar.</small></p>';
+  if (!r || (r.tipo === "link" && r.pendente)) h += '<label>Dados para a requisição (confira e complete com o que conversou com o responsável)</label><textarea id="reqTxt" rows="7" style="width:100%">' + esc((r && r.texto) || textoPedido(a)) + '</textarea>' +
+    '<div class="bts"><button class="btn sec peq" data-a="reqCopiarDados">Copiar dados para a requisição</button><button class="btn peq" data-a="reqGerar" data-v="emergencia">Gerar requisição de emergência</button><button class="btn peq" data-a="reqGerar" data-v="comum">Gerar requisição de bolsa comum</button><button class="btn sec peq" data-a="reqAnexar">Anexar requisição em PDF</button></div><input type="file" id="reqArq" accept="application/pdf,image/*" hidden>';
+  return h + "</div>";
+}
 function abrirAtendimento(id) {
   const a = S.at.find((x) => x.id === id); if (!a) return; S.atAberto = id; const am = a.amostra || {}, r = S.rem.find((x) => x.id === a.remessa_id), moto = a.modalidade !== "uber";
   const B = (et, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="atEt" data-id="' + esc(a.id) + '" data-v="' + et + '">' + t + "</button>";
@@ -245,7 +281,7 @@ function abrirAtendimento(id) {
   if (a.etapa === "entregue") ac += B("concluido", "Concluir");
   if (!["concluido", "cancelado"].includes(a.etapa)) ac += B("cancelar", "Cancelar atendimento", "perigo"); else ac += B("reabrir", "Reabrir");
   const avisoUber = !moto && ["preparo", "pronta"].includes(a.etapa) && !a.link_uber ? '<div class="cx" style="background:#FBF0DC;margin:8px 0"><b>Esta entrega será por Uber. Chamar o Uber e acrescentar o link da corrida.</b></div>' : "";
-  abrirGaveta("Atendimento " + a.id, avisoUber + '<dl class="dl"><dt>Destino</dt><dd>' + esc(a.destino) + (a.endereco ? "<br><small>" + esc(a.endereco) + "</small>" : "") + "</dd>" + (a.paciente ? "<dt>Paciente</dt><dd>" + esc(a.paciente) + "</dd>" : "") + (a.solicitante ? "<dt>Solicitante</dt><dd>" + esc(a.solicitante) + "</dd>" : "") + "<dt>Transporte</dt><dd>" + (moto ? "Motoboy terceirizado" : "Uber") + (a.link_uber ? ' · <a href="' + esc(a.link_uber) + '" target="_blank" rel="noopener">abrir a corrida</a>' : "") + "</dd><dt>Etapa</dt><dd>" + esc(ROT_AT[a.etapa] || a.etapa) + "</dd>" +
+  abrirGaveta("Atendimento " + a.id, avisoUber + htmlPedidoReq(a) + '<dl class="dl"><dt>Destino</dt><dd>' + esc(a.destino) + (a.endereco ? "<br><small>" + esc(a.endereco) + "</small>" : "") + "</dd>" + (a.paciente ? "<dt>Paciente</dt><dd>" + esc(a.paciente) + "</dd>" : "") + (a.solicitante ? "<dt>Solicitante</dt><dd>" + esc(a.solicitante) + "</dd>" : "") + "<dt>Transporte</dt><dd>" + (moto ? "Motoboy terceirizado" : "Uber") + (a.link_uber ? ' · <a href="' + esc(a.link_uber) + '" target="_blank" rel="noopener">abrir a corrida</a>' : "") + "</dd><dt>Etapa</dt><dd>" + esc(ROT_AT[a.etapa] || a.etapa) + "</dd>" +
     (am.buscar != null ? "<dt>Amostra</dt><dd>" + (am.buscar ? "buscar em " + esc(am.local || "") + (am.prazoBusca ? " até " + esc(hora(am.prazoBusca)) : "") : "já estava no CVH") + (am.buscadaEm ? "<br><small>buscada " + esc(hora(am.buscadaEm)) + "</small>" : "") + (am.chegouEm ? "<br><small>chegou " + esc(hora(am.chegouEm)) + "</small>" : "") + (am.previsaoTestes ? "<br><small>testes previstos " + esc(hora(am.previsaoTestes)) + "</small>" : "") + "</dd>" : "") +
     (r ? "<dt>Caixa</dt><dd>" + esc(r.id) + " · " + esc(ROT_REM[r.situacao] || r.situacao) + (r.recebida_em ? "<br><small>QR lido pela " + esc(r.destino) + " " + esc(hora(r.recebida_em)) + "</small>" : "") + "</dd>" : "") + (a.uber_fim ? "<dt>Corrida encerrada</dt><dd>" + esc(hora(a.uber_fim)) + "</dd>" : "") + "</dl>" +
     '<div class="bts">' + ac + '</div><div id="atForm"></div><h2 style="margin-top:16px">Linha do tempo</h2>' + (a.linha || []).slice().reverse().map((x) => '<div class="ev"><b>' + esc(ROT_AT[x.etapa] || x.etapa) + "</b> <small>" + esc(hora(x.em)) + " · " + esc(x.por) + "</small></div>").join("") +
@@ -373,6 +409,11 @@ document.addEventListener("click", async (ev) => {
     if (a === "dNovo") return abrirGaveta("Cadastrar destino", formDestino());
     if (a === "dEditar") { const d = S.D.destinos.find((x) => x.id === v); abrirGaveta("Editar destino", formDestino(d)); const c = $("#dCoord"); if (c && c.value) c.dispatchEvent(new Event("input", { bubbles: true })); return; }
     if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
+    if (a === "reqCopiarDados") { const t = ($("#reqTxt") || {}).value || ""; try { await navigator.clipboard.writeText(t); toast("Dados copiados."); } catch (e) { toast("Não consegui copiar. Selecione o texto e copie.", 5000); } return; }
+    if (a === "reqGerar") { const at = S.at.find((x) => x.id === S.atAberto); if (!at) return; b.disabled = true; try { const r = await est("estRequisicaoGerar", at.id, { tipo: v, texto: ($("#reqTxt") || {}).value || "" }); const link = ORIGEM + r.link; try { await navigator.clipboard.writeText(link); } catch (e) {} await recarregar(); abrirAtendimento(at.id); toast("Requisição gerada. O link foi copiado para enviar ao veterinário.", 7000); } catch (e) { b.disabled = false; toast(e.message, 7000); } return; }
+    if (a === "reqCopiar") { const link = ORIGEM + "requisicao.html?r=" + v; try { await navigator.clipboard.writeText(link); toast("Link copiado."); } catch (e) { prompt("Copie o link:", link); } return; }
+    if (a === "reqEnviar") return enviarLink(ORIGEM + "requisicao.html?r=" + v, "do médico veterinário para assinar a requisição");
+    if (a === "reqAnexar") { const f = $("#reqArq"); f.onchange = async () => { const x = f.files[0]; if (!x) return; const u8 = new Uint8Array(await x.arrayBuffer()); let bb = ""; for (let i = 0; i < u8.length; i += 0x8000) bb += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); try { await est("estRequisicaoAnexar", S.atAberto, { nome: x.name, mime: x.type || "application/pdf", b64: btoa(bb) }); await recarregar(); abrirAtendimento(S.atAberto); toast("Requisição anexada."); } catch (e) { toast(e.message, 6000); } }; f.click(); return; }
     if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado."); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "at") return abrirAtendimento(v);
   if (a === "atNovo") { abrirGaveta("Novo atendimento", formAtendimento({})); return; }

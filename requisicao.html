@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  function reescrever(x) {
+    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261121104734';
+  function conferirVersao() {
+    if (document.hidden) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+      v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
+      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.onclick = function () { location.reload(); }; document.body.appendChild(d);
+    }).catch(function () {});
+  }
+  setInterval(conferirVersao, 180000);
+  document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  if (q.get('v')) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Requisição CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png"><link rel="icon" type="image/png" href="painel-192.png"><link rel="manifest" href="painel.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Requisição CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:680px;margin:0 auto;padding:18px 14px 60px}
+h1{margin:0 0 2px;font-size:21px;color:var(--vinho)}h1 small{display:block;font-size:13px;color:var(--tinta2);font-weight:600}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin:12px 0}
+.cx h2{margin:0 0 8px;font-size:16px;color:var(--vinho)}
+pre{white-space:pre-wrap;font:inherit;margin:0}
+label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
+input{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;font:inherit}
+.btn{border:0;border-radius:14px;padding:14px 16px;background:var(--vinho);color:#fff;font-weight:700;font:inherit;font-weight:700;width:100%;margin-top:12px}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2);width:auto;padding:8px 12px;font-size:14px}
+.ok{color:var(--ok);font-weight:700}.erro{color:var(--verm);font-weight:700}
+canvas{width:100%;height:160px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff}
+small{color:var(--tinta2)}
+</style></head><body><!-- CVH-REQUISICAO -->
+<div class="wrap" id="app"><p>Abrindo a requisição…</p></div>
+<script>
+// requisição gerada pelo CVH: o médico veterinário confere os dados e assina com o dedo (10.13 a 10.15)
+const $ = (q) => document.querySelector(q), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const hora = (iso) => { if (!iso) return ""; const d = new Date(iso), p = (n) => String(n).padStart(2, "0"); return p(d.getDate()) + "/" + p(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p(d.getHours()) + ":" + p(d.getMinutes()); };
+const TESTES = { tipagem: "Tipagem sanguínea", prova: "Prova de compatibilidade", coombs: "Teste de Coombs (antiglobulina direto)" };
+const T = new URLSearchParams(location.search).get("r") || "";
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, a);
+let tracos = 0;
+async function abrir() {
+  let r; try { r = await srv("reqDados", T); } catch (e) { $("#app").innerHTML = '<h1>Requisição CVH</h1><div class="cx"><p class="erro">' + esc(e.message || e) + "</p></div>"; return; }
+  const p = r.pedido || {}, P = p.paciente || {}, V = p.vet || {};
+  const pedido = (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES[t] || t)).join(" · ");
+  let h = "<h1>Requisição de " + (r.modelo === "comum" ? "bolsa" : "emergência") + "<small>CVH - Centro Veterinário de Hemoterapia · atendimento " + esc(r.id) + " · " + esc(r.destino) + "</small></h1>";
+  h += '<div class="cx"><h2>Dados da requisição</h2><pre>' + esc(r.texto || [pedido && "Pedido: " + pedido, "Paciente: " + [r.paciente, P.peso ? P.peso + " kg" : "", P.ht ? "Ht " + P.ht + "%" : ""].filter(Boolean).join(" · "), "Solicitante: " + r.solicitante].filter(Boolean).join("\n")) + "</pre></div>";
+  if (r.assinada) { h += '<div class="cx"><p class="ok">Requisição assinada por ' + esc(r.nome) + " (" + esc(r.crmv) + ") em " + esc(hora(r.assinadoEm)) + ".</p><p><small>Obrigado. O documento fica guardado no atendimento do CVH.</small></p></div>"; $("#app").innerHTML = h; return; }
+  h += '<div class="cx"><h2>Assinatura do médico veterinário</h2><p><small>Confira os dados acima. Ao assinar, você confirma a solicitação ao CVH.</small></p><label>Nome</label><input id="rNome" value="' + esc(V.nome || "") + '"><label>CRMV/UF</label><input id="rCrmv" value="' + esc(V.crmv || "") + '" placeholder="CRMV-DF 0000"><label>Assine com o dedo</label><canvas id="rAss" width="700" height="220"></canvas><button class="btn sec" id="rLimpar" type="button">Limpar</button><button class="btn" id="rOk" type="button">Assinar a requisição</button><p id="rSt"></p></div>';
+  $("#app").innerHTML = h;
+  const cv = $("#rAss"), cx = cv.getContext("2d"); cx.lineWidth = 3; cx.lineCap = "round"; cx.strokeStyle = "#2b2320"; let des = false;
+  const pos = (e) => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * cv.width / b.width, (e.clientY - b.top) * cv.height / b.height]; };
+  cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
+  cv.onpointermove = (e) => { if (!des) return; const [x, y] = pos(e); cx.lineTo(x, y); cx.stroke(); tracos++; };
+  cv.onpointerup = cv.onpointercancel = () => { des = false; };
+  $("#rLimpar").onclick = () => { cx.clearRect(0, 0, cv.width, cv.height); tracos = 0; };
+  $("#rOk").onclick = async () => {
+    const st = $("#rSt"); if (tracos < 8) { st.className = "erro"; st.textContent = "Assine no quadro."; return; }
+    $("#rOk").disabled = true; st.className = ""; st.textContent = "Enviando…";
+    try { await srv("reqAssinar", T, { nome: $("#rNome").value.trim(), crmv: $("#rCrmv").value.trim(), assinatura: cv.toDataURL("image/png").split(",")[1] }); abrir(); }
+    catch (e) { $("#rOk").disabled = false; st.className = "erro"; st.textContent = e.message || String(e); }
+  };
+}
+abrir();
+</script></body></html>

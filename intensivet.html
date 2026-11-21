@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121104226';
+  var VERSAO = '20261121104734';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -95,7 +95,7 @@ button{cursor:pointer}
 .relogio.al{color:var(--verm)}
 .vazio{color:var(--tinta2);text-align:center;padding:14px}
 label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
-input[type=text],input[type=tel],input[type=number],textarea{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;background:#fff}
+input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;background:#fff}
 .op{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--areia2);border-radius:12px;padding:11px;margin-top:8px;font-weight:600}
 .op input{margin-top:3px;transform:scale(1.25)}
 #veu{position:fixed;inset:0;background:rgba(43,35,32,.5);z-index:20;display:none}
@@ -257,6 +257,12 @@ function pintar() {
   if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
   if (!notifOk()) h += '<div class="cx av"><p>Ative as notificações para saber quando uma caixa do CVH estiver a caminho, mesmo com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>';
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
+  // pedidos ao CVH: bolsa, tipagem, prova de compatibilidade e Coombs (internação)
+  if (interna) {
+    h += '<button class="btn grande sec" data-a="solicitar" style="margin-top:10px">Solicitar bolsa ou teste ao CVH</button>';
+    const P = (D.pedidos || []).filter((x) => !["concluido", "cancelado"].includes(x.etapa) || Date.now() - new Date(x.criado).getTime() < 864e5);
+    if (P.length) h += '<div class="cx"><h2>Pedidos ao CVH</h2>' + P.map((x) => { const p = (x.dados || {}).pedido || {}; return '<div class="bolsa"><b>' + esc(x.paciente) + " · " + esc(oQuePedido(p)) + '</b> <span class="tag ' + (x.etapa === "cancelado" ? "al" : x.etapa === "concluido" || x.etapa === "entregue" ? "ok" : "av") + '">' + esc(ETAPA_PED[x.etapa] || x.etapa) + "</span><small>" + esc(hora(x.criado)) + " · " + esc(p.vet ? p.vet.nome : x.solicitante) + "</small></div>"; }).join("") + "</div>";
+  }
   // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento; CRIO primeiro
   const prio = { CRIO: 0, PFC: 1, PPC: 1, CH: 2, CP: 3 };
   for (const r of rem.filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
@@ -397,6 +403,56 @@ function confirmarRetirada(uid) {
 }
 async function retirarQR() { const t = await lerQR("Leia a etiqueta da bolsa"); if (!t) return; const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id); if (!u) { bip(false); return toast("Bolsa não encontrada no estoque daqui. Confira a etiqueta.", 7000); } confirmarRetirada(u.id); }
 const vets = () => { try { return JSON.parse(localStorage.getItem("cvh_int_vets") || "[]"); } catch (e) { return []; } };
+/* ── pedido ao CVH pelo celular da internação ── */
+const TESTES_PED = [["tipagem", "Tipagem sanguínea"], ["prova", "Prova de compatibilidade"], ["coombs", "Teste de Coombs (antiglobulina direto)"]];
+const ETAPA_PED = { aberto: "Recebido pelo CVH", possivel: "Em análise", autorizado: "Autorizado", pago: "Confirmado", testes: "Testes em andamento", fracionamento: "Preparando a bolsa", preparo: "Preparando a bolsa", pronta: "Pronta para sair", retirada: "Com o motoboy", entregue: "Entregue", concluido: "Concluído", cancelado: "Cancelado" };
+const oQuePedido = (p) => (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => ({ tipagem: "tipagem", prova: "prova de compatibilidade", coombs: "Coombs" }[t] || t))).join(" + ");
+let ASS = null;
+function formSolicitar() {
+  const V = vets();
+  modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. O pedido chega na hora para a equipe do CVH.</small></p>" +
+    "<label>O que precisa</label>" + ["CH", "PFC", "CRIO", "CP"].map((c) => '<label class="op" style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="sB" value="' + c + '"> <span style="flex:1">' + { CH: "CH · concentrado de hemácias", PFC: "PFC · plasma fresco congelado", CRIO: "CRIO · crioprecipitado", CP: "CP · concentrado de plaquetas" }[c] + '</span><input type="number" inputmode="numeric" min="1" max="10" value="1" class="sQ" data-c="' + c + '" style="width:70px" aria-label="quantidade"></label>').join("") +
+    TESTES_PED.map(([k, t]) => '<label class="op"><input type="checkbox" class="sT" value="' + k + '"> ' + t + "</label>").join("") +
+    '<p id="sAmHint" hidden><small>Para prova de compatibilidade, tipagem e Coombs, colete sangue do paciente em tubo de EDTA (1 mL) e identifique com o nome.</small></p>' +
+    '<label class="op" id="sAmLb" hidden><input type="checkbox" id="sAm"> A amostra do paciente já está coletada para o motoboy buscar</label>' +
+    '<label>Urgência</label><div class="bts" style="margin-top:0"><label class="op"><input type="radio" name="sUrg" value="rotina"> Rotina</label><label class="op"><input type="radio" name="sUrg" value="urgente" checked> Urgente</label><label class="op"><input type="radio" name="sUrg" value="emergencia"> Emergência</label></div>' +
+    '<h2 style="margin-top:14px">Paciente</h2><label>Nome</label><input type="text" id="sAn"><label>Espécie</label><select id="sEsp"><option>Canina</option><option>Felina</option></select><label>Raça</label><input type="text" id="sRaca"><label>Sexo</label><select id="sSexo"><option value="">não informado</option><option>Macho</option><option>Fêmea</option></select><label>Idade</label><input type="text" id="sIdade" placeholder="ex.: 6 anos">' +
+    '<label>Peso (kg)</label><input type="number" inputmode="decimal" id="sPeso"><label>Hematócrito atual (%)</label><input type="number" inputmode="decimal" id="sHt"><label>Tipagem conhecida (se tiver)</label><input type="text" id="sTip" placeholder="ex.: DEA 1 negativo"><label>Já recebeu transfusão antes?</label><select id="sTr"><option value="">não sei</option><option>Não</option><option>Sim</option></select>' +
+    '<label>Indicação clínica e diagnóstico</label><textarea id="sInd" rows="3" style="width:100%"></textarea>' +
+    '<h2 style="margin-top:14px">Responsável</h2><label>Nome</label><input type="text" id="sResp"><label>Telefone ou WhatsApp</label><input type="tel" id="tTel">' +
+    '<label class="op"><input type="radio" name="tCont" value="ciente"> O responsável está ciente. O CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Favor aguardar. O responsável ainda não foi avisado.</label>' +
+    '<h2 style="margin-top:14px">Médico veterinário solicitante</h2>' + (V.length ? '<div class="bts" style="margin-top:0">' + V.map((v, i) => '<button class="btn sec peq" data-a="vetUsar" data-v="' + i + '">' + esc(v.nome) + "</button>").join("") + "</div>" : "") +
+    '<label>Nome</label><input type="text" id="tVet"><label>CRMV/UF</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
+    '<label>Assinatura da requisição</label><p><small>Assine com o dedo no quadro. Se já tiver a requisição em PDF, anexe no lugar da assinatura.</small></p><canvas id="sAss" width="600" height="200" style="width:100%;height:140px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff"></canvas>' +
+    '<div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="assLimpar">Limpar assinatura</button><button class="btn sec peq" data-a="sAnexar">Anexar requisição em PDF</button></div><input type="file" id="sArq" accept="application/pdf,image/*" hidden><p id="sArqNome"></p>' +
+    '<label>Observações</label><textarea id="sObs" rows="2" style="width:100%"></textarea>' +
+    '<div class="bts"><button class="btn" data-a="solicitarOk">Enviar pedido ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  ASS = { tracos: 0, anexo: null }; const cv = $("#sAss"), cx = cv.getContext("2d"); cx.lineWidth = 3; cx.lineCap = "round"; cx.strokeStyle = "#2b2320";
+  let des = false; const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+  cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
+  cv.onpointermove = (e) => { if (!des) return; const [x, y] = pos(e); cx.lineTo(x, y); cx.stroke(); ASS.tracos++; };
+  cv.onpointerup = cv.onpointercancel = () => { des = false; };
+  const amostra = () => { const t = [...document.querySelectorAll(".sT:checked")].length; $("#sAmHint").hidden = $("#sAmLb").hidden = !t; };
+  document.querySelectorAll(".sT").forEach((x) => (x.onchange = amostra));
+  document.querySelectorAll(".sQ").forEach((x) => (x.oninput = () => { const c = document.querySelector('.sB[value="' + x.dataset.c + '"]'); if (c) c.checked = true; }));
+  $("#sArq").onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 7e6) return toast("Arquivo grande demais.", 5000); const u8 = new Uint8Array(await f.arrayBuffer()); let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); ASS.anexo = { nome: f.name, mime: f.type || "application/pdf", b64: btoa(b) }; $("#sArqNome").innerHTML = "<small>Anexo: " + esc(f.name) + "</small>"; };
+}
+async function solicitarOk(b) {
+  const val = (id) => ($("#" + id) || {}).value ? $("#" + id).value.trim() : "", c = document.querySelector('input[name="tCont"]:checked'), urg = document.querySelector('input[name="sUrg"]:checked');
+  const o = { bolsas: [...document.querySelectorAll(".sB:checked")].map((x) => ({ componente: x.value, qtd: +(document.querySelector('.sQ[data-c="' + x.value + '"]') || {}).value || 1 })), testes: [...document.querySelectorAll(".sT:checked")].map((x) => x.value), urgencia: urg ? urg.value : "urgente",
+    paciente: { nome: val("sAn"), especie: val("sEsp"), raca: val("sRaca"), sexo: val("sSexo"), idade: val("sIdade"), peso: val("sPeso"), ht: val("sHt"), tipagem: val("sTip"), transfundido: val("sTr") }, indicacao: val("sInd"), obs: val("sObs"),
+    responsavel: { nome: val("sResp"), telefone: val("tTel"), contato: c ? c.value : "" }, vet: { nome: val("tVet"), crmv: val("tCrmv") }, amostra: { coletada: !!($("#sAm") || {}).checked } };
+  if (!o.bolsas.length && !o.testes.length) return toast("Escolha o que precisa: bolsa ou teste.", 5000);
+  if (!o.paciente.nome || !o.paciente.peso) return toast("Informe o nome e o peso do paciente.", 5000);
+  if (!o.vet.nome || !o.vet.crmv) return toast("Informe o médico veterinário e o CRMV.", 5000);
+  if (!o.responsavel.contato) return toast("Escolha a orientação de contato com o responsável.", 5000);
+  if (ASS.tracos < 8 && !ASS.anexo) return toast("Assine a requisição no quadro ou anexe a requisição em PDF.", 6000);
+  if (ASS.tracos >= 8) o.assinatura = $("#sAss").toDataURL("image/png").split(",")[1]; if (ASS.anexo) o.anexo = ASS.anexo;
+  b.disabled = true; b.textContent = "Enviando…";
+  try { await srv("intSolicitar", o); try { const V = vets().filter((v) => v.nome.toLowerCase() !== o.vet.nome.toLowerCase()); V.unshift({ nome: o.vet.nome, crmv: o.vet.crmv }); localStorage.setItem("cvh_int_vets", JSON.stringify(V.slice(0, 12))); } catch (e) {}
+    fechar(); toast("Pedido enviado ao CVH. Acompanhe aqui em Pedidos ao CVH.", 6000); await carregar(); }
+  catch (e) { b.disabled = false; b.textContent = "Enviar pedido ao CVH"; toast(e.message || String(e), 7000); }
+}
 function formTransfusao(uid) {
   const V = vets();
   modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="number" inputmode="decimal" id="tPeso"><label>Hematócrito do paciente (%)</label><input type="number" inputmode="decimal" id="tHt"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
@@ -444,6 +500,10 @@ document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
   try {
     if (a === "fechar") { PROX = null; return fechar(); }
+    if (a === "solicitar") return formSolicitar();
+    if (a === "solicitarOk") return solicitarOk(b);
+    if (a === "assLimpar") { const cv = $("#sAss"); cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); ASS.tracos = 0; return; }
+    if (a === "sAnexar") return $("#sArq").click();
     if (a === "atualizar") { await carregar(); return toast("Atualizado.", 1500); }
     if (a === "notif") { await ativarNotif(); toast("Notificações ativadas.", 4000); return pintar(); }
     if (a === "receber") return receber();
