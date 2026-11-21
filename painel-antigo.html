@@ -463,6 +463,8 @@ a.btn{text-decoration:none}
 .ct-mini{display:flex;align-items:center;gap:14px;cursor:pointer}.ct-mini .ct-ano{width:62px;height:62px;filter:none}.ct-mini small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-mini b{display:block;font-size:17px;color:var(--vinho)}.ct-mini span{font-size:13px;color:#7A6A62}
 .ct-oc{margin-top:16px}.ct-oc-l{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFE6DC}
 .av-i.lido{opacity:.55}
+.al-imp{margin:.2em 0;color:#A83D3D;font-weight:700;font-size:.85em}.alerta-c.imped{border-color:#A83D3D}
+@media (min-width:1000px){.tela-al .tela-c{max-width:1180px}.al-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.al-lado{position:sticky;top:10px}.al-lado .filtros{flex-wrap:wrap}}
 .cf-fis{margin:.5em 0 .2em;padding:.5em .7em;border:1px dashed var(--areia,#EEE5DB);border-radius:.6em;font-size:.82em;color:var(--vinho)}.cf-fis p{margin:0 0 .3em}.cf-fis .mini.on{background:var(--vinho);color:#fff}
 .ct-cart{display:flex;gap:.8em;align-items:center;background:#fff;border:1px solid var(--areia,#EEE5DB);border-radius:.8em;padding:.55em .8em;margin:.4em 0;cursor:pointer}.ct-cart .ct-ano{width:3.6em;height:3.6em;filter:none}
 .ct-cart small{display:block;font-size:.62em;letter-spacing:.14em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-cart b{display:block;font-size:.9em;color:var(--vinho)}
@@ -822,7 +824,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121004059';
+  var VERSAO = '20261121004542';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3907,29 +3909,38 @@ async function telaAlertas(filtro) {
   if (!E.alertas) { carregando('Calculando os alertas'); try { await carregarAlertas(true); } catch (e) { toast(e.message, 9000); return telaHome(); } }
   const l = E.alertas, f = E.filtroAl;
   const cont = k => ativos(l).filter(a => a.nivel === k).length;
-  const vis = l.filter(a => f === 'arquivados' ? a.situacao === 'arquivado' : a.situacao !== 'arquivado' && (f === 'ativos' || a.nivel === f));
+  const vis = l.filter(a => f === 'arquivados' ? a.situacao === 'arquivado' : f === 'impedimento' ? a.situacao === 'impedimento' : a.situacao !== 'arquivado' && (f === 'ativos' || a.nivel === f));
   const chipF = (k, t, n) => '<button class="filtro' + (f === k ? ' on' : '') + '" data-acao="alertas-filtro" data-v="' + k + '">' + t + (n != null ? ' <b>' + n + '</b>' : '') + '</button>';
   const comRes = [...new Set((E.resultados || []).map(r => r.animalId))].map(animalDe).filter(Boolean).sort((a, b) => a.nome.localeCompare(b.nome));
-  raiz.innerHTML = '<main class="tela"><div class="tela-c">' +
+  raiz.innerHTML = '<main class="tela tela-al"><div class="tela-c">' +
     '<div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Só para o administrador</span><b>Alertas laboratoriais</b></div></header>' +
     '<p class="nota">Calculados a partir dos históricos salvos. Nada aqui aparece para o responsável. Você decide o que comunicar. Os alertas apoiam a avaliação e não definem sozinhos a aptidão para doação.</p>' +
-    '<div class="filtros">' + chipF('ativos', 'Todos', ativos(l).length) + chipF('super', 'Super', cont('super')) + chipF('urgente', 'Urgentes', cont('urgente')) + chipF('normal', 'Normais', cont('normal')) + chipF('arquivados', 'Arquivados') + '</div>' +
+    // busca por animal ou responsável (o responsável traz todos os animais dele); no computador, busca e filtros ficam na lateral
+    '<div class="al-grid"><aside class="al-lado"><div class="busca"><input id="buscaAl" type="search" placeholder="Buscar animal ou responsável" value="' + esc(E.buscaAl || '') + '" aria-label="Buscar alertas"></div>' +
+    '<div class="filtros">' + chipF('ativos', 'Todos', ativos(l).length) + chipF('super', 'Super', cont('super')) + chipF('urgente', 'Urgentes', cont('urgente')) + chipF('normal', 'Normais', cont('normal')) + chipF('impedimento', 'Impedimentos', l.filter(a => a.situacao === 'impedimento').length) + chipF('arquivados', 'Arquivados') + '</div>' +
+    (comRes.length ? '<section class="cartao"><h3>Perfil laboratorial individual</h3><div class="chips" id="chipsAl">' + comRes.map(a => '<button class="chip-an" data-acao="alerta-perfil" data-id="' + a.id + '" data-busca="' + esc(semAc(a.nome + ' ' + ((respDe(a) || {}).nome || ''))) + '">' + esc(a.nome) + '</button>').join('') + '</div></section>' : '') + '</aside><div class="al-main">' +
     '<section id="listaAl">' + (vis.length ? vis.map(cartaoAlerta).join('') : '<p class="vazio-p">' + (E.resultados && E.resultados.length ? 'Nenhum alerta aqui.' : 'A base de resultados ainda está vazia. Ela é preenchida sempre que um histórico é salvo. Para os históricos que já estão na carteira, use o botão abaixo.') + '</p>') + '</section>' +
-    (comRes.length ? '<section class="cartao"><h3>Perfil laboratorial individual</h3><div class="chips">' + comRes.map(a => '<button class="chip-an" data-acao="alerta-perfil" data-id="' + a.id + '">' + esc(a.nome) + '</button>').join('') + '</div></section>' : '') +
     '<section class="cartao"><h3>Base de resultados</h3><p class="nota">' + (E.resultados ? E.resultados.length : 0) + ' resultados de ' + comRes.length + ' animais.</p>' +
       '<div class="acoes"><button class="btn sec2 peq" data-acao="alertas-carregar">Carregar os históricos que já estão na carteira</button><button class="btn sec2 peq" data-acao="coef-abrir">Coeficientes e regras</button></div></section>' +
-    '</div></main>';
+    '</div></div></div></main>';
+  const busca = () => { const q = semAc(($('#buscaAl') || {}).value || '').trim(); E.buscaAl = q; let n = 0;
+    document.querySelectorAll('#listaAl .alerta-c').forEach(el => { const ok = !q || el.dataset.busca.includes(q); el.hidden = !ok; if (ok) n++; });
+    document.querySelectorAll('#chipsAl .chip-an').forEach(el => { el.hidden = !!q && !el.dataset.busca.includes(q); });
+    let v = $('#alVazio'); if (q && !n) { if (!v) { v = document.createElement('p'); v.id = 'alVazio'; v.className = 'vazio-p'; $('#listaAl').appendChild(v); } v.textContent = 'Nenhum alerta para "' + q + '" neste filtro.'; } else if (v) v.remove(); };
+  $('#buscaAl').oninput = busca; busca();
 }
 function cartaoAlerta(a) {
   const an = animalDe(a.animalId) || {}, rp = respDe(an) || {};
   const rot = { super: 'Super alerta', urgente: 'Urgente', normal: a.tipo === 'tendencia' || a.tipo === 'perfil' ? 'Alerta exploratório' : 'Alerta' }[a.nivel];
-  return '<article class="alerta-c ' + a.nivel + (a.situacao === 'visto' ? ' visto' : '') + '"><div class="al-top"><span class="al-niv">' + rot + '</span><span class="al-an">' + esc(an.nome || '') + (rp.nome ? ' · ' + esc(rp.nome) : '') + '</span></div>' +
-    '<h4>' + esc(a.titulo) + '</h4><p class="al-det">' + esc(a.detalhe || '') + '</p>' + (a.hist ? '<p class="al-hist">Últimos: ' + esc(a.hist) + '</p>' : '') +
+  const outros = rp.id ? E.d.animais.filter(x => x.responsavelId === rp.id).map(x => x.nome).join(' ') : '';
+  return '<article class="alerta-c ' + a.nivel + (a.situacao === 'visto' ? ' visto' : '') + (a.situacao === 'impedimento' ? ' imped' : '') + '" data-busca="' + esc(semAc([an.nome, rp.nome, outros, a.titulo].join(' '))) + '"><div class="al-top"><span class="al-niv">' + rot + '</span><span class="al-an">' + esc(an.nome || '') + (rp.nome ? ' · ' + esc(rp.nome) : '') + '</span></div>' +
+    (a.situacao === 'impedimento' ? '<p class="al-imp">Impedimento para doar marcado' + (a.vistoPor ? ' por ' + esc(a.vistoPor) : '') + '</p>' : '') + '<h4>' + esc(a.titulo) + '</h4><p class="al-det">' + esc(a.detalhe || '') + '</p>' + (a.hist ? '<p class="al-hist">Últimos: ' + esc(a.hist) + '</p>' : '') +
     a.notas.map(n => '<p class="al-nota">' + esc(n) + '</p>').join('') + (a.nota ? '<p class="al-minha">Sua nota: ' + esc(a.nota) + '</p>' : '') +
     '<div class="al-bts"><button class="btn sec2 peq" data-acao="alerta-perfil" data-id="' + a.animalId + '">Perfil e resultados</button>' +
     (a.situacao === 'arquivado' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="">Reativar</button>' :
-      (a.situacao !== 'visto' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="visto">Marcar como visto</button>' : '') +
+      (a.situacao !== 'visto' && a.situacao !== 'impedimento' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="visto">Marcar como visto</button>' : '') +
+      (a.situacao === 'impedimento' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="visto">Tirar o impedimento</button>' : '<button class="btn sec2 peq rc-del" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="impedimento">Impedimento para doar</button>') +
       '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="arquivado">Arquivar</button>') + '</div></article>';
 }
 // gráfico cronológico: intervalo populacional (faixa clara), faixa histórica individual (tracejado) e cada resultado
@@ -4053,7 +4064,7 @@ async function perfilAnimal(aid) {
   };
   const valU = x => x.pf.ultimo ? fmtA(+x.pf.ultimo.valor, x.u.unidade) : '';
   raiz.innerHTML = '<main class="tela tela-larga" id="pfTela"><div class="tela-c">' +
-    '<div class="barra" style="padding:0"><button class="pill" data-acao="pf-lista">‹ Perfis</button></div>' +
+    '<div class="barra" style="padding:0">' + (E.pfDeAlertas ? '<button class="pill" data-acao="alertas">‹ Alertas</button>' : '') + '<button class="pill" data-acao="pf-lista">‹ Perfis</button></div>' +
     '<header class="topo"><div class="t"><span>Perfil laboratorial individual</span><b>' + esc(an.nome || '') + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') + '</b></div></header>' +
     '<p class="nota">' + esc([rp.nome ? 'Responsável ' + rp.nome : '', datas.length ? 'exames de ' + br(datas[0]) + ' a ' + br(datas[datas.length - 1]) : '', labs.length ? labs.length + (labs.length === 1 ? ' método' : ' métodos') : ''].filter(Boolean).join(' · ')) + '</p>' +
     '<div class="acoes pf-acoes"><button class="btn sec2 peq" data-acao="hist-ver" data-id="' + aid + '">Histórico laboratorial</button><button class="btn sec2 peq" data-acao="perfil-pdf" data-id="' + aid + '" data-v="a4">PDF digital</button><button class="btn sec2 peq" data-acao="perfil-pdf" data-id="' + aid + '" data-v="cel">PDF smartphone</button></div>' +
@@ -4340,8 +4351,8 @@ function triagemDoador(aid) {
   if (an.ativo === '0' || an.aposentadoMotivo) imp.push('Doador aposentado' + (an.aposentadoMotivo ? ': ' + an.aposentadoMotivo : '') + '.');
   if (pode('admin') && E.alertas) {
     const meus = ativos(E.alertas).filter(a => a.animalId === aid);
-    meus.filter(a => a.nivel !== 'normal').forEach(a => imp.push((a.nivel === 'super' ? 'Super alerta: ' : '') + a.titulo + ' (' + br(a.data) + ').'));
-    const nn = meus.filter(a => a.nivel === 'normal').length; if (nn) pend.push(nn + (nn === 1 ? ' alerta laboratorial para avaliar.' : ' alertas laboratoriais para avaliar.'));
+    meus.filter(a => a.nivel !== 'normal' || a.situacao === 'impedimento').forEach(a => imp.push((a.situacao === 'impedimento' ? 'Impedimento marcado: ' : a.nivel === 'super' ? 'Super alerta: ' : '') + a.titulo + ' (' + br(a.data) + ').'));
+    const nn = meus.filter(a => a.nivel === 'normal' && a.situacao !== 'impedimento').length; if (nn) pend.push(nn + (nn === 1 ? ' alerta laboratorial para avaliar.' : ' alertas laboratoriais para avaliar.'));
   }
   pendencias(regs).filter(p => p.data < h).forEach(p => pend.push(p.rot + (p.det ? ' (' + p.det + ')' : '') + ' venceu em ' + br(p.data) + '.'));
   if (an.doador === '1' && !regs.some(r => r.tipo === 'tcle')) pend.push('Sem termo de consentimento assinado na carteira.');
@@ -6532,7 +6543,7 @@ const ACOES = {
   alertas: () => telaAlertas('ativos'),
   'alertas-filtro': b => telaAlertas(b.dataset.v),
   'alertas-carregar': b => { b.disabled = true; carregarHistoricosAntigos(b).catch(e => { toast(e.message, 5000); b.disabled = false; }); },
-  'alerta-perfil': b => perfilAnimal(b.dataset.id),
+  'alerta-perfil': b => { E.pfDeAlertas = !!document.querySelector('#listaAl'); perfilAnimal(b.dataset.id); },
   'link-temp': () => telaLinkTemp(E.animal),
   'auditoria-animal': () => telaAuditoria(E.animal),
   'pd-filtro': b => { E.pdFiltro = b.dataset.v; pintarPendencias(); },
@@ -6551,7 +6562,7 @@ const ACOES = {
   'hs-filtro': b => { E.hsFiltro = b.dataset.v; aplicarFiltroHs(); },
   'alerta-marcar': async b => {
     const a = E.alertas.find(x => x.chave === b.dataset.k); if (!a) return; b.disabled = true;
-    try { await api('marcarAlerta', E.sessao, a.chave, a.animalId, b.dataset.v, ''); a.situacao = b.dataset.v; telaAlertas(); } catch (e) { toast(e.message, 5000); b.disabled = false; }
+    try { const o = await api('marcarAlerta', E.sessao, a.chave, a.animalId, b.dataset.v, ''); a.situacao = b.dataset.v; if (o && o.vistoPor) a.vistoPor = o.vistoPor; if (document.querySelector('#pfTela')) perfilAnimal(a.animalId); else telaAlertas(); } catch (e) { toast(e.message, 5000); b.disabled = false; }
   },
   'receitas-todas': () => telaReceitas(null),
   'laudos-todos': () => telaLaudos(null),
