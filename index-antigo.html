@@ -240,6 +240,10 @@ button{cursor:pointer}
 .reg .ed+.linha .chip{margin-right:5.2em}
 .add{border:1.5px dashed var(--dourado);background:rgba(255,255,255,.55);color:var(--vinho);border-radius:.5em;padding:1em;font-weight:700;font-size:.78em;display:flex;align-items:center;justify-content:center;gap:.4em;min-height:3.6em}
 .ac-pai{position:relative}
+.tx-at{margin:10px 0 6px;padding:10px 12px;border-radius:12px;background:#F6EFE7}.tx-at select{width:100%}
+.prep .tg{display:inline-block;font-style:normal;font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px;margin:2px 4px 2px 0}.prep .tg.ok{background:#E3F1E4;color:#24572b}.prep .tg.av{background:#FBEBD2;color:#7a4a0c}
+.venc.prep{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px;border-radius:12px;margin:8px 0}.venc.prep .t{width:100%}.venc.prep .t small{display:block;white-space:normal;overflow:visible;text-overflow:clip;margin-top:4px;line-height:1.7}.venc.prep .mini-bts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
+.prep-ok{box-shadow:0 0 0 2px #3f8b4a inset;background:#F4FAF4}
 .ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}
 .ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
 .ped-l{width:100%;display:flex;gap:10px;align-items:center;border:0;border-top:1px solid #EEE5DB;background:none;padding:10px 0;font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
@@ -831,7 +835,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121111440';
+  var VERSAO = '20261121114705';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4891,7 +4895,7 @@ async function bolsasTx(T, r) {
   const cab = '<section class="tx-est"><h3>Bolsas do estoque</h3><div class="grade"><label>Margem operacional (mL)<input type="text" inputmode="numeric" id="txMargem" value="' + esc(String(margem)) + '"></label><label>Tipagem do paciente<select id="txTipPac">' +
     (T.esp === 'Gato' ? [['', 'não tipado'], ['A', 'A'], ['B', 'B'], ['AB', 'AB']] : [['', 'não tipado'], ['neg', 'DEA 1 negativo'], ['pos', 'DEA 1 positivo']]).map(([v, t]) => '<option value="' + v + '"' + ((T.tipPac || '') === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label></div>';
   box.innerHTML = cab + '<p class="nota">Consultando o estoque…</p></section>';
-  const ligar = () => { const m = $('#txMargem'), t = $('#txTipPac'); if (m) m.onchange = () => { T.margem = m.value; E.tx.margem = m.value; try { localStorage.setItem('cvh_tx_margem', m.value); } catch (_) {} bolsasTx(T, r); }; if (t) t.onchange = () => { T.tipPac = t.value; E.tx.tipPac = t.value; bolsasTx(T, r); }; };
+  const ligar = () => { const sa = $('#txAt'); if (sa) sa.onchange = () => escolherAtTx(sa.value); const m = $('#txMargem'), t = $('#txTipPac'); if (m) m.onchange = () => { T.margem = m.value; E.tx.margem = m.value; try { localStorage.setItem('cvh_tx_margem', m.value); } catch (_) {} bolsasTx(T, r); }; if (t) t.onchange = () => { T.tipPac = t.value; E.tx.tipPac = t.value; bolsasTx(T, r); }; };
   let d; try { d = await estoqueTx(); } catch (e) { box.innerHTML = cab + '<p class="nota">Não consegui consultar o estoque agora.</p></section>'; return ligar(); }
   if (!$('#txEst')) return;
   const hoje0 = new Date(hoje() + 'T00:00:00'), dias = u => Math.round((new Date(String(u.validade).slice(0, 10) + 'T00:00:00') - hoje0) / 864e5);
@@ -4907,10 +4911,88 @@ async function bolsasTx(T, r) {
   // primeiro as que cobrem dose e margem (menos sobra e vencimento mais perto), depois as que cobrem só a dose, por último as menores (as mais próximas da dose primeiro)
   const nota = x => { const f = x.v >= alvo ? 0 : x.v >= r.vol ? 1 : 2; return f * 1000 + (f === 2 ? (r.vol - x.v) * 2 : 0) + (x.inte ? 150 : 0) + Math.min(x.dv, 60) * 3 + (f === 0 ? Math.max(0, x.v - alvo) * 0.5 : 0); };
   const L = C.sort((a, b) => nota(a) - nota(b)).slice(0, 3);
-  box.innerHTML = cab + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
+  // atendimento ligado ao cálculo (14.1): guarda paciente, dose, margem e as unidades avaliadas para reabrir no preparo
+  const ats = (d.atendimentos || []).filter(a => !['concluido', 'cancelado', 'retirada', 'entregue'].includes(a.etapa));
+  const at = ats.find(a => a.id === E.tx.at) || null, calc = at && (at.dados || {}).calculo;
+  E.txCalc = { comp: 'CH', esp: T.esp, peso, htAtual: rec, htDesejado: des, htBolsa: numTx(T.doa), fator: fat, vol: Math.round(r.vol * 10) / 10, margem, alvo: Math.round(alvo), tipPac: T.tipPac || '', unidades: L.map(x => ({ id: x.u.id, v: x.v, just: just(x) })) };
+  const blocoAt = '<div class="tx-at"><label>Atendimento<select id="txAt"><option value="">Sem atendimento</option>' + ats.map(a => '<option value="' + esc(a.id) + '"' + (at && at.id === a.id ? ' selected' : '') + '>' + esc(a.id + ' · ' + a.destino + (a.paciente ? ' · ' + a.paciente : '') + ' · ' + (ETAPA_AT_TX[a.etapa] || a.etapa)) + '</option>').join('') + '</select></label>' +
+    (at ? '<div class="mini-bts"><button class="mini" data-acao="tx-salvar">' + (calc ? 'Atualizar o cálculo no atendimento' : 'Salvar o cálculo no atendimento') + '</button>' + (at.etapa === 'aberto' && at.modalidade !== 'uber' ? '<button class="mini" data-acao="tx-possivel">Avisar possível venda</button>' : '') + '</div>' + (calc ? '<p class="nota">Cálculo salvo ' + esc(hmTx(calc.em)) + ' por ' + esc(calc.por || '') + (calc.prova && calc.prova.length ? ' · para a prova ' + esc(calc.prova.join(', ')) : '') + '. Ele reabre no preparo da bolsa.</p>' : '')
+      : '<div class="mini-bts"><button class="mini" data-acao="tx-novo-at">Abrir atendimento com este cálculo</button></div>') + '</div>';
+  box.innerHTML = cab + blocoAt + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
       return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button></div></div>'; }).join('') +
       '<p class="nota">A escolha no estoque não substitui a prova de compatibilidade.</p>' : '<p class="nota">Nenhuma bolsa de CH disponível que combine com a espécie' + (T.tipPac ? ' e a tipagem' : '') + '.</p>') + '</section>';
   ligar();
+}
+/* ── HemoCalculadora ligada ao atendimento (14.1) e reaberta no preparo da bolsa (14.2) ── */
+const ETAPA_AT_TX = { aberto: 'aberto', possivel: 'possível venda', autorizado: 'aguardando pagamento', pago: 'pago', testes: 'testes concluídos', fracionamento: 'fracionando', preparo: 'em preparo', pronta: 'pronta' };
+const hmTx = t => { const d = new Date(t); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' às ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+// escolher o atendimento preenche o que o pedido da Intensivet já trouxe (peso, Ht, espécie, tipagem) sem apagar o que foi digitado
+async function escolherAtTx(id, abrir) {
+  const T = E.tx = E.tx || {}; T.at = id || '';
+  let d; try { d = await estoqueTx(true); } catch (_) { d = null; }
+  const a = d && (d.atendimentos || []).find(x => x.id === id), c = a && (a.dados || {}).calculo, P = a && ((a.dados || {}).pedido || {}).paciente;
+  if (c && c.vol) Object.assign(T, { comp: 'CH', esp: c.esp || T.esp, peso: c.peso != null ? String(c.peso).replace('.', ',') : T.peso, rec: c.htAtual != null ? String(c.htAtual).replace('.', ',') : T.rec, des: c.htDesejado != null ? String(c.htDesejado) : T.des, doa: c.htBolsa != null ? String(c.htBolsa) : T.doa, margem: c.margem != null ? String(c.margem) : T.margem, tipPac: c.tipPac || T.tipPac });
+  else if (P) {
+    if (/fel|gat/i.test(P.especie || '')) T.esp = 'Gato'; else if (P.especie) T.esp = 'Cão';
+    T.fator = String(TX_FATOR[T.esp]); T.comp = 'CH';
+    if (P.peso && !T.peso) T.peso = String(P.peso); if (P.ht && !T.rec) T.rec = String(P.ht);
+    const tp = semAc(P.tipagem || ''); if (tp) T.tipPac = T.esp === 'Gato' ? ((tp.match(/\b(ab|a|b)\b/) || [])[1] || '').toUpperCase() : /neg/.test(tp) ? 'neg' : /pos/.test(tp) ? 'pos' : '';
+  }
+  if (abrir !== false) telaTransfusao();
+}
+function pacienteTx(id) { const a = ((E.txEst && E.txEst.d && E.txEst.d.atendimentos) || []).find(x => x.id === id); return a ? (a.paciente || '') : ''; }
+async function salvarCalcTx(extra) {
+  if (!E.tx || !E.tx.at || !E.txCalc) throw new Error('Escolha o atendimento.');
+  const r = await api('estAtendimentoCalculo', E.sessao, E.tx.at, Object.assign({}, E.txCalc, extra || {})); E.txEst = null; return r;
+}
+// preparo: recupera o cálculo, atualiza o estoque e destaca a bolsa testada na prova
+async function telaPreparoTx(id) {
+  E.livro = null; fecharFolha(); E.prepAt = id; carregando('Abrindo a HemoCalculadora do atendimento');
+  let d; try { d = await estoqueTx(true); } catch (e) { telaInicio(); toast(e.message, 6000); return; }
+  const a = (d.atendimentos || []).find(x => x.id === id); if (!a) { telaInicio(); toast('Atendimento não encontrado.'); return; }
+  const c = (a.dados || {}).calculo || null, ped = (a.dados || {}).pedido || {}, P = ped.paciente || {};
+  const esp = c ? c.esp : /fel|gat/i.test(P.especie || '') ? 'Gato' : 'Cão', tipPac = c ? c.tipPac : '';
+  const vol = c ? c.vol : null, alvo = c ? c.alvo : null, prova = (c && c.prova) || [];
+  const exigeProva = esp === 'Gato' || /sim/i.test(P.transfundido || '');
+  const hoje0 = new Date(hoje() + 'T00:00:00'), dias = u => Math.round((new Date(String(u.validade).slice(0, 10) + 'T00:00:00') - hoje0) / 864e5);
+  const T = { esp, tipPac };
+  const minha = u => u.situacao === 'reservada' && String(u.reserva || '').includes(a.id);
+  const U = (d.unidades || []).filter(u => u.componente === 'CH' && (u.local || 'CVH') === 'CVH' && (u.situacao === 'disponivel' || minha(u)) && !(u.dados || {}).qcPendente && dias(u) >= 0 && u.volume_ml != null)
+    .map(u => ({ u, v: +u.volume_ml, comp: compativelTx(u, T), testada: prova.includes(u.id) || (u.mae_id && prova.includes(u.mae_id)), fracao: !!u.mae_id, dv: dias(u) })).filter(x => x.comp || x.testada);
+  const pronta = x => vol != null && x.v >= vol && x.v <= (alvo || vol) + 30;
+  const nota = x => (x.testada ? 0 : 1000) + (x.fracao && pronta(x) ? 0 : 300) + (vol != null && x.v < vol ? 500 : 0) + Math.min(x.dv, 60);
+  const L = U.sort((p, q) => nota(p) - nota(q)).slice(0, 6);
+  const sumidas = (c && c.unidades || []).filter(x => !U.some(y => y.u.id === x.id));
+  const linha = x => { const an = animalDe(x.u.animal_id) || {}, tags = [];
+    if (x.testada) tags.push('<span class="tg ok">testada na prova deste paciente</span>');
+    if (x.fracao && pronta(x)) tags.push('<span class="tg ok">fração pronta no volume</span>');
+    if (!x.testada) tags.push('<span class="tg av">' + (exigeProva ? 'sem prova com este paciente · prova obrigatória' : 'bolsa diferente da testada') + '</span>');
+    const just = vol == null ? '' : x.v >= alvo ? 'cobre a dose e a margem' + (x.v - alvo >= 50 ? ', fracionar preserva cerca de ' + n0h(x.v - alvo) + ' mL' : '') : x.v >= vol ? 'cobre a dose com ' + n0h(x.v - vol) + ' mL de margem' : 'faltam ' + n0h(vol - x.v) + ' mL para a dose';
+    return '<div class="venc prep' + (x.testada ? ' prep-ok' : '') + '" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([an.nome, x.comp ? x.comp.txt : ''].filter(Boolean).join(', ')) + '<small>' + tags.join(' ') + (just ? ' ' + esc(just) : '') + ' · vence em ' + x.dv + ' dias</small></div><div class="mini-bts">' +
+      (vol == null || x.v > (alvo || vol) + 5 ? '<button class="mini" data-acao="prep-frac" data-v="' + esc(x.u.id) + '" data-t="' + (x.testada ? 1 : 0) + '">Iniciar fracionamento desta unidade</button>' : '') +
+      (vol == null || x.v >= vol ? '<button class="mini" data-acao="prep-emb" data-v="' + esc(x.u.id) + '" data-t="' + (x.testada ? 1 : 0) + '">Usar esta bolsa e seguir para a embalagem</button>' : '') + '</div></div>'; };
+  E.prep = { id: a.id, exigeProva, alvo, vol, paciente: a.paciente || P.nome || '' };
+  raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="prep-voltar">‹ Atendimento</button></div>' +
+    '<header class="topo"><div class="t"><span>HemoCalculadora · preparo da bolsa</span><b>Atendimento ' + esc(a.id) + '</b></div></header>' +
+    '<section class="cartao"><h3>' + esc([a.paciente || P.nome, a.destino].filter(Boolean).join(' · ')) + '</h3>' +
+    (c ? '<div class="tx-vol"><small>Volume calculado</small><b>' + n1h(vol) + ' <i>mL</i></b><span>' + esc((c.esp || '') + (c.peso ? ', ' + n1h(c.peso) + ' kg' : '') + (c.htAtual != null ? ', Ht de ' + n0h(c.htAtual) + '% para ' + n0h(c.htDesejado) + '%' : '') + ' · margem ' + n0h(c.margem) + ' mL · busca ' + n0h(alvo) + ' mL') + '</span></div><p class="nota">Cálculo salvo ' + esc(hmTx(c.em)) + ' por ' + esc(c.por || '') + '. Não precisa refazer.</p>'
+      : '<p class="nota">Este atendimento ainda não tem cálculo salvo. <button class="mini" data-acao="prep-calcular">Calcular na HemoCalculadora</button></p>') +
+    (c && c.fracao ? '<p class="av-i novo"><b>Fração ' + esc(c.fracao.id) + ' com ' + n1h(c.fracao.volume) + ' mL já separada para este atendimento</b><small>Siga para a embalagem.</small></p>' : '') +
+    (c && c.escolhida ? '<p class="nota">Bolsa escolhida ' + esc(c.escolhida.id) + ' (' + (c.escolhida.modo === 'embalar' ? 'embalagem' : 'fracionamento') + ') ' + esc(hmTx(c.escolhida.em)) + '.</p>' : '') + '</section>' +
+    '<section class="cartao"><h3>Bolsa para este atendimento</h3>' + (L.length ? L.map(linha).join('') : '<p class="vazio-p">Nenhuma bolsa de CH apta no CVH agora.</p>') +
+    (sumidas.length ? '<p class="nota">Avaliadas no cálculo e indisponíveis agora: ' + esc(sumidas.map(x => x.id).join(', ')) + '.</p>' : '') +
+    '<p class="nota">A unidade testada aparece primeiro. Trocar de bolsa pede a confirmação da compatibilidade da nova bolsa.</p></section></div></main>';
+}
+async function preparoTx(b, modo) {
+  const P = E.prep; if (!P) return; const uid = b.dataset.v, testada = b.dataset.t === '1';
+  let conf = false;
+  if (!testada) { if (!confirm((P.exigeProva ? 'A bolsa ' + uid + ' não passou pela prova de compatibilidade deste paciente, e a prova é obrigatória (felino ou paciente já transfundido).' : 'A bolsa ' + uid + ' é diferente da testada.') + ' Confirma que a compatibilidade com esta bolsa foi verificada?')) return; conf = true; }
+  b.disabled = true;
+  try {
+    await api('estAtendimentoPreparo', E.sessao, P.id, { unidade: uid, modo, provaConfirmada: conf }); E.txEst = null;
+    if (modo === 'fracionar') { E.fracAbrir = { unidade: uid, volume: P.alvo, atendimento: P.id, paciente: P.paciente }; const k = pode('estoque') || pode('admin') ? 'estoque' : 'producao'; E.modulo = k; toast('Atendimento em fracionamento. O motoboy foi avisado.', 5000); return abrirModulo(k); }
+    toast('Bolsa ' + uid + ' reservada para o atendimento. Siga para a embalagem.', 5000); E.pedAbrir = P.id; E.modulo = 'transporte'; return abrirModulo('transporte');
+  } catch (e) { b.disabled = false; toast(e.message, 7000); }
 }
 function telaTransfusao() {
   E.livro = null; fecharFolha();
@@ -5564,6 +5646,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.base = E.receitaBase ? E.receitaBase.itens : null; E.ponte.baseOrient = E.receitaBase ? E.receitaBase.orient : '';
   }
   if (nome === 'transporte') { E.ponte.abrirPedido = E.pedAbrir || null; E.pedAbrir = null; }
+  if (nome === 'estoque' || nome === 'producao') { E.ponte.fracionar = E.fracAbrir || null; E.fracAbrir = null; }
   if (nome === 'estoque' || nome === 'producao') {
     // fichas de doação com coleta: código, doador, volume de ST, lote e validade da bolsa, segmento
     E.ponte.doacoes = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}, f = d.ficha || {}, a = animalDe(r.animalId) || {};
@@ -5640,6 +5723,10 @@ const PONTE = {
     });
   },
   contexto: () => E.ponte,
+  // atendimento abre a HemoCalculadora: cálculo novo com os dados do pedido, ou o preparo com o cálculo salvo
+  hemocalc: id => { setTimeout(() => { E.modulo = 'transfusao'; escolherAtTx(String(id || '')); }, 0); return true; },
+  abrirAtendimento: id => { setTimeout(() => { E.pedAbrir = String(id || ''); E.modulo = 'transporte'; abrirModulo('transporte'); }, 0); return true; },
+  hemocalcPreparo: id => { setTimeout(() => telaPreparoTx(String(id || '')), 0); return true; },
   salvarRascunho: async o => {
     const r = await api('fichaAndamentoSalvar', E.sessao, { id: o.id, animalId: E.animal, ficha: o.ficha });
     E.d.fichasAndamento = (E.d.fichasAndamento || []).filter(x => x.id !== r.id).concat([r]);
@@ -6560,10 +6647,20 @@ const ACOES = {
   'como-resp': () => verComoResponsavel(E.resp),
   'voltar-painel': voltarAoPainel,
   'tx-prova': async b => {
-    const pac = prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
-    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (pac.trim() || 'paciente da HemoCalculadora') }); E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade.'); }
+    const at = E.tx && E.tx.at, pac = at ? pacienteTx(at) : prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
+    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : '') }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
     catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
+  'tx-salvar': async b => { b.disabled = true; try { await salvarCalcTx(); b.textContent = 'Cálculo salvo ✓'; toast('Cálculo salvo no atendimento ' + E.tx.at + '. Ele reabre no preparo da bolsa.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
+  'tx-possivel': async b => { b.disabled = true; try { await salvarCalcTx(); await api('estAtendimentoEtapa', E.sessao, E.tx.at, 'possivel', {}); E.txEst = null; b.textContent = 'Possível venda avisada ✓'; toast('Aviso de possível venda enviado ao motoboy.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
+  'tx-novo-at': async b => {
+    const pac = prompt('Nome do paciente:', ''); if (pac == null) return; const dest = prompt('Destino da bolsa (clínica):', 'Intensivet'); if (dest == null || !dest.trim()) return; b.disabled = true;
+    try { const a = await api('estAtendimentoSalvar', E.sessao, { destino: dest.trim(), paciente: pac.trim(), modalidade: 'motoboy' }); E.tx.at = a.id; await salvarCalcTx(); toast('Atendimento ' + a.id + ' aberto com o cálculo.', 5000); telaTransfusao(); } catch (e) { b.disabled = false; toast(e.message, 6000); }
+  },
+  'prep-frac': b => preparoTx(b, 'fracionar'),
+  'prep-emb': b => preparoTx(b, 'embalar'),
+  'prep-voltar': () => { E.pedAbrir = E.prepAt; E.modulo = 'transporte'; return abrirModulo('transporte'); },
+  'prep-calcular': () => { E.modulo = 'transfusao'; return escolherAtTx(E.prepAt); },
   'cartao-fisico': async b => {
     const an = animalDe(b.dataset.id); if (!an) return; const v = an.cartaoFisico === b.dataset.v ? '' : b.dataset.v; b.disabled = true;
     try { const at = await api('animalCartaoFisico', E.sessao, an.id, v); Object.assign(an, at); reabrir(); toast(v === 'cvh' ? 'Marcado: cartão no CVH.' : v === 'responsavel' ? 'Marcado: cartão com o responsável.' : 'Marcação retirada.'); } catch (e) { b.disabled = false; toast(e.message, 5000); }

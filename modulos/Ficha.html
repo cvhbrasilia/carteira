@@ -180,6 +180,8 @@ textarea:focus{border-color:var(--verm);box-shadow:0 0 0 3px rgba(168,61,61,.12)
 .dlg header h3{margin:0;font-size:18px;color:var(--head);flex:1}
 .dlg .bd{padding:16px 18px;overflow:auto}
 .dlg footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+/* celular: botões do rodapé um embaixo do outro, largos e altos (o Ler automaticamente ficava espremido) */
+@media (max-width:600px){#ovLer .dlg footer{flex-direction:column;align-items:stretch;gap:10px}#ovLer #bLerAgora{order:1}#ovLer #bManual{order:2}#ovLer footer [data-close]{order:3}#ovLer .dlg footer .btn{justify-content:center;min-height:50px;font-size:16px;white-space:normal;text-align:center}#bLerAgora{background:var(--accent,#5F130F);color:#fff;border-color:transparent;font-weight:700}}
 .xbtn{border:0;background:none;font-size:24px;line-height:1;color:var(--ink2);padding:2px 6px}
 .drop{border:2px dashed var(--fieldline);border-radius:14px;padding:26px 16px;text-align:center;background:var(--bg)}
 .drop.over{border-color:var(--verm);background:var(--lido)}
@@ -2280,7 +2282,7 @@ async function pdfPaginas(file){
     await pg.render({canvasContext:x,viewport:vp}).promise;out.push(await new Promise(r=>c.toBlob(r,'image/jpeg',.88)));}
   return out;
 }
-async function paraJpeg(file,max=2000){
+async function paraJpeg(file,max=1600){
   let src,w,h;
   try{src=await createImageBitmap(file,{imageOrientation:'from-image'});w=src.width;h=src.height;}
   catch(e){src=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=URL.createObjectURL(file);});w=src.naturalWidth;h=src.naturalHeight;}
@@ -2357,7 +2359,7 @@ Responda apenas com um objeto JSON neste formato:
 async function lerAtual(){
   const it=fila.itens[fila.idx];if(!it||!sample)return;
   $('#lerErr').textContent='';$('#prog').classList.add('show');$('#bLerAgora').disabled=true;
-  const t0=Date.now();const tick=setInterval(()=>{$('#progTx').textContent=`Lendo a ficha ${fila.itens.length>1?(fila.idx+1)+' ':''}(${Math.round((Date.now()-t0)/1000)} s)`},1000);
+  const t0=Date.now();const tick=setInterval(()=>{const sg=Math.round((Date.now()-t0)/1000);$('#progTx').textContent=`Lendo a ficha ${fila.itens.length>1?(fila.idx+1)+' ':''}(${sg} s)`+(sg>=30?'. Está demorando: dá para tocar em Parar e digitar olhando a imagem.':'')},1000);
   $('#progTx').textContent='Lendo a ficha';
   ctl=new AbortController();
   try{
@@ -2366,7 +2368,7 @@ async function lerAtual(){
     aplicarLeitura(j,it);fila.feitos.add(fila.idx);
     fechar('#ovLer');toast('Ficha lida. Confira os campos em dourado.');
   }catch(e){
-    const m={not_granted:'A leitura automática não está disponível.',rate_limited:'Muitas leituras seguidas. Espere um minuto e tente de novo.',invalid_json:'A leitura voltou incompleta. Tente de novo ou use uma foto mais nítida.',image_rejected:'Este formato de imagem não foi aceito. Use JPG ou PNG.',cancelled:'Leitura interrompida.'};
+    const m={parado:'Leitura interrompida.',not_granted:'A leitura automática não está disponível.',rate_limited:'Muitas leituras seguidas. Espere um minuto e tente de novo.',invalid_json:'A leitura voltou incompleta. Tente de novo ou use uma foto mais nítida.',image_rejected:'Este formato de imagem não foi aceito. Use JPG ou PNG.',cancelled:'Leitura interrompida.'};
     $('#lerErr').textContent=(m[e?.code]||'Não foi possível ler a ficha agora.')+' Você pode digitar olhando a imagem.'+(e&&e.message&&!e.code?' ('+e.message+')':'');
   }finally{clearInterval(tick);$('#prog').classList.remove('show');$('#bLerAgora').disabled=false;renderThumbs();}
 }
@@ -2921,7 +2923,9 @@ init();
     // leitura automática pelo Gemini do painel
     if (ctx.temGemini) {
       sample = { limits: async () => ({ images: { mediaTypes: ["image/jpeg"] }, modelTiers: [] }),
-        json: async (prompt, o) => ponte("ia", "fichaPapel", "image/jpeg", b64De(new Uint8Array(await o.images[0].arrayBuffer()))) };
+        // o botão Parar encerra a espera na hora (a resposta que chegar depois é ignorada)
+        json: async (prompt, o) => { const sig = o.signal, pr = ponte("ia", "fichaPapel", "image/jpeg", b64De(new Uint8Array(await o.images[0].arrayBuffer())));
+          if (!sig) return pr; return Promise.race([pr, new Promise((_, no) => { const f = () => no(Object.assign(new Error("Leitura interrompida."), { code: "parado" })); if (sig.aborted) f(); else sig.addEventListener("abort", f, { once: true }); })]); } };
       imgLim = { mediaTypes: ["image/jpeg"] };
       renderThumbs();
     }

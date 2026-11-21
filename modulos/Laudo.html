@@ -1841,6 +1841,7 @@ function lerTecsa(paginas) {
 }
 // ===================== Laudos do CVH (IDEXX, TECSA, tipagem, testes rápidos e compatibilidade) =====================
 const CTX = window.CVH_CTX || {};
+const CVH_RT = "Plínio Rossi · CRMV-DF 2703";
 const CVH_END = "QNB 17 Lote 15 Loja 01, Taguatinga Norte, Brasília, DF, 72115-170", CVH_TEL = "(61) 9 8237-2772";
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -2675,6 +2676,8 @@ function blocoAssinatura(x, w, y, celular) {
   hh = 8 + h + 3;
   if (lib) lib(quando);
   quebrar("Confira a autenticidade pelo QR Code ou pelo código de verificação.", 6.6, false, w).forEach((l) => { el.push(T(x, y + hh + 8, l, 6.6, { i: true, c: COR.MARROM2 })); hh += 9; });
+  // Resolução CFMV 1.374/2020, art. 10: nome e CRMV do médico veterinário responsável técnico do laboratório
+  el.push(T(x, y + hh + 8, "Responsável técnico: " + CVH_RT, 6.6, { b: true, c: COR.TXT2 })); hh += 9;
   return { el, h: hh + 4 };
 }
 function paginasLaudo() {

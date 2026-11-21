@@ -1439,14 +1439,16 @@ function secaoTipagem(D, pags, ox, aberta) {
   const L = D.tipagens || [];
   if (!L.length) { if (aberta) pags.push(aberta.pag); return null; }
   // altura da seção: só DEA 1 (sem foto) é bem curta e cabe embaixo dos exames moleculares
-  const hSec = 60 + L.reduce((s, tp) => s + Math.max(92, tp.foto ? Math.min(230 / tp.foto.rw, 118 / tp.foto.rh) * tp.foto.rh + 24 : 0) + 12, 0) + (L.some((tp) => tp.grau) ? 22 : 0);
+  // a fita do DEA 1 (foto larga e baixa) vai na largura toda, embaixo do texto; o cartão do DAL fica ao lado
+  const ehFita = (f) => !!f && f.rw / f.rh > 2.5, hFita = (f) => Math.min(70, (PG.CW - 32) * f.rh / f.rw);
+  const hSec = 60 + L.reduce((s, tp) => s + (ehFita(tp.foto) ? 110 + hFita(tp.foto) + 8 : Math.max(92, tp.foto ? Math.min(230 / tp.foto.rw, 118 / tp.foto.rh) * tp.foto.rh + 24 : 0)) + 12, 0) + (L.some((tp) => tp.grau) ? 22 : 0);
   let pag = [], y = PG.Y, propria = true;
   if (aberta && aberta.y + 24 + hSec <= PG.YMAX) { pag = aberta.pag; y = aberta.y + 24; propria = false; }
   else if (aberta) pags.push(aberta.pag);
   paginas.mapa.tipagem = pags.length + 1;
   const s = secao(ox, y, "Tipagem sanguínea", "Antígenos eritrocitários pesquisados no CVH"); pag.push(...s.el); y += s.h;
   L.forEach((tp, i) => {
-    const fw = 230, fh = 118, temF = !!tp.foto, esc = temF ? Math.min(fw / tp.foto.rw, fh / tp.foto.rh) : 0, h = Math.max(92, temF ? tp.foto.rh * esc + 24 : 0);
+    const fita = ehFita(tp.foto), fw = 230, fh = 118, temF = !!tp.foto && !fita, esc = temF ? Math.min(fw / tp.foto.rw, fh / tp.foto.rh) : 0, nm = tp.metodo ? quebrar(tp.metodo, 8.8, false, PG.CW - (temF ? fw + 60 : 40)).length : 0, h = fita ? 46 + (tp.grau ? 15 : 0) + 13 + nm * 13 + hFita(tp.foto) + 6 : Math.max(92, temF ? tp.foto.rh * esc + 24 : 0);
     if (y + h > PG.YMAX) { pags.push(pag); pag = []; y = PG.Y; }
     pag.push(E.ret(ox, y, PG.CW, h, { f: COR.CLARO }), E.ret(ox, y, 3, h, { f: COR.BORDO }));
     pag.push(T(ox + 16, y + 26, tp.sistema, 20, { b: true, c: COR.BORDO }));
@@ -1460,6 +1462,10 @@ function secaoTipagem(D, pags, ox, aberta) {
       const id = "tip" + i, w = tp.foto.rw * esc, hh = tp.foto.rh * esc; IMG_DIN[id] = { url: tp.foto.recorte, w: tp.foto.rw, h: tp.foto.rh };
       const fx = ox + PG.CW - 12 - w, fy = y + (h - hh) / 2;
       pag.push(E.img(id, fx, fy, w, hh), E.ret(fx, fy, w, hh, { s: COR.BEGE, lw: 0.6 }));
+    }
+    if (fita) {
+      const id = "tip" + i, hh = hFita(tp.foto), w = Math.min(PG.CW - 32, hh * tp.foto.rw / tp.foto.rh); IMG_DIN[id] = { url: tp.foto.recorte, w: tp.foto.rw, h: tp.foto.rh };
+      const fx = ox + 16 + (PG.CW - 32 - w) / 2, fy = yy - 4; pag.push(E.img(id, fx, fy, w, hh), E.ret(fx, fy, w, hh, { s: COR.BEGE, lw: 0.6 }));
     }
     y += h + 12;
   });
@@ -3622,7 +3628,8 @@ async function imagensPagina(doc, n) {
     else if (fn === OPS.paintImageXObject || fn === OPS.paintJpegXObject || fn === OPS.paintInlineImageXObject) {
       const xs = [ctm[4], ctm[4] + ctm[0] + ctm[2]], ys = [ctm[5], ctm[5] + ctm[1] + ctm[3]];
       const c = { x0: Math.min(...xs), x1: Math.max(...xs), y0: H - Math.max(...ys), y1: H - Math.min(...ys) };
-      if (c.x1 - c.x0 > 30 && c.y1 - c.y0 > 20 && c.x1 - c.x0 < W * 0.6) caixas.push(c);   // fora o papel timbrado e enfeites pequenos
+      // fora o papel timbrado (página inteira) e enfeites pequenos; a fita do DEA 1 é larga e baixa e entra
+      if (c.x1 - c.x0 > 30 && c.y1 - c.y0 > 20 && !(c.x1 - c.x0 >= W * 0.6 && c.y1 - c.y0 >= H * 0.25)) caixas.push(c);
     }
   }
   if (!caixas.length) return [];

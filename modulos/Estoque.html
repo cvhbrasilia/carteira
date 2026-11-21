@@ -679,7 +679,7 @@ function pintar() {
     ({ hoje: PROD ? telaHojeProd : telaHoje, prod: telaProd, estoque: telaEstoque, frac: telaFrac, rem: telaRemessas, int: telaIntensivet, conf: telaConf, rel: telaRel, hist: telaHist }[S.aba] || telaHoje)();
 }
 
-/* ── etiquetas (Zebra 50 × 30 mm, Zebra grande, Brother 100 × 100 mm) e leitor de código de barras ── */
+/* ── etiquetas (Zebra 50 × 30 mm, Zebra 100 × 100 mm, Brother 100 × 100 mm) e leitor de código de barras ── */
 const C128 = "212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112".split(" ");
 // Code 128 B: lido por qualquer leitor de código de barras; o QR ao lado é para a câmera do celular
 function code128Larg(txt) {
@@ -694,7 +694,7 @@ function code128Svg(txt, alt) {
 }
 const FORMATOS = {
   z50: { nome: "Zebra 50 × 30 mm", w: 50, h: 30 },
-  zg: { nome: "Zebra grande 100 × 150 mm", w: 100, h: 150 },
+  zg: { nome: "Zebra 100 × 100 mm", w: 100, h: 100 },
   b100: { nome: "Brother 100 × 100 mm", w: 100, h: 100 },
 };
 const fmtEtq = () => { try { return localStorage.getItem("cvh_etq") || "z50"; } catch (e) { return "z50"; } };
@@ -741,15 +741,16 @@ async function pdfEtiquetas(us, f) {
       const g = F.h > 120;
       tx("CVH", 5, 12, 22, true); tx("Centro Veterinário de Hemoterapia", 30, 8.5, 8.5); tx("Brasília, DF · uso veterinário", 30, 12.3, 8.5);
       ret(5, 15, F.w - 10, 0.4);
-      tx(comp, 5, 22.5, 13, true); tx(u.id, 5, 33, 26, true);
+      tx(comp, 5, 22.5, 13, true); tx(u.id, 5, g ? 33 : 31, g ? 26 : 22, true);
       const lin = [["Espécie", esp], ["Tipo sanguíneo", tipo || "não informado"], ["Volume", (vol || "não informado") + (u.peso_g != null ? " (" + fmt(u.peso_g) + " g)" : "")]];
       if (u.componente === "CH" && D.htFinal != null) lin.push(["Hematócrito", fmt(D.htFinal, 1) + "%"]);
       lin.push(["Coleta", col], ["Validade", val]); if (u.mae_id) lin.push(["Fração de", u.mae_id]);
-      let y = 39; const passo = g ? 7.2 : 5.6;
+      let y = g ? 39 : 34; const passo = g ? 7.2 : 5.2;
       for (const [k, v] of lin) { y += passo; tx(k, 5, y, g ? 11 : 9.5); tx(v, 40, y, g ? 11 : 9.5, k === "Tipo sanguíneo" || k === "Validade"); pg.drawLine({ start: { x: 5 * K, y: (H - y - 1.6) * K }, end: { x: (F.w - 5) * K, y: (H - y - 1.6) * K }, thickness: 0.4, color: L.rgb(0.6, 0.6, 0.6) }); }
       tx(CONSERVA[u.componente] || "", 5, y + passo + 1.5, g ? 11 : 9.5, true);
-      const lq = g ? 30 : 22; await qr(F.w - 5 - lq, H - 10 - lq, lq); barras(5, H - 10 - (g ? 18 : 13), F.w - 15 - lq, g ? 18 : 13);
-      tx("Responsável técnico Plínio Rossi · CRMV-DF 2703", 5, H - 5, 7.5);
+      // 100 × 100 mm (Zebra e Brother): texto até ~77 mm, código de barras e QR no rodapé sem encostar no texto
+      const lq = g ? 30 : 20, base = g ? 10 : 8; await qr(F.w - 5 - lq, H - base - lq, lq); barras(5, H - base - (g ? 18 : 11), F.w - 15 - lq, g ? 18 : 11);
+      tx("Responsável técnico Plínio Rossi · CRMV-DF 2703", 5, H - (g ? 5 : 3.5), 7.5);
     }
   }
   return doc.saveAsBase64();
