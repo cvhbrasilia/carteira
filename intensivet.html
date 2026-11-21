@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121173419';
+  var VERSAO = '20261121173726';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -100,7 +100,7 @@ input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;b
 .op.off{opacity:.5}
 .op.on{border-color:#5F130F;background:#5F130F;color:#fff}
 input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
-.tps{display:inline-block;vertical-align:2px;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.02em;color:#fff;white-space:nowrap}.tps.neg{background:#A83D3D}.tps.pos{background:#3F6890}.tps.gat{background:#C49A6C}
+.tps{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.02em;line-height:1.5;color:#fff;white-space:nowrap}.tps.neg{background:#A83D3D}.tps.pos{background:#3F6890}.tps.gat{background:#C49A6C}
 .tipos{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
 .esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
