@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121204345';
+  var VERSAO = '20261121205621';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -283,7 +283,7 @@ function pintar() {
     if (Hr.aberto === false) h += '<div class="cx av" style="margin-top:10px"><h2>CVH fora do horário de funcionamento</h2><p>' + esc(Hr.grade || "") + "</p><p>Pedidos de rotina e de reserva enviados agora ficam registrados e chegam à equipe do CVH " + esc(Hr.quando || "na abertura") + ".</p><p><b>Infelizmente não poderemos atender urgência ou emergência fora do horário.</b></p></div>";
     h += '<button class="btn grande sec" data-a="solicitar" style="margin-top:10px">Solicitar bolsa ou teste ao CVH</button>';
     const P = (D.pedidos || []).filter((x) => !["concluido", "cancelado"].includes(x.etapa) || Date.now() - new Date(x.criado).getTime() < 864e5);
-    if (P.length) h += '<div class="cx"><h2>Pedidos ao CVH</h2>' + P.map((x) => { const p = (x.dados || {}).pedido || {}; return '<div class="bolsa"><b>' + esc(x.paciente) + " · " + esc(oQuePedido(p)) + '</b> <span class="tag ' + (x.etapa === "cancelado" ? "al" : x.etapa === "concluido" || x.etapa === "entregue" ? "ok" : "av") + '">' + esc(ETAPA_PED[x.etapa] || x.etapa) + "</span><small>" + esc(hora(x.criado)) + " · " + esc(p.vet ? p.vet.nome : x.solicitante) + (p.urgencia ? " · " + esc(TIPO_PED[p.urgencia] || p.urgencia) : "") + (p.reservaPara ? " para " + esc(hora(p.reservaPara)) : "") + "</small>" + infoPedido(x, p) + ((x.dados || {}).resultados || []).map((r) => '<a class="btn sec peq" style="display:inline-block;margin:6px 6px 0 0;text-decoration:none" href="' + esc(r.url) + '" target="_blank" rel="noopener">Laudo: ' + esc(r.titulo) + "</a>").join("") + "</div>"; }).join("") + "</div>";
+    if (P.length) h += '<div class="cx"><h2>Pedidos ao CVH</h2>' + P.map((x) => { const p = (x.dados || {}).pedido || {}; return '<div class="bolsa"><b>' + esc(x.paciente) + " · " + esc(oQuePedido(p)) + '</b> <span class="tag ' + (x.etapa === "cancelado" ? "al" : x.etapa === "concluido" || x.etapa === "entregue" ? "ok" : "av") + '">' + esc(ETAPA_PED[x.etapa] || x.etapa) + "</span><small>" + esc(hora(x.criado)) + " · " + esc(p.vet ? p.vet.nome : x.solicitante) + (p.urgencia ? " · " + esc(TIPO_PED[p.urgencia] || p.urgencia) : "") + (p.reservaPara ? " para " + esc(hora(p.reservaPara)) : "") + "</small>" + infoPedido(x, p) + ((x.dados || {}).resultados || []).map((r) => '<a class="btn sec peq" style="display:inline-block;margin:6px 6px 0 0;text-decoration:none" href="' + esc(r.url) + '" target="_blank" rel="noopener">Laudo: ' + esc(r.titulo) + "</a>" + (r.urlA4 ? '<a class="btn sec peq" style="display:inline-block;margin:6px 6px 0 0;text-decoration:none" href="' + esc(r.urlA4) + '" target="_blank" rel="noopener">' + esc(r.titulo) + " · A4 para imprimir</a>" : "")).join("") + "</div>"; }).join("") + "</div>";
   }
   // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento; CRIO primeiro
   const prio = { CRIO: 0, PFC: 1, PPC: 1, CH: 2, CP: 3 };
