@@ -400,7 +400,7 @@ async function pintarProvaCx(id) {
   const A = S.at.find((x) => x.id === id) || {}, doCalc = (((A.dados || {}).calculo || {}).prova || []).map(String);
   const daqui = L.filter((x) => x.atendimento === id || doCalc.includes(x.unidade)), soltas = L.filter((x) => !x.atendimento && !doCalc.includes(x.unidade));
   doCalc.filter((u) => !daqui.some((x) => x.unidade === u)).forEach((u) => daqui.push({ unidade: u, doacao: u.split(" ")[0] }));
-  const ck = (x, on) => '<label style="display:flex;gap:8px;align-items:center;font-weight:normal;margin:4px 0"><input type="checkbox" class="provaCk" value="' + esc(x.doacao) + '"' + (on ? " checked" : "") + ' style="width:auto">' + esc(x.unidade + (x.volume ? " · " + x.volume + " mL" : "") + (x.doador ? " · " + x.doador : "") + (x.paciente && !on ? " · " + x.paciente : "")) + "</label>";
+  const ck = (x, on) => '<label style="display:flex;gap:8px;align-items:center;font-weight:normal;margin:4px 0"><input type="checkbox" class="provaCk" value="' + esc(x.doacao) + '"' + (on ? " checked data-at=\"1\"" : "") + ' style="width:auto">' + esc(x.unidade + (x.volume ? " · " + x.volume + " mL" : "") + (x.doador ? " · " + x.doador : "") + (x.paciente && !on ? " · " + x.paciente : "")) + "</label>";
   el.innerHTML = (daqui.length ? "<small>Separada na HemoCalculadora para este atendimento</small>" + daqui.map((x) => ck(x, true)).join("") : "<small>Nenhuma bolsa separada para este atendimento.</small>") +
     (soltas.length ? '<small style="display:block;margin-top:6px">Outras bolsas separadas para prova</small>' + soltas.map((x) => ck(x, false)).join("") : "");
 }
@@ -587,7 +587,11 @@ document.addEventListener("click", async (ev) => {
   if (a === "laudoPed") return ponte("laudoPedido", { id: b.dataset.id, tipo: v });
   if (a === "provaLer") { const t = await lerQR("Leia a etiqueta da bolsa"); if (t) provaLida(codigo(t)); return; }
   if (a === "iniciarProva") { const L = [...document.querySelectorAll(".provaCk:checked")].map((x) => x.value), m = doacoesDe(($("#provaManual") || {}).value);
-    return ponte("laudoPedido", { id: b.dataset.id, tipo: "compat", bolsas: [...new Set(L.concat(m))], escolhidas: true }); }
+    const todas = [...new Set(L.concat(m))], antes = [...document.querySelectorAll(".provaCk[data-at='1']")].map((x) => x.value);
+    if (todas.length && (todas.some((x) => !antes.includes(x)) || antes.some((x) => !todas.includes(x)))) { b.disabled = true;
+      try { const r = await ponte("trocarProva", { id: b.dataset.id, doacoes: todas }); toast(["Bolsa da prova: " + (r.novas.join(", ") || "nenhuma do estoque"), r.liberadas.length ? "reserva liberada: " + r.liberadas.join(", ") : "", r.faltam.length ? "fora do estoque: " + r.faltam.join(", ") : ""].filter(Boolean).join(" · "), 7000); }
+      catch (e) { toast(e.message, 7000); } b.disabled = false; }
+    return ponte("laudoPedido", { id: b.dataset.id, tipo: "compat", bolsas: todas, escolhidas: true }); }
   if (a === "amVia") { S.viaAm = S.viaAm || {}; S.viaAm[b.dataset.id] = v; return abrirAtendimento(b.dataset.id); }
   if (a === "amBusca") { b.disabled = true; try { const r = await est("estAmostraBusca", b.dataset.id, { acao: v, via: (S.viaAm && S.viaAm[b.dataset.id]) || ((S.at.find((x) => x.id === b.dataset.id) || {}).amostra || {}).via || "uber", link: ($("#amUber") || {}).value || "", hora: ($("#amHora") || {}).value || "" }); const i = S.at.findIndex((x) => x.id === r.id); if (i >= 0) S.at[i] = r; pintar(); abrirAtendimento(r.id); toast(v === "transito" ? "Amostra em trânsito." : "A Intensivet foi avisada.", 4000); } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; } return; }
   if (a === "hcPrep") return ponte("hemocalcPreparo", v);
