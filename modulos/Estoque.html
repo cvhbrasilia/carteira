@@ -721,13 +721,12 @@ function code128Svg(txt, alt) {
   return '<svg class="bc" viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="height:' + (alt || 8) + 'mm"><rect width="' + tot + '" height="40" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
 }
 const FORMATOS = {
-  z104: { nome: "Zebra ZD220 104 × 50,8 mm", w: 104, h: 50.8 },
   z50: { nome: "Zebra 50 × 30 mm", w: 50, h: 30 },
   zg: { nome: "Zebra 100 × 100 mm", w: 100, h: 100 },
   b100: { nome: "Brother 100 × 100 mm", w: 100, h: 100 },
 };
-// padrão: a Zebra ZD220 do CVH (104 × 50,8 mm), pedido do Plínio em 21/11
-const fmtEtq = () => { try { const f = localStorage.getItem("cvh_etq2"); return FORMATOS[f] ? f : "z104"; } catch (e) { return "z104"; } };
+// rolos da Zebra ZD220 do CVH: 50 × 30 mm (pequena) e 100 × 100 mm (grande); 104 × 50,8 mm era só a medida do driver, não existe etiqueta assim (21/11)
+const fmtEtq = () => { try { const f = localStorage.getItem("cvh_etq3"); return FORMATOS[f] ? f : "zg"; } catch (e) { return "zg"; } };
 const CONSERVA = { CH: "Conservar entre 2 e 6 °C", PFC: "Conservar a −18 °C ou menos", CRIO: "Conservar a −18 °C ou menos", PPC: "Conservar a −18 °C ou menos", CP: "Conservar entre 20 e 24 °C, sob agitação" };
 function etiquetaHtml(u, f, qr) {
   const D = u.dados || {}, a = u.animal_id ? animalDe(u.animal_id) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a);
@@ -1078,13 +1077,13 @@ document.addEventListener("click", async (ev) => {
       if (at.id) await est("estAtendimentoSalvar", { id: at.id, destino: at.destino, endereco: at.endereco, paciente: at.paciente, solicitante: at.solicitante, modalidade: at.modalidade, remessa: r.id });
       await recarregar(); toast("Caixa " + r.id + " criada e ligada ao atendimento. A etiqueta da caixa está abaixo da etiqueta da bolsa.", 6000); embalagem({ unidade: v, atendimento: at.id }); return; }
     catch (e) { b.disabled = false; return toast(e.message, 7000); } }
-  if (a === "etqFmt") { try { localStorage.setItem("cvh_etq2", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const pv = $("#etqPrev"); if (pv) previaEtiqueta(pv.dataset.id, v); return; }
+  if (a === "etqFmt") { try { localStorage.setItem("cvh_etq3", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const pv = $("#etqPrev"); if (pv) previaEtiqueta(pv.dataset.id, v); return; }
   if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
   if (a === "etqDireto") return imprimirDireto(v.split("|"));
   if (a === "etqLista") { const ids = v.split("|"); const el = document.getElementById("etqBox"); if (el) { el.innerHTML = escolherEtiqueta(ids); previaEtiqueta(ids[0]); } return; }
   if (a === "remNova") return abrirRemNova();
   if (a === "eqQR") { const el = $("#eqQrBox"); if (el) el.innerHTML = escolherQr("equip"); return; }
-  if (a === "qrFmt") { try { localStorage.setItem("cvh_etq2", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "qrFmt") { try { localStorage.setItem("cvh_etq3", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "qrPdf") return gerarPdfQr(b.dataset.t, v);
   if (a === "qrDireto") return b.dataset.t === "caixa" ? imprimirQRRem(S.rem.find((x) => x.id === v)) : imprimirQREq(S.eq.filter((e) => e.ativo));
   if (["remCriar", "remSaida", "remSaidaOk", "remEntrega", "remCancelar", "remUber", "remUberOk", "remQR", "apNovo", "apDesativar"].includes(a)) {
