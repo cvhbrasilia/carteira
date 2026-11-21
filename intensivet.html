@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121170842';
+  var VERSAO = '20261121171309';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -62,7 +62,7 @@
 
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mini Estação CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><script>(function(){var s="";try{s=new URLSearchParams(location.search).get("s")||"";if(s)localStorage.setItem("cvh_int_setor",s);else s=localStorage.getItem("cvh_int_setor")||"";}catch(e){}var p="estacao-"+(s==="internacao"?"internacao":"recepcao");document.write('<link id="icA" rel="apple-touch-icon" href="'+p+'-180.png"><link id="icF" rel="icon" type="image/png" href="'+p+'-192.png"><link id="icM" rel="manifest" href="'+p+'.webmanifest">');window.CVH_ICONE_SETOR=function(x){var q="estacao-"+(x==="internacao"?"internacao":"recepcao");try{localStorage.setItem("cvh_int_setor",x);}catch(e){}var a=document.getElementById("icA"),f=document.getElementById("icF"),m=document.getElementById("icM");if(a&&a.getAttribute("href")!==q+"-180.png"){a.href=q+"-180.png";f.href=q+"-192.png";m.href=q+".webmanifest";}};})();</script>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Mini Estação CVH</title>
 <style>
 :root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
@@ -104,7 +104,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
 .esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
 .tipag{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tipag .esc{flex-direction:column}.tipag .esc .op{flex:none}.tipag h4{margin:6px 0 0;font-size:13px;color:var(--tinta2)}
-.ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}.colar{margin-top:8px;border:1px dashed #C6B098;border-radius:12px;padding:10px;text-align:center;font-size:13px;color:#f3e6dc;min-height:40px;outline:none;-webkit-user-select:text;user-select:text}
+.ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}.colar{margin-top:8px;border:1px dashed #C6B098;border-radius:12px;padding:10px;text-align:center;font-size:16px;color:#f3e6dc;height:46px;overflow:hidden;outline:none;-webkit-user-select:text;user-select:text;caret-color:transparent}.colar:empty::before{content:attr(data-ph);color:#e9d9cc;font-size:14px}.colar *{display:none!important}
 .pesoV{display:inline-block;margin-top:6px;font-weight:800;color:#5F130F}
 .ac-pai{position:relative}.ac-lista{position:absolute;left:0;right:0;top:100%;z-index:40;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid var(--areia2);border-radius:10px;box-shadow:0 10px 28px rgba(60,20,15,.18);max-height:264px;overflow:auto;display:none}.ac-lista.on{display:block}.ac-lista li{padding:.7em .75em;border-radius:7px;cursor:pointer;font-size:15px}.ac-lista li:hover{background:#f4ece3}.ac-lista li small{display:block;color:var(--tinta2)}
 .orienta{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
@@ -512,7 +512,14 @@ function arquivosDoColar(dt) {
   return L.filter((f) => /^image\/|pdf/i.test(f.type || "") || /\.(pdf|jpe?g|png|heic)$/i.test(f.name || "")).map((f, i) => { const pdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || ""); return pdf ? new File([f], /\.pdf$/i.test(f.name || "") ? f.name : "Exame colado.pdf", { type: "application/pdf" }) : f.name && f.name !== "image.png" ? f : new File([f], "Foto colada " + (i + 1) + ".jpg", { type: f.type || "image/jpeg" }); });
 }
 const tiposColados = (dt) => { const t = [...((dt || {}).items || [])].map((x) => x.kind + ":" + (x.type || "?")); return t.length ? t.join(", ") : "nada"; };
-document.addEventListener("paste", (ev) => { if (!$("#exArq") || !$("#modal").classList.contains("on")) return; const L = arquivosDoColar(ev.clipboardData); const z = $("#exColarZona"); if (z) setTimeout(() => { z.textContent = "ou toque e segure aqui e escolha Colar"; }, 0); if (!L.length) { if (ev.target === z || (z && z.contains(ev.target))) { ev.preventDefault(); toast("O iPhone não entregou o arquivo ao colar (" + tiposColados(ev.clipboardData) + "). Use Anexar hemograma ou requisição.", 8000); } return; } ev.preventDefault(); toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L); });
+document.addEventListener("paste", (ev) => {
+  if (!$("#exArq") || !$("#modal").classList.contains("on")) return; const L = arquivosDoColar(ev.clipboardData), z = $("#exColarZona"), naZona = z && (ev.target === z || z.contains(ev.target));
+  if (L.length) { ev.preventDefault(); if (z) z.innerHTML = ""; toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L); return; }
+  if (!naZona) return;
+  // o iPhone às vezes cola o PDF como figura dentro do quadro: a figura vira o arquivo do exame
+  const tipos = tiposColados(ev.clipboardData); setTimeout(async () => { const F = await figurasDaZona(z); z.innerHTML = ""; z.blur(); if (F.length) { toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(F); } else toast("O iPhone não entregou o arquivo ao colar (" + tipos + "). Use Anexar hemograma ou requisição.", 9000); }, 400);
+});
+async function figurasDaZona(z) { const F = []; for (const im of [...z.querySelectorAll("img, object, embed")]) { const src = im.getAttribute("src") || im.getAttribute("data") || ""; if (!src) continue; try { const b = await (await fetch(src)).blob(); if (b.size > 500) F.push(new File([b], /pdf/i.test(b.type) ? "Exame colado.pdf" : "Exame colado.jpg", { type: /pdf/i.test(b.type) ? "application/pdf" : b.type || "image/png" })); } catch (_) {} } return F; }
 async function colarExames() {
   try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = [];
     let tipos = []; for (const c of await navigator.clipboard.read()) { tipos = tipos.concat(c.types); const t = c.types.find((x) => /^image\/|pdf/i.test(x)); if (t) { const pdf = /pdf/i.test(t); L.push(new File([await c.getType(t)], pdf ? "Exame colado.pdf" : "Foto colada.jpg", { type: pdf ? "application/pdf" : t })); } }
@@ -538,7 +545,7 @@ function formSolicitar() {
   const Hr = D.horario || {}, fechado = Hr.aberto === false;
   Object.keys(ESC).forEach((k) => delete ESC[k]); ESC.esp = "Canina";
   modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. No horário de funcionamento o pedido chega na hora para a equipe do CVH.</small></p>" +
-    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF ou foto). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar PDF ou foto copiada</button><div id="exColarZona" contenteditable="true" class="colar" aria-label="Toque e segure aqui e escolha Colar">ou toque e segure aqui e escolha Colar</div></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
+    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF ou foto). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar PDF ou foto copiada</button><div id="exColarZona" contenteditable="true" class="colar" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
     "<label>O que precisa</label>" + ["CH", "PFC", "CRIO", "CP"].map((c) => '<label class="op" style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="sB" value="' + c + '"> <span style="flex:1">' + { CH: "CH · concentrado de hemácias", PFC: "PFC · plasma fresco congelado", CRIO: "CRIO · crioprecipitado", CP: "CP · concentrado de plaquetas" }[c] + '</span><input type="number" inputmode="numeric" min="1" max="10" value="1" class="sQ" data-c="' + c + '" style="width:70px" aria-label="quantidade"></label>').join("") +
     TESTES_PED.map(([k, t]) => '<label class="op"><input type="checkbox" class="sT" value="' + k + '"> ' + t + "</label>").join("") +
     '<p id="sAmHint" hidden><small>Para prova de compatibilidade, tipagem e Coombs, colete sangue do paciente em tubo de EDTA (1 mL) e identifique com o nome.</small></p>' +

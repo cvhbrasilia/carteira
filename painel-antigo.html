@@ -251,6 +251,8 @@ button{cursor:pointer}
 .ped-x{display:flex;flex-direction:column;gap:2px}.ped-rel{font-weight:700;color:#8a5a12}.ped-rel.al{color:#A83D3D}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
 .ped-t{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--areia);color:var(--vinho)}
 .ped-t.urgente{background:#F6D9C9;color:#8a2a1f}.ped-t.emergencia{background:var(--vermelho);color:#fff}
+.login .manter{display:flex;align-items:center;gap:8px;font-size:14px;color:#6b5a52;margin:2px 0 10px;cursor:pointer}.login .manter input{width:18px;height:18px;accent-color:#5F130F}
+.colar-zona{border:1px dashed #C6B098;border-radius:12px;padding:12px;margin:0 0 12px;text-align:center;font-size:14px;color:#7a6a62;min-height:44px;outline:none;-webkit-user-select:text;user-select:text;background:#FBF8F4}
 .al-home{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;border:0;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#fff;box-shadow:0 2px 10px rgba(95,19,15,.12);font-family:inherit;cursor:pointer;text-align:left}
 .al-home b{color:var(--vinho);font-size:16px}
 .al-dir{display:flex!important;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.al-home i.b.novo{background:#C49A6C;color:#fff;font-style:normal;font-weight:700;border-radius:999px;padding:4px 11px;cursor:pointer;box-shadow:0 0 0 0 rgba(196,154,108,.6);animation:pulsoNovo 2.4s ease-out 3}
@@ -866,7 +868,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121165429';
+  var VERSAO = '20261121170842';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -899,14 +901,15 @@ const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const raiz = $('#raiz');
 const E = { modo: BOOT.modo, token: BOOT.token, sessao: null, u: null, modulo: 'carteiras', modHtml: {}, ponte: null, d: null, animal: null, livro: null, previa: false, imp: null };
-try { E.sessao = sessionStorage.getItem('cvh_s'); } catch (_) {}
+// sessão guardada: no aparelho (manter conectado) ou só nesta aba
+try { E.sessao = localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s'); } catch (_) {}
 
 function api(fn, ...args) {
   return new Promise((ok, erro) => {
     if (window.DEMO) { DEMO.chamar(fn, args).then(ok, erro); return; }
     CVH_SERVIDOR.chamar(fn, args).then(ok, e => {
       const m = String((e && e.message) || e).replace(/^(Exception|Error):\s*/, '');
-      if (m.indexOf('SESSAO') >= 0) { E.sessao = null; try { sessionStorage.removeItem('cvh_s'); } catch (_) {} fecharFolha(); telaLogin(); erro(new Error('Sua sessão expirou. Entre de novo.')); return; }
+      if (m.indexOf('SESSAO') >= 0) { E.sessao = null; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); } catch (_) {} fecharFolha(); telaLogin(); erro(new Error('Sua sessão expirou. Entre de novo.')); return; }
       erro(new Error(m));
     });
   });
@@ -3123,6 +3126,7 @@ async function telaLogin() {
     '<input class="cred" id="usu" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="usuário" aria-label="Usuário">' +
     '<input class="cred" id="sen" type="password" autocomplete="' + (criar ? 'new-password' : 'current-password') + '" placeholder="senha" aria-label="Senha">' +
     (criar ? '<input class="cred" id="sen2" type="password" autocomplete="new-password" placeholder="repita a senha" aria-label="Repita a senha">' : '') +
+    '<label class="manter"><input type="checkbox" id="manter" checked> Manter conectado neste aparelho</label>' +
     '<button class="btn" style="min-width:200px">' + (criar ? 'Criar e entrar' : 'Entrar') + '</button><p class="erro" id="erro"></p></form></main>';
   $(criar ? '#nom' : '#usu').focus();
   $('#fLogin').onsubmit = async ev => {
@@ -3134,7 +3138,7 @@ async function telaLogin() {
     try {
       const r = criar ? await api('painelCriarAdmin', $('#nom').value.trim(), usu, sen) : await api('painelEntrar', usu, sen);
       E.sessao = r.sessao;
-      try { sessionStorage.setItem('cvh_s', E.sessao); } catch (_) {}
+      try { const fica = !$('#manter') || $('#manter').checked; localStorage.removeItem('cvh_s'); sessionStorage.removeItem('cvh_s'); (fica ? localStorage : sessionStorage).setItem('cvh_s', E.sessao); } catch (_) {}
       await carregarPainel();
     } catch (e) { if ($('#erro')) { $('#erro').textContent = e.message; bt.disabled = false; } }
   };
@@ -5180,13 +5184,20 @@ async function iaHemo(o) {
     if (r && !r.ocupado) return r.dados; if (Date.now() - t0 > 120000) break; await new Promise(ok => setTimeout(ok, 2000)); }
   throw new Error('O Gemini está sobrecarregado agora. Espere alguns minutos e tente de novo.');
 }
+// arquivo colado (PDF ou imagem): procura nos arquivos e nos itens da área de transferência, com o tipo que o iPhone mandar
+function arquivoColado(dt) {
+  if (!dt) return null; const L = [...(dt.files || [])].concat([...(dt.items || [])].filter(x => x.kind === 'file').map(x => x.getAsFile()).filter(Boolean));
+  const f = L.find(x => /^image\/|pdf/i.test(x.type || '') || /\.(pdf|jpe?g|png|heic)$/i.test(x.name || '')); if (!f) return null;
+  const pdf = /pdf/i.test(f.type || '') || /\.pdf$/i.test(f.name || ''); return f.type && !/pdf/i.test(f.type) || !pdf ? f : new File([f], f.name && /\.pdf$/i.test(f.name) ? f.name : 'PDF colado.pdf', { type: 'application/pdf' });
+}
+const tiposColados = dt => { const t = [...((dt || {}).items || [])].map(x => x.kind + ':' + (x.type || '?')); return t.length ? t.join(', ') : 'nada'; };
 function telaHemoIA() {
   const T = E.tx || {}, H = E.hia = E.hia || { arq: null, val: {}, sit: '', clin: '', res: null, msg: 'curta' };
   const cmp = (id, rot, v) => campo(id, rot, inp(id, v || '', 'inputmode="decimal" autocomplete="off"'));
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" id="hiVolta">‹ HemoCalculadora</button></div>' +
     '<header class="topo"><div class="t"><span>Leitura do hemograma e indicação</span><b>HemoCalculadora IA</b></div></header>' +
     '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
-    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 10px">Colar imagem ou PDF copiado</button>' +
+    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem ou PDF copiado</button><div id="hiColarZona" class="colar-zona" contenteditable="true" aria-label="Toque e segure aqui e escolha Colar">No iPhone, toque e segure aqui e escolha Colar</div>' +
     '<div class="grade">' + cmp('hiPeso', 'Peso (kg)', T.peso) + '</div>' +
     '<details class="tx-av"' + (Object.keys(H.val).length ? ' open' : '') + '><summary>Digitar os valores (sem arquivo ou para corrigir a leitura)</summary><div class="grade">' + HC_VALS.map(([k, t]) => cmp('hiV_' + k, t, H.val[k])).join('') + '</div></details>' +
     '<h3>Situação</h3><div class="filtros hc-sit">' + HC_SIT.map(([k, t]) => '<button class="filtro' + (H.sit === k ? ' on' : '') + '" data-sit="' + k + '">' + t + '</button>').join('') + '</div>' +
@@ -5204,8 +5215,15 @@ function telaHemoIA() {
     if (H.arq.mime === 'application/pdf') { try { const tx = await textoDoPdfIdx(u8); if (tx.trim().length > 80) H.arq.texto = tx; } catch (_) { } } };
   $('#hiArq').onchange = ev => usarArq(ev.target.files[0]);
   // colar uma imagem ou um PDF copiado (Cmd+V no computador, Colar no celular)
-  document.onpaste = ev => { if (!$('#hiArq')) { document.onpaste = null; return; } const it = [...((ev.clipboardData || {}).items || [])].find(x => x.kind === 'file' && /^(image\/|application\/pdf)/.test(x.type)); if (!it) return; ev.preventDefault(); usarArq(it.getAsFile()); toast('Arquivo colado.'); };
-  const bc = $('#hiColar'); if (bc) bc.onclick = async () => { try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = await navigator.clipboard.read(); for (const c of L) { const t = c.types.find(x => /^(image\/|application\/pdf)/.test(x)); if (t) { const b = await c.getType(t); await usarArq(new File([b], t === 'application/pdf' ? 'PDF colado.pdf' : 'Imagem colada', { type: t })); toast('Arquivo colado.'); return; } } toast('Não há imagem nem PDF copiado.'); } catch (_) { toast('Use Cmd+V (ou Ctrl+V) para colar a imagem.', 5000); } };
+  const zona = $('#hiColarZona'), zTxt = zona ? zona.textContent : '';
+  document.onpaste = ev => { if (!$('#hiArq')) { document.onpaste = null; return; } const f = arquivoColado(ev.clipboardData); if (zona) setTimeout(() => { zona.textContent = zTxt; }, 0);
+    if (!f) { if (ev.target === zona || (zona && zona.contains(ev.target))) { ev.preventDefault(); toast('O iPhone não entregou o arquivo ao colar (' + tiposColados(ev.clipboardData) + '). Use Escolher foto ou PDF.', 8000); } return; }
+    ev.preventDefault(); usarArq(f); toast('Arquivo colado.'); };
+  const bc = $('#hiColar'); if (bc) bc.onclick = async () => { let tipos = [];
+    try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = await navigator.clipboard.read();
+      for (const c of L) { tipos = tipos.concat(c.types); const t = c.types.find(x => /^image\/|pdf/i.test(x)); if (t) { const b = await c.getType(t), pdf = /pdf/i.test(t); await usarArq(new File([b], pdf ? 'PDF colado.pdf' : 'Imagem colada', { type: pdf ? 'application/pdf' : t })); toast('Arquivo colado.'); return; } }
+      if (zona) zona.focus(); toast('O botão só recebe imagem no iPhone' + (tipos.length ? ' (veio ' + tipos.join(', ') + ')' : '') + '. Para PDF, toque e segure no quadro tracejado e escolha Colar.', 8000);
+    } catch (_) { if (zona) zona.focus(); toast('Toque e segure no quadro tracejado e escolha Colar (no computador, Cmd+V).', 6000); } };
   $('#hiIr').onclick = async () => {
     T.peso = $('#hiPeso').value; H.clin = $('#hiClin').value.trim(); H.val = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) H.val[k] = v; });
     if (!H.arq && !Object.keys(H.val).length) return toast('Mande o hemograma ou digite os valores.');
@@ -7150,7 +7168,7 @@ const ACOES = {
   'imp-fim': () => { fecharFolha(); reabrir(); },
   'teste-email': async b => { try { b.disabled = true; const para = await api('testarEmail', E.sessao); toast('E-mail de teste enviado para ' + para + '.', 4000); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; } },
   'rodar-lembretes': async b => { try { b.disabled = true; const n = await api('verificarLembretes', E.sessao); toast(n ? n + ' e-mail(s) enviados.' : 'Nenhum lembrete pendente hoje.', 4000); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; } },
-  sair: () => { E.sessao = null; E.u = null; E.d = null; E.modHtml = {}; try { sessionStorage.removeItem('cvh_s'); } catch (_) {} fecharFolha(); telaLogin(); },
+  sair: () => { E.u = null; E.d = null; E.modHtml = {}; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); } catch (_) {} if (E.sessao) api('painelSair', E.sessao).catch(() => {}); E.sessao = null; fecharFolha(); telaLogin(); },
   'demo-resp': () => { E.modo = 'responsavel'; E.token = 'demo'; iniciarResponsavel(); },
   'demo-painel': () => { E.modo = 'painel'; iniciarPainel(); }
 };
