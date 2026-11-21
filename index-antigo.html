@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121223625';
+  var VERSAO = '20261121224824';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3612,7 +3612,7 @@ const MODS = [
   { k: 'auditoria', perm: 'auditoria', t: 'Histórico de alterações', d: 'Quem criou, alterou ou apagou cada coisa, e quando', ic: svgIc('<circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/><path d="M3.500 4.500v3.500H7"/>') },
   { k: 'relatorios', perm: 'relatorios', t: 'Relatórios', d: 'Doações, doadores ativos e tipos sanguíneos, em planilha ou PDF', ic: svgIc('<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 17v-3M12 17v-6M15 17v-4"/>') }
 ];
-const ROT_PERM = { admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil laboratorial', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
+const ROT_PERM = { admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil laboratorial', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
   certificados: 'Certificados', receitas: 'Receituário', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações' };
 
 /* ── calculadora de SAG ── */
@@ -4681,12 +4681,12 @@ function telaHome() {
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
     ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +
     (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span class="al-dir"><span id="labNovos"></span><span id="alCont">calculando…</span></span></button>' : pode('laudos') ? '<button class="al-home" data-acao="laudos-painel" id="labHome" hidden><b>Laudos dos laboratórios</b><span id="labNovos"></span></button>' : '') +
-    '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Buscar animal, responsável, bolsa, exame ou medicamento" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>' +
+    (E.d.externo ? '' : '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Buscar animal, responsável, bolsa, exame ou medicamento" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>') +
     (meus.length ? '<div class="mods">' + meus.map(m => '<button class="mod' + (m.breve ? ' breve' : '') + '" data-acao="modulo" data-k="' + m.k + '">' + (m.breve ? '<span class="tag">' + m.breve + '</span>' : '') + (m.k === 'pendencias' && E.d.pendencias ? '<span class="conta">' + E.d.pendencias + '</span>' : '') + '<i>' + m.ic + '</i><b>' + m.t + '</b><small>' + m.d + '</small></button>').join('') + '</div>'
       : '<section class="cartao"><p class="vazio-p">Seu usuário ainda não tem módulos liberados. Fale com o administrador do painel.</p></section>') +
     '<div class="rodape-home"><button class="btn sec2 peq" data-acao="conta">Minha conta</button>' + (pode('admin') ? '<button class="btn sec2 peq" data-acao="compartilhar-painel">Compartilhar o painel com a equipe</button>' : '') + (pode('admin') ? '<button class="btn sec2 peq" data-acao="ajustes">Ajustes e usuários</button>' : '') + '<button class="btn sec2 peq" data-acao="sair">Sair</button></div>' +
     '</div></main>';
-  const bg = $('#buscaG'); bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
+  const bg = $('#buscaG'); if (bg) bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
 }
 /* ── Pedidos da Intensivet que esperam o CVH (acima dos alertas laboratoriais) ──
    Fora do horário o pedido aparece aqui na hora, em silêncio; o alerta com som toca na abertura do CVH. */
