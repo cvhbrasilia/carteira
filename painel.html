@@ -824,7 +824,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121005042';
+  var VERSAO = '20261121005307';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4791,6 +4791,7 @@ function notaInternaTx(T, r) {
   const lim22 = peso * 22, lim4 = peso * 4, abs = gato ? [60, 120] : [180, 360], h4 = vol / lim4;
   return '<div class="av-i ' + nivel + ' tx-int"><span class="av-rot">Só aparece para você</span><b>' + n1(mlkg) + ' mL/kg neste paciente</b><small>' + txt + '</small>' +
     (macica ? '<small><b>' + macica + '</b></small>' : '') +
+    '<small>CH com SAG, referência do CVH de 15 mL/kg ≈ ' + n0(peso * 15) + ' mL' + (vol > peso * 15 ? ' (o volume calculado passa disso)' : '') + '.</small>' +
     '<small>Teto de 10 mL/kg ≈ ' + n0(peso * 10) + ' mL · teto de 22 mL/kg ≈ ' + n0(lim22) + ' mL.</small>' +
     '<details><summary>Velocidade</summary><small>Começar devagar, por exemplo 1 mL/kg (' + n0(peso) + ' mL) nos primeiros 10 a 15 minutos, observando reação.</small>' +
     '<small>Normovolêmico até 11 a 22 mL/kg/h (' + n0(peso * 11) + ' a ' + n0(lim22) + ' mL/h), sem passar de ' + (gato ? '1 a 2 mL/min em gatos e filhotes' : '3 a 6 mL/min em cães adultos') + ' (' + abs[0] + ' a ' + abs[1] + ' mL/h).</small>' +
@@ -4909,7 +4910,7 @@ function telaHemoIA() {
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" id="hiVolta">‹ HemoCalculadora</button></div>' +
     '<header class="topo"><div class="t"><span>Leitura do hemograma e indicação</span><b>HemoCalculadora IA</b></div></header>' +
     '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
-    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label>' +
+    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 10px">Colar imagem ou PDF copiado</button>' +
     '<div class="grade">' + cmp('hiPeso', 'Peso (kg)', T.peso) + '</div>' +
     '<details class="tx-av"' + (Object.keys(H.val).length ? ' open' : '') + '><summary>Digitar os valores (sem arquivo ou para corrigir a leitura)</summary><div class="grade">' + HC_VALS.map(([k, t]) => cmp('hiV_' + k, t, H.val[k])).join('') + '</div></details>' +
     '<h3>Situação</h3><div class="filtros hc-sit">' + HC_SIT.map(([k, t]) => '<button class="filtro' + (H.sit === k ? ' on' : '') + '" data-sit="' + k + '">' + t + '</button>').join('') + '</div>' +
@@ -4919,9 +4920,14 @@ function telaHemoIA() {
   pEsp(); document.querySelectorAll('.tx-esp .filtro').forEach(b => b.onclick = () => { T.esp = b.dataset.esp; T.fator = String(TX_FATOR[T.esp]); pEsp(); });
   $('#hiVolta').onclick = () => telaTransfusao();
   document.querySelectorAll('.hc-sit [data-sit]').forEach(b => b.onclick = () => { H.sit = H.sit === b.dataset.sit ? '' : b.dataset.sit; document.querySelectorAll('.hc-sit [data-sit]').forEach(x => x.classList.toggle('on', x.dataset.sit === H.sit)); });
-  $('#hiArq').onchange = async ev => { const f = ev.target.files[0]; if (!f) return; if (f.size > 9e6) return toast('Arquivo grande demais. Mande uma foto ou PDF menor.', 5000);
+  const usarArq = async f => { if (!f) return; if (f.size > 9e6) return toast('Arquivo grande demais. Mande uma foto ou PDF menor.', 5000);
     const u8 = new Uint8Array(await f.arrayBuffer()); let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
-    H.arq = { nome: f.name, mime: f.type || (/\.pdf$/i.test(f.name) ? 'application/pdf' : 'image/jpeg'), b64: btoa(s) }; $('.hi-arq b').textContent = f.name; };
+    const nome = f.name && f.name !== 'image.png' ? f.name : 'Imagem colada';
+    H.arq = { nome, mime: f.type || (/\.pdf$/i.test(f.name || '') ? 'application/pdf' : 'image/jpeg'), b64: btoa(s) }; const lb = $('.hi-arq b'); if (lb) lb.textContent = nome; };
+  $('#hiArq').onchange = ev => usarArq(ev.target.files[0]);
+  // colar uma imagem ou um PDF copiado (Cmd+V no computador, Colar no celular)
+  document.onpaste = ev => { if (!$('#hiArq')) { document.onpaste = null; return; } const it = [...((ev.clipboardData || {}).items || [])].find(x => x.kind === 'file' && /^(image\/|application\/pdf)/.test(x.type)); if (!it) return; ev.preventDefault(); usarArq(it.getAsFile()); toast('Arquivo colado.'); };
+  const bc = $('#hiColar'); if (bc) bc.onclick = async () => { try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = await navigator.clipboard.read(); for (const c of L) { const t = c.types.find(x => /^(image\/|application\/pdf)/.test(x)); if (t) { const b = await c.getType(t); await usarArq(new File([b], t === 'application/pdf' ? 'PDF colado.pdf' : 'Imagem colada', { type: t })); toast('Arquivo colado.'); return; } } toast('Não há imagem nem PDF copiado.'); } catch (_) { toast('Use Cmd+V (ou Ctrl+V) para colar a imagem.', 5000); } };
   $('#hiIr').onclick = async () => {
     T.peso = $('#hiPeso').value; H.clin = $('#hiClin').value.trim(); H.val = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) H.val[k] = v; });
     if (!H.arq && !Object.keys(H.val).length) return toast('Mande o hemograma ou digite os valores.');
