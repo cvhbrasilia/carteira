@@ -195,6 +195,8 @@ textarea:focus{border-color:var(--verm);box-shadow:0 0 0 3px rgba(168,61,61,.12)
 .spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--areia);border-top-color:var(--verm);animation:sp 1s linear infinite;flex:none}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+/* celular: título numa linha e os botões em outra, maiores e afastados (para não tocar no errado) */
+@media (max-width:600px){.top{flex-wrap:wrap;row-gap:8px}.brand{flex:1 0 100%}.acts{flex:1 0 100%;gap:10px}.acts .btn{min-height:44px;min-width:48px;padding:10px 12px;justify-content:center}.acts #bCarteira{flex:1}}
 .err{color:var(--accent);font-size:14px;margin-top:10px}
 .search{width:100%;border:1px solid var(--fieldline);background:var(--field);border-radius:10px;padding:10px 12px;font-size:15px;outline:none;margin-bottom:10px}
 .saved{list-style:none;margin:0;padding:0}
@@ -2758,6 +2760,8 @@ init();
   function preencher(forcar) {
     const c = cadastro();
     for (const [k, v] of Object.entries(c)) if (v && (forcar || !S[k] || S[k] === "NI")) S[k] = v;
+    // tipagem: vale a do cadastro (corrigida lá, a ficha ainda não assinada acompanha)
+    if (!S.ass) for (const k of ["dea1", "dal"]) if (c[k] && S[k] !== c[k]) S[k] = c[k];
     syncAll(); schedule();
   }
   // quem assina: o médico veterinário logado; quem não é médico veterinário escolhe em nome de quem a ficha sai, com "liberado por"

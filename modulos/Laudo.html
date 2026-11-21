@@ -3401,9 +3401,11 @@ function mostrarSalvo(res) {
     ${res && res.whats ? `<a class="btn" target="_blank" rel="noopener" href="${esc(res.whats)}">Enviar ao responsável por WhatsApp</a>` : estado.receptor ? `<p class="nota">Envie o PDF do celular para a clínica pelo botão acima. O laudo fica no painel de laudos, em ${esc(TIPOS[estado.tipo].nome)}.</p>` : `<p class="nota">O responsável não tem telefone no cadastro. Envie o PDF do celular pelo botão acima.</p>`}
     ${res && res.historico ? `<p class="nota">Os resultados entram sozinhos no Histórico Laboratorial de ${esc(estado.paciente.nome)}. Abra o histórico para conferir, acrescentar o Citopet se tiver e salvar na carteira.</p><button type="button" class="btn sec" data-a="historico">Abrir o Histórico Laboratorial</button>` : ""}
     <button type="button" class="btn sec" data-a="voltar">Voltar para os laudos</button>`;
-  $("#salvo").hidden = false; $("#salvo").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("#salvo").hidden = false; subirAoSalvo();
   avisoUltimo();
 }
+// depois de salvar, a tela sobe até o resultado (no iPhone o deslizar suave dentro do módulo às vezes não acontece)
+function subirAoSalvo() { const el = $("#salvo"); try { el.scrollIntoView({ block: "start" }); } catch (_) {} setTimeout(() => { const y = el.getBoundingClientRect().top + window.scrollY - 8; window.scrollTo(0, Math.max(0, y)); document.documentElement.scrollTop = Math.max(0, y); }, 50); }
 // avisa quando o laudo usou o último teste do lote
 function avisoUltimo() { const fim = [...new Set(kitsDoLaudo())].filter((k) => KITS[k] && restam(k) <= 0); if (fim.length) $("#salvo").insertAdjacentHTML("beforeend", `<p class="aviso">Este foi o último teste do lote de ${esc(fim.map((k) => KIT_NOME[k]).join(", "))}. No próximo laudo o painel pergunta se o lote novo é igual.</p>`); }
 async function baixar(v) {
