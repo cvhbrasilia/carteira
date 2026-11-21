@@ -2554,7 +2554,7 @@ function blocosCompat(x, w, cel) {
     if (acs && t.acDoadorOn) L.push(["Autocontrole do doador", "Negativo" + (gel ? "" : " (em coluna de gel)")]);
     if (p.doador && !t.doadorExterno) L.push(["Doador", p.doador]);
     if (t.doadorExterno && p.bolsa) L.push(["Bolsa", p.bolsa]);
-    if (htTxt(p.ht)) L.push([(p.htDe || (t.doadorExterno ? "Bolsa" : "Doador")) === "Bolsa" ? "Hematócrito da bolsa" : "Hematócrito do doador", htTxt(p.ht)]);
+    if (htTxt(p.ht)) L.push([(p.htDe || "Bolsa") === "Bolsa" ? "Hematócrito da bolsa" : "Hematócrito do doador", htTxt(p.ht)]);
     const inc = incompat(p.maior) || (gel && t.menor && incompat(p.menor));
     cartoes.push(blocoCartao({ titulo: t.doadorExterno ? "Doador " + (p.doador || i + 1) : p.bolsa ? "Bolsa " + p.bolsa : (t.provas.length > 1 ? "Bolsa " + (i + 1) : "Prova"), res: inc ? "Incompatível" : "Compatível", pos: inc, rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, linhas: L }, x, wl, cel));
   });
@@ -3276,8 +3276,8 @@ function formTipo() {
       <div class="grade" style="margin-top:9px">${gel ? "" : campo("Lote", inp('data-t="lote"', t.lote)) + campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>
       ${gel ? "" : caixaKit(felino() ? "xmGato" : "xmCao") + campo("Texto sobre o teste", `<textarea rows="4" data-t="nota">${esc(t.nota)}</textarea>`)}</div>
       <div class="cx"><h3>${t.doadorExterno ? "Doadores testados" : "Bolsas testadas"}</h3><label class="chk"><span><input type="checkbox" data-tb="doadorExterno" ${t.doadorExterno ? "checked" : ""}> Doador externo (amostra do doador enviada pelo médico veterinário, sem bolsa do CVH)</span></label>${t.provas.map((p, i) => `<div class="item"><div class="it-top"><b>${t.doadorExterno ? "Doador" : "Bolsa"} ${i + 1}</b>${t.provas.length > 1 ? `<button type="button" class="lnk" data-a="tirar-bolsa" data-i="${i}">tirar</button>` : ""}</div>
-        <div class="grade">${t.doadorExterno ? campo("Identificação do doador (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="nome ou número do doador"`, p.doador)) + campo("Número da bolsa (opcional)", inp(`data-pv-c="bolsa" data-i="${i}"`, p.bolsa)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || (t.doadorExterno ? "Bolsa" : "Doador"), ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))
-          : campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa)) + campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || (t.doadorExterno ? "Bolsa" : "Doador"), ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
+        <div class="grade">${t.doadorExterno ? campo("Identificação do doador (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="nome ou número do doador"`, p.doador)) + campo("Número da bolsa (opcional)", inp(`data-pv-c="bolsa" data-i="${i}"`, p.bolsa)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || "Bolsa", ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))
+          : campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa)) + campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || "Bolsa", ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
         <label style="margin-top:6px">Prova maior</label>${segm(`data-a="pv" data-i="${i}" data-c="maior"`, p.maior, ["Compatível", "Incompatível"])}
         ${gel && t.menor ? `<label style="margin-top:6px">Prova menor</label>${segm(`data-a="pv" data-i="${i}" data-c="menor"`, p.menor, ["Compatível", "Incompatível"])}` : ""}
         ${(gel || t.acGel) && t.acDoadorOn ? `<label style="margin-top:6px">Autocontrole do doador</label>${segm(`data-a="pv" data-i="${i}" data-c="acDoador"`, "Negativo", ["Negativo"])}` : ""}
@@ -3706,6 +3706,7 @@ async function preencherSegmentos() {
   if (estado.tipo !== "compat" || (estado.t || {}).doadorExterno) return;
   try { if (!SEGS) SEGS = await ponte("segmentos"); } catch (_) { SEGS = {}; }
   let mudouAlgo = false; (estado.t.provas || []).forEach((p, i) => { const n = String(p.doador || "").trim(), sg = SEGS[n]; if (sg && !String(p.bolsa || "").trim()) { p.bolsa = sg; mudouAlgo = true; const el = document.querySelector('[data-pv-c="bolsa"][data-i="' + i + '"]'); if (el) el.value = sg; } });
+  try { const H = await ponte("htBolsas"); (estado.t.provas || []).forEach((p, i) => { const h = H[String(p.doador || "").trim()]; if (h != null && h !== "" && (p.htDe || "Bolsa") === "Bolsa" && !String(p.ht || "").trim()) { p.ht = String(h).replace(".", ","); mudouAlgo = true; const el = document.querySelector('[data-pv-c="ht"][data-i="' + i + '"]'); if (el) el.value = p.ht; } }); } catch (_) {}
   if (mudouAlgo) mudou(false);
 }
 async function pintarProvasRes() {
