@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121183129';
+  var VERSAO = '20261121183625';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -477,7 +477,10 @@ function infoPedido(x, p) {
   if (x.etapa === "aberto" && p.foraHorario && p.abreEm && Date.parse(p.abreEm) > agora()) t.push("Recebido fora do horário. Chega à equipe do CVH " + p.abreQuando + ".");
   if (x.etapa === "autorizado" && z.pagamento) t.push((Date.parse(z.pagamento) < agora() ? "Prazo de pagamento terminou " : "Pagamento até ") + hora(z.pagamento));
   if (z.envio && ["pago", "testes", "fracionamento", "preparo"].includes(x.etapa)) t.push("Envio até " + hora(z.envio));
-  return t.map((v) => '<span class="prazo">' + esc(v) + "</span>").join("");
+  const am = x.amostra || {};
+  const uber = am.uber && !am.chegouEm ? '<div class="tipo-exp" style="margin-top:8px"><b>Uber a caminho para buscar a amostra</b><br>Separe o tubo identificado com o nome do paciente. <a href="' + esc(am.uber) + '" target="_blank" rel="noopener">Acompanhar a corrida</a>' +
+    (am.entregueUberEm ? "<br><small>Amostra entregue ao motorista " + esc(hora(am.entregueUberEm)) + ".</small>" : '<div class="bts" style="margin-top:6px"><button class="btn peq" data-a="amEntregue" data-v="' + esc(x.id) + '">Amostra entregue ao Uber</button></div>') + "</div>" : am.chegouEm ? '<span class="prazo" style="background:#e4efe7;color:#2f6b3f">Amostra recebida no CVH</span>' : "";
+  return t.map((v) => '<span class="prazo">' + esc(v) + "</span>").join("") + uber;
 }
 const oQuePedido = (p) => (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => ({ tipagem: "tipagem", prova: "prova de compatibilidade", coombs: "Coombs" }[t] || t))).join(" + ");
 let ASS = null, EXAMES = [];
@@ -677,6 +680,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "solicitar") return formSolicitar();
     if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
     if (a === "exColar") return colarExames();
+    if (a === "amEntregue") { b.disabled = true; await srv("intAmostraEntregue", v); somOk(); toast("Obrigado. O CVH foi avisado.", 4000); return carregar(); }
     if (a === "atalho") { ev.preventDefault(); return mostrarAtalho(); }
     if (a === "atalhoCopiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado.", 2500); } catch (_) { toast("Toque e segure no link para copiar.", 5000); } return; }
     if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
