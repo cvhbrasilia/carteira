@@ -3158,7 +3158,8 @@ function usarCorte(inteira) {
   const o = out.getContext("2d"); o.fillStyle = "#fff"; o.fillRect(0, 0, out.width, out.height); o.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height);
   if (CORTE.alvo === "tubo") {
     $("#corte").hidden = true; const a = analisarTubo(out), st = $("#st");
-    if (!a) { st.className = "st erro"; st.textContent = "Não encontrei o plasma neste recorte. Recorte de novo deixando só o tubo."; return; }
+    // sem achar o plasma pela cor, a foto vai como foi recortada (não perde a foto)
+    if (!a) { AMOSTRA_IMG.tubo = null; AMOSTRA_IMG.cache.tuboCh = ""; estado.fotos.tubo = { url: out.toDataURL("image/jpeg", 0.88), w: out.width, h: out.height }; st.className = "st"; st.textContent = "Foto do tubo incluída como foi recortada. Não consegui separar o plasma pela cor, então marque o aspecto do plasma à mão."; mudou(true); return; }
     AMOSTRA_IMG.tubo = a; AMOSTRA_IMG.cache.tuboCh = ""; st.className = "st"; st.textContent = "";
     if (!estado.t.plasmaManual) { estado.t.plasma = plasmaPorCor(a.cor); estado.t.plasmaIA = "pela cor medida na foto"; st.textContent = "Plasma avaliado como " + estado.t.plasma.toLowerCase() + " pela cor da foto. Mude se discordar."; }
     imagensAmostra(); mudou(true); lerPlasma(out); return;
