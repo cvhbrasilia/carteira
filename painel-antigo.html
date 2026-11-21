@@ -248,11 +248,13 @@ button{cursor:pointer}
 .ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}.ped-home.vazio{border-left-color:var(--areia2,#C6B098)}.ped-home.vazio .ped-cab{margin:0}
 .ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
 .ped-l{width:100%;display:flex;gap:10px;align-items:center;border:0;border-top:1px solid #EEE5DB;background:none;padding:10px 0;font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
-.ped-x{display:flex;flex-direction:column;gap:2px}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
+.ped-x{display:flex;flex-direction:column;gap:2px}.ped-rel{font-weight:700;color:#8a5a12}.ped-rel.al{color:#A83D3D}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
 .ped-t{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--areia);color:var(--vinho)}
 .ped-t.urgente{background:#F6D9C9;color:#8a2a1f}.ped-t.emergencia{background:var(--vermelho);color:#fff}
 .al-home{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;border:0;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#fff;box-shadow:0 2px 10px rgba(95,19,15,.12);font-family:inherit;cursor:pointer;text-align:left}
 .al-home b{color:var(--vinho);font-size:16px}
+.al-dir{display:flex!important;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.al-home i.b.novo{background:#C49A6C;color:#fff;font-style:normal;font-weight:700;border-radius:999px;padding:4px 11px;cursor:pointer;box-shadow:0 0 0 0 rgba(196,154,108,.6);animation:pulsoNovo 2.4s ease-out 3}
+@keyframes pulsoNovo{0%{box-shadow:0 0 0 0 rgba(196,154,108,.7)}70%{box-shadow:0 0 0 10px rgba(196,154,108,0)}100%{box-shadow:0 0 0 0 rgba(196,154,108,0)}}
 .al-home span{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;font-size:13px;color:#7a6a62}
 .al-home .b{font-style:normal;font-weight:700;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--areia);color:var(--vinho)}
 .al-home .b.urgente{background:var(--vermelho);color:#fff}
@@ -864,7 +866,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121155245';
+  var VERSAO = '20261121164754';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4657,13 +4659,14 @@ function telaHome() {
     c.innerHTML = a.length ? (n('super') ? '<i class="b super">' + n('super') + ' super</i>' : '') + (n('urgente') ? '<i class="b urgente">' + n('urgente') + ' urgentes</i>' : '') + '<i class="b">' + a.length + ' no total</i>' : 'Nenhum alerta';
   }).catch(e => { const c = $('#alCont'); if (c) c.textContent = /Código\.gs/.test(e.message) ? 'servidor desatualizado' : 'Abrir'; }), 50);
   if (pode('estoque') || pode('producao') || pode('admin')) setTimeout(pedidosHome, 40);
+  if (pode('laudos')) setTimeout(novosResultadosHome, 60);
   const meus = MODS.filter(m => m.livre || pode(m.perm || m.k));
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>Centro Veterinário de Hemoterapia</span><b>Painel CVH</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
     ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +
-    (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span id="alCont">calculando…</span></button>' : '') +
+    (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span class="al-dir"><span id="labNovos"></span><span id="alCont">calculando…</span></span></button>' : pode('laudos') ? '<button class="al-home" data-acao="laudos-painel" id="labHome" hidden><b>Laudos dos laboratórios</b><span id="labNovos"></span></button>' : '') +
     '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Buscar animal, responsável, bolsa, exame ou medicamento" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>' +
     (meus.length ? '<div class="mods">' + meus.map(m => '<button class="mod' + (m.breve ? ' breve' : '') + '" data-acao="modulo" data-k="' + m.k + '">' + (m.breve ? '<span class="tag">' + m.breve + '</span>' : '') + (m.k === 'pendencias' && E.d.pendencias ? '<span class="conta">' + E.d.pendencias + '</span>' : '') + '<i>' + m.ic + '</i><b>' + m.t + '</b><small>' + m.d + '</small></button>').join('') + '</div>'
       : '<section class="cartao"><p class="vazio-p">Seu usuário ainda não tem módulos liberados. Fale com o administrador do painel.</p></section>') +
@@ -4674,20 +4677,39 @@ function telaHome() {
 /* ── Pedidos da Intensivet que esperam o CVH (acima dos alertas laboratoriais) ──
    Fora do horário o pedido aparece aqui na hora, em silêncio; o alerta com som toca na abertura do CVH. */
 const TIPO_PEDH = { rotina: 'Rotina', reserva: 'Reserva', urgente: 'Urgência', emergencia: 'Emergência' };
-const ETAPA_PEDH = { aberto: 'novo', possivel: 'possível venda', autorizado: 'aguardando pagamento' };
+const ETAPA_PEDH = { aberto: 'novo', possivel: 'possível venda', autorizado: 'aguardando pagamento', pago: 'pago', testes: 'testes concluídos', fracionamento: 'fracionando', preparo: 'em preparo', pronta: 'pronta para sair' };
+// relógio da urgência e da emergência no quadro da tela inicial: meta de 1 h depois do pagamento e da amostra
+function relogioPedH(a) {
+  const p = (a.dados || {}).pedido || {}, am = a.amostra || {}, ck = (a.dados || {}).checagem || {}; if (!['urgente', 'emergencia'].includes(p.urgencia)) return '';
+  const pg = (a.linha || []).find(x => x.etapa === 'pago'), ini = pg && am.chegouEm ? Math.max(Date.parse(pg.em), Date.parse(am.chegouEm)) : null, m = t => Math.max(0, Math.floor((Date.now() - t) / 6e4));
+  if (ini && ck.fim) return ' · testes prontos em ' + Math.round((Date.parse(ck.fim) - ini) / 6e4) + ' min';
+  if (ini) { const x = m(ini); return ' · <span class="ped-rel' + (x >= 45 ? ' al' : '') + '">' + x + ' min de 60 desde pagamento e amostra</span>' + (ck.pergunta ? ' · <b class="ped-rel al">compatibilidade pronta?</b>' : ''); }
+  if (pg) return ' · aguardando a amostra';
+  return ' · <span class="ped-rel">há ' + m(Date.parse(a.criado)) + ' min</span>';
+}
+// laudo novo do TECSA ou do Citopet: etiqueta ao lado dos alertas; toque abre o painel de laudos
+async function novosResultadosHome() {
+  let L; try { L = await api('laboratoriosListar', E.sessao, false); } catch (_) { return; }
+  const el = $('#labNovos'); if (!el) return; clearTimeout(E.tLabH); E.tLabH = setTimeout(() => { if ($('#labNovos')) novosResultadosHome(); }, 5 * 60000);
+  const N = (L || []).filter(x => x.situacao === 'novo' && !ehQualidade(x) && x.origem !== 'idexx'), por = k => N.filter(x => x.origem === k).length;
+  const t = N.length ? (N.length === 1 ? '1 resultado novo' : N.length + ' resultados novos') + ' · ' + [por('tecsa') ? 'TECSA' : '', por('citopet') ? 'Citopet' : ''].filter(Boolean).join(' e ') : '';
+  el.innerHTML = t ? '<i class="b novo" data-acao="laudos-painel" role="button" title="Abrir os laudos dos laboratórios">' + esc(t) + '</i>' : '';
+  const lh = $('#labHome'); if (lh) lh.hidden = !t;
+}
 async function pedidosHome() {
   let r; try { r = await api('estPedidosAbertos', E.sessao); } catch (_) { return; }
   const box = $('#pedHome'); if (!box || !r) return;
+  clearTimeout(E.tPedH); E.tPedH = setTimeout(() => { if ($('#pedHome')) pedidosHome(); }, 60000);
   // sempre visível, como os alertas laboratoriais: vazio mostra só a linha do título
   if (!(r.pedidos || []).length) { const H0 = r.horario || {}; box.hidden = false; box.classList.add('vazio'); box.innerHTML = '<div class="ped-cab"><b>Pedidos de bolsas e testes</b><span>' + (H0.aberto === false ? 'CVH fora do horário · ' : '') + 'nenhum pedido aguardando</span></div>'; return; }
   box.classList.remove('vazio');
   const H = r.horario || {}, hm = t => { const d = new Date(t); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const L = r.pedidos.slice().sort((a, b) => ({ emergencia: 0, urgente: 1, reserva: 2, rotina: 3 }[((a.dados || {}).pedido || {}).urgencia] ?? 9) - ({ emergencia: 0, urgente: 1, reserva: 2, rotina: 3 }[((b.dados || {}).pedido || {}).urgencia] ?? 9));
   box.hidden = false;
-  box.innerHTML = '<div class="ped-cab"><b>Pedidos de bolsas e testes</b><span>' + L.length + (L.length === 1 ? ' aguardando o CVH' : ' aguardando o CVH') + (H.aberto === false ? ' · CVH fora do horário, o alerta toca ' + esc(H.quando) : '') + '</span></div>' +
+  box.innerHTML = '<div class="ped-cab"><b>Pedidos de bolsas e testes</b><span>' + L.length + (L.length === 1 ? ' em andamento' : ' em andamento') + (H.aberto === false ? ' · CVH fora do horário, o alerta toca ' + esc(H.quando) : '') + '</span></div>' +
     L.map(a => { const p = (a.dados || {}).pedido || {}, z = (a.dados || {}).prazos || {}, urg = p.urgencia;
       const oq = (p.bolsas || []).map(b => b.qtd + ' ' + b.componente).concat((p.testes || []).map(t => ({ tipagem: 'tipagem', prova: 'prova de compatibilidade', coombs: 'Coombs' }[t] || t))).join(' + ');
-      return '<button class="ped-l" data-acao="pedido-int" data-id="' + esc(a.id) + '"><span class="ped-t ' + esc(urg || '') + '">' + esc(TIPO_PEDH[urg] || '') + '</span><span class="ped-x"><b>' + esc(a.paciente || '') + ' · ' + esc(oq) + '</b><small>' + esc(ETAPA_PEDH[a.etapa] || a.etapa) + ' · chegou ' + esc(hm(a.criado)) + (p.foraHorario ? ', fora do horário' : '') + (p.reservaPara ? ' · reserva para ' + esc(p.reservaPara.replace(/^(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$3/$2 às $4')) : '') + (a.etapa === 'autorizado' && z.pagamento ? ' · pagamento até ' + esc(hm(z.pagamento)) : '') + '</small></span></button>'; }).join('');
+      return '<button class="ped-l" data-acao="pedido-int" data-id="' + esc(a.id) + '"><span class="ped-t ' + esc(urg || '') + '">' + esc(TIPO_PEDH[urg] || '') + '</span><span class="ped-x"><b>' + esc(a.paciente || '') + ' · ' + esc(oq) + '</b><small>' + esc(ETAPA_PEDH[a.etapa] || a.etapa) + ' · chegou ' + esc(hm(a.criado)) + (p.foraHorario ? ', fora do horário' : '') + (p.reservaPara ? ' · reserva para ' + esc(p.reservaPara.replace(/^(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$3/$2 às $4')) : '') + (a.etapa === 'autorizado' && z.pagamento ? ' · pagamento até ' + esc(hm(z.pagamento)) : '') + relogioPedH(a) + '</small></span></button>'; }).join('');
 }
 /* ── layout do computador ── */
 // separa a tela em cabeçalho, coluna da esquerda (busca, botões) e coluna da direita (lista ou resultado). No celular nada muda.
@@ -4980,22 +5002,58 @@ const ETAPA_AT_TX = { aberto: 'aberto', possivel: 'possível venda', autorizado:
 const hmTx = t => { const d = new Date(t); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' às ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
 // escolher o atendimento preenche o que o pedido da Intensivet já trouxe (peso, Ht, espécie, tipagem) sem apagar o que foi digitado
 async function escolherAtTx(id, abrir) {
-  const T = E.tx = E.tx || {}; T.at = id || '';
+  const T = E.tx = E.tx || {}, novo = (T.at || '') !== (id || ''); T.at = id || '';
   let d; try { d = await estoqueTx(true); } catch (_) { d = null; }
   const a = d && (d.atendimentos || []).find(x => x.id === id), c = a && (a.dados || {}).calculo, P = a && ((a.dados || {}).pedido || {}).paciente;
   if (c && c.vol) Object.assign(T, { comp: 'CH', esp: c.esp || T.esp, peso: c.peso != null ? String(c.peso).replace('.', ',') : T.peso, rec: c.htAtual != null ? String(c.htAtual).replace('.', ',') : T.rec, des: c.htDesejado != null ? String(c.htDesejado) : T.des, doa: c.htBolsa != null ? String(c.htBolsa) : T.doa, margem: c.margem != null ? String(c.margem) : T.margem, tipPac: c.tipPac || T.tipPac });
   else if (P) {
     if (/fel|gat/i.test(P.especie || '')) T.esp = 'Gato'; else if (P.especie) T.esp = 'Cão';
     T.fator = String(TX_FATOR[T.esp]); T.comp = 'CH';
-    if (P.peso && !T.peso) T.peso = String(P.peso); if (P.ht && !T.rec) T.rec = String(P.ht);
-    const tp = semAc(P.tipagem || ''); if (tp) T.tipPac = T.esp === 'Gato' ? ((tp.match(/\b(ab|a|b)\b/) || [])[1] || '').toUpperCase() : /neg/.test(tp) ? 'neg' : /pos/.test(tp) ? 'pos' : '';
+    const nu = v => String(v || '').replace(/[^\d.,]/g, '').replace('.', ',');
+    if (P.peso && (novo || !T.peso)) T.peso = nu(P.peso); if (P.ht && (novo || !T.rec)) T.rec = nu(P.ht);
+    const tp = semAc(P.dea1 || P.felino || (P.tipagem || '').split(/[,·;]/)[0] || ''); if (tp && !/nao tipad/.test(tp)) T.tipPac = T.esp === 'Gato' ? ((tp.match(/\b(ab|a|b)\b/) || [])[1] || '').toUpperCase() : /neg/.test(tp) ? 'neg' : /pos/.test(tp) ? 'pos' : '';
   }
   if (abrir !== false) telaTransfusao();
+}
+// leitor de código de barras com o foco fora do laudo (no painel): o código vai para o laudo aberto
+(() => { const L = { buf: '', t0: 0, ult: 0 }; document.addEventListener('keydown', e => {
+  const fr = $('#modulo'), w = fr && fr.contentWindow; if (!w || typeof w.lidoLeitor !== 'function') return;
+  const t = performance.now(); if (e.key === 'Enter') { const c = L.buf; L.buf = ''; if (c.length >= 3 && t - L.t0 < 45 * c.length + 150) { e.preventDefault(); w.lidoLeitor(c.trim()); } return; }
+  if (e.key.length !== 1) return; if (t - L.ult > 60) { L.buf = ''; L.t0 = t; } L.ult = t; L.buf += e.key; }, true); })();
+async function laudoDoPedido(id, tipo) {
+  let d; try { d = await estoqueTx(true); } catch (e) { toast(e.message, 6000); return; }
+  const a = (d.atendimentos || []).find(x => x.id === id); if (!a) { toast('Atendimento não encontrado.'); return; }
+  const ped = (a.dados || {}).pedido || {}, P = ped.paciente || {}, c = (a.dados || {}).calculo || {}, V = ped.vet || {};
+  const ids = [...new Set([].concat(c.prova || [], (d.unidades || []).filter(u => u.situacao === 'reservada' && ((u.dados || {}).reservaInfo || {}).atendimento === id).map(u => u.id)))];
+  const provas = ids.map(uid => { const u = (d.unidades || []).find(x => x.id === uid) || {}; return { bolsa: '', doador: String(u.coleta || uid).split(' ')[0], unidade: uid }; });
+  E.laudoPedido = { id: a.id, paciente: { nome: P.nome || a.paciente || '', especie: P.especie || '', raca: P.raca || '', sexo: P.sexo || '', idade: P.idade || '', peso: P.peso || '' }, resp: (ped.responsavel || {}).nome || '', solicitante: [V.nome, V.crmv].filter(Boolean).join(', ') || a.solicitante || '', clinica: a.destino || '', provas, dea1: P.dea1 || '', dal: P.dal || '', felino: P.felino || '' };
+  if (tipo === 'requisicao') {
+    const R = ped.responsavel || {}, rq = (a.dados || {}).requisicao || {}, q = new Date(a.criado), p2 = n => String(n).padStart(2, '0');
+    const URG = { rotina: 'Rotina', reserva: 'Reserva', urgente: 'Urgência', emergencia: 'Emergência' }, CT = { orientado: 'já orientado a falar com o CVH', orientar: 'a internação vai orientar o responsável a falar com o CVH', ciente: 'ciente, o CVH pode entrar em contato', aguardar: 'aguardar o médico veterinário avisar' };
+    const TT = { tipagem: 'tipagem sanguínea', prova: 'prova de compatibilidade', coombs: 'teste de Coombs' };
+    const linhas = [
+      ['Pedido', (ped.bolsas || []).map(b => b.qtd + ' ' + b.componente).concat((ped.testes || []).map(t => TT[t] || t)).join(', ')],
+      ['Tipo do pedido', (URG[ped.urgencia] || '') + (ped.reservaPara ? ', para ' + hmTx(ped.reservaPara) : ped.reservaAdefinir ? ', data a definir' : '') + '. Recebido em ' + hmTx(a.criado) + ', ' + (a.destino || '') + '.'],
+      ['Peso e hematócrito', [P.peso ? String(P.peso).replace('.', ',') + ' kg' : '', P.ht ? 'hematócrito ' + String(P.ht).replace('.', ',') + '%' : ''].filter(Boolean).join(' · ')],
+      ['Tipagem informada pela internação', P.tipagem || ''],
+      ['Primeira transfusão', P.primeira || ''],
+      ['Indicação clínica e diagnóstico', ped.indicacao || ''],
+      ['Responsável', [R.nome, R.telefone].filter(Boolean).join(' · ') + (CT[R.contato] ? ' (' + CT[R.contato] + ')' : '')],
+      ['Amostra', ped.amostra && ped.amostra.coletada ? 'Coletada pela internação para o motoboy buscar.' : ''],
+      ['Exames anexados', (ped.exames || []).map(x => x.nome).join('\n')],
+      ['Observações da internação', ped.obs || ''],
+    ].filter(x => String(x[1] || '').trim());
+    let assinatura = null;
+    if (rq.assinaturaUrl) try { const bl = await (await fetch(rq.assinaturaUrl)).blob(), url = await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(bl); }), im = await new Promise((ok, er) => { const i = new Image(); i.onload = () => ok(i); i.onerror = er; i.src = url; }); assinatura = { url, w: im.naturalWidth, h: im.naturalHeight }; } catch (_) {}
+    E.laudoPedido.req = { linhas, assinatura, data: q.getFullYear() + '-' + p2(q.getMonth() + 1) + '-' + p2(q.getDate()), hora: p2(q.getHours()) + ':' + p2(q.getMinutes()), solicitante: { nome: rq.nome || V.nome || '', crmv: rq.crmv || V.crmv || '', quando: rq.assinadoEm ? 'assinada em ' + hmTx(rq.assinadoEm) + (rq.no ? ' no ' + rq.no : '') : '', anexo: rq.tipo === 'pdf' } };
+  }
+  E.laudoReceptor = true; E.laudoTipo = tipo; E.modulo = 'laudos'; abrirModulo('laudos', null);
 }
 function pacienteTx(id) { const a = ((E.txEst && E.txEst.d && E.txEst.d.atendimentos) || []).find(x => x.id === id); return a ? (a.paciente || '') : ''; }
 async function salvarCalcTx(extra) {
   if (!E.tx || !E.tx.at || !E.txCalc) throw new Error('Escolha o atendimento.');
-  const r = await api('estAtendimentoCalculo', E.sessao, E.tx.at, Object.assign({}, E.txCalc, extra || {})); E.txEst = null; return r;
+  const ps = E.tx.provaSem, x = Object.assign({}, extra || {}); if (ps && ps.uids.length) x.prova = [...new Set([].concat(x.prova || [], ps.uids))];
+  const r = await api('estAtendimentoCalculo', E.sessao, E.tx.at, Object.assign({}, E.txCalc, x)); E.tx.provaSem = null; E.txEst = null; return r;
 }
 // preparo: recupera o cálculo, atualiza o estoque e destaca a bolsa testada na prova
 async function telaPreparoTx(id) {
@@ -5706,7 +5764,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.idade = an && an.nascimento ? idade(an.nascimento) : ''; E.ponte.peso = an ? pesoAtual(an.id) : ''; E.ponte.animalId = aid || '';
     E.ponte.tipo = E.laudoTipo || ''; E.laudoTipo = null; E.ponte.pdfLab = E.laudoPdfLab || null; E.laudoPdfLab = null; E.ponte.edicao = E.laudoEdicao || null; E.laudoEdicao = null; try { E.ponte.receptores = JSON.parse(localStorage.getItem('cvh_receptores') || '[]'); } catch (_) { E.ponte.receptores = []; }
     // quem não é médico veterinário pode liberar o laudo assinado pelo médico veterinário escolhido
-    if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; } E.ponte.kits = (E.d.config || {}).kits || {}; E.ponte.racasCao = RACAS_CAO; E.ponte.racasGato = RACAS_GATO; E.ponte.receptor = !an && !!E.laudoReceptor; E.laudoReceptor = false;
+    if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; } E.ponte.kits = (E.d.config || {}).kits || {}; E.ponte.racasCao = RACAS_CAO; E.ponte.racasGato = RACAS_GATO; E.ponte.receptor = !an && !!E.laudoReceptor; E.laudoReceptor = false; E.ponte.pedido = E.laudoPedido || null; E.laudoPedido = null;
     // doações (salvas e em andamento) para reconhecer o número da coleta nos PDFs da IDEXX e da TECSA
     const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}; return { numero: String(d.numero || (d.ficha || {}).numero || '').trim(), data: r.data, animalId: r.animalId }; });
     andamentoDe().forEach(f => { const n = String(f.numero || (f.ficha || {}).numero || '').trim(); if (n && !doa.some(x => x.numero === n)) doa.push({ numero: n, data: f.data, animalId: f.animalId, andamento: true }); });
@@ -5803,6 +5861,8 @@ const PONTE = {
   // atendimento abre a HemoCalculadora: cálculo novo com os dados do pedido, ou o preparo com o cálculo salvo
   hemocalc: id => { setTimeout(() => { E.modulo = 'transfusao'; escolherAtTx(String(id || '')); }, 0); return true; },
   abrirAtendimento: id => { setTimeout(() => { E.pedAbrir = String(id || ''); E.modulo = 'transporte'; abrirModulo('transporte'); }, 0); return true; },
+  // atendimento da Intensivet: abre o laudo do receptor (prova de compatibilidade, tipagem ou Coombs) já preenchido com o pedido e as bolsas da prova
+  laudoPedido: o => { setTimeout(() => laudoDoPedido(String((o || {}).id || ''), String((o || {}).tipo || 'compat')), 0); return true; },
   hemocalcPreparo: id => { setTimeout(() => telaPreparoTx(String(id || '')), 0); return true; },
   salvarRascunho: async o => {
     const r = await api('fichaAndamentoSalvar', E.sessao, { id: o.id, animalId: E.animal, ficha: o.ficha });
@@ -6738,13 +6798,13 @@ const ACOES = {
   'voltar-painel': voltarAoPainel,
   'tx-prova': async b => {
     const at = E.tx && E.tx.at, pac = at ? pacienteTx(at) : prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
-    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : ''), atendimento: at || '', obs: 'Separada pela HemoCalculadora para a prova de compatibilidade' }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
+    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : ''), atendimento: at || '', obs: 'Separada pela HemoCalculadora para a prova de compatibilidade' }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); else { const ps = E.tx.provaSem = E.tx.provaSem || { uids: [], pac: '' }; ps.uids.push(b.dataset.v); ps.pac = ps.pac || String(pac).trim(); } E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
     catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
   'tx-salvar': async b => { b.disabled = true; try { await salvarCalcTx(); b.textContent = 'Cálculo salvo ✓'; toast('Cálculo salvo no atendimento ' + E.tx.at + '. Ele reabre no preparo da bolsa.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'tx-possivel': async b => { b.disabled = true; try { await salvarCalcTx(); await api('estAtendimentoEtapa', E.sessao, E.tx.at, 'possivel', {}); E.txEst = null; b.textContent = 'Possível venda avisada ✓'; toast('Aviso de possível venda enviado ao motoboy.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'tx-novo-at': async b => {
-    const pac = prompt('Nome do paciente:', ''); if (pac == null) return; const dest = prompt('Destino da bolsa (clínica):', 'Intensivet'); if (dest == null || !dest.trim()) return; b.disabled = true;
+    const pac = prompt('Nome do paciente:', (E.tx.provaSem || {}).pac || ''); if (pac == null) return; const dest = prompt('Destino da bolsa (clínica):', 'Intensivet'); if (dest == null || !dest.trim()) return; b.disabled = true;
     try { const a = await api('estAtendimentoSalvar', E.sessao, { destino: dest.trim(), paciente: pac.trim(), modalidade: 'motoboy' }); E.tx.at = a.id; await salvarCalcTx(); toast('Atendimento ' + a.id + ' aberto com o cálculo.', 5000); telaTransfusao(); } catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
   'prep-frac': b => preparoTx(b, 'fracionar'),

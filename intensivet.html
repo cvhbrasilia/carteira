@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121164754';
+  var VERSAO = '20261121165429';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -104,7 +104,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
 .esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
 .tipag{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tipag .esc{flex-direction:column}.tipag .esc .op{flex:none}.tipag h4{margin:6px 0 0;font-size:13px;color:var(--tinta2)}
-.ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}
+.ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}.colar{margin-top:8px;border:1px dashed #C6B098;border-radius:12px;padding:10px;text-align:center;font-size:13px;color:#f3e6dc;min-height:40px;outline:none;-webkit-user-select:text;user-select:text}
 .pesoV{display:inline-block;margin-top:6px;font-weight:800;color:#5F130F}
 .ac-pai{position:relative}.ac-lista{position:absolute;left:0;right:0;top:100%;z-index:40;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid var(--areia2);border-radius:10px;box-shadow:0 10px 28px rgba(60,20,15,.18);max-height:264px;overflow:auto;display:none}.ac-lista.on{display:block}.ac-lista li{padding:.7em .75em;border-radius:7px;cursor:pointer;font-size:15px}.ac-lista li:hover{background:#f4ece3}.ac-lista li small{display:block;color:var(--tinta2)}
 .orienta{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
@@ -506,6 +506,16 @@ function aplicarExame(d) {
   if (obs.length || d.laboratorio || d.data) { const el = $("#sObs"); if (el && !el.value.trim()) { el.value = "Exame" + (d.laboratorio ? " " + d.laboratorio : "") + (d.data ? " de " + d.data : "") + (obs.length ? ": " + obs.join(", ") : "") + "."; el.classList.add("lido"); } }
   return marcados.length;
 }
+// colar: PDF ou foto copiados (WhatsApp, e-mail, Arquivos) entram sem precisar salvar no celular
+function arquivosDoColar(dt) { return [...((dt || {}).items || [])].filter((x) => x.kind === "file" && /^(image\/|application\/pdf)/.test(x.type)).map((x) => x.getAsFile()).filter(Boolean).map((f, i) => f.name && f.name !== "image.png" ? f : new File([f], f.type === "application/pdf" ? "Exame colado.pdf" : "Foto colada " + (i + 1) + ".jpg", { type: f.type })); }
+document.addEventListener("paste", (ev) => { if (!$("#exArq") || !$("#modal").classList.contains("on")) return; const L = arquivosDoColar(ev.clipboardData); const z = $("#exColarZona"); if (z) setTimeout(() => { z.textContent = "ou toque e segure aqui e escolha Colar"; }, 0); if (!L.length) { if (ev.target === z) { ev.preventDefault(); toast("Não encontrei PDF nem foto copiada. Copie o arquivo e tente de novo.", 5000); } return; } ev.preventDefault(); toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L); });
+async function colarExames() {
+  try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = [];
+    for (const c of await navigator.clipboard.read()) { const t = c.types.find((x) => /^(image\/|application\/pdf)/.test(x)); if (t) L.push(new File([await c.getType(t)], t === "application/pdf" ? "Exame colado.pdf" : "Foto colada.jpg", { type: t })); }
+    if (!L.length) return toast("Não encontrei PDF nem foto copiada. Copie o arquivo e tente de novo.", 5000);
+    toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L);
+  } catch (_) { const z = $("#exColarZona"); if (z) { z.focus(); toast("Toque e segure no quadro tracejado e escolha Colar.", 5000); } }
+}
 async function anexarExames(files) {
   for (const f of [...files].slice(0, 4 - EXAMES.length)) {
     if (f.size > 7e6) { toast("O arquivo " + f.name + " é grande demais.", 5000); continue; }
@@ -524,7 +534,7 @@ function formSolicitar() {
   const Hr = D.horario || {}, fechado = Hr.aberto === false;
   Object.keys(ESC).forEach((k) => delete ESC[k]); ESC.esp = "Canina";
   modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. No horário de funcionamento o pedido chega na hora para a equipe do CVH.</small></p>" +
-    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF ou foto). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
+    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF ou foto). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar PDF ou foto copiada</button><div id="exColarZona" contenteditable="true" class="colar" aria-label="Toque e segure aqui e escolha Colar">ou toque e segure aqui e escolha Colar</div></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
     "<label>O que precisa</label>" + ["CH", "PFC", "CRIO", "CP"].map((c) => '<label class="op" style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="sB" value="' + c + '"> <span style="flex:1">' + { CH: "CH · concentrado de hemácias", PFC: "PFC · plasma fresco congelado", CRIO: "CRIO · crioprecipitado", CP: "CP · concentrado de plaquetas" }[c] + '</span><input type="number" inputmode="numeric" min="1" max="10" value="1" class="sQ" data-c="' + c + '" style="width:70px" aria-label="quantidade"></label>').join("") +
     TESTES_PED.map(([k, t]) => '<label class="op"><input type="checkbox" class="sT" value="' + k + '"> ' + t + "</label>").join("") +
     '<p id="sAmHint" hidden><small>Para prova de compatibilidade, tipagem e Coombs, colete sangue do paciente em tubo de EDTA (1 mL) e identifique com o nome.</small></p>' +
@@ -637,6 +647,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "fechar") { PROX = null; return fechar(); }
     if (a === "solicitar") return formSolicitar();
     if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
+    if (a === "exColar") return colarExames();
     if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
     if (a === "esc") { const k = b.dataset.k; marcar(k, ESC[k] === v && k !== "esp" ? "" : v); if (k === "resDef" && ESC.resDef) $("#sResQ").value = ""; return; }
     if (a === "solicitarOk") return solicitarOk(b);
