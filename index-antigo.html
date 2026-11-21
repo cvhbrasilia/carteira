@@ -244,7 +244,7 @@ button{cursor:pointer}
 .prep .tg{display:inline-block;font-style:normal;font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px;margin:2px 4px 2px 0}.prep .tg.ok{background:#E3F1E4;color:#24572b}.prep .tg.av{background:#FBEBD2;color:#7a4a0c}
 .venc.prep{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px;border-radius:12px;margin:8px 0}.venc.prep .t{width:100%}.venc.prep .t small{display:block;white-space:normal;overflow:visible;text-overflow:clip;margin-top:4px;line-height:1.7}.venc.prep .mini-bts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
 .prep-ok{box-shadow:0 0 0 2px #3f8b4a inset;background:#F4FAF4}
-.ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}
+.ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}.ped-home.vazio{border-left-color:var(--areia2,#C6B098)}.ped-home.vazio .ped-cab{margin:0}
 .ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
 .ped-l{width:100%;display:flex;gap:10px;align-items:center;border:0;border-top:1px solid #EEE5DB;background:none;padding:10px 0;font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
 .ped-x{display:flex;flex-direction:column;gap:2px}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
@@ -649,6 +649,28 @@ button.pdf{font-family:inherit;cursor:pointer}
 
 /* ── telas do painel ── */
 .tela{position:fixed;inset:0;overflow:auto;background:var(--papel2);-webkit-overflow-scrolling:touch}
+/* computador: telas em duas colunas (controles à esquerda, lista ou resultado à direita); no celular as colunas não existem (display: contents) */
+.col-t,.col-e,.col-d{display:contents}
+@media (min-width:1000px){
+.tela-2c .tela-c{max-width:1240px;display:grid;grid-template-columns:minmax(340px,410px) minmax(0,1fr);column-gap:28px;row-gap:0;align-items:start;padding-left:28px;padding-right:28px}
+.tela-2c .col-t{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;grid-column:1/-1;margin-bottom:16px}
+.tela-2c .col-t .barra{order:-1}
+.tela-2c .col-t .topo{flex:1}
+.tela-2c .col-e,.tela-2c .col-d{display:flex;flex-direction:column;gap:16px;min-width:0}
+.tela-2c .col-d .cartao{margin:0}
+.tela-2c #lista,.tela-2c #listaC,.tela-2c #listaPf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;align-content:start}
+.tela-2c #lista>:is(h3,.vazio-p),.tela-2c #listaC>:is(h3,.vazio-p,p),.tela-2c #listaPf>:is(h3,.vazio-p,p,.nota){grid-column:1/-1}
+.tela-tx .tela-c{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+.tela-tx #txRes{position:sticky;top:12px}
+.tela-resp .tela-c{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.tela-ci .tela-c,.tela-ag .tela-c{max-width:1240px;padding-left:28px;padding-right:28px}
+.tela-ci .ci-ks{grid-template-columns:repeat(8,minmax(0,1fr))}
+.tela-ci .tela-c{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.tela-ci .tela-c>*{grid-column:1/-1}.tela-ci .ci-ks+.cartao,.tela-ci .ci-ks+.cartao+.cartao{grid-column:auto;margin:0}.tela-ci .cartao svg{max-height:300px}
+.tela-ag #agLista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.tela-ag #agLista>.vazio-p{grid-column:1/-1}
+.tela-ag .ag-fut{columns:2;column-gap:28px}.tela-ag .ag-fut>h3,.tela-ag .ag-fut>.nota{column-span:all}
+.tela-media .tela-c{max-width:960px;padding-left:28px;padding-right:28px}
+}
 .tela-c{max-width:560px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px}
 .topo{display:flex;align-items:center;gap:12px;padding:4px 0 6px}
 .topo .lg-res{width:96px}
@@ -835,7 +857,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121121628';
+  var VERSAO = '20261121123156';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3277,6 +3299,7 @@ function telaCertificados(aid, busca) {
     $('#listaC').innerHTML = '<h3>' + l.length + (l.length === 1 ? ' doador' : ' doadores') + '</h3>' + (l.length ? l.map(x => '<button class="item" data-acao="cert-animal" data-id="' + x.a.id + '"><div class="t"><b>' + esc(x.a.nome) + (tipoTxt(x.a) ? ' <small class="tp">' + esc(tipoTxt(x.a)) + '</small>' : '') + '</b><small>' + esc((respDe(x.a) || {}).nome || '') + ' · ' + x.l.length + (x.l.length === 1 ? ' certificado' : ' certificados') + ' · último ' + br(x.l[0].data) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum certificado encontrado.</p>');
   };
   $('#buscaC').oninput = pinta; pinta();
+  duasColunas(['#listaC']);
 }
 
 /* ═════════════ linha do tempo da saúde ═════════════ */
@@ -3431,6 +3454,7 @@ async function telaInteligencia() {
       '<div id="ciLista">' + st.slice().sort((a, b) => ordem[a.sit] - ordem[b.sit] || String(a.an.nome).localeCompare(String(b.an.nome))).map(linhaD).join('') + '</div></section>' +
     '<p class="nota">A situação é calculada com o cadastro, as fichas, os alertas laboratoriais e o intervalo de ' + INTERVALO_DOACAO_MESES + ' meses entre doações. A liberação final é sempre do médico veterinário.</p></div></main>';
   E.ciLinhas = st.map(x => ({ sit: x.sit, html: linhaD(x), ord: ordem[x.sit], nome: x.an.nome }));
+  telaClasse('tela-ci');
 }
 
 /* ═════════════ busca global ═════════════ */
@@ -3514,6 +3538,7 @@ function telaRelatorios() {
     '<section class="cartao" id="relCorpo"></section></div></main>';
   const pinta = () => { $('#cMes').hidden = $('#relTipo').value === 'ano'; $('#cAno').hidden = $('#relTipo').value !== 'ano'; const [i, f, rot] = periodoRel(); $('#relCorpo').innerHTML = '<h3>' + rot + '</h3>' + htmlRelatorio(dadosRelatorio(i, f)); };
   ['relTipo', 'relMes', 'relAno'].forEach(k => $('#' + k).onchange = pinta); pinta();
+  telaClasse('tela-media');
 }
 function relCsv() {
   const [i, f, rot] = periodoRel(), R = dadosRelatorio(i, f), q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', L = [];
@@ -3599,7 +3624,7 @@ async function telaSag(editar) {
   const selMet = (id, v) => '<select id="' + id + '">' + Object.entries(MET).map(([k, t]) => '<option value="' + k + '"' + (k === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>';
   const an0 = b.animalId ? animalDe(b.animalId) : null;
   let estudo = b.id ? b.estudo === '1' : (E.sagEstudo != null ? E.sagEstudo : (() => { try { const v = localStorage.getItem('cvh_sag_estudo'); if (v != null) return v === '1'; } catch (_) {} return ok < p.metaEstudo; })());
-  raiz.innerHTML = '<main class="tela"><div class="tela-c">' +
+  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c">' +
     '<div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Concentrado de hemácias</span><b>Calculadora de SAG</b></div></header>' +
     '<section class="cartao sag-calc"><div class="sag-cab"><h3>' + (b.id ? 'Bolsa ' + esc(b.bolsa || '') : 'Nova bolsa') + '</h3>' +
@@ -4020,6 +4045,7 @@ async function telaPerfis(busca) {
       : '<p class="vazio-p">' + ((E.resultados || []).length ? 'Nenhum doador encontrado.' : 'A base de resultados ainda está vazia. Ela é preenchida sempre que um histórico laboratorial é salvo.') + '</p>');
   };
   $('#buscaPf').addEventListener('input', pinta); pinta();
+  duasColunas(['#listaPf']);
 }
 // bloco detalhado de um analito: números, gráfico, resultados e ajustes
 function blocoSerie(x, aid, metodosPor, cfg) {
@@ -4437,6 +4463,7 @@ function telaReceitas(aid, busca) {
     $('#listaR').innerHTML = '<h3>' + lista.length + (lista.length === 1 ? ' receita' : ' receitas') + '</h3>' + (lista.length ? lista.map(cartao).join('') : '<p class="vazio-p">' + (q ? 'Nenhuma receita encontrada.' : 'Nenhuma receita ainda.') + '</p>');
   };
   $('#buscaR').oninput = pinta; pinta();
+  duasColunas(['#listaR']);
 }
 async function baixarDocReceita(r, k, v) {
   const x = ((r.dados || {}).docs || [])[k]; if (!x) return;
@@ -4546,6 +4573,7 @@ async function telaAgenda(dia) {
     (d0 === h && prev.some(p => p.contato) ? '<section class="ag-chamar"><h3>Convites enviados</h3>' + prev.filter(p => p.contato).map(cartaoPrevisao).join('') + '</section>' : '') +
     '</div></main>';
   const ir = raiz.querySelector('.ag-ir'); ir.onchange = () => { if (ir.value) telaAgenda(ir.value); };
+  telaClasse('tela-ag');
 }
 // todas as doações previstas, sempre visíveis, por mês; tocar abre pendências, triagem e os botões
 function listaPrevistas(lista) {
@@ -4638,15 +4666,28 @@ const TIPO_PEDH = { rotina: 'Rotina', reserva: 'Reserva', urgente: 'Urgência', 
 const ETAPA_PEDH = { aberto: 'novo', possivel: 'possível venda', autorizado: 'aguardando pagamento' };
 async function pedidosHome() {
   let r; try { r = await api('estPedidosAbertos', E.sessao); } catch (_) { return; }
-  const box = $('#pedHome'); if (!box || !r || !(r.pedidos || []).length) return;
+  const box = $('#pedHome'); if (!box || !r) return;
+  // sempre visível, como os alertas laboratoriais: vazio mostra só a linha do título
+  if (!(r.pedidos || []).length) { const H0 = r.horario || {}; box.hidden = false; box.classList.add('vazio'); box.innerHTML = '<div class="ped-cab"><b>Pedidos de bolsas e testes</b><span>' + (H0.aberto === false ? 'CVH fora do horário · ' : '') + 'nenhum pedido aguardando</span></div>'; return; }
+  box.classList.remove('vazio');
   const H = r.horario || {}, hm = t => { const d = new Date(t); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const L = r.pedidos.slice().sort((a, b) => ({ emergencia: 0, urgente: 1, reserva: 2, rotina: 3 }[((a.dados || {}).pedido || {}).urgencia] ?? 9) - ({ emergencia: 0, urgente: 1, reserva: 2, rotina: 3 }[((b.dados || {}).pedido || {}).urgencia] ?? 9));
   box.hidden = false;
-  box.innerHTML = '<div class="ped-cab"><b>Pedidos da Intensivet</b><span>' + L.length + (L.length === 1 ? ' aguardando o CVH' : ' aguardando o CVH') + (H.aberto === false ? ' · CVH fora do horário, o alerta toca ' + esc(H.quando) : '') + '</span></div>' +
+  box.innerHTML = '<div class="ped-cab"><b>Pedidos de bolsas e testes</b><span>' + L.length + (L.length === 1 ? ' aguardando o CVH' : ' aguardando o CVH') + (H.aberto === false ? ' · CVH fora do horário, o alerta toca ' + esc(H.quando) : '') + '</span></div>' +
     L.map(a => { const p = (a.dados || {}).pedido || {}, z = (a.dados || {}).prazos || {}, urg = p.urgencia;
       const oq = (p.bolsas || []).map(b => b.qtd + ' ' + b.componente).concat((p.testes || []).map(t => ({ tipagem: 'tipagem', prova: 'prova de compatibilidade', coombs: 'Coombs' }[t] || t))).join(' + ');
       return '<button class="ped-l" data-acao="pedido-int" data-id="' + esc(a.id) + '"><span class="ped-t ' + esc(urg || '') + '">' + esc(TIPO_PEDH[urg] || '') + '</span><span class="ped-x"><b>' + esc(a.paciente || '') + ' · ' + esc(oq) + '</b><small>' + esc(ETAPA_PEDH[a.etapa] || a.etapa) + ' · chegou ' + esc(hm(a.criado)) + (p.foraHorario ? ', fora do horário' : '') + (p.reservaPara ? ' · reserva para ' + esc(p.reservaPara.replace(/^(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$3/$2 às $4')) : '') + (a.etapa === 'autorizado' && z.pagamento ? ' · pagamento até ' + esc(hm(z.pagamento)) : '') + '</small></span></button>'; }).join('');
 }
+/* ── layout do computador ── */
+// separa a tela em cabeçalho, coluna da esquerda (busca, botões) e coluna da direita (lista ou resultado). No celular nada muda.
+function duasColunas(dir, extra) {
+  const m = raiz.querySelector('main.tela'), c = m && m.querySelector(':scope > .tela-c'); if (!c || c.querySelector(':scope > .col-e')) return;
+  m.classList.add('tela-2c'); if (extra) m.classList.add(extra);
+  const t = document.createElement('div'), e = document.createElement('div'), d = document.createElement('div'); t.className = 'col-t'; e.className = 'col-e'; d.className = 'col-d';
+  [...c.children].forEach(ch => (ch.matches('.barra, header.topo') ? t : dir.some(sel => ch.matches(sel)) ? d : e).appendChild(ch));
+  c.append(t, e, d);
+}
+const telaClasse = cls => { const m = raiz.querySelector('main.tela'); if (m) m.classList.add(cls); };
 /* ── Contatos secundários do responsável ── */
 function contatosDe(r) { try { const l = JSON.parse((r && r.contatos) || '[]'); return Array.isArray(l) ? l : []; } catch (_) { return []; } }
 const zapTel = t => { let d = String(t || '').replace(/\D/g, ''); if (!d) return ''; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d; };
@@ -4730,7 +4771,7 @@ function pintarPendencias() {
   const l = (grupos[f] || []).slice().sort((a, b) => f === 'feitas' ? String(b.feitoEm).localeCompare(String(a.feitoEm)) : (a.prazo || '9999').localeCompare(b.prazo || '9999') || String(a.criadoEm).localeCompare(String(b.criadoEm)));
   const chip = (v, t) => '<button class="filtro' + (f === v ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + v + '">' + t + ' <b>' + grupos[v].length + '</b></button>';
   const porPessoa = {}; if (adm) ab.forEach(p => { (porPessoa[p.paraNome] = porPessoa[p.paraNome] || { n: 0, at: 0 }).n++; if (p.prazo && p.prazo < h) porPessoa[p.paraNome].at++; });
-  raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
+  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Pendências</b></div><button class="pill escura" data-acao="pd-nova">+ Nova</button></header>' +
     '<p class="nota">Tarefas passadas de uma pessoa para outra, com prazo. Cada um vê as suas e as que criou. O administrador vê todas.</p>' +
     (adm && Object.keys(porPessoa).length ? '<div class="pd-eq">' + Object.keys(porPessoa).sort().map(n => '<div class="ci-k" style="--c:' + (porPessoa[n].at ? '#A83D3D' : '#C49A6C') + '"><b>' + porPessoa[n].n + '</b><span>' + esc(n.split(' ')[0]) + '</span><small>' + (porPessoa[n].at ? porPessoa[n].at + (porPessoa[n].at === 1 ? ' atrasada' : ' atrasadas') : 'em dia') + '</small></div>').join('') + '</div>' : '') +
@@ -5043,6 +5084,7 @@ function telaTransfusao() {
   document.querySelectorAll('.hc-comp [data-comp]').forEach(b => b.onclick = () => { T.comp = b.dataset.comp; if (T.comp === 'PFC' && T.esp === 'Gato' && T.pfcDose === '10') T.pfcDose = '8'; document.querySelectorAll('.hc-comp [data-comp]').forEach(x => x.classList.toggle('on', x === b)); $('#hcCampos').innerHTML = campos(); ligar(); pinta(); });
   $('#hcIa').onclick = () => telaHemoIA();
   ligar(); pinta();
+  duasColunas(['#txRes'], 'tela-tx');
 }
 /* ── HemoCalculadora IA ── */
 const HC_VALS = [['ht', 'Ht (%)'], ['hb', 'Hb (g/dL)'], ['vcm', 'VCM (fL)'], ['chcm', 'CHCM (g/dL)'], ['reticulocitos', 'Reticulócitos <span class="hc-nu">(mil/µL)</span>'], ['plaquetas', 'Plaquetas <span class="hc-nu">(mil/µL)</span>'], ['tp', 'TP (s)'], ['ttpa', 'TTPa (s)'], ['fibrinogenio', 'Fibrinogênio (mg/dL)'], ['proteinaTotal', 'Proteína total (g/dL)']];
@@ -5242,6 +5284,7 @@ function telaLaudos(aid, busca) {
     $('#listaLd').innerHTML = '<h3>' + l.length + (l.length === 1 ? ' laudo' : ' laudos') + '</h3>' + (l.length ? l.map(r => itemLaudo(r, !aid)).join('') : '<p class="vazio-p">' + (q ? 'Nenhum laudo encontrado.' : 'Ainda não há laudos.') + '</p>');
   };
   $('#buscaLd').oninput = pinta; pinta();
+  duasColunas(['#listaEd', '#listaLd']);
 }
 /* ═════════════ painel de laudos: por tipo e por etapa, com envio à carteira e ao histórico ═════════════ */
 const TIPOS_PL = [['tecsa', 'TECSA'], ['citopet', 'Citopet'], ['idexx', 'IDEXX'], ['tipagem', 'Tipagem'], ['compat', 'Prova de compatibilidade'], ['coombs', 'Coombs'], ['fiv', 'FIV e FeLV']];
@@ -5412,6 +5455,7 @@ function telaInicio(busca) {
     }).join('') : '<p class="vazio-p">Nenhum responsável encontrado.</p>');
   };
   $('#busca').oninput = pinta; pinta();
+  if (mod !== 'laudos') duasColunas(['#lista']);
   if (mod === 'laudos' && pode('laudos')) pintarLaboratorios();
 }
 // "Abrir como responsável" dentro do painel: mostra a carteira exatamente como o responsável vê, com um botão para voltar
@@ -5444,10 +5488,11 @@ function telaResp(id) {
     (cad ? '<section class="cartao"><h3>Link da carteira</h3><p class="nota">O responsável abre por este link e só consegue ver. Ele mostra todos os animais cadastrados aqui.</p>' +
     '<div class="link-box"><input id="link" readonly value="' + esc(link) + '" aria-label="Link da carteira"><button class="btn peq" data-acao="copiar-link">Copiar</button></div>' +
     '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button></div></section>' : '') +
-    '<section class="cartao"><h3>Animais</h3>' + (ans.length ? ans.map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + (a.ativo === '0' ? ' <small style="display:inline">(arquivado)</small>' : '') + '</b><small>' + esc([a.especie, a.raca, tipoTxt(a), a.doador === '1' ? (a.aposentadoEm ? 'Doador aposentado' + (a.aposentadoMotivo ? ' (' + a.aposentadoMotivo.toLowerCase() + ')' : '') : 'Clube do Doador') : ''].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum animal ainda.</p>') +
+    '<section class="cartao" id="respAnimais"><h3>Animais</h3>' + (ans.length ? ans.map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + (a.ativo === '0' ? ' <small style="display:inline">(arquivado)</small>' : '') + '</b><small>' + esc([a.especie, a.raca, tipoTxt(a), a.doador === '1' ? (a.aposentadoEm ? 'Doador aposentado' + (a.aposentadoMotivo ? ' (' + a.aposentadoMotivo.toLowerCase() + ')' : '') : 'Clube do Doador') : ''].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum animal ainda.</p>') +
     (cad ? '<button class="btn sec2" data-acao="novo-animal">+ Novo animal</button>' : '') + '</section>' +
     (pode('admin') ? '<button class="btn perigo peq" data-acao="excluir-resp">Excluir responsável</button>' : '') +
     '</div></main>' + '';
+  duasColunas(['#respAnimais'], 'tela-resp');
 }
 function linkWhats(r, ans, link) {
   let tel = String(r.telefone || '').replace(/\D/g, '');
@@ -6270,6 +6315,7 @@ function telaFichas(aid, busca) {
     }).join('') : '<p class="vazio-p">' + (q ? 'Nenhuma ficha encontrada.' : 'Ainda não há fichas salvas.') + '</p>');
   };
   $('#buscaF').oninput = pinta; pinta();
+  duasColunas(['#listaAnd', '#listaF']);
   if (aid && pode('admin') && !E.alertas) carregarAlertas().then(() => { const t = $('#triagemBox'); if (t && E.fichasDe === aid) t.innerHTML = triagemDoador(aid); }).catch(() => {});
 }
 function verFicha(id) {
