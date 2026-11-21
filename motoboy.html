@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121010724';
+  var VERSAO = '20261121011415';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1433,7 +1433,7 @@ function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remo
 
 /* ── aparelho: ativado pelo link do CVH ── */
 let K = "";
-try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_moto_k", q.get("k")); history.replaceState(null, "", location.pathname); } K = localStorage.getItem("cvh_moto_k") || ""; } catch (e) {}
+try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_moto_k", q.get("k")); } K = localStorage.getItem("cvh_moto_k") || ""; } catch (e) {}
 const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]);
 
 /* ── sons ── */
@@ -1653,7 +1653,10 @@ const A = {
 };
 let ULT = lsGet("cvh_moto_ult", 0);
 async function carregar(silencio) {
-  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Abra neste celular o link de ativação enviado pelo CVH.</p></div>'; return; }
+  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Copie o link de ativação enviado pelo CVH e cole aqui. Também dá para abrir o link no navegador e adicionar à tela de início de novo.</p><input type="text" id="atvLink" placeholder="Cole o link aqui" style="width:100%;font-size:16px;padding:12px;border:1px solid #E2D6C8;border-radius:10px;margin:8px 0"><button class="btn" id="atvBt" style="width:100%">Ativar este celular</button></div>';
+    // o app da tela de início do iPhone tem memória separada do navegador: o link colado aqui ativa o próprio app
+    $("#atvBt").onclick = () => { const v = $("#atvLink").value.trim(), m = /[?&]k=([A-Za-z0-9]+)/.exec(v), k = m ? m[1] : /^[A-Za-z0-9]{16,}$/.test(v) ? v : ""; if (!k) { alert("Esse não parece o link de ativação do CVH."); return; } try { localStorage.setItem("cvh_moto_k", k); const s2 = /[?&]s=(recepcao|internacao)/.exec(v); if (s2) localStorage.setItem("cvh_int_setor", s2[1]); } catch (e) {} K = k; carregar(); };
+    return; }
   try {
     const antes = D; D = await srv("motoDados");
     const novos = (D.avisos || []).filter((x) => x.id > ULT).sort((a, b) => a.id - b.id);

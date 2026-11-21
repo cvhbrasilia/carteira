@@ -1,7 +1,6 @@
 {
   "name": "Mini Estação CVH",
   "short_name": "Mini Estação CVH",
-  "start_url": "intensivet.html",
   "display": "standalone",
   "background_color": "#F5EFE7",
   "theme_color": "#F5EFE7",

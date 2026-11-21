@@ -825,7 +825,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121010603';
+  var VERSAO = '20261121010724';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -837,6 +837,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   setInterval(conferirVersao, 180000);
   document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
   // notificações: o service worker só existe no painel
   if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
   if (q.get('v')) {
@@ -5213,7 +5216,7 @@ function telaConta() {
     '<button class="btn sec2 peq" data-acao="sair-outros">Sair de todos os outros aparelhos</button></section>' +
     '<section class="cartao"><h3>Notificações</h3><p class="nota" id="notifEstado">' + esc(notifEstado()) + '</p>' +
     '<div class="mini-bts" style="flex-wrap:wrap"><button class="btn peq" data-acao="notif-ativar">Ativar notificações neste aparelho</button>' +
-    '<button class="btn sec2 peq" data-acao="notif-teste" data-v="normal">Testar aviso</button><button class="btn sec2 peq" data-acao="notif-teste" data-v="critico">Testar alerta crítico</button></div>' +
+    '<button class="btn sec2 peq" data-acao="notif-teste" data-v="normal">Testar aviso</button><button class="btn sec2 peq" data-acao="notif-teste" data-v="critico">Testar alerta crítico</button><button class="btn sec2 peq" data-acao="notif-fechado">Testar com o app fechado</button></div>' +
     '<div class="mini-bts" style="margin-top:8px"><button class="mini" data-acao="som-ouvir" data-v="normal">Ouvir o som do aviso</button><button class="mini" data-acao="som-ouvir" data-v="critico">Ouvir o alarme crítico</button></div>' +
     '<p class="nota">Com o app aberto, os avisos tocam o som do CVH e o alerta crítico toca até alguém tocar em Entendi. Com o app fechado, chega a notificação do celular com o som do aparelho.</p></section>');
 }
@@ -6711,6 +6714,7 @@ const ACOES = {
     try { b.disabled = true; const n = await api('encerrarOutrasSessoes', E.sessao); toast(n ? (n === 1 ? 'Um outro aparelho foi desconectado.' : n + ' outros aparelhos foram desconectados.') : 'Nenhum outro aparelho estava conectado.', 4500); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; }
   },
   'notif-ativar': async b => { try { b.disabled = true; await ativarNotificacoes(); toast('Notificações ligadas neste aparelho.', 4000); const e = $('#notifEstado'); if (e) e.textContent = notifEstado(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } },
+  'notif-fechado': async b => { b.disabled = true; try { await api('pushTeste', E.sessao, 'normal', 20); toast('Feche o app agora (vá para a tela de início do celular). Em 20 segundos chega o aviso, e o ícone fica com o número vermelho.', 9000); } catch (e) { toast(e.message, 6000); } setTimeout(() => { b.disabled = false; }, 20000); },
   'notif-teste': async b => { try { somDesbloquear(); const r = await api('pushTeste', E.sessao, b.dataset.v); toast(r && r.enviadas ? 'Enviado para ' + r.enviadas + (r.enviadas === 1 ? ' aparelho.' : ' aparelhos.') : 'Nenhum aparelho com notificação ligada. Toque em Ativar primeiro.', 5000); setTimeout(checarAvisos, 1500); } catch (e) { toast(e.message, 5000); } },
   'som-ouvir': b => { somDesbloquear(); b.dataset.v === 'critico' ? alertaCritico({ titulo: 'Teste do alarme crítico', corpo: 'É assim que toca um alerta urgente.' }) : somAviso(); },
   'trocar-senha': async b => {
