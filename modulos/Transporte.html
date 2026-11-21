@@ -366,8 +366,10 @@ function abrirAtendimento(id) {
   if (a.etapa === "entregue") ac += B("concluido", "Concluir");
   if (!["concluido", "cancelado"].includes(a.etapa)) ac += B("cancelar", "Cancelar atendimento", "perigo"); else ac += B("reabrir", "Reabrir");
   // busca da amostra por Uber ou motoboy: avisos à Intensivet (a caminho, chegou) e "em trânsito" quando a corrida começa
+  // prova já feita (laudo enviado): resumo com o laudo, a bolsa e a embalagem; nova prova só se pedir
+  const provaFeita = ((a.dados || {}).resultados || []).filter((r) => /compatib/i.test(r.titulo || "")).slice(-1)[0], abrirNova = S.novaProva === a.id;
   const viaAm = S.viaAm && S.viaAm[a.id] || am.via || "uber";
-  const blocoAmUber = ["concluido", "cancelado", "entregue", "retirada"].includes(a.etapa) || am.chegouEm ? "" : '<div class="cx" style="margin:8px 0"><h2>Buscar a amostra</h2>' +
+  const blocoAmUber = ["concluido", "cancelado", "entregue", "retirada"].includes(a.etapa) || am.chegouEm || provaFeita ? "" : '<div class="cx" style="margin:8px 0"><h2>Buscar a amostra</h2>' +
     '<div class="filtros" style="margin:0 0 8px"><button class="' + (viaAm === "uber" ? "on" : "") + '" data-a="amVia" data-id="' + esc(a.id) + '" data-v="uber">Uber</button><button class="' + (viaAm === "motoboy" ? "on" : "") + '" data-a="amVia" data-id="' + esc(a.id) + '" data-v="motoboy">Motoboy</button></div>' +
     (viaAm === "uber" ? '<label>Link da corrida (opcional)</label><input type="text" id="amUber" value="' + esc(am.uber || "") + '" placeholder="https://...">' : "") +
     '<label>Horário, se aconteceu antes (opcional)</label><input type="time" id="amHora" style="max-width:140px">' +
@@ -375,7 +377,10 @@ function abrirAtendimento(id) {
     '<p><small>' + [am.caminhoEm ? "a caminho " + hora(am.caminhoEm) : "", am.chamadoEm ? "chegou " + hora(am.chamadoEm) : "", am.enviadaEm ? "Intensivet marcou enviada " + hora(am.enviadaEm) : "", am.saiuEm ? "em trânsito " + hora(am.saiuEm) : ""].filter(Boolean).map(esc).join(" · ") + (am.uber ? ' · <a href="' + esc(am.uber) + '" target="_blank" rel="noopener">acompanhar a corrida</a>' : "") + "</small></p></div>";
   const avisoUber = !moto && ["preparo", "pronta"].includes(a.etapa) && !a.link_uber ? '<div class="cx" style="background:#FBF0DC;margin:8px 0"><b>Esta entrega será por Uber. Chamar o Uber e acrescentar o link da corrida.</b></div>' : "";
   const dst = destinoDe(a.destino), endTxt = a.endereco || (dst ? [dst.endereco, dst.bairro].filter(Boolean).join(", ") : "");
-  const blocoProva = (a.dados || {}).pedido && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" id="provaCx" data-id="' + esc(a.id) + '" style="margin:8px 0"><h2>Prova de compatibilidade</h2><div id="provaBolsas"><small>Procurando as bolsas separadas…</small></div>' +
+  const cAt = (a.dados || {}).calculo || {}, bolsaT = (cAt.escolhida || {}).id || (cAt.prova || []).join(", ");
+  const blocoFeita = provaFeita && !abrirNova && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" style="margin:8px 0;background:#F1F6EE"><h2>Prova de compatibilidade feita ✓</h2><p>' + esc(provaFeita.titulo) + " · " + esc(hora(provaFeita.em)) + (bolsaT ? " · bolsa " + esc(bolsaT) : "") + (provaFeita.url ? ' · <a href="' + esc(provaFeita.url) + '" target="_blank" rel="noopener">ver o laudo</a>' : "") + "</p>" +
+    '<div class="bts">' + (bolsaT ? '<button class="btn peq" data-a="embalar" data-id="' + esc(a.id) + '" data-v="' + esc((cAt.escolhida || {}).id || (cAt.prova || [])[0]) + '">Etiqueta da bolsa e da caixa de isopor</button>' : "") + '<button class="btn peq sec" data-a="novaProva" data-id="' + esc(a.id) + '">Nova prova de compatibilidade</button></div></div>' : "";
+  const blocoProva = blocoFeita ? blocoFeita : (a.dados || {}).pedido && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" id="provaCx" data-id="' + esc(a.id) + '" style="margin:8px 0"><h2>' + (provaFeita ? "Nova prova de compatibilidade" : "Prova de compatibilidade") + '</h2><div id="provaBolsas"><small>Procurando as bolsas separadas…</small></div>' +
     '<label>Outra bolsa (número da doação, ex.: 572-0)</label><input type="text" id="provaManual" placeholder="digite ou passe a etiqueta no leitor" autocomplete="off">' +
     '<div class="bts" style="margin-top:6px"><button class="btn peq sec" data-a="provaLer">Ler a etiqueta da bolsa com a câmera</button><button class="btn peq sec" data-a="hcCalc" data-v="' + esc(a.id) + '">Trocar a bolsa na HemoCalculadora</button></div><p><small>Para trocar a bolsa, desmarque a anterior e leia ou digite a nova.</small></p>' +
     '<div class="bts" style="margin-top:8px"><button class="btn" data-a="iniciarProva" data-id="' + esc(a.id) + '">Iniciar prova de compatibilidade</button></div></div>' : "";
@@ -384,7 +389,7 @@ function abrirAtendimento(id) {
     (r ? "<dt>Caixa</dt><dd>" + esc(r.id) + " · " + esc(ROT_REM[r.situacao] || r.situacao) + (r.recebida_em ? "<br><small>QR lido pela " + esc(r.destino) + " " + esc(hora(r.recebida_em)) + "</small>" : "") + "</dd>" : "") + (a.uber_fim ? "<dt>Corrida encerrada</dt><dd>" + esc(hora(a.uber_fim)) + "</dd>" : "") + "</dl>" +
     htmlCalculo(a) + '<div class="bts">' + ac + '</div><div id="atForm"></div><h2 style="margin-top:16px">Linha do tempo</h2>' + (a.linha || []).slice().reverse().map((x) => '<div class="ev"><b>' + esc(x.texto || ROT_AT[x.etapa] || x.etapa) + "</b> <small>" + esc(hora(x.em)) + " · " + esc(x.por) + "</small></div>").join("") +
     '<h2 style="margin-top:16px">Dados</h2>' + formAtendimento(a));
-  ligarClinica(); tiqueRelogios(); if (blocoProva) pintarProvaCx(a.id);
+  ligarClinica(); tiqueRelogios(); if (blocoProva && !blocoFeita) pintarProvaCx(a.id);
 }
 // números de doação num texto (etiqueta lida "572-0 CH", vários separados por vírgula ou espaço)
 // número só com algarismos ganha o hífen antes do último dígito (5673 vira 567-3)
@@ -591,6 +596,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "hcCalc") return ponte("hemocalc", v);
   if (a === "laudoPed") return ponte("laudoPedido", { id: b.dataset.id, tipo: v });
   if (a === "embalar") return ponte("embalagem", { id: b.dataset.id, unidade: v });
+  if (a === "novaProva") { S.novaProva = b.dataset.id; return abrirAtendimento(b.dataset.id); }
   if (a === "provaLer") { const t = await lerQR("Leia a etiqueta da bolsa"); if (t) provaLida(codigo(t)); return; }
   if (a === "iniciarProva") { const L = [...document.querySelectorAll(".provaCk:checked")].map((x) => x.value), m = doacoesDe(($("#provaManual") || {}).value);
     const todas = [...new Set(L.concat(m))], antes = [...document.querySelectorAll(".provaCk[data-at='1']")].map((x) => x.value);
