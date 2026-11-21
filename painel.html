@@ -463,6 +463,7 @@ a.btn{text-decoration:none}
 .ct-mini{display:flex;align-items:center;gap:14px;cursor:pointer}.ct-mini .ct-ano{width:62px;height:62px;filter:none}.ct-mini small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-mini b{display:block;font-size:17px;color:var(--vinho)}.ct-mini span{font-size:13px;color:#7A6A62}
 .ct-oc{margin-top:16px}.ct-oc-l{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFE6DC}
 .av-i.lido{opacity:.55}
+.tx-est{margin:12px 0;padding:10px 12px;border:1px solid var(--areia,#EEE5DB);border-radius:12px;background:#fff}.tx-est h3{margin:0 0 6px}.tx-est label{font-size:.82em;font-weight:700;color:var(--vinho)}.tx-est input,.tx-est select{width:100%;margin-top:3px}
 @media (max-width:600px){.pill{font-size:16px;padding:12px 18px;min-height:46px}.venc{flex-wrap:wrap;row-gap:10px}.venc .t{flex:1 1 100%;min-width:0}.venc .t small{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.venc .mini-bts{flex:1 1 100%;display:flex;gap:10px}.venc .mini-bts .mini{flex:1}.venc .mini-bts .mini,.mini-bts .mini{min-height:42px;padding:9px 14px;font-size:15px}}
 .al-imp{margin:.2em 0;color:#A83D3D;font-weight:700;font-size:.85em}.alerta-c.imped{border-color:#A83D3D}
 @media (min-width:1000px){.tela-al .tela-c{max-width:1180px}.al-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.al-lado{position:sticky;top:10px}.al-lado .filtros{flex-wrap:wrap}}
@@ -825,7 +826,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121104935';
+  var VERSAO = '20261121105303';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4851,9 +4852,47 @@ function caixaHb(T) {
     '<small>Desidratação aumenta Ht e Hb na mesma proporção e não muda o CHCM, então não aparece nessa conta.</small>' +
     (baixo ? '<label class="hc-chk"><input type="checkbox" id="hcUsarHb"' + (T.usarHb ? ' checked' : '') + '> Calcular com o Ht pela hemoglobina (' + n1h(eq) + '%)</label>' : '') + '</div>';
 }
+/* ── HemoCalculadora × estoque (12, 14 a 16): bolsas candidatas com justificativa; a escolha fica com o médico veterinário ── */
+async function estoqueTx(forcar) { if (!forcar && E.txEst && Date.now() - E.txEst.t < 60000) return E.txEst.d; const d = await api('estDados', E.sessao); E.txEst = { t: Date.now(), d }; return d; }
+function htBolsaTx(u, T) { const D = u.dados || {}, m = numTx(D.htFinal != null ? D.htFinal : D.microHt != null ? D.microHt : (D.ch || {}).htFinal); return m ? { v: m, med: true } : { v: numTx(T.doa) || 65, med: false }; }
+function compativelTx(u, T) {
+  const a = animalDe(u.animal_id) || {}, gatoP = T.esp === 'Gato', gatoU = /fel|gat/i.test(a.especie || ''); if (gatoP !== gatoU) return null;
+  const t = semAc(a.tipoSanguineo || ''), pt = T.tipPac || '';
+  if (!pt) return { ok: true, txt: a.tipoSanguineo ? (gatoU ? 'tipo ' + a.tipoSanguineo : 'DEA 1 ' + (/neg/.test(t) ? '−' : '+')) : 'tipagem do doador não informada' };
+  if (gatoP) return t.replace(/^tipo\s*/, '').toUpperCase() === pt.toUpperCase() ? { ok: true, txt: 'tipo ' + pt } : null;
+  if (pt === 'neg' && !/neg/.test(t)) return null;
+  return { ok: true, txt: 'DEA 1 ' + (/neg/.test(t) ? '−' : '+') };
+}
+async function bolsasTx(T, r) {
+  const box = $('#txEst'); if (!box) return;
+  const margem = numTx(T.margem) != null ? numTx(T.margem) : 20, alvo = r.vol + margem, peso = numTx(T.peso), fat = numTx(T.fator), rec = numTx(T.rec), des = numTx(T.des);
+  const cab = '<section class="tx-est"><h3>Bolsas do estoque</h3><div class="grade"><label>Margem operacional (mL)<input type="text" inputmode="numeric" id="txMargem" value="' + esc(String(margem)) + '"></label><label>Tipagem do paciente<select id="txTipPac">' +
+    (T.esp === 'Gato' ? [['', 'não tipado'], ['A', 'A'], ['B', 'B'], ['AB', 'AB']] : [['', 'não tipado'], ['neg', 'DEA 1 negativo'], ['pos', 'DEA 1 positivo']]).map(([v, t]) => '<option value="' + v + '"' + ((T.tipPac || '') === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label></div>';
+  box.innerHTML = cab + '<p class="nota">Consultando o estoque…</p></section>';
+  const ligar = () => { const m = $('#txMargem'), t = $('#txTipPac'); if (m) m.onchange = () => { T.margem = m.value; E.tx.margem = m.value; try { localStorage.setItem('cvh_tx_margem', m.value); } catch (_) {} bolsasTx(T, r); }; if (t) t.onchange = () => { T.tipPac = t.value; E.tx.tipPac = t.value; bolsasTx(T, r); }; };
+  let d; try { d = await estoqueTx(); } catch (e) { box.innerHTML = cab + '<p class="nota">Não consegui consultar o estoque agora.</p></section>'; return ligar(); }
+  if (!$('#txEst')) return;
+  const hoje0 = new Date(hoje() + 'T00:00:00'), dias = u => Math.round((new Date(String(u.validade).slice(0, 10) + 'T00:00:00') - hoje0) / 864e5);
+  const C = (d.unidades || []).filter(u => u.componente === 'CH' && u.situacao === 'disponivel' && !(u.dados || {}).qcPendente && dias(u) >= 0 && u.volume_ml != null).map(u => ({ u, comp: compativelTx(u, T), v: +u.volume_ml, dv: dias(u), ht: htBolsaTx(u, T), inte: !/^cvh$/i.test(u.local || 'CVH') })).filter(x => x.comp);
+  const htCom = (ml, htb) => rec + ml * htb / (fat * peso);
+  const just = x => { const L = [], sobra = x.v - alvo;
+    if (x.v >= alvo) { L.push('cobre a dose e a margem de ' + n0h(margem) + ' mL'); if (sobra >= 50) L.push('pode ser fracionada e preservar cerca de ' + n0h(sobra) + ' mL'); }
+    else if (x.v >= r.vol) L.push('cobre a dose com ' + n0h(x.v - r.vol) + ' mL de margem');
+    else L.push('faltam ' + n0h(r.vol - x.v) + ' mL para a dose; com ' + n0h(x.v) + ' mL o Ht passaria de ' + n0h(rec) + '% para cerca de ' + n0h(htCom(x.v, x.ht.v)) + '%' + (x.ht.med ? ' (Ht medido da bolsa ' + n0h(x.ht.v) + '%)' : ' (Ht da bolsa estimado em ' + n0h(x.ht.v) + '%)'));
+    L.push(x.dv <= 7 ? 'vence em ' + x.dv + (x.dv === 1 ? ' dia' : ' dias') + ', aproveitar' : 'vence em ' + x.dv + ' dias');
+    if (x.inte) L.push('está na Intensivet: avaliar transferência e reposição do miniestoque');
+    return L.join(' · '); };
+  // primeiro as que cobrem dose e margem (menos sobra e vencimento mais perto), depois as que cobrem só a dose, por último as menores (as mais próximas da dose primeiro)
+  const nota = x => { const f = x.v >= alvo ? 0 : x.v >= r.vol ? 1 : 2; return f * 1000 + (f === 2 ? (r.vol - x.v) * 2 : 0) + (x.inte ? 150 : 0) + Math.min(x.dv, 60) * 3 + (f === 0 ? Math.max(0, x.v - alvo) * 0.5 : 0); };
+  const L = C.sort((a, b) => nota(a) - nota(b)).slice(0, 3);
+  box.innerHTML = cab + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
+      return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button></div></div>'; }).join('') +
+      '<p class="nota">A escolha no estoque não substitui a prova de compatibilidade.</p>' : '<p class="nota">Nenhuma bolsa de CH disponível que combine com a espécie' + (T.tipPac ? ' e a tipagem' : '') + '.</p>') + '</section>';
+  ligar();
+}
 function telaTransfusao() {
   E.livro = null; fecharFolha();
-  const T = E.tx = Object.assign({ esp: 'Cão', peso: '', des: '26', rec: '', hb: '', usarHb: false, doa: '65', fator: '90', bolsa: '250', tipo: 'auto', comp: 'CH', sit: 'grave', cpKg: '10', cpVol: '50', pfcDose: '10', pfcBolsa: '200', crioKg: '10', plq: '', tp: '', ttpa: '', fib: '' }, E.tx || {});
+  const T = E.tx = Object.assign({ margem: (() => { try { return localStorage.getItem('cvh_tx_margem') || '20'; } catch (_) { return '20'; } })(), tipPac: '', esp: 'Cão', peso: '', des: '26', rec: '', hb: '', usarHb: false, doa: '65', fator: '90', bolsa: '250', tipo: 'auto', comp: 'CH', sit: 'grave', cpKg: '10', cpVol: '50', pfcDose: '10', pfcBolsa: '200', crioKg: '10', plq: '', tp: '', ttpa: '', fib: '' }, E.tx || {});
   const cmp = (id, rot, v, at) => campo(id, rot, inp(id, v, 'inputmode="decimal" autocomplete="off" ' + (at || '')));
   const campos = () => {
     if (T.comp === 'CH') return '<div class="grade">' + cmp('txPeso', 'Peso (kg)', T.peso, 'placeholder="15,8"') + cmp('txRec', 'Ht do receptor (%)', T.rec, 'placeholder="16"') + cmp('txHb', 'Hb do receptor (g/dL), opcional', T.hb, 'placeholder="5,2"') + cmp('txDes', 'Ht desejado (%)', T.des) + cmp('txDoa', 'Ht do CH (%)', T.doa) + '</div>' +
@@ -4881,7 +4920,7 @@ function telaTransfusao() {
     let topo;
     if (T.comp === 'CH') { const sug = r.bolsa && r.vol > r.bolsa * 1.15 ? 'varias' : 'uma', tipo = T.tipo === 'auto' ? sug : T.tipo;
       topo = caixaHb(T) + '<div class="tx-vol"><small>Volume calculado' + (T.usarHb && numTx(T.hb) ? ' (Ht pela Hb, ' + n1h(numTx(T.hb) * 3) + '%)' : '') + '</small><b>' + String(r.vol.toFixed(1)).replace('.', ',') + ' <i>mL</i></b><span>' + String((r.vol / numTx(T.peso)).toFixed(1)).replace('.', ',') + ' mL/kg' + (r.n ? ' · ' + String(r.n.toFixed(1)).replace('.', ',') + ' CH de ' + Math.round(r.bolsa) + ' mL' : '') + '</span></div>' +
-        (txSouEu() ? notaInternaTx(Object.assign({}, T, { rec: htUsado(T) }), r) : '') + '<h3>Mensagem</h3><div class="filtros"><button class="filtro' + (tipo === 'uma' ? ' on' : '') + '" data-tx="uma">1 CH</button><button class="filtro' + (tipo === 'varias' ? ' on' : '') + '" data-tx="varias">Mais de 1 CH</button></div>'; }
+        (txSouEu() ? notaInternaTx(Object.assign({}, T, { rec: htUsado(T) }), r) : '') + (pode(['estoque', 'producao']) ? '<div id="txEst"></div>' : '') + '<h3>Mensagem</h3><div class="filtros"><button class="filtro' + (tipo === 'uma' ? ' on' : '') + '" data-tx="uma">1 CH</button><button class="filtro' + (tipo === 'varias' ? ' on' : '') + '" data-tx="varias">Mais de 1 CH</button></div>'; }
     else { const big = T.comp === 'PFC' ? n0h(r.vol) + ' <i>mL</i>' : r.n + ' <i>' + (T.comp === 'CP' ? 'CP' : r.n === 1 ? 'unidade' : 'unidades') + '</i>', sub = T.comp === 'PFC' ? n0h(r.dose) + ' mL/kg · ' + r.nb + (r.nb === 1 ? ' bolsa' : ' bolsas') + ' de ' + n0h(r.b) + ' mL' : T.comp === 'CP' ? '±' + n0h(r.vu) + ' mL cada' + (r.n > 1 ? ', ±' + n0h(r.vol) + ' mL no total' : '') + ' · 1 a cada ' + n0h(r.kg) + ' kg' : '1 a cada ' + n0h(r.kg) + ' kg';
       const av = T.sit === 'grave' ? '' : '<div class="av-i ' + (T.sit === 'sem' ? 'obrig' : 'novo') + '"><b>' + (T.sit === 'sem' ? 'Sem sangramento não há indicação' : 'Cirurgia programada') + '</b><small>' + (T.sit === 'sem' ? (T.comp === 'CP' ? 'Contagem baixa de plaquetas sem sangramento não justifica a transfusão, inclusive na TIM - trombocitopenia imunomediada.' : T.comp === 'PFC' ? 'Tempos de coagulação prolongados sem sangramento não justificam o plasma.' : 'Fibrinogênio baixo sem sangramento não justifica o crioprecipitado.') : 'Deixar reservado e usar só se houver sangramento. Se não sangrar, descartar.') + '</small></div>';
       topo = av + '<div class="tx-vol"><small>' + (T.comp === 'CP' ? 'Concentrado de plaquetas' : T.comp === 'PFC' ? 'Plasma fresco congelado' : 'Crioprecipitado') + '</small><b>' + big + '</b><span>' + sub + '</span></div><h3>Mensagem</h3>'; }
@@ -4893,6 +4932,7 @@ function telaTransfusao() {
     $('#txCopiar').onclick = async () => toast(await copiar($('#txMsg').value) ? 'Mensagem copiada.' : 'Selecione o texto e copie manualmente.');
     box.querySelectorAll('[data-tx]').forEach(b => b.onclick = () => { T.tipo = b.dataset.tx; pinta(); });
     ligarHb();
+    if (T.comp === 'CH' && $('#txEst')) bolsasTx(Object.assign({}, T, { rec: htUsado(T) }), r);
   };
   const ligarHb = () => { const c = $('#hcUsarHb'); if (c) c.onchange = () => { T.usarHb = c.checked; pinta(); }; };
   document.querySelectorAll('.tx-esp .filtro').forEach(b => b.onclick = () => { T.esp = b.dataset.esp; T.fator = String(TX_FATOR[T.esp]); if (T.comp === 'PFC' && !E.txDoseMexida) T.pfcDose = T.esp === 'Gato' ? '8' : '10'; const f = $('#txFator'); if (f) f.value = T.fator; const d = $('#txPfcDose'); if (d) d.value = T.pfcDose; pinta(); });
@@ -6493,6 +6533,11 @@ const ACOES = {
   fechar: fecharFolha,
   'como-resp': () => verComoResponsavel(E.resp),
   'voltar-painel': voltarAoPainel,
+  'tx-prova': async b => {
+    const pac = prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
+    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (pac.trim() || 'paciente da HemoCalculadora') }); E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade.'); }
+    catch (e) { b.disabled = false; toast(e.message, 6000); }
+  },
   'cartao-fisico': async b => {
     const an = animalDe(b.dataset.id); if (!an) return; const v = an.cartaoFisico === b.dataset.v ? '' : b.dataset.v; b.disabled = true;
     try { const at = await api('animalCartaoFisico', E.sessao, an.id, v); Object.assign(an, at); reabrir(); toast(v === 'cvh' ? 'Marcado: cartão no CVH.' : v === 'responsavel' ? 'Marcado: cartão com o responsável.' : 'Marcação retirada.'); } catch (e) { b.disabled = false; toast(e.message, 5000); }
