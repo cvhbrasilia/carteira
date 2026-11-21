@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121230630';
+  var VERSAO = '20261121232302';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1508,8 +1508,20 @@ const minhas = () => (D.paradas || []).filter((p) => p.status !== "cancelado");
 const fila = () => minhas().filter((p) => p.status === "pendente" && p.data <= hoje()).sort((a, b) => String(a.data).localeCompare(String(b.data)) || (+a.ordem) - (+b.ordem));
 const ativa = () => minhas().find((p) => p.status === "em_deslocamento" || p.status === "no_local") || null;
 const concluidasHoje = () => minhas().filter((p) => p.status === "concluido" && p.tipo !== "retorno" && p.concluido_em && new Date(p.concluido_em).toDateString() === new Date().toDateString());
-const maps = (p) => p.lat != null ? "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + p.lat + "," + p.lng : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.endereco || p.nome);
-const rotaMaps = (L) => { const pts = L.map((p) => p.lat != null ? p.lat + "," + p.lng : (p.endereco || p.nome)); if (!pts.length) return ""; return "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=" + encodeURIComponent(pts[pts.length - 1]) + (pts.length > 1 ? "&waypoints=" + encodeURIComponent(pts.slice(0, -1).join("|")) : ""); };
+// Google Maps: navegação de moto direto para a parada; a rota completa vai em trechos de até 4 paradas
+// (no celular o Google Maps aceita no máximo 3 paradas intermediárias por link; acima disso ignora as demais)
+const pontoMaps = (p) => p.lat != null && p.lng != null ? p.lat + "," + p.lng : [p.endereco, p.nome].filter(Boolean).join(", ");
+const maps = (p) => "https://www.google.com/maps/dir/?api=1&travelmode=two-wheeler&dir_action=navigate&destination=" + encodeURIComponent(pontoMaps(p));
+function trechosRota(L) {
+  const pts = L.map(pontoMaps).filter(Boolean), T = [];
+  for (let i = 0; i < pts.length; i += 4) {
+    const parte = pts.slice(i, i + 4), origem = i ? pts[i - 1] : "";
+    T.push({ de: i + 1, ate: i + parte.length, url: "https://www.google.com/maps/dir/?api=1&travelmode=two-wheeler" + (origem ? "&origin=" + encodeURIComponent(origem) : "") + "&destination=" + encodeURIComponent(parte[parte.length - 1]) + (parte.length > 1 ? "&waypoints=" + encodeURIComponent(parte.slice(0, -1).join("|")) : "") });
+  }
+  return T;
+}
+const rotaMaps = (L) => (trechosRota(L)[0] || {}).url || "";
+const botoesRota = (L, cls) => { const T = trechosRota(L); return T.map((t) => '<a class="' + cls + '" style="display:inline-block;margin:8px 6px 0 0;text-decoration:none" href="' + t.url + '" target="_blank" rel="noopener">' + (T.length === 1 ? "Ver rota completa no mapa" : "Rota no mapa · paradas " + t.de + " a " + t.ate) + "</a>").join(""); };
 function fase() {
   const e = expAberto(); if (!e) return { f: "sem" };
   const st = estadoExp(e), a = ativa();
@@ -1568,7 +1580,7 @@ function proximas() {
   const F = fase(), pend = fila(), outras = F.f === "livre" && F.prox ? pend.slice(1) : pend; if (!outras.length) return "";
   const todas = (F.prox ? [F.prox] : []).concat(outras);
   return '<div class="cx"><h2>Próximas paradas</h2>' + outras.map((p, i) => '<div class="prox"><div class="num ' + (p.prioridade === "urgente" ? "red" : "") + '">' + (i + (F.f === "livre" && F.prox ? 2 : 1)) + '</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + (p.servicos || []).map((s) => esc(tipoNome(s.tipo))).join(", ") + "</small></div>" + (F.f === "livre" ? '<button class="btn sec peq" data-a="agora" data-v="' + esc(p.id) + '">Fazer agora</button>' : "") + "</div>").join("") +
-    (todas.length > 1 ? '<a class="btn sec peq" style="display:inline-block;margin-top:8px;text-decoration:none" href="' + rotaMaps(todas) + '" target="_blank" rel="noopener">Ver rota completa no mapa</a>' : "") + "</div>";
+    (todas.length > 1 ? botoesRota(todas, "btn sec peq") : "") + "</div>";
 }
 function feitas() { const L = concluidasHoje(); if (!L.length) return ""; return '<div class="cx"><h2>Concluídas hoje</h2>' + L.map((p) => '<div class="prox"><div class="num ok">✓</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + hhmm(p.chegada_em) + (p.km_ini != null && p.km_fim != null ? " · " + fKm(p.km_fim - p.km_ini) + " km" : "") + "</small></div></div>").join("") + "</div>"; }
 function pintar() {
