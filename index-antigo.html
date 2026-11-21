@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121190328';
+  var VERSAO = '20261121191203';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5062,6 +5062,18 @@ async function laudoDoPedido(id, tipo, bolsas) {
   E.laudoPedido = o; E.laudoReceptor = true; E.laudoTipo = tipo; E.modulo = 'laudos'; abrirModulo('laudos', null);
 }
 // bolsas separadas para a prova de compatibilidade (pela HemoCalculadora ou no fracionamento), para o laudo do receptor
+// laudos a fazer: pedidos com prova de compatibilidade ainda sem laudo, do pedido até a entrega, com a situação da amostra
+async function provasAfazer() {
+  let d; try { d = await estoqueTx(true); } catch (_) { return; } const box = $('#ldAfazer'); if (!box) return;
+  const L = (d.atendimentos || []).filter(a => { const p = (a.dados || {}).pedido; if (!p || ['cancelado', 'concluido', 'entregue', 'retirada'].includes(a.etapa)) return false;
+    const quer = (p.testes || []).includes('prova') || (p.bolsas || []).some(b => b.componente === 'CH'), feito = ((a.dados || {}).resultados || []).some(r => /compatib/i.test(r.titulo || ''));
+    return quer && !feito && Date.now() - new Date(a.criado) < 5 * 864e5; });
+  if (!L.length) { box.hidden = true; return; }
+  const situ = a => { const m = a.amostra || {}; return m.chegouEm ? 'amostra chegou ' + hmTx(m.chegouEm) : m.saiuEm ? 'amostra em trânsito desde ' + hmTx(m.saiuEm) : m.chamadoEm ? 'Uber/motoboy na Intensivet' : m.caminhoEm ? 'Uber/motoboy a caminho' : m.buscar === false ? 'amostra no CVH' : 'aguardando amostra'; };
+  const bols = a => { const c = ((a.dados || {}).calculo || {}).prova || []; const r = (d.unidades || []).filter(u => u.situacao === 'reservada' && ((u.dados || {}).reservaInfo || {}).atendimento === a.id).map(u => u.id); return [...new Set(c.concat(r))]; };
+  box.hidden = false;
+  box.innerHTML = '<h3>A fazer · prova de compatibilidade</h3>' + L.map(a => '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(a.paciente || 'Paciente') + '</b> · ' + esc(a.destino || '') + ' · atendimento ' + esc(a.id) + '<small>' + esc([situ(a), bols(a).length ? 'bolsa ' + bols(a).join(', ') : 'sem bolsa separada'].join(' · ')) + '</small></div><div class="mini-bts"><button class="mini" data-acao="ld-prova" data-v="' + esc(a.id) + '">Iniciar prova de compatibilidade</button></div></div>').join('');
+}
 async function provasReservadas() {
   const d = await estoqueTx(true), ats = d.atendimentos || [];
   return (d.unidades || []).filter(u => u.situacao === 'reservada' && u.componente === 'CH' && (/^Prova de compatibilidade|^Atendimento /.test(u.reserva || '') || ((u.dados || {}).reservaInfo || {}).atendimento)).map(u => {
@@ -5456,8 +5468,9 @@ function telaLaudos(aid, busca) {
     '<header class="topo"><div class="t"><span>Laudos de exames</span><b>' + (an ? esc(an.nome) + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') : 'Todos os laudos') + '</b></div></header>' +
     (an ? '<button class="btn" data-acao="laudo-novo" data-id="' + aid + '">+ Novo laudo</button><p class="nota">IDEXX, TECSA, tipagem sanguínea, FIV e FeLV, Coombs ou prova de compatibilidade. O laudo sai no padrão do CVH, em A4 e para celular, assinado com o seu CRMV. Fica guardado aqui e pode ser enviado ao responsável por WhatsApp. Não entra na carteira.</p>' :
       '<div class="ld-novos"><button class="btn" data-acao="laudo-receptor">+ Laudo de receptor (sem cadastro)</button> <button class="btn sec2" data-acao="laudo-tecsa">+ Laudo da TECSA pelo número da doação</button></div><p class="nota">No laudo de receptor você digita os dados do paciente, e o laudo fica salvo e assinado aqui e no painel de laudos. No da TECSA, o painel acha o doador pelo número da doação.</p>') +
+    (an ? '' : '<section class="cartao" id="ldAfazer" hidden></section>') +
     '<div class="busca"><input id="buscaLd" type="search" placeholder="Buscar por animal, exame ou data" value="' + esc(busca || '') + '" aria-label="Buscar laudos"></div><section class="cartao" id="listaEd" hidden></section><section class="cartao" id="listaLd"></section></div></main>';
-  pintarRascunhos(aid);
+  pintarRascunhos(aid); if (!an) provasAfazer();
   const pinta = () => {
     const q = semAc($('#buscaLd').value.trim()), l = lista.filter(r => { const d = r.dados || {}, a = animalDe(r.animalId) || {}; return !q || semAc([a.nome, (d.paciente || {}).nome, (d.exame || {}).clinica, (respDe(a) || {}).nome, d.titulo, br(r.data), (d.exame || {}).doacao, (d.linhas || []).map(x => x.nome).join(' '), (d.resumo || []).map(x => x.nome + ' ' + x.texto).join(' ')].join(' ')).includes(q); });
     $('#listaLd').innerHTML = '<h3>' + l.length + (l.length === 1 ? ' laudo' : ' laudos') + '</h3>' + (l.length ? l.map(r => itemLaudo(r, !aid)).join('') : '<p class="vazio-p">' + (q ? 'Nenhum laudo encontrado.' : 'Ainda não há laudos.') + '</p>');
@@ -5509,13 +5522,14 @@ function pintarPainelLaudos() {
   };
   const cont = t => V.filter(o => o.t === t && o.et !== 'assinado' && o.et !== 'arquivado').length;
   const T = V.filter(o => o.t === PL.tipo), etapa = (k, tit, nota) => { const L = T.filter(o => o.et === k); return '<section class="cartao"><h3>' + tit + ' · ' + L.length + '</h3>' + (nota ? '<p class="nota">' + nota + '</p>' : '') + (L.length ? L.map(card).join('') : '<p class="vazio-p">Nada aqui.</p>') + '</section>'; };
-  document.querySelector('.tela-pl .tela-c').innerHTML = '<div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Laudos</button></div><header class="topo"><div class="t"><span>Laudos de exames</span><b>Painel de laudos</b></div></header>' +
+  document.querySelector('.tela-pl .tela-c').innerHTML = '<div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Laudos</button></div><header class="topo"><div class="t"><span>Laudos de exames</span><b>Painel de laudos</b></div></header>' + '<section class="cartao" id="ldAfazer" hidden></section>' +
     '<div class="pl-filtro"><label>Período <select id="plMes"><option value="recentes"' + (PL.mes === 'recentes' ? ' selected' : '') + '>Últimos 30 dias e pendentes</option>' + meses.map(m => '<option value="' + m + '"' + (PL.mes === m ? ' selected' : '') + '>' + nomeMes(m) + '</option>').join('') + '<option value="todos"' + (PL.mes === 'todos' ? ' selected' : '') + '>Todos</option></select></label><button class="btn sec2 peq" data-acao="pl-atualizar">Atualizar</button></div>' +
     '<section class="cartao pl-alertas"><h3>Alertas' + (alertas.length ? ' <span class="chip critico">' + alertas.length + '</span>' : '') + '</h3>' + (alertas.length ? alertas.sort((a, b) => (b.x.positivo ? 1 : 0) - (a.x.positivo ? 1 : 0)).map(card).join('') : '<p class="vazio-p">Nenhum alerta no período.</p>') + '</section>' +
     '<div class="pl-tipos">' + TIPOS_PL.map(([k, t]) => '<button class="' + (PL.tipo === k ? 'on' : '') + '" data-acao="pl-tipo" data-v="' + k + '">' + t + (cont(k) ? ' <b>' + cont(k) + '</b>' : '') + '</button>').join('') + '</div>' +
     '<div class="pl-etapas">' + etapa('alerta', 'Alerta', 'Detectado, positivo ou fora da referência, ainda sem o laudo do CVH.') + etapa('aguardando', 'Aguardando revisão e assinatura', 'Recebidos dos laboratórios e laudos em edição.') + etapa('assinado', 'Revisados e assinados', 'Envie para a carteira do responsável e para o histórico laboratorial.') + '</div>' +
     (() => { const A = itens.filter(o => o.t === PL.tipo && o.et === 'arquivado'); return A.length ? '<details class="cartao"><summary><b>Arquivados · ' + A.length + '</b> <small>(laudos antigos baixados de uma vez, para organizar depois)</small></summary>' + A.map(card).join('') + '</details>' : ''; })();
   const s = $('#plMes'); if (s) s.onchange = () => { PL.mes = s.value; pintarPainelLaudos(); };
+  provasAfazer();
 }
 /* ═════════════ notificações e sons do CVH ═════════════ */
 // sons feitos aqui mesmo (Web Audio): aviso suave em duas notas; alarme crítico em dois tons alternados, insistente
@@ -7002,6 +7016,7 @@ const ACOES = {
   'laudos-todos': () => telaLaudos(null),
   'laudos-lista': () => { E.modulo = 'laudos'; telaInicio(); },
   'laudos-painel': () => telaPainelLaudos(true),
+  'ld-prova': b => laudoDoPedido(b.dataset.v, 'compat'),
   'pl-atualizar': () => telaPainelLaudos(true),
   'pl-tipo': b => { PL.tipo = b.dataset.v; pintarPainelLaudos(); },
   'pl-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); const x = (PL.labs || []).find(y => y.id === b.dataset.id); if (x) x.situacao = b.dataset.v; pintarPainelLaudos(); } catch (e) { toast(e.message, 4000); } },

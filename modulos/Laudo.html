@@ -3610,7 +3610,7 @@ async function guardarEdicao(silencioso) {
 function aplicarPedido(p) {
   estado.receptor = true; estado.pedidoId = p.id; Object.assign(estado.paciente, p.paciente || {}); estado.resp.nome = p.resp || estado.resp.nome;
   const k = CTX.tipo && TIPOS[CTX.tipo] ? CTX.tipo : "compat"; iniciarTipo(k);
-  estado.exame.solicitante = p.solicitante || ""; estado.exame.clinica = p.clinica || "";
+  if (p.solNome) { estado.exame.solicitante = p.solNome; estado.exame.solicitanteCrmv = p.solCrmv || ""; } else estado.exame.solicitante = p.solicitante || ""; estado.exame.clinica = p.clinica || "";
   if (k === "requisicao" && p.req) { estado.t.linhas = p.req.linhas || []; estado.t.solicitante = p.req.solicitante || null; if (p.req.assinatura) estado.fotos.assSol = p.req.assinatura; estado.exame.data = p.req.data || estado.exame.data; estado.exame.hora = p.req.hora || ""; }
   if (k === "compat" && (p.provas || []).length) estado.t.provas = p.provas.map((x) => Object.assign({ bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }, { bolsa: x.bolsa || "", doador: x.doador || "" }));
   estado.exame.titulo = tituloPadrao();
@@ -3703,7 +3703,7 @@ async function pintarProvasRes() {
 async function usarProva(i) {
   const x = (PROVAS_RES || [])[i]; if (!x) return; const L = estado.t.provas;
   let p = L.find((y) => !String(y.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); } p.doador = x.doacao;
-  if (x.atendimento && !String(estado.paciente.nome || "").trim()) { try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) estado.exame.solicitante = o.solicitante || ""; if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
+  if (x.atendimento && !String(estado.paciente.nome || "").trim()) { try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) { estado.exame.solicitante = o.solNome || o.solicitante || ""; if (o.solNome && !estado.exame.solicitanteCrmv) estado.exame.solicitanteCrmv = o.solCrmv || ""; } if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
   mudou(true); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Doação " + x.doacao + " na prova" + (x.paciente ? ", paciente " + x.paciente : "") + ". Confira."; }
 }
 window.CVH_LAUDO_TESTE = (lidos) => { if (estado.tipo !== "idexx") iniciarTipo("idexx"); aplicarLeitura(lidos); montarForm(); renderPrevia(); };
