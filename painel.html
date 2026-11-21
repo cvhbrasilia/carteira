@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121215816';
+  var VERSAO = '20261121221413';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3548,16 +3548,23 @@ function periodoRel() {
   return [m + '-01', m + '-' + String(fimM).padStart(2, '0'), MESES_PT[+m.slice(5) - 1] + ' de ' + m.slice(0, 4)];
 }
 function telaRelatorios() {
-  E.livro = null; const h = hoje(), anos = [...new Set(E.d.registros.map(r => r.data.slice(0, 4)).concat(h.slice(0, 4)))].sort().reverse();
+  E.livro = null; E.orcRel = null; const h = hoje(), anos = [...new Set(E.d.registros.map(r => r.data.slice(0, 4)).concat(h.slice(0, 4)))].sort().reverse();
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Clube do Doador</span><b>Relatórios</b></div></header>' +
     '<section class="cartao"><div class="grade"><div class="campo"><label for="relTipo">Período</label><select id="relTipo"><option value="mes">Mensal</option><option value="ano">Anual</option></select></div>' +
     '<div class="campo" id="cMes"><label for="relMes">Mês</label><input id="relMes" type="month" value="' + h.slice(0, 7) + '"></div><div class="campo" id="cAno" hidden><label for="relAno">Ano</label><select id="relAno">' + anos.map(a => '<option>' + a + '</option>').join('') + '</select></div></div>' +
     '<div class="acoes"><button class="btn sec2 peq" data-acao="rel-csv">Planilha (Excel e Numbers)</button><button class="btn sec2 peq" data-acao="rel-pdf">PDF A4</button></div></section>' +
-    '<section class="cartao" id="relCorpo"></section></div></main>';
-  const pinta = () => { $('#cMes').hidden = $('#relTipo').value === 'ano'; $('#cAno').hidden = $('#relTipo').value !== 'ano'; const [i, f, rot] = periodoRel(); $('#relCorpo').innerHTML = '<h3>' + rot + '</h3>' + htmlRelatorio(dadosRelatorio(i, f)); };
+    '<section class="cartao" id="relCorpo"></section>' + (pode('calculadora') || pode('estoque') || pode('admin') ? '<section class="cartao" id="relOrc"><h3>Orçamentos da HemoCalculadora</h3><p class="nota">Carregando…</p></section>' : '') + '</div></main>';
+  const pinta = () => { $('#cMes').hidden = $('#relTipo').value === 'ano'; $('#cAno').hidden = $('#relTipo').value !== 'ano'; const [i, f, rot] = periodoRel(); $('#relCorpo').innerHTML = '<h3>' + rot + '</h3>' + htmlRelatorio(dadosRelatorio(i, f)); pintarRelOrc(i, f); };
   ['relTipo', 'relMes', 'relAno'].forEach(k => $('#' + k).onchange = pinta); pinta();
   telaClasse('tela-media');
+}
+// orçamentos do período: quantos viraram transfusão e por que os outros não seguiram
+async function pintarRelOrc(i, f) {
+  const box = $('#relOrc'); if (!box) return;
+  try { if (!E.orcRel) E.orcRel = await api('estOrcamentos', E.sessao, 400); } catch (e) { box.innerHTML = '<h3>Orçamentos da HemoCalculadora</h3><p class="nota">' + esc(e.message) + '</p>'; return; }
+  const L = E.orcRel.filter(o => { const d = String(o.criado).slice(0, 10); return d >= i && d <= f; });
+  if ($('#relOrc')) $('#relOrc').innerHTML = '<h3>Orçamentos da HemoCalculadora</h3>' + htmlResumoOrc(resumoOrc(L)) + '<div class="acoes"><button class="btn sec2 peq" data-acao="orc-lista">Ver os orçamentos</button></div>';
 }
 function relCsv() {
   const [i, f, rot] = periodoRel(), R = dadosRelatorio(i, f), q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', L = [];
@@ -4856,10 +4863,10 @@ function formReceptor(rc, pre) {
     });
 }
 // abre o cadastro do receptor de um pedido (vindo da ficha do atendimento): o que já existe ou um novo, preenchido com o pedido
-async function receptorDoPedido(atId) {
-  E.modulo = 'receptores'; await telaReceptores(); const F = fontesReceptor(), k = 'at:' + atId;
+async function receptorDoPedido(atId, chave) {
+  E.modulo = 'receptores'; await telaReceptores(); const F = fontesReceptor(), k = chave || 'at:' + atId;
   const rc = (E.rec || []).find(r => ligacoesRec(r, F).some(f => f.k === k)); if (rc) return formReceptor(rc);
-  const f = F.find(x => x.k === k); if (!f) return toast('Pedido não encontrado.');
+  const f = F.find(x => x.k === k); if (!f) return toast('Não encontrei os dados do paciente.');
   const g = (E.recSug || []).find(G => G.some(x => x.k === k)) || [f]; formReceptor(null, juntarRec(g));
 }
 async function telaPendencias(filtro) {
@@ -5071,7 +5078,7 @@ async function bolsasTx(T, r) {
     return L.join(' · '); };
   // primeiro as que cobrem dose e margem (menos sobra e vencimento mais perto), depois as que cobrem só a dose, por último as menores (as mais próximas da dose primeiro)
   const nota = x => { const f = x.v >= alvo ? 0 : x.v >= r.vol ? 1 : 2; return f * 1000 + (x.comp.semTipo ? 100 : 0) + (f === 2 ? (r.vol - x.v) * 2 : 0) + (x.inte ? 150 : 0) + Math.min(x.dv, 60) * 3 + (f === 0 ? Math.max(0, x.v - alvo) * 0.5 : 0); };
-  const ord = C.sort((a, b) => nota(a) - nota(b)), L = ord.slice(0, 3), resto = ord.slice(3);
+  const ord = C.sort((a, b) => nota(a) - nota(b)), L = ord.slice(0, 3), resto = ord.slice(3); E.txSemBolsa = !C.some(x => x.v >= r.vol);
   // atendimento ligado ao cálculo (14.1): guarda paciente, dose, margem e as unidades avaliadas para reabrir no preparo
   const ats = (d.atendimentos || []).filter(a => !['concluido', 'cancelado', 'retirada', 'entregue'].includes(a.etapa));
   const at = ats.find(a => a.id === E.tx.at) || null, calc = at && (at.dados || {}).calculo;
@@ -5208,6 +5215,66 @@ async function montarPedidoLaudo(id, tipo, bolsas) {
 }
 // bolsas reservadas para a prova de um atendimento (para oferecer a troca)
 function separadasTx(id) { const d = E.txEst && E.txEst.d; return ((d && d.unidades) || []).filter(u => u.situacao === 'reservada' && /^Prova de compatibilidade/.test(u.reserva || '') && (((u.dados || {}).reservaInfo || {}).atendimento === id || String(u.reserva || '').includes(id))).map(u => u.id); }
+// receptor cadastrado na HemoCalculadora: preenche espécie, peso e tipagem; o orçamento e o atendimento ficam ligados a ele
+function recTxHtml(T) {
+  const rc = (E.rec || []).find(x => x.id === T.receptor);
+  if (rc) { const d = rc.dados || {}; return '<div class="av-i novo"><b>Receptor · ' + esc(d.nome) + '</b><small>' + esc([d.especie, d.raca, d.tipo, d.responsavel ? 'resp. ' + d.responsavel : '', d.clinica].filter(Boolean).join(' · ')) + ' · <a href="#" data-acao="tx-rec-tirar">trocar</a></small></div>'; }
+  return '<div class="campo"><label for="txRecep">Receptor cadastrado (opcional)</label><input id="txRecep" list="txRecepL" placeholder="' + (E.rec ? 'Digite o nome do paciente' : 'Carregando os receptores…') + '" autocomplete="off"><datalist id="txRecepL">' + (E.rec || []).map(rc => '<option value="' + esc(rc.dados.nome + (rc.dados.responsavel ? ' · ' + rc.dados.responsavel : '')) + '">').join('') + '</datalist></div>';
+}
+function ligarRecTx(T) {
+  if (!E.rec && !E.recCarregando) { E.recCarregando = true; api('estReceptores', E.sessao).then(L => { E.rec = L; E.recCarregando = false; if (E.modulo === 'transfusao' && $('#txRecep') && !$('#txRecep').value && document.activeElement !== $('#txRecep')) setTimeout(telaTransfusao, 0); }).catch(() => { E.recCarregando = false; }); }
+  const i = $('#txRecep'); if (!i) return;
+  i.onchange = () => { const v = semAc(i.value), rc = (E.rec || []).find(x => semAc(x.dados.nome + (x.dados.responsavel ? ' · ' + x.dados.responsavel : '')) === v) || (E.rec || []).find(x => semAc(x.dados.nome) === v); if (!rc) return;
+    const d = rc.dados || {}, gato = /fel|gat/i.test(d.especie || ''), t = semAc(d.tipo || '');
+    T.receptor = rc.id; T.paciente = d.nome; T.orcId = ''; T.esp = gato ? 'Gato' : 'Cão'; T.fator = String(TX_FATOR[T.esp]); if (numTx(d.peso)) T.peso = String(d.peso);
+    T.tipPac = gato ? ((d.tipo || '').match(/\b(AB|A|B)\b/) || [])[1] || '' : /neg/.test(t) ? 'neg' : /pos/.test(t) ? 'pos' : '';
+    toast('Receptor ' + d.nome + ' escolhido. Confira o peso e preencha o Ht de hoje.', 5000); i.onchange = null; i.blur(); setTimeout(telaTransfusao, 0); };
+}
+// orçamento: cada cálculo enviado (copiado, WhatsApp ou ligado a atendimento) fica registrado para o relatório de orçamentos
+function orcTx(acao) {
+  const T = E.tx; if (!T) return; const r = calcComp(T); if (!r) return;
+  const at = T.at || '', pac = T.paciente || (at ? pacienteTx(at) : ''), sig = [T.comp, T.esp, T.peso, pac, T.receptor || ''].join('|');
+  if (T.orcSig !== sig) { T.orcId = ''; T.orcSig = sig; }
+  const o = { id: T.orcId || '', comp: T.comp, modo: T.comp === 'CH' ? (T.chModo === 'cirurgia' ? 'cirurgia' : 'transfusao') : T.sit, esp: T.esp, peso: T.peso, htAtual: T.comp === 'CH' ? htUsado(T) : '', htDesejado: T.comp === 'CH' && T.chModo !== 'cirurgia' ? T.des : '', vol: r.vol != null ? Math.round(r.vol) : null, unidades: r.n != null ? r.n : null, paciente: pac, receptor: T.receptor || '', atendimento: at, semBolsa: !!E.txSemBolsa, acao };
+  api('estOrcamentoSalvar', E.sessao, o).then(x => { if (x && x.id) T.orcId = x.id; }).catch(() => {});
+}
+const ORC_VIROU = ['pago', 'testes', 'fracionamento', 'preparo', 'pronta', 'retirada', 'entregue', 'concluido'];
+const ORC_MOT = { sem_bolsa: 'Sem bolsa', nao_quiseram: 'Não quiseram', outro: 'Outro motivo' };
+// situação do orçamento: o atendimento ligado manda (pago em diante virou transfusão; cancelado não virou)
+function situOrc(o) {
+  if (o.atendimento && ORC_VIROU.includes(o.at_etapa)) return { s: 'virou' };
+  if (o.atendimento && o.at_etapa === 'cancelado') return { s: 'perdido', m: o.motivo || (o.at_cancelamento || {}).motivo || 'outro' };
+  return { s: o.situacao || 'aberto', m: o.motivo || '' };
+}
+function resumoOrc(L) { const c = { total: L.length, virou: 0, aberto: 0, perdido: 0, sem_bolsa: 0, nao_quiseram: 0, outro: 0 }; L.forEach(o => { const x = situOrc(o); c[x.s]++; if (x.s === 'perdido') c[ORC_MOT[x.m] ? x.m : 'outro']++; }); return c; }
+function htmlResumoOrc(c) {
+  return '<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">' + [['Orçamentos', c.total], ['Viraram transfusão', c.virou], ['Em aberto', c.aberto], ['Sem bolsa', c.sem_bolsa], ['Não quiseram', c.nao_quiseram], ['Outro motivo', c.outro]].map(([t, n]) => '<div class="tx-vol" style="padding:10px"><small>' + t + '</small><b>' + n + '</b>' + (c.total && t !== 'Orçamentos' ? '<span>' + Math.round(n * 100 / c.total) + '%</span>' : '') + '</div>').join('') + '</div>';
+}
+async function telaOrcamentos(dias) {
+  E.livro = null; fecharFolha(); E.orcDias = dias || E.orcDias || 30; carregando('Carregando os orçamentos');
+  try { E.orc = await api('estOrcamentos', E.sessao, E.orcDias); } catch (e) { toast(e.message, 7000); return telaTransfusao(); }
+  pintarOrcamentos();
+}
+function pintarOrcamentos() {
+  const L = E.orc || [], c = resumoOrc(L), d0 = E.orcDias;
+  const item = o => { const d = o.dados || {}, x = situOrc(o), quando = new Date(o.criado);
+    const tag = x.s === 'virou' ? '<span class="tag ok">virou transfusão</span>' : x.s === 'perdido' ? '<span class="tag al">' + esc(ORC_MOT[x.m] || x.m) + '</span>' : '<span class="tag">em aberto</span>';
+    const qual = [d.comp + (d.vol ? ' ' + d.vol + ' mL' : d.unidades ? ' ' + d.unidades + ' un.' : ''), d.esp, d.peso ? String(d.peso).replace('.', ',') + ' kg' : '', d.htAtual ? 'Ht ' + d.htAtual + '%' : '', d.semBolsa ? 'sem bolsa suficiente no estoque' : ''].filter(Boolean).join(' · ');
+    return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(d.paciente || o.at_paciente || 'Paciente não informado') + '</b> ' + tag + '<small>' + esc(String(quando.getDate()).padStart(2, '0') + '/' + String(quando.getMonth() + 1).padStart(2, '0') + ' · ' + qual + (o.atendimento ? ' · atendimento ' + o.atendimento : '') + (d.por ? ' · ' + d.por : '')) + '</small></div>' +
+      '<div class="mini-bts">' + (x.s === 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="virou">Virou transfusão</button>' + Object.entries(ORC_MOT).map(([k, t]) => '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="' + k + '">' + t + '</button>').join('') : '') +
+      (x.s === 'virou' && !o.receptor ? '<button class="mini" data-acao="orc-receptor" data-id="' + o.id + '">Cadastrar o receptor</button>' : '') + (x.s !== 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="aberto">Voltar para em aberto</button>' : '') + '</div></div>'; };
+  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="modulo" data-k="transfusao">‹ HemoCalculadora</button></div>' +
+    '<header class="topo"><div class="t"><span>HemoCalculadora</span><b>Orçamentos</b></div></header>' +
+    '<section class="cartao"><p class="nota">Cada cálculo copiado, enviado por WhatsApp ou ligado a um atendimento vira um orçamento. Quando o atendimento é pago, conta como transfusão. Quando é cancelado, conta como não seguiu, com o motivo do cancelamento.</p><div class="filtros">' + [7, 30, 90, 365].map(n => '<button class="filtro' + (n === d0 ? ' on' : '') + '" data-acao="orc-dias" data-v="' + n + '">' + (n === 365 ? '1 ano' : n + ' dias') + '</button>').join('') + '</div>' + htmlResumoOrc(c) + '</section>' +
+    '<section class="cartao"><h3>' + L.length + (L.length === 1 ? ' orçamento' : ' orçamentos') + '</h3>' + (L.length ? L.map(item).join('') : '<p class="vazio-p">Nenhum orçamento no período.</p>') + '</section></div></main>';
+}
+async function desfechoOrc(id, v) {
+  const o = (E.orc || []).find(x => x.id === id); if (!o) return;
+  const sit = v === 'virou' ? 'virou' : v === 'aberto' ? 'aberto' : 'perdido', obs = sit === 'perdido' && v === 'outro' ? prompt('Qual foi o motivo?', '') : '';
+  if (obs === null) return;
+  try { Object.assign(o, await api('estOrcamentoDesfecho', E.sessao, id, { situacao: sit, motivo: sit === 'perdido' ? v : '', obs })); pintarOrcamentos(); toast(sit === 'virou' ? 'Orçamento marcado como transfusão.' : sit === 'perdido' ? 'Orçamento marcado: ' + ORC_MOT[v].toLowerCase() + '.' : 'Orçamento de volta para em aberto.'); }
+  catch (e) { toast(e.message, 6000); }
+}
 function pacienteTx(id) { const a = ((E.txEst && E.txEst.d && E.txEst.d.atendimentos) || []).find(x => x.id === id); return a ? (a.paciente || '') : ''; }
 async function salvarCalcTx(extra) {
   if (!E.tx || !E.tx.at || !E.txCalc) throw new Error('Escolha o atendimento.');
@@ -5279,9 +5346,9 @@ function telaTransfusao() {
     return sit + '<div class="grade">' + cmp('txPeso', 'Peso (kg)', T.peso) + cmp('txFib', 'Fibrinogênio (mg/dL), opcional', T.fib) + '</div><details class="tx-av"><summary>Ajustes da conta</summary><div class="grade">' + cmp('txCrioKg', '1 unidade a cada (kg)', T.crioKg) + '</div><p class="nota">1 unidade a cada 10 kg (Cornell, Comparative Coagulation Laboratory).</p></details>';
   };
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
-    '<header class="topo"><div class="t"><span>CH, CP, PFC e crioprecipitado</span><b>HemoCalculadora</b></div></header>' +
+    '<header class="topo"><div class="t"><span>CH, CP, PFC e crioprecipitado</span><b>HemoCalculadora</b></div><button class="pill" data-acao="orc-lista">Orçamentos</button></header>' +
     '<button class="btn hc-ia" id="hcIa">HemoCalculadora IA<small>manda o hemograma de qualquer laboratório e ela indica os hemocomponentes</small></button>' +
-    '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
+    '<section class="cartao">' + recTxHtml(T) + '<div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
     '<div class="filtros hc-comp">' + HC_COMP.map(([k, t]) => '<button class="filtro' + (T.comp === k ? ' on' : '') + '" data-comp="' + k + '">' + t + '</button>').join('') + '</div><div id="hcCampos">' + campos() + '</div></section>' +
     '<section class="cartao" id="txRes"></section></div></main>';
   const ids = { txResMlkg: 'resMlkg', txPeso: 'peso', txRec: 'rec', txHb: 'hb', txDes: 'des', txDoa: 'doa', txFator: 'fator', txBolsa: 'bolsa', txPlq: 'plq', txCpKg: 'cpKg', txCpVol: 'cpVol', txPfcDose: 'pfcDose', txTp: 'tp', txTtpa: 'ttpa', txPfcBolsa: 'pfcBolsa', txFib: 'fib', txCrioKg: 'crioKg' };
@@ -5307,7 +5374,8 @@ function telaTransfusao() {
       '<div class="acoes"><button class="btn" id="txCopiar">Copiar mensagem</button><a class="btn sec2" id="txZap" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>';
     const zap = () => { $('#txZap').href = 'https://wa.me/?text=' + encodeURIComponent($('#txMsg').value); };
     zap(); $('#txMsg').oninput = zap;
-    $('#txCopiar').onclick = async () => toast(await copiar($('#txMsg').value) ? 'Mensagem copiada.' : 'Selecione o texto e copie manualmente.');
+    $('#txCopiar').onclick = async () => { orcTx('copiou'); toast(await copiar($('#txMsg').value) ? 'Mensagem copiada. Orçamento registrado.' : 'Selecione o texto e copie manualmente.'); };
+    $('#txZap').addEventListener('click', () => orcTx('whatsapp'));
     box.querySelectorAll('[data-tx]').forEach(b => b.onclick = () => { T.tipo = b.dataset.tx; pinta(); });
     ligarHb();
     if (T.comp === 'CH' && $('#txEst')) bolsasTx(Object.assign({}, T, { rec: htUsado(T) }), r);
@@ -5316,6 +5384,7 @@ function telaTransfusao() {
   document.querySelectorAll('.tx-esp .filtro').forEach(b => b.onclick = () => { T.esp = b.dataset.esp; T.fator = String(TX_FATOR[T.esp]); if (T.comp === 'PFC' && !E.txDoseMexida) T.pfcDose = T.esp === 'Gato' ? '8' : '10'; const f = $('#txFator'); if (f) f.value = T.fator; const d = $('#txPfcDose'); if (d) d.value = T.pfcDose; pinta(); });
   document.querySelectorAll('.hc-comp [data-comp]').forEach(b => b.onclick = () => { T.comp = b.dataset.comp; if (T.comp === 'PFC' && T.esp === 'Gato' && T.pfcDose === '10') T.pfcDose = '8'; document.querySelectorAll('.hc-comp [data-comp]').forEach(x => x.classList.toggle('on', x === b)); $('#hcCampos').innerHTML = campos(); ligar(); pinta(); });
   $('#hcIa').onclick = () => telaHemoIA();
+  ligarRecTx(T);
   ligar(); pinta();
   duasColunas(['#txRes'], 'tela-tx');
 }
@@ -6066,6 +6135,7 @@ const PONTE = {
   // atendimento da Intensivet: abre o laudo do receptor (prova de compatibilidade, tipagem ou Coombs) já preenchido com o pedido e as bolsas da prova
   provasReservadas: () => provasReservadas(),
   receptorDoPedido: o => { setTimeout(() => receptorDoPedido(String((o || {}).id || '')), 0); return true; },
+  receptorDoLaudo: o => { setTimeout(() => receptorDoPedido('', 'lr:' + String((o || {}).regId || '')), 0); return true; },
   // hematócrito medido da bolsa de CH no estoque (micro-Ht ou final), pelo número da doação
   htBolsas: async () => { const d = await estoqueTx(true), m = {}; (d.unidades || []).filter(u => u.componente === 'CH').forEach(u => { const D = u.dados || {}, h = D.htFinal != null ? D.htFinal : D.microHt != null ? D.microHt : (D.ch || {}).htFinal; if (h != null && h !== '') m[String(u.coleta || u.id).split(' ')[0]] = h; }); return m; },
   trocarProva: o => trocarProva(String((o || {}).id || ''), (o || {}).doacoes || []),
@@ -7025,15 +7095,20 @@ const ACOES = {
   },
   // bolsa maior que a necessidade: abre o fracionamento com o volume da dose e da margem (e o atendimento, se houver)
   'tx-outras': () => { E.txOutras = !E.txOutras; telaTransfusao(); },
+  'tx-rec-tirar': () => { E.tx.receptor = ''; E.tx.paciente = ''; E.tx.orcId = ''; telaTransfusao(); },
+  'orc-lista': () => telaOrcamentos(),
+  'orc-dias': b => telaOrcamentos(+b.dataset.v),
+  'orc-fim': b => desfechoOrc(b.dataset.id, b.dataset.v),
+  'orc-receptor': b => { const o = (E.orc || []).find(x => x.id === b.dataset.id) || {}, d = o.dados || {}; E.modulo = 'receptores'; formReceptor(null, { nome: d.paciente || o.at_paciente || '', especie: d.esp === 'Gato' ? 'Felina' : d.esp ? 'Canina' : '', peso: d.peso != null ? String(d.peso).replace('.', ',') : '', clinica: o.at_destino || '', fontes: o.atendimento ? ['at:' + o.atendimento] : [] }); },
   'tx-frac': async b => { const at = E.tx && E.tx.at, uid = b.dataset.v, vol = +b.dataset.vol || 0;
     if (!confirm('Fracionar ' + vol + ' mL da bolsa ' + uid + (at ? ' para o atendimento ' + at : '') + '? O restante volta ao estoque.')) return;
     try { if (at && E.txCalc) await salvarCalcTx(); } catch (_) {}
     E.fracAbrir = { unidade: uid, volume: vol, atendimento: at || '', paciente: at ? pacienteTx(at) : '' }; const k = pode('estoque') || pode('admin') ? 'estoque' : 'producao'; E.modulo = k; return abrirModulo(k); },
-  'tx-salvar': async b => { b.disabled = true; try { await salvarCalcTx(); b.textContent = 'Cálculo salvo ✓'; toast('Cálculo salvo no atendimento ' + E.tx.at + '. Ele reabre no preparo da bolsa.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
+  'tx-salvar': async b => { b.disabled = true; try { await salvarCalcTx(); orcTx('atendimento'); b.textContent = 'Cálculo salvo ✓'; toast('Cálculo salvo no atendimento ' + E.tx.at + '. Ele reabre no preparo da bolsa.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'tx-possivel': async b => { b.disabled = true; try { await salvarCalcTx(); await api('estAtendimentoEtapa', E.sessao, E.tx.at, 'possivel', {}); E.txEst = null; b.textContent = 'Possível venda avisada ✓'; toast('Aviso de possível venda enviado ao motoboy.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'tx-novo-at': async b => {
-    const pac = prompt('Nome do paciente:', (E.tx.provaSem || {}).pac || ''); if (pac == null) return; const dest = prompt('Destino da bolsa (clínica):', 'Intensivet'); if (dest == null || !dest.trim()) return; b.disabled = true;
-    try { const a = await api('estAtendimentoSalvar', E.sessao, { destino: dest.trim(), paciente: pac.trim(), modalidade: 'motoboy' }); E.tx.at = a.id; await salvarCalcTx(); toast('Atendimento ' + a.id + ' aberto com o cálculo.', 5000); telaTransfusao(); } catch (e) { b.disabled = false; toast(e.message, 6000); }
+    const pac = prompt('Nome do paciente:', E.tx.paciente || (E.tx.provaSem || {}).pac || ''); if (pac == null) return; const dest = prompt('Destino da bolsa (clínica):', 'Intensivet'); if (dest == null || !dest.trim()) return; b.disabled = true;
+    try { const a = await api('estAtendimentoSalvar', E.sessao, { destino: dest.trim(), paciente: pac.trim(), modalidade: 'motoboy' }); E.tx.at = a.id; await salvarCalcTx(); orcTx('atendimento'); toast('Atendimento ' + a.id + ' aberto com o cálculo.', 5000); telaTransfusao(); } catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
   'prep-frac': b => preparoTx(b, 'fracionar'),
   'prep-emb': b => preparoTx(b, 'embalar'),

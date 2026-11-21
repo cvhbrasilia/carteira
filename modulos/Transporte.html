@@ -629,6 +629,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "hcCalc") return ponte("hemocalc", v);
   if (a === "laudoPed") return ponte("laudoPedido", { id: b.dataset.id, tipo: v });
   if (a === "embalar") return ponte("embalagem", { id: b.dataset.id, unidade: v });
+  if (a === "cancMot") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "receptorPed") return ponte("receptorDoPedido", { id: b.dataset.id });
   if (a === "embLer") { const t = await lerQR(v === "caixa" ? "Leia o QR da caixa de isopor" : "Leia a etiqueta da bolsa"); if (t) embLido(t); return; }
   if (a === "embFoto") { const i = $("#embFotoIn"); i.value = ""; return i.click(); }
@@ -665,7 +666,8 @@ document.addEventListener("click", async (ev) => {
       const iso = (id) => { const el = $("#" + id); return el && el.value ? new Date(el.value).toISOString() : null; };
       if (a === "atSalvar") { const m = (document.querySelector('[data-a="atMod"].on') || {}).dataset || {}; r = await est("estAtendimentoSalvar", { id: v || undefined, destino: $("#atDest").value, endereco: $("#atEnd").value, paciente: $("#atPac").value, solicitante: $("#atSol").value, modalidade: m.v || "motoboy", remessa: $("#atRem").value }); }
       if (a === "atPagoOk") r = await est("estAtendimentoEtapa", v, "pago", { buscar: $("#pgBuscar").checked, local: $("#pgLocal").value, prazoBusca: iso("pgPrazo"), previsaoChegada: iso("pgCheg"), previsaoTestes: iso("pgTestes") });
-      if (a === "atEt") { const et = v, o = {}; if (et === "uber") o.link = $("#atUber").value; if (et === "uberFim") o.quando = iso("atUberFim"); r = await est("estAtendimentoEtapa", b.dataset.id, et, o); }
+      if (a === "atEt" && v === "cancelar" && !b.dataset.ok) { $("#atForm").innerHTML = '<div class="cx" style="margin-top:8px"><h2>Por que não seguiu?</h2><div class="filtros" style="margin:0 0 8px">' + [["sem_bolsa", "Sem bolsa"], ["nao_quiseram", "Não quiseram"], ["outro", "Outro motivo"]].map(([k, t], i) => '<button class="' + (i === 1 ? "on" : "") + '" data-a="cancMot" data-v="' + k + '">' + t + "</button>").join("") + '</div><input type="text" id="cancObs" placeholder="Observação (opcional)"><div class="bts" style="margin-top:8px"><button class="btn peq perigo" data-a="atEt" data-id="' + esc(b.dataset.id) + '" data-v="cancelar" data-ok="1">Confirmar o cancelamento</button></div><p><small>O motivo entra no relatório de orçamentos que não viraram transfusão.</small></p></div>'; $("#atForm").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+      if (a === "atEt") { const et = v, o = {}; if (et === "cancelar") { o.motivo = ((document.querySelector('[data-a="cancMot"].on') || {}).dataset || {}).v || "outro"; o.obs = ($("#cancObs") || {}).value || ""; } if (et === "uber") o.link = $("#atUber").value; if (et === "uberFim") o.quando = iso("atUberFim"); r = await est("estAtendimentoEtapa", b.dataset.id, et, o); }
       const i = S.at.findIndex((x) => x.id === r.id); if (i >= 0) S.at[i] = r; else S.at.unshift(r);
       if (a === "atEt" && ["retirada", "uberFim"].includes(v)) await recarregar(); else pintar();
       abrirAtendimento(r.id); toast(a === "atSalvar" && !v ? "Atendimento aberto." : "Registrado." + (r.modalidade === "motoboy" && a !== "atSalvar" && ["possivel", "autorizado", "pago", "testes", "fracionamento", "pronta"].includes(r.etapa) ? " O motoboy foi avisado." : ""), 4000);
