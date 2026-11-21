@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121123709';
+  var VERSAO = '20261121155245';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -98,6 +98,8 @@ label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:
 input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;background:#fff}
 .op{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--areia2);border-radius:12px;padding:11px;margin-top:8px;font-weight:600}
 .op.off{opacity:.5}
+.op.on{border-color:#5F130F;background:#5F130F;color:#fff}
+input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .tipos{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
 .tipo-exp{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
 .tipo-exp small{display:block;margin-top:6px;color:#6b5a52}
@@ -429,7 +431,52 @@ function infoPedido(x, p) {
   return t.map((v) => '<span class="prazo">' + esc(v) + "</span>").join("");
 }
 const oQuePedido = (p) => (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => ({ tipagem: "tipagem", prova: "prova de compatibilidade", coombs: "Coombs" }[t] || t))).join(" + ");
-let ASS = null;
+let ASS = null, EXAMES = [];
+const PRIM = { v: "" };
+// exames anexados: o PDF vira texto aqui no celular (rápido) e o servidor devolve os dados do cabeçalho
+const LIB_PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", LIB_PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const carregarJs = (src) => new Promise((ok, erro) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => erro(new Error("Sem internet para abrir o PDF.")); document.head.appendChild(sc); });
+async function textoDoPdf(u8) {
+  if (!window.pdfjsLib) await carregarJs(LIB_PDFJS);
+  for (let i = 0; i < 40 && !window.pdfjsLib; i++) await new Promise((ok) => setTimeout(ok, 100));
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsLib.GlobalWorkerOptions.workerSrc || LIB_PDFJS_W;
+  const doc = await pdfjsLib.getDocument({ data: u8, isEvalSupported: false }).promise; let out = "";
+  for (let n = 1; n <= Math.min(doc.numPages, 3); n++) {
+    const c = await (await doc.getPage(n)).getTextContent(), L = {};
+    c.items.forEach((it) => { const y = Math.round(it.transform[5] / 3) * 3; (L[y] = L[y] || []).push([it.transform[4], it.str]); });
+    out += Object.keys(L).map(Number).sort((a, b) => b - a).map((y) => L[y].sort((a, b) => a[0] - b[0]).map((x) => x[1]).join(" ").replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + "\n";
+  }
+  return out;
+}
+const b64De = (u8) => { let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(b); };
+async function fotoMenor(f) { const im = await createImageBitmap(f).catch(() => null); if (!im) return null; const k = Math.min(1, 1800 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); const bl = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.85)); return new Uint8Array(await bl.arrayBuffer()); }
+function pintarExames() { const el = $("#exLista"); if (!el) return; el.innerHTML = EXAMES.map((x, i) => '<div class="bolsa"><b>' + esc(x.nome) + '</b><small>' + esc(x.st || "") + '</small><div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="exTirar" data-v="' + i + '">Tirar</button></div></div>').join(""); }
+// preenche só o que está vazio e marca em dourado o que veio do exame
+function aplicarExame(d) {
+  const P = d.paciente || {}, R = d.responsavel || {}, V = d.vet || {}, X = d.valores || {}, marcados = [];
+  const pre = (id, v) => { const el = $("#" + id); if (!el || v == null || String(v).trim() === "" || String(el.value || "").trim()) return; el.value = String(v).trim(); el.classList.add("lido"); marcados.push(id); };
+  pre("sAn", P.nome); pre("sRaca", P.raca); pre("sIdade", P.idade); pre("sPeso", String(P.peso || "").replace(",", ".").replace(/[^\d.]/g, "")); pre("sHt", String(X.ht || "").replace(",", ".").replace(/[^\d.]/g, ""));
+  pre("sResp", R.nome); pre("tTel", R.telefone); pre("tVet", V.nome); pre("tCrmv", V.crmv);
+  const esp = $("#sEsp"); if (esp && P.especie && /fel/i.test(P.especie)) { esp.value = "Felina"; esp.classList.add("lido"); }
+  const sx = $("#sSexo"); if (sx && !sx.value && P.sexo) { sx.value = /f/i.test(P.sexo) ? "Fêmea" : "Macho"; sx.classList.add("lido"); }
+  const obs = []; if (X.hb) obs.push("Hb " + X.hb + " g/dL"); if (X.plaquetas) obs.push("plaquetas " + X.plaquetas + " mil/µL"); if (X.ppt) obs.push("PPT " + X.ppt + " g/dL");
+  if (obs.length || d.laboratorio || d.data) { const el = $("#sObs"); if (el && !el.value.trim()) { el.value = "Exame" + (d.laboratorio ? " " + d.laboratorio : "") + (d.data ? " de " + d.data : "") + (obs.length ? ": " + obs.join(", ") : "") + "."; el.classList.add("lido"); } }
+  return marcados.length;
+}
+async function anexarExames(files) {
+  for (const f of [...files].slice(0, 4 - EXAMES.length)) {
+    if (f.size > 7e6) { toast("O arquivo " + f.name + " é grande demais.", 5000); continue; }
+    const pdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name || "");
+    const u8 = pdf ? new Uint8Array(await f.arrayBuffer()) : await fotoMenor(f); if (!u8) continue;
+    const x = { nome: f.name || (pdf ? "Exame.pdf" : "Foto do exame.jpg"), mime: pdf ? "application/pdf" : "image/jpeg", b64: b64De(u8), st: "lendo os dados…" }; EXAMES.push(x); pintarExames();
+    try {
+      let texto = ""; if (pdf) texto = await textoDoPdf(u8.slice()).catch(() => "");
+      const d = await srv("intLerExame", texto.trim().length > 80 ? { texto } : { mime: x.mime, b64: x.b64 });
+      const n = aplicarExame(d || {}); x.lido = true; x.st = n ? "dados lidos e preenchidos (em dourado): confira" : "lido, nada novo para preencher";
+    } catch (e) { x.st = "anexado. " + (e.message || "Não consegui ler os dados; preencha à mão."); }
+    pintarExames();
+  }
+}
 function formSolicitar() {
   const V = vets(), Hr = D.horario || {}, fechado = Hr.aberto === false;
   modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. No horário de funcionamento o pedido chega na hora para a equipe do CVH.</small></p>" +
@@ -440,17 +487,21 @@ function formSolicitar() {
     '<label>Tipo do pedido</label><div class="tipos">' + Object.keys(TIPO_PED).map((k) => { const off = fechado && (k === "urgente" || k === "emergencia"); return '<label class="op' + (off ? " off" : "") + '"><input type="radio" name="sUrg" value="' + k + '"' + (off ? " disabled" : "") + "> " + TIPO_PED[k] + "</label>"; }).join("") + "</div>" +
     (fechado ? '<p class="tipo-exp">O CVH está fora do horário. Infelizmente não poderemos atender urgência ou emergência agora. Rotina e reserva chegam à equipe ' + esc(Hr.quando || "na abertura") + ".</p>" : "") +
     '<div class="tipo-exp" id="sTipoExp" hidden></div><div id="sResWrap" hidden><label>Data e hora do procedimento</label><input type="datetime-local" id="sResQ"></div>' +
+    '<h2 style="margin-top:14px">Exames do paciente</h2><p><small>Anexe o PDF ou a foto do hemograma ou de outros exames. Os dados do animal, do responsável e o hematócrito são lidos e preenchidos sozinhos. Confira antes de enviar.</small></p>' +
+    '<div class="bts" style="margin-top:0"><button class="btn sec" data-a="exAnexar">Anexar PDF ou foto dos exames</button></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
     '<h2 style="margin-top:14px">Paciente</h2><label>Nome</label><input type="text" id="sAn"><label>Espécie</label><select id="sEsp"><option>Canina</option><option>Felina</option></select><label>Raça</label><input type="text" id="sRaca"><label>Sexo</label><select id="sSexo"><option value="">não informado</option><option>Macho</option><option>Fêmea</option></select><label>Idade</label><input type="text" id="sIdade" placeholder="ex.: 6 anos">' +
-    '<label>Peso (kg)</label><input type="number" inputmode="decimal" id="sPeso"><label>Hematócrito atual (%)</label><input type="number" inputmode="decimal" id="sHt"><label>Tipagem conhecida (se tiver)</label><input type="text" id="sTip" placeholder="ex.: DEA 1 negativo"><label>Já recebeu transfusão antes?</label><select id="sTr"><option value="">não sei</option><option>Não</option><option>Sim</option></select>' +
-    '<label>Indicação clínica e diagnóstico</label><textarea id="sInd" rows="3" style="width:100%"></textarea>' +
+    '<label>Peso (kg)</label><input type="number" inputmode="decimal" id="sPeso"><label>Hematócrito atual (%)</label><input type="number" inputmode="decimal" id="sHt"><label>Tipagem conhecida (se tiver)</label><input type="text" id="sTip" placeholder="ex.: DEA 1 negativo">' +
+    '<label>Primeira transfusão?</label><div class="tipos" id="sPrim"><button type="button" class="op" data-a="prim" data-v="Sim">Sim</button><button type="button" class="op" data-a="prim" data-v="Não">Não</button></div>' +
+    '<label>Suspeita clínica (opcional)</label><textarea id="sInd" rows="3" style="width:100%" placeholder="ex.: anemia hemolítica imunomediada, hemorragia por trauma"></textarea>' +
     '<h2 style="margin-top:14px">Responsável</h2><label>Nome</label><input type="text" id="sResp"><label>Telefone ou WhatsApp</label><input type="tel" id="tTel">' +
     '<label class="op"><input type="radio" name="tCont" value="ciente"> O responsável está ciente. O CVH pode entrar em contato.</label><label class="op"><input type="radio" name="tCont" value="aguardar"> Favor aguardar. O responsável ainda não foi avisado.</label>' +
     '<h2 style="margin-top:14px">Médico veterinário solicitante</h2>' + (V.length ? '<div class="bts" style="margin-top:0">' + V.map((v, i) => '<button class="btn sec peq" data-a="vetUsar" data-v="' + i + '">' + esc(v.nome) + "</button>").join("") + "</div>" : "") +
     '<label>Nome</label><input type="text" id="tVet"><label>CRMV/UF</label><input type="text" id="tCrmv" placeholder="CRMV-DF 0000">' +
     '<label>Assinatura da requisição</label><p><small>Assine com o dedo no quadro. Se já tiver a requisição em PDF, anexe no lugar da assinatura.</small></p><canvas id="sAss" width="600" height="200" style="width:100%;height:140px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff"></canvas>' +
     '<div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="assLimpar">Limpar assinatura</button><button class="btn sec peq" data-a="sAnexar">Anexar requisição em PDF</button></div><input type="file" id="sArq" accept="application/pdf,image/*" hidden><p id="sArqNome"></p>' +
-    '<label>Observações</label><textarea id="sObs" rows="2" style="width:100%"></textarea>' +
+    '<label>Observações (texto livre)</label><textarea id="sObs" rows="4" style="width:100%" placeholder="o que quiser contar ao CVH sobre o paciente ou o pedido"></textarea>' +
     '<div class="bts"><button class="btn" data-a="solicitarOk">Enviar pedido ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  EXAMES = []; PRIM.v = "";
   ASS = { tracos: 0, anexo: null }; const cv = $("#sAss"), cx = cv.getContext("2d"); cx.lineWidth = 3; cx.lineCap = "round"; cx.strokeStyle = "#2b2320";
   let des = false; const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
   cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
@@ -465,7 +516,7 @@ function formSolicitar() {
 async function solicitarOk(b) {
   const val = (id) => ($("#" + id) || {}).value ? $("#" + id).value.trim() : "", c = document.querySelector('input[name="tCont"]:checked'), urg = document.querySelector('input[name="sUrg"]:checked');
   const o = { bolsas: [...document.querySelectorAll(".sB:checked")].map((x) => ({ componente: x.value, qtd: +(document.querySelector('.sQ[data-c="' + x.value + '"]') || {}).value || 1 })), testes: [...document.querySelectorAll(".sT:checked")].map((x) => x.value), urgencia: urg ? urg.value : "", reservaPara: val("sResQ"),
-    paciente: { nome: val("sAn"), especie: val("sEsp"), raca: val("sRaca"), sexo: val("sSexo"), idade: val("sIdade"), peso: val("sPeso"), ht: val("sHt"), tipagem: val("sTip"), transfundido: val("sTr") }, indicacao: val("sInd"), obs: val("sObs"),
+    paciente: { nome: val("sAn"), especie: val("sEsp"), raca: val("sRaca"), sexo: val("sSexo"), idade: val("sIdade"), peso: val("sPeso"), ht: val("sHt"), tipagem: val("sTip"), primeira: PRIM.v, transfundido: PRIM.v === "Sim" ? "Não" : PRIM.v === "Não" ? "Sim" : "" }, indicacao: val("sInd"), obs: val("sObs"), exames: EXAMES.map((x) => ({ nome: x.nome, mime: x.mime, b64: x.b64 })), lidoDoExame: EXAMES.some((x) => x.lido),
     responsavel: { nome: val("sResp"), telefone: val("tTel"), contato: c ? c.value : "" }, vet: { nome: val("tVet"), crmv: val("tCrmv") }, amostra: { coletada: !!($("#sAm") || {}).checked } };
   if (!o.bolsas.length && !o.testes.length) return toast("Escolha o que precisa, bolsa ou teste.", 5000);
   if (!o.urgencia) return toast("Escolha o tipo do pedido.", 5000);
@@ -528,6 +579,9 @@ document.addEventListener("click", async (ev) => {
   try {
     if (a === "fechar") { PROX = null; return fechar(); }
     if (a === "solicitar") return formSolicitar();
+    if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
+    if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
+    if (a === "prim") { PRIM.v = PRIM.v === v ? "" : v; document.querySelectorAll("#sPrim [data-a=prim]").forEach((x) => x.classList.toggle("on", x.dataset.v === PRIM.v)); return; }
     if (a === "solicitarOk") return solicitarOk(b);
     if (a === "assLimpar") { const cv = $("#sAss"); cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); ASS.tracos = 0; return; }
     if (a === "sAnexar") return $("#sArq").click();

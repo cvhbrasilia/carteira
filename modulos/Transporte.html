@@ -245,8 +245,9 @@ function textoPedido(a) {
   return [
     "Atendimento " + a.id + " · " + a.destino + " · " + hora(a.criado),
     "Pedido: " + (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES_PED[t] || t)).join(", ") + (p.urgencia ? " · " + URG_PED[p.urgencia] : ""),
-    "Paciente: " + [P.nome, P.especie, P.raca, P.sexo, P.idade].filter(Boolean).join(", ") + (P.peso ? " · " + P.peso + " kg" : "") + (P.ht ? " · Ht " + P.ht + "%" : "") + (P.tipagem ? " · tipagem " + P.tipagem : "") + (P.transfundido ? " · transfundido antes: " + P.transfundido : ""),
-    p.indicacao ? "Indicação: " + p.indicacao : "",
+    "Paciente: " + [P.nome, P.especie, P.raca, P.sexo, P.idade].filter(Boolean).join(", ") + (P.peso ? " · " + P.peso + " kg" : "") + (P.ht ? " · Ht " + P.ht + "%" : "") + (P.tipagem ? " · tipagem " + P.tipagem : "") + (P.transfundido && !P.primeira ? " · transfundido antes: " + P.transfundido : ""),
+    P.primeira ? "Primeira transfusão: " + P.primeira : "",
+    p.indicacao ? "Suspeita clínica: " + p.indicacao : "",
     "Responsável: " + [R.nome, R.telefone].filter(Boolean).join(" · ") + (R.contato === "ciente" ? " (ciente, o CVH pode entrar em contato)" : R.contato ? " (aguardar o veterinário avisar)" : ""),
     "Médico veterinário: " + [V.nome || a.solicitante, V.crmv].filter(Boolean).join(" · "),
     p.amostra && p.amostra.coletada ? "Amostra do paciente coletada para buscar." : "",
@@ -260,7 +261,9 @@ function htmlPedidoReq(a) {
     const pz = prazosPedido(a);
     h += '<div class="cx" style="margin:8px 0;' + (p.urgencia === "emergencia" || p.urgencia === "urgente" ? "border-color:#A83D3D" : "") + '"><h2>Pedido da ' + esc(a.destino) + " · " + esc(URG_PED[p.urgencia] || "") + "</h2>" + (pz.length ? "<p>" + pz.map(([c, t]) => '<span class="chip ' + c + '">' + esc(t) + "</span>").join(" ") + "</p>" : "") + (REGRA_PED[p.urgencia] ? '<p><small>' + REGRA_PED[p.urgencia] + "</small></p>" : "") + "<dl class=\"dl\"><dt>Pede</dt><dd>" + esc((p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES_PED[t] || t)).join(" · ")) + "</dd>" +
       "<dt>Paciente</dt><dd>" + esc([P.nome, P.especie, P.raca, P.sexo, P.idade].filter(Boolean).join(", ")) + "<br><small>" + esc([P.peso ? P.peso + " kg" : "", P.ht ? "Ht " + P.ht + "%" : "", P.tipagem ? "tipagem " + P.tipagem : "", P.transfundido ? "transfundido antes: " + P.transfundido : ""].filter(Boolean).join(" · ")) + "</small></dd>" +
-      (p.indicacao ? "<dt>Indicação</dt><dd>" + esc(p.indicacao) + "</dd>" : "") +
+      (P.primeira ? "<dt>Primeira transfusão</dt><dd>" + esc(P.primeira) + "</dd>" : "") +
+      (p.indicacao ? "<dt>Suspeita clínica</dt><dd>" + esc(p.indicacao) + "</dd>" : "") +
+      ((p.exames || []).length ? "<dt>Exames</dt><dd>" + p.exames.map((x) => x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.nome) + "</a>" : esc(x.nome)).join("<br>") + (p.lidoDoExame ? "<br><small>dados do paciente lidos do exame pela internação</small>" : "") + "</dd>" : "") +
       "<dt>Responsável</dt><dd>" + esc([R.nome, R.telefone].filter(Boolean).join(" · ")) + "<br><small>" + (R.contato === "ciente" ? "Ciente. O CVH pode entrar em contato." : "Aguardando o veterinário avisar o responsável.") + "</small>" + (R.contato === "ciente" && R.telefone ? ' <a href="https://wa.me/55' + esc(String(R.telefone).replace(/\D/g, "").replace(/^55/, "")) + '" target="_blank" rel="noopener">WhatsApp</a>' : "") + "</dd>" +
       "<dt>Solicitante</dt><dd>" + esc([p.vet.nome, p.vet.crmv].join(" · ")) + "</dd>" + (p.amostra && p.amostra.coletada ? "<dt>Amostra</dt><dd>coletada, para o motoboy buscar</dd>" : "") + (p.obs ? "<dt>Observações</dt><dd>" + esc(p.obs) + "</dd>" : "") + "</dl></div>";
   }

@@ -309,12 +309,15 @@ table.kv{width:100%;border-collapse:collapse;table-layout:fixed}
 /* assinatura */
 .as{display:flex;gap:14px;align-items:center;border-top:1px solid #C49A6C;padding-top:11px}
 .as img{width:58px;height:58px;flex:none}
-.as .tx{font-size:10.5px;line-height:1.5;color:#3d0e0b}
-.as .tx b{color:#5F130F;font-size:11.5px}
+.as .tx{font-size:10.5px;line-height:1.45;color:#3d0e0b;width:max-content;max-width:100%}
+.as .tx b{color:#5F130F;font-size:13px;line-height:1.25}
+.as .as-top{display:flex;align-items:stretch}.as .as-nm{display:flex;flex-direction:column;flex:none}
+.as .as-lbl{display:block;font-size:6.6px;font-weight:800;letter-spacing:.04em;color:#A83D3D;line-height:1.3}
+.as .as-rub{flex:1 1 auto;min-width:60px;position:relative;margin-left:6px}
+.as .as-rub svg{position:absolute;right:0;top:-13px;height:calc(100% + 18px);width:100%;overflow:visible}
+.as-lib{font-size:8.6px;color:#8a5a50;margin-top:4px}
 .as .cod{font-size:8.8px;letter-spacing:.06em;color:#8a5a50;font-variant-numeric:tabular-nums;margin-top:1px}
-.as .rub{width:120px;height:48px;flex:none;align-self:flex-start;margin-top:-6px}
 .as .qr{width:58px;height:58px;flex:none;margin-left:auto}
-.mb .as .rub{width:96px;height:38px}
 .mb .as .qr{width:50px;height:50px}
 .nas{border:1.5px dashed #C6B098;border-radius:6px;padding:12px;text-align:center;font-size:10px;color:#9b7f6e}
 .pg.cp .blk{margin-bottom:8px}
@@ -2215,7 +2218,9 @@ function assHTML(){
   const t=assTexto(S.ass);
   const rub=S.ass.rub||(window.CVH_RUB?window.CVH_RUB():'');
   const url=((window.CVH_CTX||{}).urlVerificacao||'https://carteira.cvh.vet.br/')+'?v='+encodeURIComponent(S.ass.codigo);
-  return `<div class="as"><img src="${IMG.selo}" alt=""><div class="tx"><b>${esc(t.l1)}</b><br>${esc(t.l2)}, ${esc(t.l3)}<div class="cod">${esc(t.cod)}${t.lib?` · ${esc(t.lib)}`:''}</div></div>${rub?`<svg class="rub" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${esc(rub)}"/></svg>`:''}${qrFicha(url)}</div>`;
+  // mesmo modelo dos laudos: selo, ASSINADO ELETRONICAMENTE, nome com a rubrica à direita terminando junto com a linha do CRMV, data, código e QR
+  const rubSvg=rub?`<svg viewBox="0 0 300 120" preserveAspectRatio="xMaxYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${esc(rub)}"/></svg>`:'';
+  return `<div class="as"><img src="${IMG.selo}" alt=""><div class="tx"><small class="as-lbl">ASSINADO ELETRONICAMENTE</small><div class="as-top"><div class="as-nm"><b>${esc(S.ass.nome)}</b></div><span class="as-rub">${rubSvg}</span></div><div>Médico veterinário · CRMV-${esc(S.ass.uf)} ${esc(S.ass.crmv)}</div><div>${esc(t.l3.replace(/^em /,''))}</div><div class="cod">${esc(t.cod)}</div></div>${qrFicha(url)}</div>${t.lib?`<div class="as-lib">${esc(t.lib)}${t.l3?' '+esc(t.l3):''}</div>`:''}`;
 }
 function blocos(){
   return [`<div class="blk">${tituloHTML()}</div>`,idHTML(),

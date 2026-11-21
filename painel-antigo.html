@@ -858,7 +858,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121123156';
+  var VERSAO = '20261121123709';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6709,7 +6709,7 @@ const ACOES = {
   'voltar-painel': voltarAoPainel,
   'tx-prova': async b => {
     const at = E.tx && E.tx.at, pac = at ? pacienteTx(at) : prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
-    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : '') }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
+    try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : ''), atendimento: at || '', obs: 'Separada pela HemoCalculadora para a prova de compatibilidade' }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
     catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
   'tx-salvar': async b => { b.disabled = true; try { await salvarCalcTx(); b.textContent = 'Cálculo salvo ✓'; toast('Cálculo salvo no atendimento ' + E.tx.at + '. Ele reabre no preparo da bolsa.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
