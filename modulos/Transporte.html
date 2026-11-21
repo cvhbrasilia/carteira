@@ -385,7 +385,10 @@ function abrirAtendimento(id) {
   ligarClinica(); tiqueRelogios(); if (blocoProva) pintarProvaCx(a.id);
 }
 // números de doação num texto (etiqueta lida "572-0 CH", vários separados por vírgula ou espaço)
-function doacoesDe(t) { const r = String(t || "").toUpperCase().match(/\d{1,6}-\d{1,2}/g); return r ? [...new Set(r)] : String(t || "").split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /\d/.test(x)); }
+// número só com algarismos ganha o hífen antes do último dígito (5673 vira 567-3)
+const hifen = (x) => /^\d{2,7}$/.test(x) ? x.slice(0, -1) + "-" + x.slice(-1) : x;
+function doacoesDe(t) { const T = String(t || "").toUpperCase().replace(/[^0-9A-Z\-,;\s]/g, " "); const r = T.match(/\d{1,6}-\d{1,2}/g); return [...new Set(r ? r : T.split(/[,;\s]+/).map((x) => hifen(x.trim())).filter((x) => /\d/.test(x)))]; }
+document.addEventListener("change", (e) => { const el = e.target; if (el && el.id === "provaManual" && el.value.trim()) el.value = doacoesDe(el.value).join(", "); }, true);
 function provaLida(c) {
   const L = doacoesDe(c), inp = $("#provaManual"); if (!L.length || !inp) { bipe(false); toast("Código lido (" + c + "), mas não é a etiqueta de uma bolsa.", 5000); return; }
   const ja = doacoesDe(inp.value); inp.value = [...new Set(ja.concat(L))].join(", "); bipe(true); toast("Bolsa " + L.join(", ") + " na prova. Desmarque a anterior se for troca.", 5000);

@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121192902';
+  var VERSAO = '20261121193521';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5074,6 +5074,22 @@ async function provasAfazer() {
   box.hidden = false;
   box.innerHTML = '<h3>A fazer · prova de compatibilidade</h3>' + L.map(a => '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(a.paciente || 'Paciente') + '</b> · ' + esc(a.destino || '') + ' · atendimento ' + esc(a.id) + '<small>' + esc([situ(a), bols(a).length ? 'bolsa ' + bols(a).join(', ') : 'sem bolsa separada'].join(' · ')) + '</small></div><div class="mini-bts"><button class="mini" data-acao="ld-prova" data-v="' + esc(a.id) + '">Iniciar prova de compatibilidade</button></div></div>').join('');
 }
+// troca da bolsa da prova de um atendimento: reserva as doações escolhidas, libera as separadas antes e guarda a lista nova no cálculo
+async function trocarProva(id, doacoes) {
+  const d = await estoqueTx(true), U = d.unidades || [], doa = [...new Set((doacoes || []).map(x => String(x).trim()).filter(Boolean))];
+  const raizDe = u => String(u.coleta || u.id).split(' ')[0], minha = u => u.situacao === 'reservada' && (((u.dados || {}).reservaInfo || {}).atendimento === id || String(u.reserva || '').includes(id));
+  const at = (d.atendimentos || []).find(a => a.id === id) || {}, pac = at.paciente || 'paciente', novas = [], liberadas = [], faltam = [];
+  for (const n of doa) {
+    const cand = U.filter(u => u.componente === 'CH' && (raizDe(u) === n || u.id.split(' ')[0] === n));
+    const u = cand.find(minha) || cand.filter(u => u.situacao === 'disponivel').sort((a, b) => (a.volume_ml || 0) - (b.volume_ml || 0))[0];
+    if (!u) { faltam.push(n); continue; }
+    if (!minha(u)) await api('estUnidadeAcao', E.sessao, u.id, 'reservar', { reserva: 'Prova de compatibilidade · ' + pac + ' · atendimento ' + id, atendimento: id, obs: 'Bolsa trocada na prova de compatibilidade' });
+    novas.push(u.id);
+  }
+  for (const u of U.filter(u => minha(u) && /^Prova de compatibilidade/.test(u.reserva || '') && !novas.includes(u.id))) { await api('estUnidadeAcao', E.sessao, u.id, 'cancelarReserva', { motivo: 'Trocada na prova de compatibilidade do atendimento ' + id }); liberadas.push(u.id); }
+  if (novas.length) await api('estAtendimentoCalculo', E.sessao, id, { prova: novas, substituirProva: true });
+  E.txEst = null; return { novas, liberadas, faltam };
+}
 async function provasReservadas() {
   const d = await estoqueTx(true), ats = d.atendimentos || [];
   return (d.unidades || []).filter(u => u.situacao === 'reservada' && u.componente === 'CH' && (/^Prova de compatibilidade|^Atendimento /.test(u.reserva || '') || ((u.dados || {}).reservaInfo || {}).atendimento)).map(u => {
@@ -5095,7 +5111,7 @@ async function montarPedidoLaudo(id, tipo, bolsas) {
   let provas = ids.map(uid => { const u = (d.unidades || []).find(x => x.id === uid) || {}; return { bolsa: '', doador: String(u.coleta || uid).split(' ')[0], unidade: uid }; });
   // escolha feita na ficha do atendimento (marcadas e digitadas à mão) substitui a lista automática
   if (Array.isArray(bolsas)) provas = bolsas.map(String).filter(Boolean).map(b => { const u = (d.unidades || []).find(x => x.id === b || String(x.coleta || '').split(' ')[0] === b || x.id.split(' ')[0] === b) || {}; return { bolsa: '', doador: String(u.coleta || b).split(' ')[0], unidade: u.id || '' }; });
-  E.laudoPedido = { id: a.id, paciente: { nome: P.nome || a.paciente || '', especie: P.especie || '', raca: P.raca || '', sexo: P.sexo || '', idade: P.idade || '', peso: P.peso || '', tipo: tipagemPedido(P) }, resp: (ped.responsavel || {}).nome || '', solicitante: [V.nome, V.crmv].filter(Boolean).join(', ') || a.solicitante || '', solNome: V.nome || '', solCrmv: V.crmv || '', clinica: a.destino || '', provas, dea1: P.dea1 || '', dal: P.dal || '', felino: P.felino || '' };
+  E.laudoPedido = { id: a.id, paciente: { nome: P.nome || a.paciente || '', especie: P.especie || '', raca: P.raca || '', sexo: P.sexo || '', idade: P.idade || '', peso: P.peso || '', tipo: tipagemPedido(P) }, htReceptor: String(P.ht || '').replace('.', ','), resp: (ped.responsavel || {}).nome || '', solicitante: [V.nome, V.crmv].filter(Boolean).join(', ') || a.solicitante || '', solNome: V.nome || '', solCrmv: V.crmv || '', clinica: a.destino || '', provas, dea1: P.dea1 || '', dal: P.dal || '', felino: P.felino || '' };
   if (tipo === 'requisicao') {
     const R = ped.responsavel || {}, rq = (a.dados || {}).requisicao || {}, q = new Date(a.criado), p2 = n => String(n).padStart(2, '0');
     const URG = { rotina: 'Rotina', reserva: 'Reserva', urgente: 'Urgência', emergencia: 'Emergência' }, CT = { orientado: 'já orientado a falar com o CVH', orientar: 'a internação vai orientar o responsável a falar com o CVH', ciente: 'ciente, o CVH pode entrar em contato', aguardar: 'aguardar o médico veterinário avisar' };
@@ -5975,6 +5991,9 @@ const PONTE = {
   abrirAtendimento: id => { setTimeout(() => { E.pedAbrir = String(id || ''); E.modulo = 'transporte'; abrirModulo('transporte'); }, 0); return true; },
   // atendimento da Intensivet: abre o laudo do receptor (prova de compatibilidade, tipagem ou Coombs) já preenchido com o pedido e as bolsas da prova
   provasReservadas: () => provasReservadas(),
+  // hematócrito medido da bolsa de CH no estoque (micro-Ht ou final), pelo número da doação
+  htBolsas: async () => { const d = await estoqueTx(true), m = {}; (d.unidades || []).filter(u => u.componente === 'CH').forEach(u => { const D = u.dados || {}, h = D.htFinal != null ? D.htFinal : D.microHt != null ? D.microHt : (D.ch || {}).htFinal; if (h != null && h !== '') m[String(u.coleta || u.id).split(' ')[0]] = h; }); return m; },
+  trocarProva: o => trocarProva(String((o || {}).id || ''), (o || {}).doacoes || []),
   // segmento da bolsa anotado na ficha de doação, pelo número da doação
   segmentos: () => { const m = {}; (E.d.registros || []).filter(r => r.tipo === 'doacao' && r.excluido !== '1').forEach(r => { const d = r.dados || {}, f = d.ficha || {}, n = String(d.numero || f.numero || '').trim(); if (n && String(f.seguimento || '').trim()) m[n] = String(f.seguimento).trim(); }); return m; },
   pedidoParaLaudo: o => montarPedidoLaudo(String((o || {}).id || ''), String((o || {}).tipo || 'compat')).then(r => { E.laudoPedido = null; return r; }),
