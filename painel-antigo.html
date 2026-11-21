@@ -241,6 +241,12 @@ button{cursor:pointer}
 .reg .ed+.linha .chip{margin-right:5.2em}
 .add{border:1.5px dashed var(--dourado);background:rgba(255,255,255,.55);color:var(--vinho);border-radius:.5em;padding:1em;font-weight:700;font-size:.78em;display:flex;align-items:center;justify-content:center;gap:.4em;min-height:3.6em}
 .ac-pai{position:relative}
+.ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}
+.ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
+.ped-l{width:100%;display:flex;gap:10px;align-items:center;border:0;border-top:1px solid #EEE5DB;background:none;padding:10px 0;font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
+.ped-x{display:flex;flex-direction:column;gap:2px}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
+.ped-t{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--areia);color:var(--vinho)}
+.ped-t.urgente{background:#F6D9C9;color:#8a2a1f}.ped-t.emergencia{background:var(--vermelho);color:#fff}
 .al-home{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;border:0;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#fff;box-shadow:0 2px 10px rgba(95,19,15,.12);font-family:inherit;cursor:pointer;text-align:left}
 .al-home b{color:var(--vinho);font-size:16px}
 .al-home span{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;font-size:13px;color:#7a6a62}
@@ -826,7 +832,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121105540';
+  var VERSAO = '20261121111440';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4608,11 +4614,13 @@ function telaHome() {
     const c = $('#alCont'); if (!c || !l) return; const a = ativos(l), n = k => a.filter(x => x.nivel === k && x.situacao !== 'visto').length;
     c.innerHTML = a.length ? (n('super') ? '<i class="b super">' + n('super') + ' super</i>' : '') + (n('urgente') ? '<i class="b urgente">' + n('urgente') + ' urgentes</i>' : '') + '<i class="b">' + a.length + ' no total</i>' : 'Nenhum alerta';
   }).catch(e => { const c = $('#alCont'); if (c) c.textContent = /Código\.gs/.test(e.message) ? 'servidor desatualizado' : 'Abrir'; }), 50);
+  if (pode('estoque') || pode('producao') || pode('admin')) setTimeout(pedidosHome, 40);
   const meus = MODS.filter(m => m.livre || pode(m.perm || m.k));
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>Centro Veterinário de Hemoterapia</span><b>Painel CVH</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
+    ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +
     (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span id="alCont">calculando…</span></button>' : '') +
     '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Buscar animal, responsável, bolsa, exame ou medicamento" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>' +
     (meus.length ? '<div class="mods">' + meus.map(m => '<button class="mod' + (m.breve ? ' breve' : '') + '" data-acao="modulo" data-k="' + m.k + '">' + (m.breve ? '<span class="tag">' + m.breve + '</span>' : '') + (m.k === 'pendencias' && E.d.pendencias ? '<span class="conta">' + E.d.pendencias + '</span>' : '') + '<i>' + m.ic + '</i><b>' + m.t + '</b><small>' + m.d + '</small></button>').join('') + '</div>'
@@ -4620,6 +4628,21 @@ function telaHome() {
     '<div class="rodape-home"><button class="btn sec2 peq" data-acao="conta">Minha conta</button>' + (pode('admin') ? '<button class="btn sec2 peq" data-acao="compartilhar-painel">Compartilhar o painel com a equipe</button>' : '') + (pode('admin') ? '<button class="btn sec2 peq" data-acao="ajustes">Ajustes e usuários</button>' : '') + '<button class="btn sec2 peq" data-acao="sair">Sair</button></div>' +
     '</div></main>';
   const bg = $('#buscaG'); bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
+}
+/* ── Pedidos da Intensivet que esperam o CVH (acima dos alertas laboratoriais) ──
+   Fora do horário o pedido aparece aqui na hora, em silêncio; o alerta com som toca na abertura do CVH. */
+const TIPO_PEDH = { rotina: 'Rotina', reserva: 'Reserva', urgente: 'Urgência', emergencia: 'Emergência' };
+const ETAPA_PEDH = { aberto: 'novo', possivel: 'possível venda', autorizado: 'aguardando pagamento' };
+async function pedidosHome() {
+  let r; try { r = await api('estPedidosAbertos', E.sessao); } catch (_) { return; }
+  const box = $('#pedHome'); if (!box || !r || !(r.pedidos || []).length) return;
+  const H = r.horario || {}, hm = t => { const d = new Date(t); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const L = r.pedidos.slice().sort((a, b) => ({ emergencia: 0, urgente: 1, reserva: 2, rotina: 3 }[((a.dados || {}).pedido || {}).urgencia] ?? 9) - ({ emergencia: 0, urgente: 1, reserva: 2, rotina: 3 }[((b.dados || {}).pedido || {}).urgencia] ?? 9));
+  box.hidden = false;
+  box.innerHTML = '<div class="ped-cab"><b>Pedidos da Intensivet</b><span>' + L.length + (L.length === 1 ? ' aguardando o CVH' : ' aguardando o CVH') + (H.aberto === false ? ' · CVH fora do horário, o alerta toca ' + esc(H.quando) : '') + '</span></div>' +
+    L.map(a => { const p = (a.dados || {}).pedido || {}, z = (a.dados || {}).prazos || {}, urg = p.urgencia;
+      const oq = (p.bolsas || []).map(b => b.qtd + ' ' + b.componente).concat((p.testes || []).map(t => ({ tipagem: 'tipagem', prova: 'prova de compatibilidade', coombs: 'Coombs' }[t] || t))).join(' + ');
+      return '<button class="ped-l" data-acao="pedido-int" data-id="' + esc(a.id) + '"><span class="ped-t ' + esc(urg || '') + '">' + esc(TIPO_PEDH[urg] || '') + '</span><span class="ped-x"><b>' + esc(a.paciente || '') + ' · ' + esc(oq) + '</b><small>' + esc(ETAPA_PEDH[a.etapa] || a.etapa) + ' · chegou ' + esc(hm(a.criado)) + (p.foraHorario ? ', fora do horário' : '') + (p.reservaPara ? ' · reserva para ' + esc(p.reservaPara.replace(/^(\d{4})-(\d\d)-(\d\d)T(\d\d:\d\d).*/, '$3/$2 às $4')) : '') + (a.etapa === 'autorizado' && z.pagamento ? ' · pagamento até ' + esc(hm(z.pagamento)) : '') + '</small></span></button>'; }).join('');
 }
 /* ── Contatos secundários do responsável ── */
 function contatosDe(r) { try { const l = JSON.parse((r && r.contatos) || '[]'); return Array.isArray(l) ? l : []; } catch (_) { return []; } }
@@ -5541,6 +5564,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.sugestoes = sugestoesReceita();
     E.ponte.base = E.receitaBase ? E.receitaBase.itens : null; E.ponte.baseOrient = E.receitaBase ? E.receitaBase.orient : '';
   }
+  if (nome === 'transporte') { E.ponte.abrirPedido = E.pedAbrir || null; E.pedAbrir = null; }
   if (nome === 'estoque' || nome === 'producao') {
     // fichas de doação com coleta: código, doador, volume de ST, lote e validade da bolsa, segmento
     E.ponte.doacoes = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}, f = d.ficha || {}, a = animalDe(r.animalId) || {};
@@ -6603,6 +6627,7 @@ const ACOES = {
   },
   conta: telaConta,
   alertas: () => telaAlertas('ativos'),
+  'pedido-int': b => { if (pode('transporte') || pode('admin')) { E.modulo = 'transporte'; E.pedAbrir = b.dataset.id; return abrirModulo('transporte'); } E.modulo = 'estoque'; return abrirModulo('estoque'); },
   'alertas-filtro': b => telaAlertas(b.dataset.v),
   'alertas-carregar': b => { b.disabled = true; carregarHistoricosAntigos(b).catch(e => { toast(e.message, 5000); b.disabled = false; }); },
   'alerta-perfil': b => { E.pfDeAlertas = !!document.querySelector('#listaAl'); perfilAnimal(b.dataset.id); },

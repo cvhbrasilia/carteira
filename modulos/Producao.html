@@ -384,7 +384,8 @@ const optBolsas = (c, pref) => bolsasDe(c).map((b, i) => '<option value="' + b.t
 const campoPeso = (id, rot, ph) => "<label>" + rot + '</label><div style="display:flex;gap:8px"><input type="text" inputmode="decimal" id="' + id + '" placeholder="' + esc(ph || "g") + '" style="flex:1"><button class="btn sec peq" data-a="foto" data-v="' + id + '">Foto</button></div>';
 function formFracionar(u) {
   const c = u.componente, mae = u.componente === "CH" ? "ch-final" : "satelite";
-  let h = '<div class="cx" style="margin-top:12px"><h2>Fracionar ' + esc(u.id) + "</h2><p><small>Sistema fechado. Pese a bolsa mãe antes, separe a fração orientado pelo peso-alvo e pese tudo no fim.</small></p>" +
+  const F = S.fracAt && S.fracAt.unidade === u.id ? S.fracAt : null;
+  let h = '<div class="cx" style="margin-top:12px"><h2>Fracionar ' + esc(u.id) + "</h2>" + (F ? '<p class="cx" style="background:#E3F1E4;margin:8px 0"><b>Atendimento ' + esc(F.atendimento) + (F.paciente ? " · " + esc(F.paciente) : "") + "</b><br><small>Separar " + esc(String(F.volume || "")) + " mL (dose e margem da HemoCalculadora). A fração 1 fica reservada para este atendimento.</small></p>" : "") + "<p><small>Sistema fechado. Pese a bolsa mãe antes, separe a fração orientado pelo peso-alvo e pese tudo no fim.</small></p>" +
     '<label>Modelo da bolsa mãe</label><select id="fTM">' + optBolsas(c, mae) + "</select>" + campoPeso("fPI", "Peso inicial da bolsa mãe (g)", u.peso_g != null ? "último registro " + fmt(u.peso_g, 1) + " g" : "g") + '<small id="fPIv"></small><div id="fFr">';
   for (let i = 0; i < (S.nFr || 1); i++) h += '<div class="cx" style="margin:10px 0;background:var(--areia)"><b>Fração ' + (i + 1) + '</b><label>Volume a separar (mL)</label><input type="text" inputmode="decimal" id="fA' + i + '"><label>Modelo da bolsa filha</label><select id="fT' + i + '">' + optBolsas(c, "transferencia") + '</select><div id="fAlvo' + i + '" style="font-weight:800;color:var(--vinho);margin-top:6px"></div>' + campoPeso("fP" + i, "Peso final da fração (g)") + '<label>Identificação física (opcional)</label><input type="text" id="fI' + i + '" placeholder="ex.: 11001"></div>';
   return h + '</div><button class="btn sec peq" data-a="fMais">Mais uma fração</button>' + campoPeso("fPF", "Peso final da bolsa mãe (g)") + '<div id="fConc" style="margin-top:10px"></div><label>Observação (opcional)</label><input type="text" id="fObs"><div class="bts" style="margin-top:10px"><button class="btn" data-a="fConfirmar">Confirmar fracionamento</button><button class="btn sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div></div>';
@@ -407,9 +408,11 @@ function calcFracionar() {
 async function confirmarFracionar() {
   const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
   const fr = []; for (let i = 0; i < (S.nFr || 1); i++) fr.push({ peso: $("#fP" + i).value, tara: $("#fT" + i).value, identificacao: $("#fI" + i).value, alvo: $("#fA" + i).value });
-  const r = await est("estFracionar", u.id, { pesoInicial: $("#fPI").value, taraMae: $("#fTM").value, pesoFinalMae: $("#fPF").value, fracoes: fr, obs: $("#fObs").value });
+  const r = await est("estFracionar", u.id, { pesoInicial: $("#fPI").value, taraMae: $("#fTM").value, pesoFinalMae: $("#fPF").value, fracoes: fr, obs: $("#fObs").value, atendimento: S.fracAt && S.fracAt.unidade === u.id ? S.fracAt.atendimento : undefined });
+  const FA = S.fracAt && S.fracAt.unidade === u.id ? S.fracAt : null; S.fracAt = null;
   Object.assign(u, r.mae); S.uni = S.uni.concat(r.filhas); pintar(); abrirUnidade(u.id);
   $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px"><h2>Fracionamento registrado</h2><p>' + r.filhas.map((f) => esc(f.id) + " · " + fmt(f.volume_ml, 1) + " mL").join("<br>") + "</p><p>Bolsa mãe com " + fmt(r.mae.volume_ml, 1) + " mL. Diferença " + fmt(r.conciliacao.diferenca, 1) + " mL.</p></div>" + escolherEtiqueta([u.id].concat(r.filhas.map((f) => f.id)));
+  if (FA) { $("#uForm").insertAdjacentHTML("afterbegin", '<div class="cx" style="background:#E3F1E4;margin-top:12px"><b>Fração ' + esc(r.filhas[0].id) + " reservada para o atendimento " + esc(FA.atendimento) + '.</b><div class="bts"><button class="btn peq" data-a="voltarAt" data-v="' + esc(FA.atendimento) + '">Voltar ao atendimento</button></div></div>'); }
   previaEtiqueta(r.filhas[0].id); toast("Fracionamento registrado.");
 }
 function formCrio(u) {
@@ -978,6 +981,7 @@ document.addEventListener("click", async (ev) => {
 
   if (a === "bolsasSalvar") { try { const bolsas = [...document.querySelectorAll("[data-bolsa]")].map((r) => ({ id: r.querySelector(".bI").value, nome: r.querySelector(".bN").value, tara: num(r.querySelector(".bT").value), uso: [...r.querySelectorAll(".bU:checked")].map((x) => x.value) })).filter((x) => x.nome.trim() && x.tara != null); S.P = await est("estParametros", { bolsas, limites: { fracionamentoMl: num($("#limA").value), criticoMl: num($("#limC").value), ganhoMl: num($("#limG").value) } }); toast("Salvo."); pintar(); } catch (e) { toast(e.message, 6000); } return; }
   if (a === "fMais") { const v0 = {}; document.querySelectorAll("#uForm input, #uForm select").forEach((x) => { v0[x.id] = x.value; }); S.nFr = (S.nFr || 1) + 1; const u = S.uni.find((x) => x.id === S.uniAberta); $("#uForm").innerHTML = formFracionar(u); Object.entries(v0).forEach(([k, val]) => { const el = document.getElementById(k); if (el) el.value = val; }); calcFracionar(); return; }
+  if (a === "voltarAt") { try { await ponte("abrirAtendimento", v); } catch (e) { toast(e.message); } return; }
   if (a === "fConfirmar" || a === "cConfirmar") { try { b.disabled = true; await (a === "fConfirmar" ? confirmarFracionar() : confirmarCrio()); } catch (e) { toast(e.message || String(e), 7000); } finally { b.disabled = false; } return; }
   if (a === "ctSalvar") { try { const r = await est("estUnidadeAcao", v, "contato", { notas: $("#ctNotas").value }); const u = S.uni.find((x) => x.id === v); if (u) Object.assign(u, r); toast("Salvo."); abrirUnidade(v); } catch (e) { toast(e.message, 6000); } return; }
   if (a === "ctCopiar") { const u = S.uni.find((x) => x.id === v); if (!u) return; const t = textoRequisicao(Object.assign({}, u, { dados: Object.assign({}, u.dados, { contatoCVH: { notas: ($("#ctNotas") || {}).value || "" } }) })); try { await navigator.clipboard.writeText(t); toast("Dados copiados. Cole no formulário da requisição.", 5000); } catch (e) { $("#ctNotas").value += "\n\n" + t; toast("Não consegui copiar sozinho. Os dados foram para o campo; selecione e copie.", 7000); } return; }
@@ -1068,7 +1072,9 @@ async function atualizarSozinho() { if (!podeAtualizar()) return; try { const y 
 setInterval(atualizarSozinho, 25000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarSozinho(); });
 async function iniciar() {
-  try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar(); }
+  try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar();
+    // vindo da HemoCalculadora (14.2): abre a bolsa escolhida já no fracionamento, com o volume da dose e da margem
+    const F = CTX.fracionar; if (F && F.unidade && S.uni.some((u) => u.id === F.unidade)) { S.fracAt = F; abrirUnidade(F.unidade); S.nFr = 1; $("#uForm").innerHTML = formFracionar(S.uni.find((u) => u.id === F.unidade)); if (F.volume) $("#fA0").value = String(F.volume); calcFracionar(); const fp = $("#fPI"); if (fp) { fp.focus(); fp.scrollIntoView({ block: "center" }); } } }
   catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o estoque. ' + esc(e.message || String(e)) + "</div>"; }
 }
 iniciar();
