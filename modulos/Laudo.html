@@ -2211,6 +2211,8 @@ function tipoSanguineoTxt() {
 const CLINICA_CVH = "CVH - Centro Veterinário de Hemoterapia";
 // laudo de doador do CVH (ou clínica igual à do CVH): o CVH é banco de sangue, não clínica veterinária
 const ehCvh = () => !estado.receptor && (!String(estado.exame.clinica || "").trim() || estado.exame.clinica === CLINICA_CVH);
+// IDEXX, Citopet e TECSA feitos pelo CVH para os próprios doadores: exame de triagem, sem solicitante nem clínica
+const ehTriagem = () => ehCvh() && ["idexx", "tecsa"].includes(estado.tipo) && !String(estado.exame.solicitanteCrmv || "").trim() && (!String(estado.exame.solicitante || "").trim() || !!crmvSolicitante());
 // exigências do CRMV no cabeçalho: CRMV do solicitante (do cadastro, quando é médico veterinário do CVH) e data da liberação
 function crmvSolicitante() {
   const X = estado.exame, nome = String(X.solicitante || "").trim(); let crmv = String(X.solicitanteCrmv || "").trim();
@@ -2234,7 +2236,7 @@ function blocoIdent(x, y, w, tam) {
   const itens = [["Paciente", P.nome, true], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : "", false, true],
     ["Responsável", R.nome], ["CPF do responsável", R.cpf || "", false, true], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
     ["Liberação", liberacaoTxt()],
-    ["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica],
+    ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica]]),
     ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], X.labNome ? [estado.misto ? "Laboratórios" : "Laboratório", (estado.misto ? "IDEXX no CVH e " : "") + X.labNome + (X.labNumero ? " · nº " + X.labNumero : ""), false, true] : ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
   const gap = 14, wm = (w - 24 - gap) / 2, linhas = [];
@@ -3340,8 +3342,8 @@ function validar() {
   if (k === "compat" && t.provas.some((p) => !String(p.doador || "").trim())) return t.doadorExterno ? "Preencha a identificação do doador de cada prova." : "Preencha o número da doação de cada bolsa.";
   if (k === "compat") t.provas.forEach((p) => (p.acDoador = "Negativo"));
   // exigência do CRMV: solicitante com CRMV e clínica de origem
-  if (!String(estado.exame.solicitante || "").trim()) return "Preencha o médico veterinário solicitante.";
-  if (!/\d/.test(crmvSolicitante())) return "Preencha o CRMV do solicitante.";
+  if (!ehTriagem() && !String(estado.exame.solicitante || "").trim()) return "Preencha o médico veterinário solicitante.";
+  if (!ehTriagem() && !/\d/.test(crmvSolicitante())) return "Preencha o CRMV do solicitante.";
   if ((estado.receptor || k === "compat") && !String(estado.exame.clinica || "").trim()) return "Preencha a clínica veterinária solicitante." + (estado.receptor ? "" : " Se a amostra é do próprio CVH, escreva CVH.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(estado.exame.data || "")) return "Preencha a data.";
   if (!CTX.urlVerificacao) return "Atualize o Código.gs publicado para gerar o QR Code de verificação.";

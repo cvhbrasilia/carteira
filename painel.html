@@ -463,6 +463,7 @@ a.btn{text-decoration:none}
 .ct-mini{display:flex;align-items:center;gap:14px;cursor:pointer}.ct-mini .ct-ano{width:62px;height:62px;filter:none}.ct-mini small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-mini b{display:block;font-size:17px;color:var(--vinho)}.ct-mini span{font-size:13px;color:#7A6A62}
 .ct-oc{margin-top:16px}.ct-oc-l{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFE6DC}
 .av-i.lido{opacity:.55}
+@media (max-width:600px){.pill{font-size:16px;padding:12px 18px;min-height:46px}.venc{flex-wrap:wrap;row-gap:10px}.venc .t{flex:1 1 100%;min-width:0}.venc .t small{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.venc .mini-bts{flex:1 1 100%;display:flex;gap:10px}.venc .mini-bts .mini{flex:1}.venc .mini-bts .mini,.mini-bts .mini{min-height:42px;padding:9px 14px;font-size:15px}}
 .al-imp{margin:.2em 0;color:#A83D3D;font-weight:700;font-size:.85em}.alerta-c.imped{border-color:#A83D3D}
 @media (min-width:1000px){.tela-al .tela-c{max-width:1180px}.al-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.al-lado{position:sticky;top:10px}.al-lado .filtros{flex-wrap:wrap}}
 .cf-fis{margin:.5em 0 .2em;padding:.5em .7em;border:1px dashed var(--areia,#EEE5DB);border-radius:.6em;font-size:.82em;color:var(--vinho)}.cf-fis p{margin:0 0 .3em}.cf-fis .mini.on{background:var(--vinho);color:#fff}
@@ -824,7 +825,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121005307';
+  var VERSAO = '20261121010603';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5755,8 +5756,9 @@ function vermParaConfirmar() {
   const h = hoje(), lim = somaDiasIso(h, -30), out = [], disp = vermDispLocal();
   E.d.animais.filter(a => a.ativo !== '0').forEach(a => {
     const regs = regsDe(a.id), ultV = regs.filter(r => r.tipo === 'vermifugo').map(r => r.data).sort().pop() || '';
+    // só a doação mais recente de cada animal
     regs.filter(r => r.tipo === 'doacao' && r.data >= lim && r.data > ultV && a.doador === '1' && pesoNum((r.dados || {}).peso) && !(r.dados || {}).naoColetado && !(r.dados || {}).vermDispensado)
-      .forEach(r => out.push({ an: a, r, origem: 'ficha', data: r.data, peso: r.dados.peso, produto: 'Vermicanis Plus' }));
+      .sort((x, y) => (y.data || '').localeCompare(x.data || '')).slice(0, 1).forEach(r => out.push({ an: a, r, origem: 'ficha', data: r.data, peso: r.dados.peso, produto: 'Vermicanis Plus' }));
     regs.filter(r => r.tipo === 'receita' && r.data >= lim && r.data > ultV && !disp.includes(r.id)).forEach(r => {
       const it = ((r.dados || {}).docs || []).flatMap(d => d.itens || []).find(i => VERMIFUGOS.some(v => semAc(i.med || '').includes(semAc(v)))); if (!it) return;
       const prod = VERMIFUGOS.filter(v => semAc(it.med).includes(semAc(v))).sort((x, y) => y.length - x.length)[0];
