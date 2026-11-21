@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121183625';
+  var VERSAO = '20261121184337';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -346,6 +346,10 @@ async function carregar(silencio) {
   try {
     const antes = D; D = await srv("intDados"); DIF = Date.parse(D.agora) - Date.now();
     if (antes) { const novas = (D.remessas || []).filter((r) => r.situacao === "transito" && !(antes.remessas || []).some((x) => x.id === r.id)); if (novas.length) { somAviso(); toast("Caixa do CVH a caminho.", 7000); } }
+    // transporte chegou para buscar a amostra: alarme com o app aberto (uma vez por chamada)
+    { let visto = {}; try { visto = JSON.parse(localStorage.getItem("cvh_int_busca") || "{}"); } catch (_) {}
+      const ch = (D.pedidos || []).filter((x) => { const am = x.amostra || {}; return am.chamadoEm && !am.enviadaEm && !am.saiuEm && !am.chegouEm && visto[x.id] !== am.chamadoEm; });
+      if (ch.length) { somAviso(); setTimeout(somAviso, 1300); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); toast((((ch[0].amostra || {}).via === "motoboy") ? "Motoboy" : "Uber") + " chegou para buscar a amostra de " + (ch[0].paciente || "paciente") + ".", 9000); ch.forEach((x) => { visto[x.id] = x.amostra.chamadoEm; }); try { localStorage.setItem("cvh_int_busca", JSON.stringify(visto)); } catch (_) {} } }
     if (!$("#modal").classList.contains("on") && !$("#cam").classList.contains("on")) pintar();
   } catch (e) {
     if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_int_k"); } catch (_) {} K = ""; return carregar(); }
@@ -477,9 +481,11 @@ function infoPedido(x, p) {
   if (x.etapa === "aberto" && p.foraHorario && p.abreEm && Date.parse(p.abreEm) > agora()) t.push("Recebido fora do horário. Chega à equipe do CVH " + p.abreQuando + ".");
   if (x.etapa === "autorizado" && z.pagamento) t.push((Date.parse(z.pagamento) < agora() ? "Prazo de pagamento terminou " : "Pagamento até ") + hora(z.pagamento));
   if (z.envio && ["pago", "testes", "fracionamento", "preparo"].includes(x.etapa)) t.push("Envio até " + hora(z.envio));
-  const am = x.amostra || {};
-  const uber = am.uber && !am.chegouEm ? '<div class="tipo-exp" style="margin-top:8px"><b>Uber a caminho para buscar a amostra</b><br>Separe o tubo identificado com o nome do paciente. <a href="' + esc(am.uber) + '" target="_blank" rel="noopener">Acompanhar a corrida</a>' +
-    (am.entregueUberEm ? "<br><small>Amostra entregue ao motorista " + esc(hora(am.entregueUberEm)) + ".</small>" : '<div class="bts" style="margin-top:6px"><button class="btn peq" data-a="amEntregue" data-v="' + esc(x.id) + '">Amostra entregue ao Uber</button></div>') + "</div>" : am.chegouEm ? '<span class="prazo" style="background:#e4efe7;color:#2f6b3f">Amostra recebida no CVH</span>' : "";
+  const am = x.amostra || {}, via = am.via === "motoboy" ? "Motoboy" : "Uber";
+  // a equipe só é chamada quando o transporte chega; "Amostra enviada" pode ser marcada depois, sem pressa
+  const pend = (am.caminhoEm || am.chamadoEm) && !am.enviadaEm && !am.saiuEm && !am.chegouEm;
+  const uber = am.chegouEm ? '<span class="prazo" style="background:#e4efe7;color:#2f6b3f">Amostra recebida no CVH</span>' : am.saiuEm || am.enviadaEm ? '<span class="prazo" style="background:#e4efe7;color:#2f6b3f">Amostra a caminho do CVH</span>' :
+    pend ? '<div class="tipo-exp" style="margin-top:8px"><b>' + (am.chamadoEm ? via + " chegou para buscar a amostra" : via + " a caminho para buscar a amostra") + '</b><br>Tubo da amostra identificado com o nome do paciente.' + (am.uber ? ' <a href="' + esc(am.uber) + '" target="_blank" rel="noopener">Ver a corrida</a>' : "") + '<div class="bts" style="margin-top:6px"><button class="btn peq" data-a="amEntregue" data-v="' + esc(x.id) + '">Amostra enviada</button></div></div>' : "";
   return t.map((v) => '<span class="prazo">' + esc(v) + "</span>").join("") + uber;
 }
 const oQuePedido = (p) => (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => ({ tipagem: "tipagem", prova: "prova de compatibilidade", coombs: "Coombs" }[t] || t))).join(" + ");
@@ -680,7 +686,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "solicitar") return formSolicitar();
     if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
     if (a === "exColar") return colarExames();
-    if (a === "amEntregue") { b.disabled = true; await srv("intAmostraEntregue", v); somOk(); toast("Obrigado. O CVH foi avisado.", 4000); return carregar(); }
+    if (a === "amEntregue") { b.disabled = true; await srv("intAmostraEntregue", v); somOk(); toast("Obrigado. Amostra marcada como enviada.", 4000); return carregar(); }
     if (a === "atalho") { ev.preventDefault(); return mostrarAtalho(); }
     if (a === "atalhoCopiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado.", 2500); } catch (_) { toast("Toque e segure no link para copiar.", 5000); } return; }
     if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
