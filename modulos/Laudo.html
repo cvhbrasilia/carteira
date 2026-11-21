@@ -2088,6 +2088,17 @@ async function lerArquivos(files) {
   return lidos;
 }
 const mesmoNome = (a, b) => { const x = semAc(a).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(), y = semAc(b).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); return !x || !y || x === y || (" " + y + " ").indexOf(" " + x + " ") >= 0 || (" " + x + " ").indexOf(" " + y + " ") >= 0; };
+// nome com grafia diferente (Balto x Balton): até 2 letras de diferença; o responsável decide se é o mesmo animal
+const normNome = (x) => semAc(x).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+function distLetras(a, b) { const m = a.length, n = b.length, d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; }
+const nomeParecido = (a, b) => { const x = normNome(a).split(" ")[0] || "", y = normNome(b).split(" ")[0] || ""; return x.length >= 3 && y.length >= 3 && distLetras(x, y) <= (Math.min(x.length, y.length) <= 4 ? 1 : 2); };
+const respConfere = (pdf, cad) => !!String(pdf || "").trim() && !!String(cad || "").trim() && (mesmoNome(normNome(pdf).split(" ")[0], normNome(cad).split(" ")[0]) || nomeParecido(pdf, cad));
+function avisoNome(c, an, av) {
+  if (!c.nome || !an.nome || mesmoNome(c.nome, an.nome)) return;
+  const rp = c.responsavel || c.tutor || "", cad = (estado.resp || {}).nome || "";
+  if (nomeParecido(c.nome, an.nome) && respConfere(rp, cad)) av.push(`O nome no PDF (${c.nome}) está escrito diferente do cadastro (${an.nome}), mas o responsável confere (${rp}).`);
+  else av.push(`O nome no PDF (${c.nome}) é diferente do cadastro (${an.nome})` + (rp && cad && !respConfere(rp, cad) ? ` e o responsável também (${rp} no PDF, ${cad} no cadastro). Confira se é o mesmo animal.` : "."));
+}
 let GRAF = {}, LIDOS = [];
 function aplicarLeitura(lidos) {
   estado.arquivos = lidos.map((r) => r.nome);
@@ -2119,7 +2130,7 @@ function aplicarLeitura(lidos) {
       if (doEste) estado.exame.doacao = doa.numero;
       else if (doa) av.push(`A doação ${c.codigo} do PDF é de outro doador (${(ANIMAIS.find((a) => a.id === doa.animalId) || {}).nome || "outro cadastro"}), não deste animal.`);
       else av.push(`Não achei a doação ${c.codigo} nas fichas deste animal.`);
-    } else if (c.nome && an.nome && !mesmoNome(c.nome, an.nome)) av.push(`O nome no PDF (${c.nome}) é diferente do cadastro (${an.nome}).`);
+    } else avisoNome(c, an, av);
     if (c.chip && an.microchip && c.chip !== String(an.microchip).replace(/\D/g, "")) av.push("O microchip do PDF é diferente do cadastro.");
   }
   if (lidos.length > 1 && new Set(lidos.map((r) => r.data)).size > 1) av.push("Os PDFs escolhidos têm datas diferentes. Confira se são da mesma coleta.");
@@ -2148,7 +2159,7 @@ function aplicarTecsa(r, nomeArq) {
       estado.exame.doacao = doa.numero; if (doa.data) estado.exame.data = doa.data;
     } else { av.push(`Não achei a doação ${cod} no cadastro. Confira o número${CTX.animalId ? "" : " e escolha o animal abaixo"}.`); estado.exame.doacao = cod; estado.exame.data = isoDe(c.cadastro) || estado.exame.data; }
   } else {
-    if (c.nome && an.nome && !mesmoNome(c.nome, an.nome)) av.push(`O nome no PDF (${c.nome}) é diferente do cadastro (${an.nome}).`);
+    avisoNome(c, an, av);
     estado.exame.data = isoDe(c.cadastro) || estado.exame.data;
   }
   t.avisos = av; estado.exame.titulo = tituloPadrao();
@@ -3587,7 +3598,9 @@ if (CTX.pdfLab && CTX.pdfLab.id) (async () => {
       // sem animal escolhido: procura pelo número da doação ou pelo nome do paciente e do responsável no PDF
       if (!estado.animalId) {
         const doa = LIDOS[0].cab.codigo ? acharDoacao(LIDOS[0].cab.codigo) : null;
-        const cand = doa ? ANIMAIS.filter((a) => a.id === doa.animalId) : ANIMAIS.filter((a) => mesmoNome(a.nome, c0.nome) && (!c0.responsavel || !a.resp || mesmoNome(String(a.resp).split(" ")[0], c0.responsavel.split(" ")[0])));
+        let cand = doa ? ANIMAIS.filter((a) => a.id === doa.animalId) : ANIMAIS.filter((a) => mesmoNome(a.nome, c0.nome) && (!c0.responsavel || !a.resp || mesmoNome(String(a.resp).split(" ")[0], c0.responsavel.split(" ")[0])));
+        // nome escrito diferente: só vale se o responsável conferir
+        if (!cand.length && !doa && c0.responsavel) cand = ANIMAIS.filter((a) => nomeParecido(a.nome, c0.nome) && respConfere(c0.responsavel, a.resp));
         if (cand.length === 1) { usarAnimal(cand[0].id); aplicarLeitura(LIDOS); if (doa) estado.exame.doacao = doa.numero; }
         else estado.avisos.push("Não identifiquei o animal (" + (c0.nome || "sem nome no PDF") + "). Escolha o animal do cadastro antes de salvar.");
       }

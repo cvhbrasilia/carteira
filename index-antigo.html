@@ -821,7 +821,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121003530';
+  var VERSAO = '20261121004059';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3173,20 +3173,21 @@ async function certImagem(c, fmt, tipoImg) {
   } finally { box.remove(); }
 }
 const bytesDeUrl = u => { const t = atob(u.split(',')[1]), x = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) x[i] = t.charCodeAt(i); return x; };
-async function baixarCert(aid, id, fmt, b) {
+async function baixarCert(aid, id, fmt, b, modo) {
   const c = certPorId(aid, id); if (!c) return;
   const t0 = b ? b.innerHTML : ''; if (b) { b.disabled = true; b.textContent = 'Gerando…'; }
   try {
     const base = 'Certificado ' + c.an.nome + ' ' + c.data;
-    if (fmt === 'a4') {
+    if (fmt === 'a4' && modo !== 'enviar') {
       if (!window.PDFLib) await carregarScript(LIB_PDF);
       const url = await certImagem(c, 'a4', 'jpg'), pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(bytesDeUrl(url));
       pdf.addPage([841.89, 595.28]).drawImage(img, { x: 0, y: 0, width: 841.89, height: 595.28 }); pdf.setTitle((c.tipo === 'aposentadoria' ? 'Certificado de aposentadoria · ' : 'Certificado de doação · ') + c.an.nome);
       entregarArquivo(new Blob([await pdf.save()], { type: 'application/pdf' }), base + '.pdf');
     } else {
-      const url = await certImagem(c, fmt, 'png'), blob = new Blob([bytesDeUrl(url)], { type: 'image/png' }), nome = base + (fmt === 'feed' ? ' (feed).png' : ' (stories).png');
+      const url = await certImagem(c, fmt, 'png'), blob = new Blob([bytesDeUrl(url)], { type: 'image/png' }), nome = base + (fmt === 'feed' ? ' (feed).png' : fmt === 'story' ? ' (stories).png' : '.png');
       const arq = typeof File === 'function' ? new File([blob], nome, { type: 'image/png' }) : null;
-      if (arq && navigator.canShare && navigator.canShare({ files: [arq] }) && matchMedia('(pointer:coarse)').matches) { try { await navigator.share({ files: [arq], title: 'Certificado de doação' }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      // Enviar abre o compartilhar do celular (WhatsApp, Instagram etc.); Baixar salva o arquivo
+      if (modo === 'enviar' && arq && navigator.canShare && navigator.canShare({ files: [arq] })) { try { await navigator.share({ files: [arq], title: 'Certificado de doação' }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
       entregarArquivo(blob, nome);
     }
   } catch (e) { toast(e.message || 'Não consegui gerar o certificado.', 5000); }
@@ -3202,7 +3203,7 @@ function verCert(aid, id, fmt) {
   const tab = (k, t) => '<button class="filtro' + (k === fmt ? ' on' : '') + '" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + id + '" data-v="' + k + '">' + t + '</button>';
   abrirFolha(c.tipo === 'aposentadoria' ? 'Certificado de aposentadoria' : 'Certificado de doação · ' + br(c.data),
     '<div class="filtros">' + tab('a4', 'Digital') + tab('feed', 'Feed') + tab('story', 'Stories') + '</div>' +
-    '<div class="ct-prev" id="ctPrev"><div class="ct-esc">' + certHtml(c, fmt) + '</div></div>' + botoesCert(c, ed, true));
+    '<div class="ct-prev" id="ctPrev"><div class="ct-esc">' + certHtml(c, fmt) + '</div></div>' + botoesCert(c, ed, true, fmt));
   const [W, H] = CERT_FMT[fmt], ajustar = () => {
     const pv = $('#ctPrev'); if (!pv) return; const pe = pv.parentElement, cs = pe ? getComputedStyle(pe) : null, disp = pe ? pe.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 4 : 560; if (disp < 50) return;
     const k = Math.min(1, disp / W, (fmt === 'a4' ? 9999 : Math.max(420, innerHeight * 0.62)) / H);
@@ -3210,11 +3211,17 @@ function verCert(aid, id, fmt) {
   };
   ajustar(); requestAnimationFrame(ajustar); setTimeout(ajustar, 300);
 }
-function botoesCert(c, ed, naFolha) {
+function botoesCert(c, ed, naFolha, fmtAtual) {
   const aid = c.an.id, b = (fmt, t, s) => '<button class="btn sec2 peq" data-acao="cert-baixar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + fmt + '">' + t + (s ? '<small>' + s + '</small>' : '') + '</button>';
+  // primeiro visualizar: fora da prévia, os botões abrem a prévia de cada formato; na prévia, baixar ou enviar o formato que está na tela
+  const ver = (fmt, t, s) => '<button class="btn sec2 peq" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + fmt + '">' + t + (s ? '<small>' + s + '</small>' : '') + '</button>';
+  const f = fmtAtual || 'a4', podeEnviar = typeof navigator.share === 'function';
+  const acoes = naFolha ? '<button class="btn peq" data-acao="cert-baixar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + f + '">Baixar ' + (f === 'a4' ? 'o PDF' : f === 'feed' ? 'para o feed' : 'para os stories') + '</button>' +
+    (podeEnviar ? '<button class="btn sec2 peq" data-acao="cert-baixar" data-m="enviar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + f + '">Enviar</button>' : '')
+    : ver('a4', 'PDF digital', 'A4 para imprimir') + ver('feed', 'Feed', '1080 × 1350') + ver('story', 'Stories', '1080 × 1920');
   const rp = respDe(c.an) || {}, tel = String(rp.telefone || '').replace(/\D/g, ''), w = ed && tel ? 'https://wa.me/' + (tel.length <= 11 ? '55' + tel : tel) + '?text=' + encodeURIComponent('Olá, ' + (rp.nome || '').split(' ')[0] + '! ' + (c.tipo === 'aposentadoria' ? 'O certificado de aposentadoria de ' : 'O certificado da doação de sangue de ') + c.an.nome + (c.tipo === 'aposentadoria' ? '' : ' (' + br(c.data) + ')') + ' já está na carteira de saúde, na aba Certificados, com versões para imprimir e para postar no feed e nos stories. Muito obrigado por fazer parte do Clube do Doador!' + (rp.token ? '\n\n' + linkDe(rp) : '')) : '';
-  return '<div class="ct-bts">' + (naFolha ? '' : '<button class="btn sec2 peq" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + c.id + '" data-v="a4">Visualizar</button>') +
-    b('a4', 'PDF digital', 'A4 para imprimir') + b('feed', 'Feed', '1080 × 1350') + b('story', 'Stories', '1080 × 1920') +
+  return '<div class="ct-bts">' +
+    acoes +
     (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>' : '') +
     (ed && c.tipo === 'doacao' ? '<button class="btn sec2 peq rc-del" data-acao="cert-ocultar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
     (naFolha ? '<button class="btn sec2 peq" data-acao="fechar">Voltar</button>' : '') + '</div>';
@@ -5595,6 +5602,12 @@ const PONTE = {
   arquivoLab: async id => api('lerArquivoDrive', E.sessao, id),
   labQualidade: async () => (await api('laboratoriosListar', E.sessao, false)).filter(x => ehQualidade(x) && x.situacao !== 'feito' && x.situacao !== 'ignorado').map(x => ({ labId: x.id, arquivoId: x.arquivoId, nome: x.nomeArquivo })),
   labFeito: async ids => { for (const id of ids || []) { try { await api('laboratorioMarcar', E.sessao, id, { situacao: 'feito' }); } catch (_) {} } return true; },
+  // botões do laudo recém-assinado: últimos exames da carteira e Histórico Laboratorial, separados
+  laudoEnvio: async o => {
+    const r = await api('laudoEnvio', E.sessao, o.id, 'carteira' in o ? { carteira: !!o.carteira } : { historico: !!o.historico }); guardarRegistro(r);
+    if (o.historico) setTimeout(() => atualizarHistoricoSozinho(r.animalId), 300);
+    return true;
+  },
   salvarLaudo: async o => {
     if (o.receptor) return salvarLaudoReceptor(o);
     const an = animalDe(o.animalId || E.animal); if (!an) throw new Error('Escolha o animal do cadastro.');
@@ -6705,7 +6718,7 @@ const ACOES = {
   'baixar-ficha': b => baixarFicha(b.dataset.id, b.dataset.v, b),
   'anexar-ficha': b => anexarFicha(b.dataset.id, b),
   'cert-ver': b => verCert(b.dataset.aid, b.dataset.id, b.dataset.v),
-  'cert-baixar': b => baixarCert(b.dataset.aid, b.dataset.id, b.dataset.v, b),
+  'cert-baixar': b => baixarCert(b.dataset.aid, b.dataset.id, b.dataset.v, b, b.dataset.m || 'baixar'),
   'cert-ocultar': b => ocultarCert(b.dataset.aid, b.dataset.id, b, false),
   'cert-mostrar': b => ocultarCert(b.dataset.aid, b.dataset.id, b, true),
   'cert-animal': b => { fecharFolha(); telaCertificados(b.dataset.id); },
