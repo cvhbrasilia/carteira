@@ -836,7 +836,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121114705';
+  var VERSAO = '20261121121628';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4824,12 +4824,12 @@ function notaInternaTx(T, r) {
   return '<div class="av-i ' + nivel + ' tx-int"><span class="av-rot">Só aparece para você</span><b>' + n1(mlkg) + ' mL/kg neste paciente</b><small>' + txt + '</small>' +
     (macica ? '<small><b>' + macica + '</b></small>' : '') +
     '<small>CH com SAG, referência do CVH de 15 mL/kg ≈ ' + n0(peso * 15) + ' mL' + (vol > peso * 15 ? ' (o volume calculado passa disso)' : '') + '.</small>' +
-    '<small>Teto de 10 mL/kg ≈ ' + n0(peso * 10) + ' mL · teto de 22 mL/kg ≈ ' + n0(lim22) + ' mL.</small>' +
+    '<small>Teto de 10 mL/kg ≈ ' + n0(peso * 10) + ' mL · dose máxima em 24 h de 22 mL/kg ≈ ' + n0(lim22) + ' mL (BSA: CH de 10 a 22 mL/kg/dia no paciente normovolêmico).</small>' +
     '<details><summary>Velocidade</summary><small>Começar devagar, por exemplo 1 mL/kg (' + n0(peso) + ' mL) nos primeiros 10 a 15 minutos, observando reação.</small>' +
     '<small>Normovolêmico até 11 a 22 mL/kg/h (' + n0(peso * 11) + ' a ' + n0(lim22) + ' mL/h), sem passar de ' + (gato ? '1 a 2 mL/min em gatos e filhotes' : '3 a 6 mL/min em cães adultos') + ' (' + abs[0] + ' a ' + abs[1] + ' mL/h).</small>' +
     '<small>Cardiopata ou com doença renal até 4 mL/kg/h (' + n0(lim4) + ' mL/h). Nesse ritmo esse volume leva ' + n1(h4) + ' h' + (h4 > 4 ? ', mais que as 4 horas de uma bolsa. Dividir a bolsa ou o volume.' : '.') + '</small>' +
     '<small>Terminar cada bolsa em até 4 horas.</small></details>' +
-    '<details><summary>De onde vêm esses números</summary><small>Cornell (Comparative Coagulation Laboratory) para CH 6 a 10 mL/kg e velocidade máxima por minuto. MSD Veterinary Manual para volemia e TACO. dvm360 (proceedings de monitoração de transfusão) para 11 a 22 mL/kg/h, 4 mL/kg/h em cardiopatas e citrato. Jutkowitz e col. (JAVMA, 2002) para a definição de transfusão maciça.</small></details></div>';
+    '<details><summary>De onde vêm esses números</summary><small>Cornell (Comparative Coagulation Laboratory) para CH 6 a 10 mL/kg e velocidade máxima por minuto. MSD Veterinary Manual para volemia e TACO. dvm360 (proceedings de monitoração de transfusão) para 11 a 22 mL/kg/h, 4 mL/kg/h em cardiopatas e citrato. Jutkowitz e col. (JAVMA, 2002) para a definição de transfusão maciça. Manual de Hemoterapia do Banco de Sangue Animal (BSA, Portugal): 10 a 15 mL/kg de CH sobem o hematócrito em cerca de 10 pontos, e o total não deve passar de 22 mL/kg por dia.</small></details></div>';
 }
 /* ── HemoCalculadora: CH, CP, PFC e crioprecipitado, com versão simples e leitura por IA ── */
 const HC_COMP = [['CH', 'CH'], ['CP', 'CP'], ['PFC', 'PFC'], ['CRIO', 'Crio']];
@@ -5211,7 +5211,7 @@ async function pintarLaboratorios(todos) {
   let L; try { L = E.labRec = await api('laboratoriosListar', E.sessao, !!todos); } catch (e) { el.innerHTML = '<h3>Laudos dos laboratórios</h3><p class="nota">' + esc(e.message) + '</p>'; return; }
   if (!$('#labRec')) return;
   const nQc = L.filter(ehQualidade).length;
-  L = L.filter(x => !ehQualidade(x) && (todos || x.situacao !== 'arquivado'));
+  L = L.filter(x => !ehQualidade(x) && x.situacao !== 'excluido' && (todos || x.situacao !== 'arquivado'));
   if (!todos) L = L.filter(x => { if (x.situacao === 'feito') return true; const r = laudoJaFeito(x, animalDoLab(x)); if (!r) return true; api('laboratorioMarcar', E.sessao, x.id, { situacao: 'feito', registroId: r.id }).catch(() => {}); return false; });
   const novos = L.filter(x => x.situacao === 'novo').length;
   el.innerHTML = '<h3>Laudos dos laboratórios' + (novos ? ' <span class="chip critico">' + novos + (novos === 1 ? ' novo' : ' novos') + '</span>' : '') + '</h3>' +
@@ -5262,7 +5262,7 @@ function pintarPainelLaudos() {
   if (!document.querySelector('.tela-pl')) return;
   const labs = PL.labs || [], rasc = PL.rasc || [], regs = laudosTodos();
   const dataDe = (o) => o.k === 'lab' ? isoLab(o.x) : o.k === 'rasc' ? String(o.x.em || '').slice(0, 10) : o.x.data;
-  const itens = labs.filter(x => x.situacao !== 'feito').map(x => ({ k: 'lab', x, t: x.origem, al: alertaLab(x), et: ['ignorado', 'arquivado'].includes(x.situacao) ? 'arquivado' : alertaLab(x).length || x.positivo ? 'alerta' : 'aguardando' }))
+  const itens = labs.filter(x => x.situacao !== 'feito' && x.situacao !== 'excluido').map(x => ({ k: 'lab', x, t: x.origem, al: alertaLab(x), et: ['ignorado', 'arquivado'].includes(x.situacao) ? 'arquivado' : alertaLab(x).length || x.positivo ? 'alerta' : 'aguardando' }))
     .concat(rasc.map(x => ({ k: 'rasc', x, t: x.tipo === 'idexx' && /citopet/i.test(x.titulo || '') ? 'citopet' : x.tipo, al: [], et: 'aguardando' })))
     .concat(regs.map(x => ({ k: 'reg', x, t: catReg(x), al: alertaReg(x), et: 'assinado' })));
   const meses = [...new Set(itens.map(o => String(dataDe(o) || '').slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -5582,13 +5582,15 @@ async function leituraIA(tipo, accept, btn, pronto) {
 
 async function iaDireta(tipo, a) {
   if (!E.d.config.temGemini) throw new Error('Cadastre a chave do Gemini em Ajustes para usar a leitura automática.');
-  const MAX = 4;
+  // até 3 tentativas rápidas quando o modelo está ocupado; se uma leitura passar de 90 s, para e avisa (antes podia somar 12 min de espera)
+  const MAX = 3, LIMITE = 90000, t0 = Date.now();
   for (let t = 0; t < MAX; t++) {
     let res;
-    try { res = await Promise.race([api('lerComIA', E.sessao, tipo, a.mime, a.b64, t), new Promise(ok => setTimeout(() => ok({ ocupado: true, lento: true }), 180000))]); }
+    try { res = await Promise.race([api('lerComIA', E.sessao, tipo, a.mime, a.b64, t), new Promise(ok => setTimeout(() => ok({ ocupado: true, lento: true }), LIMITE))]); }
     catch (e) { if (!/NetworkError|HTTP 0|tempo|timeout/i.test(e.message)) throw e; res = { ocupado: true }; }
     if (res && !res.ocupado) return res.dados !== undefined ? res.dados : res;
-    if (t < MAX - 1 && !(res && res.lento)) await new Promise(ok => setTimeout(ok, 2500));
+    if ((res && res.lento) || Date.now() - t0 > 120000) throw new Error('A leitura automática passou de ' + Math.round((Date.now() - t0) / 1000) + ' s e foi interrompida. Digite olhando a imagem ou tente de novo daqui a pouco.');
+    if (t < MAX - 1) await new Promise(ok => setTimeout(ok, 2000));
   }
   throw new Error('O Gemini está sobrecarregado agora. Espere alguns minutos e tente de novo.');
 }
@@ -5826,6 +5828,7 @@ const PONTE = {
     }
     const salvo = await api('salvarRegistro', E.sessao, { id: '', animalId: an.id, tipo: 'receita', grupo: 'receita', data: o.data, proxima: '', dados: Object.assign({}, o.dados, { docs }) });
     guardarRegistro(salvo);
+    try { await vermDaReceita(an, salvo); } catch (_) { /* a receita já está salva; o vermífugo pode ser lançado à mão */ }
     // CPF e endereço digitados na receita voltam para o cadastro (e daí para o TCLE)
     const rp = respDe(an), nr = o.dados.responsavel || {};
     if (rp && ['cpf', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf'].some(k => nr[k] && nr[k] !== (rp[k] || ''))) {
@@ -5926,6 +5929,17 @@ function vermParaConfirmar() {
     });
   });
   return out.sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+}
+// receita com vermífugo: o vermífugo entra sozinho na carteira (aba Vermífugos, com reforço e próxima dose nos avisos)
+function vermDaReceita(an, rec) {
+  const it = ((rec.dados || {}).docs || []).flatMap(d => d.itens || []).find(i => VERMIFUGOS.some(v => semAc(i.med || '').includes(semAc(v)))); if (!it) return null;
+  if (regsDe(an.id).some(r => r.tipo === 'vermifugo' && (r.dados || {}).receitaId === rec.id)) return null;
+  const prod = VERMIFUGOS.filter(v => semAc(it.med).includes(semAc(v))).sort((x, y) => y.length - x.length)[0], txt = semAc([it.qtd, it.posologia].filter(Boolean).join(' '));
+  const peso = ultimoPeso(an.id), m = txt.match(/(\d+(?:[.,]\d+)?|1\/2|meio)\s*(?:e\s*(1\/2|meio)\s*)?(?:comprimido|cp)/);
+  const comp = compPorPeso(prod, peso) || (m ? (m[1] === 'meio' ? '1/2' : m[1].replace('.', ',')) + (m[2] ? ' e 1/2' : '') : '');
+  const ref = txt.match(/(?:repetir|reforco|repete|nova dose)[^0-9]{0,20}(\d{1,3})\s*dias/) || txt.match(/(\d{1,3})\s*dias\s*depois/);
+  const dados = { produto: prod, comprimidos: comp, peso: peso || '', reforco: ref ? somaDiasIso(rec.data, +ref[1]) : '', receitaId: rec.id, origem: 'receita', obs: [it.qtd, it.posologia].filter(Boolean).join(' · ') };
+  return api('salvarRegistro', E.sessao, { id: '', animalId: an.id, tipo: 'vermifugo', grupo: 'vermifugo', data: rec.data, proxima: somaMeses(rec.data, 3), dados }).then(r => { guardarRegistro(r); return r; });
 }
 function cartaoVerm() {
   if (!pode('carteiras')) return '';
