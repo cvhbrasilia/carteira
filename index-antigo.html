@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121194405';
+  var VERSAO = '20261121195730';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4975,8 +4975,10 @@ function caixaHb(T) {
 async function estoqueTx(forcar) { if (!forcar && E.txEst && Date.now() - E.txEst.t < 60000) return E.txEst.d; const d = await api('estDados', E.sessao); E.txEst = { t: Date.now(), d }; return d; }
 function htBolsaTx(u, T) { const D = u.dados || {}, m = numTx(D.htFinal != null ? D.htFinal : D.microHt != null ? D.microHt : (D.ch || {}).htFinal); return m ? { v: m, med: true } : { v: numTx(T.doa) || 65, med: false }; }
 function compativelTx(u, T) {
-  const a = animalDe(u.animal_id) || {}, gatoP = T.esp === 'Gato', gatoU = /fel|gat/i.test(a.especie || ''); if (gatoP !== gatoU) return null;
+  // doador sem cadastro (carga inicial): tipagem anotada na própria bolsa, como na etiqueta
+  const a = animalDe(u.animal_id) || { especie: (u.dados || {}).especie || '', tipoSanguineo: (u.dados || {}).tipoSanguineo || '' }, gatoP = T.esp === 'Gato', gatoU = /fel|gat/i.test(a.especie || ''); if (gatoP !== gatoU) return null;
   const t = semAc(a.tipoSanguineo || ''), pt = T.tipPac || '';
+  if (pt && !t) return { ok: true, txt: 'tipagem do doador não cadastrada, conferir na etiqueta', semTipo: true };
   if (!pt) return { ok: true, txt: a.tipoSanguineo ? (gatoU ? 'tipo ' + a.tipoSanguineo : 'DEA 1 ' + (/neg/.test(t) ? '−' : '+')) : 'tipagem do doador não informada' };
   if (gatoP) return t.replace(/^tipo\s*/, '').toUpperCase() === pt.toUpperCase() ? { ok: true, txt: 'tipo ' + pt } : null;
   if (pt === 'neg' && !/neg/.test(t)) return null;
@@ -5002,7 +5004,7 @@ async function bolsasTx(T, r) {
     if (x.inte) L.push('está na Intensivet: avaliar transferência e reposição do miniestoque');
     return L.join(' · '); };
   // primeiro as que cobrem dose e margem (menos sobra e vencimento mais perto), depois as que cobrem só a dose, por último as menores (as mais próximas da dose primeiro)
-  const nota = x => { const f = x.v >= alvo ? 0 : x.v >= r.vol ? 1 : 2; return f * 1000 + (f === 2 ? (r.vol - x.v) * 2 : 0) + (x.inte ? 150 : 0) + Math.min(x.dv, 60) * 3 + (f === 0 ? Math.max(0, x.v - alvo) * 0.5 : 0); };
+  const nota = x => { const f = x.v >= alvo ? 0 : x.v >= r.vol ? 1 : 2; return f * 1000 + (x.comp.semTipo ? 100 : 0) + (f === 2 ? (r.vol - x.v) * 2 : 0) + (x.inte ? 150 : 0) + Math.min(x.dv, 60) * 3 + (f === 0 ? Math.max(0, x.v - alvo) * 0.5 : 0); };
   const ord = C.sort((a, b) => nota(a) - nota(b)), L = ord.slice(0, 3), resto = ord.slice(3);
   // atendimento ligado ao cálculo (14.1): guarda paciente, dose, margem e as unidades avaliadas para reabrir no preparo
   const ats = (d.atendimentos || []).filter(a => !['concluido', 'cancelado', 'retirada', 'entregue'].includes(a.etapa));
@@ -5014,10 +5016,10 @@ async function bolsasTx(T, r) {
   const sep = at ? (d.unidades || []).filter(u => u.situacao === 'reservada' && (((u.dados || {}).reservaInfo || {}).atendimento === at.id || String(u.reserva || '').includes(at.id))) : [];
   const blocoSep = sep.length ? '<div class="cx-sep"><p class="nota"><b>Separada para a prova deste atendimento:</b> ' + esc(sep.map(u => u.id + ' · ' + u.volume_ml + ' mL').join(', ')) + '. Para trocar, selecione outra bolsa abaixo.</p></div>' : '';
   box.innerHTML = cab + blocoAt + blocoSep + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
-      return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button>' + (x.v >= alvo + 50 && (pode('estoque') || pode('producao') || pode('admin')) ? '<button class="mini" data-acao="tx-frac" data-v="' + esc(x.u.id) + '" data-vol="' + Math.round(alvo) + '">Fracionar ' + n0h(alvo) + ' mL desta bolsa</button>' : '') + '</div></div>'; }).join('') +
+      return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome || (x.u.dados || {}).doador, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button>' + (x.v >= alvo + 50 && (pode('estoque') || pode('producao') || pode('admin')) ? '<button class="mini" data-acao="tx-frac" data-v="' + esc(x.u.id) + '" data-vol="' + Math.round(alvo) + '">Fracionar ' + n0h(alvo) + ' mL desta bolsa</button>' : '') + '</div></div>'; }).join('') +
       '<p class="nota">A escolha no estoque não substitui a prova de compatibilidade.</p>' : '<p class="nota">Nenhuma bolsa de CH disponível que combine com a espécie' + (T.tipPac ? ' e a tipagem' : '') + '.</p>') +
     (resto.length ? '<div class="mini-bts"><button class="mini" data-acao="tx-outras">' + (E.txOutras ? 'Esconder as outras bolsas' : 'Escolher outra bolsa do estoque (' + resto.length + ')') + '</button></div>' +
-      (E.txOutras ? resto.map(x => { const a = animalDe(x.u.animal_id) || {}; return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button></div></div>'; }).join('') : '') : '') + '</section>';
+      (E.txOutras ? resto.map(x => { const a = animalDe(x.u.animal_id) || {}; return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome || (x.u.dados || {}).doador, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button></div></div>'; }).join('') : '') : '') + '</section>';
   ligar();
 }
 /* ── HemoCalculadora ligada ao atendimento (14.1) e reaberta no preparo da bolsa (14.2) ── */
