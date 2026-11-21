@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121193936';
+  var VERSAO = '20261121194405';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5004,7 +5004,7 @@ async function bolsasTx(T, r) {
     return L.join(' · '); };
   // primeiro as que cobrem dose e margem (menos sobra e vencimento mais perto), depois as que cobrem só a dose, por último as menores (as mais próximas da dose primeiro)
   const nota = x => { const f = x.v >= alvo ? 0 : x.v >= r.vol ? 1 : 2; return f * 1000 + (f === 2 ? (r.vol - x.v) * 2 : 0) + (x.inte ? 150 : 0) + Math.min(x.dv, 60) * 3 + (f === 0 ? Math.max(0, x.v - alvo) * 0.5 : 0); };
-  const L = C.sort((a, b) => nota(a) - nota(b)).slice(0, 3);
+  const ord = C.sort((a, b) => nota(a) - nota(b)), L = ord.slice(0, 3), resto = ord.slice(3);
   // atendimento ligado ao cálculo (14.1): guarda paciente, dose, margem e as unidades avaliadas para reabrir no preparo
   const ats = (d.atendimentos || []).filter(a => !['concluido', 'cancelado', 'retirada', 'entregue'].includes(a.etapa));
   const at = ats.find(a => a.id === E.tx.at) || null, calc = at && (at.dados || {}).calculo;
@@ -5012,9 +5012,13 @@ async function bolsasTx(T, r) {
   const blocoAt = '<div class="tx-at"><label>Atendimento<select id="txAt"><option value="">Sem atendimento</option>' + ats.map(a => '<option value="' + esc(a.id) + '"' + (at && at.id === a.id ? ' selected' : '') + '>' + esc(a.id + ' · ' + a.destino + (a.paciente ? ' · ' + a.paciente : '') + ' · ' + (ETAPA_AT_TX[a.etapa] || a.etapa)) + '</option>').join('') + '</select></label>' +
     (at ? '<div class="mini-bts"><button class="mini" data-acao="tx-salvar">' + (calc ? 'Atualizar o cálculo no atendimento' : 'Salvar o cálculo no atendimento') + '</button>' + (at.etapa === 'aberto' && at.modalidade !== 'uber' ? '<button class="mini" data-acao="tx-possivel">Avisar possível venda</button>' : '') + '</div>' + (calc ? '<p class="nota">Cálculo salvo ' + esc(hmTx(calc.em)) + ' por ' + esc(calc.por || '') + (calc.prova && calc.prova.length ? ' · para a prova ' + esc(calc.prova.join(', ')) : '') + '. Ele reabre no preparo da bolsa.</p>' : '')
       : '<div class="mini-bts"><button class="mini" data-acao="tx-novo-at">Abrir atendimento com este cálculo</button></div>') + '</div>';
-  box.innerHTML = cab + blocoAt + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
+  const sep = at ? (d.unidades || []).filter(u => u.situacao === 'reservada' && (((u.dados || {}).reservaInfo || {}).atendimento === at.id || String(u.reserva || '').includes(at.id))) : [];
+  const blocoSep = sep.length ? '<div class="cx-sep"><p class="nota"><b>Separada para a prova deste atendimento:</b> ' + esc(sep.map(u => u.id + ' · ' + u.volume_ml + ' mL').join(', ')) + '. Para trocar, selecione outra bolsa abaixo.</p></div>' : '';
+  box.innerHTML = cab + blocoAt + blocoSep + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
       return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button>' + (x.v >= alvo + 50 && (pode('estoque') || pode('producao') || pode('admin')) ? '<button class="mini" data-acao="tx-frac" data-v="' + esc(x.u.id) + '" data-vol="' + Math.round(alvo) + '">Fracionar ' + n0h(alvo) + ' mL desta bolsa</button>' : '') + '</div></div>'; }).join('') +
-      '<p class="nota">A escolha no estoque não substitui a prova de compatibilidade.</p>' : '<p class="nota">Nenhuma bolsa de CH disponível que combine com a espécie' + (T.tipPac ? ' e a tipagem' : '') + '.</p>') + '</section>';
+      '<p class="nota">A escolha no estoque não substitui a prova de compatibilidade.</p>' : '<p class="nota">Nenhuma bolsa de CH disponível que combine com a espécie' + (T.tipPac ? ' e a tipagem' : '') + '.</p>') +
+    (resto.length ? '<div class="mini-bts"><button class="mini" data-acao="tx-outras">' + (E.txOutras ? 'Esconder as outras bolsas' : 'Escolher outra bolsa do estoque (' + resto.length + ')') + '</button></div>' +
+      (E.txOutras ? resto.map(x => { const a = animalDe(x.u.animal_id) || {}; return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button></div></div>'; }).join('') : '') : '') + '</section>';
   ligar();
 }
 /* ── HemoCalculadora ligada ao atendimento (14.1) e reaberta no preparo da bolsa (14.2) ── */
@@ -5081,7 +5085,7 @@ async function trocarProva(id, doacoes) {
   const raizDe = u => String(u.coleta || u.id).split(' ')[0], minha = u => u.situacao === 'reservada' && (((u.dados || {}).reservaInfo || {}).atendimento === id || String(u.reserva || '').includes(id));
   const at = (d.atendimentos || []).find(a => a.id === id) || {}, pac = at.paciente || 'paciente', novas = [], liberadas = [], faltam = [];
   for (const n of doa) {
-    const cand = U.filter(u => u.componente === 'CH' && (raizDe(u) === n || u.id.split(' ')[0] === n));
+    const exata = U.find(u => u.id === n), cand = exata ? [exata] : U.filter(u => u.componente === 'CH' && (raizDe(u) === n || u.id.split(' ')[0] === n));
     const u = cand.find(minha) || cand.filter(u => u.situacao === 'disponivel').sort((a, b) => (a.volume_ml || 0) - (b.volume_ml || 0))[0];
     if (!u) { faltam.push(n); continue; }
     if (!minha(u)) await api('estUnidadeAcao', E.sessao, u.id, 'reservar', { reserva: 'Prova de compatibilidade · ' + pac + ' · atendimento ' + id, atendimento: id, obs: 'Bolsa trocada na prova de compatibilidade' });
@@ -5135,6 +5139,8 @@ async function montarPedidoLaudo(id, tipo, bolsas) {
   }
   return E.laudoPedido;
 }
+// bolsas reservadas para a prova de um atendimento (para oferecer a troca)
+function separadasTx(id) { const d = E.txEst && E.txEst.d; return ((d && d.unidades) || []).filter(u => u.situacao === 'reservada' && /^Prova de compatibilidade/.test(u.reserva || '') && (((u.dados || {}).reservaInfo || {}).atendimento === id || String(u.reserva || '').includes(id))).map(u => u.id); }
 function pacienteTx(id) { const a = ((E.txEst && E.txEst.d && E.txEst.d.atendimentos) || []).find(x => x.id === id); return a ? (a.paciente || '') : ''; }
 async function salvarCalcTx(extra) {
   if (!E.tx || !E.tx.at || !E.txCalc) throw new Error('Escolha o atendimento.');
@@ -6933,11 +6939,18 @@ const ACOES = {
   'como-resp': () => verComoResponsavel(E.resp),
   'voltar-painel': voltarAoPainel,
   'tx-prova': async b => {
-    const at = E.tx && E.tx.at, pac = at ? pacienteTx(at) : prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
+    const at = E.tx && E.tx.at, jaSep = at ? separadasTx(at) : [];
+    if (jaSep.length && !jaSep.includes(b.dataset.v)) {
+      if (confirm('Trocar ' + jaSep.join(', ') + ' por ' + b.dataset.v + '? A reserva da anterior é liberada. (Cancelar mantém as duas na prova.)')) { b.disabled = true;
+        try { const r = await trocarProva(at, [b.dataset.v]); toast('Bolsa da prova trocada para ' + r.novas.join(', ') + (r.liberadas.length ? '. Reserva liberada: ' + r.liberadas.join(', ') : '') + '.', 6000); return telaTransfusao(); }
+        catch (e) { b.disabled = false; toast(e.message, 6000); return; } }
+    }
+    const pac = at ? pacienteTx(at) : prompt('Nome do paciente para a reserva da prova de compatibilidade:', ''); if (pac == null) return; b.disabled = true;
     try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : ''), atendimento: at || '', obs: 'Separada pela HemoCalculadora para a prova de compatibilidade' }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); else { const ps = E.tx.provaSem = E.tx.provaSem || { uids: [], pac: '' }; ps.uids.push(b.dataset.v); ps.pac = ps.pac || String(pac).trim(); } E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
     catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
   // bolsa maior que a necessidade: abre o fracionamento com o volume da dose e da margem (e o atendimento, se houver)
+  'tx-outras': () => { E.txOutras = !E.txOutras; telaTransfusao(); },
   'tx-frac': async b => { const at = E.tx && E.tx.at, uid = b.dataset.v, vol = +b.dataset.vol || 0;
     if (!confirm('Fracionar ' + vol + ' mL da bolsa ' + uid + (at ? ' para o atendimento ' + at : '') + '? O restante volta ao estoque.')) return;
     try { if (at && E.txCalc) await salvarCalcTx(); } catch (_) {}
