@@ -867,7 +867,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121171820';
+  var VERSAO = '20261121172124';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5196,7 +5196,7 @@ function telaHemoIA() {
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" id="hiVolta">‹ HemoCalculadora</button></div>' +
     '<header class="topo"><div class="t"><span>Leitura do hemograma e indicação</span><b>HemoCalculadora IA</b></div></header>' +
     '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
-    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem ou PDF copiado</button><div id="hiColarZona" class="colar-zona" contenteditable="true" data-ph="No iPhone, toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div>' +
+    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem copiada (print do laudo)</button><div id="hiColarZona" class="colar-zona" contenteditable="true" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div>' +
     '<div class="grade">' + cmp('hiPeso', 'Peso (kg)', T.peso) + '</div>' +
     '<details class="tx-av"' + (Object.keys(H.val).length ? ' open' : '') + '><summary>Digitar os valores (sem arquivo ou para corrigir a leitura)</summary><div class="grade">' + HC_VALS.map(([k, t]) => cmp('hiV_' + k, t, H.val[k])).join('') + '</div></details>' +
     '<h3>Situação</h3><div class="filtros hc-sit">' + HC_SIT.map(([k, t]) => '<button class="filtro' + (H.sit === k ? ' on' : '') + '" data-sit="' + k + '">' + t + '</button>').join('') + '</div>' +
@@ -5220,12 +5220,12 @@ function telaHemoIA() {
     if (!naZona) return;
     // o iPhone às vezes cola o PDF como figura dentro do quadro: a figura vira o arquivo do hemograma
     const tipos = tiposColados(ev.clipboardData); setTimeout(async () => { let g = null; for (const im of [...zona.querySelectorAll('img, object, embed')]) { const src = im.getAttribute('src') || im.getAttribute('data') || ''; if (!src) continue; try { const b = await (await fetch(src)).blob(); if (b.size > 500) { g = new File([b], /pdf/i.test(b.type) ? 'PDF colado.pdf' : 'Imagem colada', { type: /pdf/i.test(b.type) ? 'application/pdf' : b.type || 'image/png' }); break; } } catch (_) {} }
-      zona.innerHTML = ''; zona.blur(); if (g) { usarArq(g); toast('Arquivo colado.'); } else toast('O iPhone não entregou o arquivo ao colar (' + tipos + '). Use Escolher foto ou PDF.', 9000); }, 400); };
+      zona.innerHTML = ''; zona.blur(); if (g) { usarArq(g); toast('Arquivo colado.'); } else toast('O iPhone não deixa colar PDF em página da internet, só imagem. Tire um print do laudo e cole aqui, ou use Escolher foto ou PDF.', 9000); }, 400); };
   const bc = $('#hiColar'); if (bc) bc.onclick = async () => { let tipos = [];
     try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = await navigator.clipboard.read();
       for (const c of L) { tipos = tipos.concat(c.types); const t = c.types.find(x => /^image\/|pdf/i.test(x)); if (t) { const b = await c.getType(t), pdf = /pdf/i.test(t); await usarArq(new File([b], pdf ? 'PDF colado.pdf' : 'Imagem colada', { type: pdf ? 'application/pdf' : t })); toast('Arquivo colado.'); return; } }
-      if (zona) zona.focus(); toast('O botão só recebe imagem no iPhone' + (tipos.length ? ' (veio ' + tipos.join(', ') + ')' : '') + '. Para PDF, toque e segure no quadro tracejado e escolha Colar.', 8000);
-    } catch (_) { if (zona) zona.focus(); toast('Toque e segure no quadro tracejado e escolha Colar (no computador, Cmd+V).', 6000); } };
+      toast('Não há imagem copiada. No iPhone, o navegador não deixa colar PDF em página da internet, só imagem. Tire um print do laudo e cole aqui, ou use Escolher foto ou PDF.', 9000);
+    } catch (_) { if (zona) zona.focus(); toast('Toque e segure no quadro tracejado e escolha Colar (no computador, Cmd+V também cola PDF).', 6000); } };
   $('#hiIr').onclick = async () => {
     T.peso = $('#hiPeso').value; H.clin = $('#hiClin').value.trim(); H.val = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) H.val[k] = v; });
     if (!H.arq && !Object.keys(H.val).length) return toast('Mande o hemograma ou digite os valores.');
