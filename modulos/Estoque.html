@@ -582,9 +582,19 @@ function telaIntensivet() {
   if (usadas.length) h += '<div class="cx"><h2>Transfundidas</h2>' + usadas.map(linhaUnidade).join("") + "</div>";
   h += '<div class="cx"><h2>Equipamentos e câmaras de conservação</h2>' + S.eq.map((e) => '<div class="ev"><b>' + esc(e.nome) + "</b> · " + esc(e.local) + " <small>" + esc(e.id) + " · " + esc((e.aceita || []).join(", ")) + (e.ativo ? "" : " · desativado") + "</small>" + (S.admin ? ' <button class="btn sec peq" data-a="eqEditar" data-v="' + esc(e.id) + '">Editar</button>' : "") + ' <button class="btn sec peq" data-a="eqQR1" data-v="' + esc(e.id) + '">QR</button></div>').join("") + '<div class="bts">' + (S.admin ? '<button class="btn peq" data-a="eqNovo">Novo equipamento</button>' : "") + '<button class="btn sec peq" data-a="eqQR">QR de todos para imprimir</button></div><div id="eqQrBox"></div></div>';
   if (S.admin) { const nt = S.uni.filter((u) => /^TESTE-/.test(u.id)).length; h += '<div class="cx" style="border-style:dashed"><h2>Teste do fluxo</h2><p class="nota">Cria três bolsas de teste (CH, PFC e CRIO, código TESTE-…) para treinar a remessa, os celulares da Intensivet e o motoboy sem mexer no estoque real. No fim, apague tudo do teste.</p><div class="bts"><button class="btn peq" data-a="testeCriar">Criar bolsas de teste</button>' + (nt ? '<button class="btn perigo peq" data-a="testeLimpar">Apagar tudo do teste (' + nt + " bolsas)</button>" : "") + "</div></div>"; }
-  if (S.admin) h += '<div class="cx"><h2>Celulares da Intensivet</h2>' + (S.ap.filter((a) => a.ativo).map((a) => '<div class="ev"><b>' + esc(a.nome) + "</b> · " + (a.setor === "recepcao" ? "recepção" : "internação") + " <small>ativado " + esc(hora(a.criado)) + (a.ultimo_uso ? " · último uso " + esc(hora(a.ultimo_uso)) : " · ainda não usado") + '</small> <button class="btn perigo peq" data-a="apDesativar" data-v="' + esc(a.token) + '">Desativar</button></div>').join("") || '<p class="vazio">Nenhum celular ativado.</p>') +
+  if (S.admin) h += '<div class="cx"><h2>Celulares da Intensivet</h2>' + (S.ap.filter((a) => a.ativo && a.setor !== "motoboy").map((a) => '<div class="ev"><b>' + esc(a.nome) + "</b> · " + (a.setor === "recepcao" ? "recepção" : "internação") + " <small>ativado " + esc(hora(a.criado)) + (a.ultimo_uso ? " · último uso " + esc(hora(a.ultimo_uso)) : " · ainda não usado") + '</small> <button class="btn perigo peq" data-a="apDesativar" data-v="' + esc(a.token) + '">Desativar</button>' + btsLink(a) + '</div>').join("") || '<p class="vazio">Nenhum celular ativado.</p>') +
     '<div class="bts"><button class="btn peq" data-a="apNovo" data-v="recepcao">Ativar celular da recepção</button><button class="btn peq" data-a="apNovo" data-v="internacao">Ativar celular da internação</button></div><div id="apLink"></div></div>';
   return h;
+}
+/* links dos celulares (Mini Estação e Motoboy): sempre à mão para entrar, copiar ou enviar */
+let ORIGEM = ""; ponte("origem").then((o) => { ORIGEM = o || ""; try { pintar(); } catch (_) {} }).catch(() => {});
+const linkAp = (a) => ORIGEM + (a.setor === "motoboy" ? "motoboy.html?k=" + a.token : "intensivet.html?k=" + a.token + "&s=" + a.setor);
+const quemAp = (a) => a.setor === "motoboy" ? "do motoboy " + (a.nome || "") : a.setor === "recepcao" ? "da recepção" : "da internação";
+const btsLink = (a) => !ORIGEM || !a.ativo ? "" : '<div class="bts" style="margin-top:6px"><a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(linkAp(a)) + '">Entrar</a><button class="btn sec peq" data-a="copiar" data-v="' + esc(linkAp(a)) + '">Copiar o link</button><button class="btn sec peq" data-a="enviarLink" data-v="' + esc(linkAp(a)) + '" data-q="' + esc(quemAp(a).trim()) + '">Enviar</button></div>';
+async function enviarLink(v, q) {
+  const txt = "Link do CVH para o celular " + q + ". Abra neste celular e adicione à tela de início.\n" + v;
+  if (navigator.share) { try { await navigator.share({ title: "CVH", text: txt }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+  window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
 }
 async function recarregar() { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; pintar(); }
 
@@ -850,13 +860,14 @@ document.addEventListener("click", async (ev) => {
       if (a === "remUber") { $("#rForm").innerHTML = '<label>Link do Uber</label><input type="text" id="rUber" value="' + esc((r && r.link_uber) || "") + '"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remUberOk" data-v="' + esc(v) + '">Salvar</button></div>'; return; }
       if (a === "remUberOk") await est("estRemessaAcao", v, "uber", { link: $("#rUber").value.trim() });
       if (a === "remCancelar") await est("estRemessaAcao", v, "cancelar", {});
-      if (a === "apNovo") { const o = await est("estAparelhoCriar", { setor: v }); const base = await ponte("origem"); const link = base + (v === "motoboy" ? "motoboy.html" : "intensivet.html") + "?k=" + o.token; await recarregar(); $("#apLink").innerHTML = '<label>Abra este link no celular ' + (v === "recepcao" ? "da recepção" : v === "motoboy" ? "do motoboy" : "da internação") + ' (uma vez só) e adicione à tela inicial</label><input type="text" readonly value="' + esc(link) + '" onclick="this.select()"><div class="bts"><button class="btn sec peq" data-a="copiar" data-v="' + esc(link) + '">Copiar o link</button></div>'; return; }
+      if (a === "apNovo") { const o = await est("estAparelhoCriar", { setor: v }); const base = await ponte("origem"); const link = base + (v === "motoboy" ? "motoboy.html?k=" + o.token : "intensivet.html?k=" + o.token + "&s=" + v); await recarregar(); $("#apLink").innerHTML = '<label>Abra este link no celular ' + (v === "recepcao" ? "da recepção" : v === "motoboy" ? "do motoboy" : "da internação") + ' (uma vez só) e adicione à tela inicial</label><input type="text" readonly value="' + esc(link) + '" onclick="this.select()"><div class="bts"><button class="btn sec peq" data-a="copiar" data-v="' + esc(link) + '">Copiar o link</button></div>'; return; }
       if (a === "apDesativar") { await est("estAparelhoDesativar", v); await recarregar(); toast("Celular desativado."); return; }
       await recarregar(); if (S.remAberta && $("#gaveta").classList.contains("on")) await abrirRem(S.remAberta);
     } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
     return;
   }
   if (a === "remMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
+  if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
   if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado."); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
   if (a === "uConf") { const t = ($("#uTxt") || {}).value || "", k = PEDE[v][2]; if (!t.trim()) return toast("Preencha o campo."); const o = { [k]: t.trim() }; if (v === "mover") o.equipamento = ($("#uEq") || {}).value || ""; return acaoUnidade(v, o); }

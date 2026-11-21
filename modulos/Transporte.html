@@ -306,7 +306,7 @@ function telaRel() {
     '<div class="cx"><h2>Por destino</h2><table class="tb"><tr><th>Destino</th><th>Paradas</th><th>Concluídas</th><th>Km nos trajetos</th><th>Tempo médio de trajeto</th></tr>' + Object.entries(porDest).sort((a, b) => b[1].n - a[1].n).map(([k, d]) => "<tr><td>" + esc(k) + "</td><td>" + d.n + "</td><td>" + d.c + "</td><td>" + fKm(d.km) + "</td><td>" + (d.nt ? fDur(d.tempo / d.nt) : "-") + "</td></tr>").join("") + "</table></div>";
 }
 function telaMotoboys() {
-  return '<div class="cx"><h2>Celulares dos motoboys</h2>' + (S.D.motoboys.length ? S.D.motoboys.map((m) => '<div class="lin"' + (m.ativo ? "" : ' style="opacity:.5"') + '><div class="t"><b>' + esc(m.nome) + "</b>" + (m.ativo ? "" : ' <span class="chip ne">desativado</span>') + "<small>ativado " + esc(hora(m.criado)) + (m.ultimo_uso ? " · último uso " + esc(hora(m.ultimo_uso)) : " · ainda não usado") + "</small></div>" + (m.ativo && S.D.admin ? '<button class="btn perigo peq" data-a="mDesativar" data-v="' + m.token + '">Desativar</button>' : "") + "</div>").join("") : '<p class="vazio">Nenhum celular ativado.</p>') +
+  return '<div class="cx"><h2>Celulares dos motoboys</h2>' + (S.D.motoboys.length ? S.D.motoboys.map((m) => '<div class="lin"' + (m.ativo ? "" : ' style="opacity:.5"') + '><div class="t"><b>' + esc(m.nome) + "</b>" + (m.ativo ? "" : ' <span class="chip ne">desativado</span>') + "<small>ativado " + esc(hora(m.criado)) + (m.ultimo_uso ? " · último uso " + esc(hora(m.ultimo_uso)) : " · ainda não usado") + "</small></div>" + (m.ativo && S.D.admin ? '<button class="btn perigo peq" data-a="mDesativar" data-v="' + m.token + '">Desativar</button>' : "") + "</div>" + (S.D.admin ? btsLink(Object.assign({ setor: "motoboy" }, m)) : "")).join("") : '<p class="vazio">Nenhum celular ativado.</p>') +
     (S.D.admin ? '<label>Nome do motoboy</label><input type="text" id="mNome" placeholder="Ex.: João"><div class="bts" style="margin-top:10px"><button class="btn" data-a="mNovo">Ativar celular do motoboy</button></div><div id="mLink"></div>' : "") + "</div>";
 }
 function telaCfg() {
@@ -321,6 +321,16 @@ function pintar() {
   const n = S.at.filter((a) => ["pronta", "preparo"].includes(a.etapa)).length;
   $("#app").innerHTML = '<div class="topo"><h1>Motoboy<small>Rotas, pedidos, destinos e quilometragem</small></h1></div><nav class="abas">' + ABAS.map(([k, t]) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (k === "ped" && n ? "<b>" + n + "</b>" : "") + "</button>").join("") + "</nav>" +
     ({ hoje: telaHoje, ped: telaTransporte, par: telaParadas, dest: telaDestinos, km: telaKm, fuel: telaFuel, rel: telaRel, moto: telaMotoboys, cfg: telaCfg }[S.aba] || telaHoje)();
+}
+/* links dos celulares (Mini Estação e Motoboy): sempre à mão para entrar, copiar ou enviar */
+let ORIGEM = ""; ponte("origem").then((o) => { ORIGEM = o || ""; try { pintar(); } catch (_) {} }).catch(() => {});
+const linkAp = (a) => ORIGEM + (a.setor === "motoboy" ? "motoboy.html?k=" + a.token : "intensivet.html?k=" + a.token + "&s=" + a.setor);
+const quemAp = (a) => a.setor === "motoboy" ? "do motoboy " + (a.nome || "") : a.setor === "recepcao" ? "da recepção" : "da internação";
+const btsLink = (a) => !ORIGEM || !a.ativo ? "" : '<div class="bts" style="margin-top:6px"><a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(linkAp(a)) + '">Entrar</a><button class="btn sec peq" data-a="copiar" data-v="' + esc(linkAp(a)) + '">Copiar o link</button><button class="btn sec peq" data-a="enviarLink" data-v="' + esc(linkAp(a)) + '" data-q="' + esc(quemAp(a).trim()) + '">Enviar</button></div>';
+async function enviarLink(v, q) {
+  const txt = "Link do CVH para o celular " + q + ". Abra neste celular e adicione à tela de início.\n" + v;
+  if (navigator.share) { try { await navigator.share({ title: "CVH", text: txt }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+  window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
 }
 async function recarregar() { const r = await trp("trpDados", S.dia); S.D = r; S.at = r.pedidos; S.rem = r.remessas; S.admin = r.admin; pintar(); }
 const recarregarEst = recarregar;
@@ -362,6 +372,7 @@ document.addEventListener("click", async (ev) => {
     }
     if (a === "dNovo") return abrirGaveta("Cadastrar destino", formDestino());
     if (a === "dEditar") { const d = S.D.destinos.find((x) => x.id === v); abrirGaveta("Editar destino", formDestino(d)); const c = $("#dCoord"); if (c && c.value) c.dispatchEvent(new Event("input", { bubbles: true })); return; }
+    if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
     if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado."); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "at") return abrirAtendimento(v);
   if (a === "atNovo") { abrirGaveta("Novo atendimento", formAtendimento({})); return; }

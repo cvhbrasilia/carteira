@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121000517';
+  var VERSAO = '20261121001616';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -58,9 +58,9 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Transporte CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png"><link rel="icon" type="image/png" href="painel-192.png"><link rel="manifest" href="painel.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png"><link rel="icon" type="image/png" href="motoboy-192.png"><link rel="manifest" href="motoboy.webmanifest">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Transporte CVH</title>
+<title>Motoboy CVH</title>
 <style>
 :root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
 *{box-sizing:border-box}
@@ -1569,7 +1569,7 @@ function proximas() {
 function feitas() { const L = concluidasHoje(); if (!L.length) return ""; return '<div class="cx"><h2>Concluídas hoje</h2>' + L.map((p) => '<div class="prox"><div class="num ok">✓</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + hhmm(p.chegada_em) + (p.km_ini != null && p.km_fim != null ? " · " + fKm(p.km_fim - p.km_ini) + " km" : "") + "</small></div></div>").join("") + "</div>"; }
 function pintar() {
   if (!D) return; const F = fase();
-  $("#app").innerHTML = '<div class="topo"><h1>Transporte CVH<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
+  $("#app").innerHTML = '<div class="topo"><h1>Motoboy CVH<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
     (notifOk() ? "" : '<div class="cx av"><p>Ative as notificações para receber os avisos com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>') +
     bannerRota() + pedidos() + principal() + proximas() + feitas() + '<p class="vazio"><small>Dúvidas, fale com o CVH.</small></p>';
   $("#dock").innerHTML = F.f === "sem" ? "" : (F.f === "pausa" ? "" : '<button data-a="pausa">Pausa pessoal</button>') + '<button data-a="abastecer">Abastecer</button><button data-a="meuDia">Meu dia</button>' + (F.f === "livre" || F.f === "pausa" ? '<button data-a="finalizar">Finalizar</button>' : "");

@@ -461,7 +461,8 @@ a.btn{text-decoration:none}
 .ct-card{background:#fff;border:1px solid rgba(110,30,30,.12);border-radius:16px;padding:14px;margin:0 0 12px}
 .ct-mini{display:flex;align-items:center;gap:14px;cursor:pointer}.ct-mini .ct-ano{width:62px;height:62px;filter:none}.ct-mini small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-mini b{display:block;font-size:17px;color:var(--vinho)}.ct-mini span{font-size:13px;color:#7A6A62}
 .ct-oc{margin-top:16px}.ct-oc-l{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFE6DC}
-.ct-cart{display:flex;gap:.8em;align-items:center;background:#fff;border:1px solid var(--areia,#EEE5DB);border-radius:.8em;padding:.7em .8em;margin:.6em 0;cursor:pointer}.ct-cart .ct-ano{width:3.6em;height:3.6em;filter:none}
+.av-i.lido{opacity:.55}
+.ct-cart{display:flex;gap:.8em;align-items:center;background:#fff;border:1px solid var(--areia,#EEE5DB);border-radius:.8em;padding:.55em .8em;margin:.4em 0;cursor:pointer}.ct-cart .ct-ano{width:3.6em;height:3.6em;filter:none}
 .ct-cart small{display:block;font-size:.62em;letter-spacing:.14em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-cart b{display:block;font-size:.9em;color:var(--vinho)}
 .ct-lks{display:flex;gap:.4em;margin-top:.35em}.ct-lks button{font:inherit;font-size:.68em;font-weight:700;color:var(--vinho);background:#F5EFE7;border:0;border-radius:99px;padding:.3em .8em;cursor:pointer}
 /* linha do tempo */
@@ -819,7 +820,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261120235251';
+  var VERSAO = '20261121000517';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2502,7 +2503,9 @@ function montarPaginas(an, regs, ed) {
     const exR = s.t === 'historico' ? examesRecentes(an.id) : [];
     if (regs.some(r => r.tipo === s.t) || exR.length) abas.push({ t: s.t, i: ps.length });
     if (s.t === 'doacao' && an.doador !== '1' && !regs.some(r => r.tipo === 'doacao')) return;
-    const lista = regs.filter(r => r.tipo === s.t).sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+    let lista = regs.filter(r => r.tipo === s.t).sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+    // histórico laboratorial: só a versão mais recente (as anteriores eram cópias com menos exames)
+    if (s.t === 'historico' && lista.length > 1) lista = [lista.slice().sort((a, b) => String(a.data + (a.assinadoEm || '')).localeCompare(String(b.data + (b.assinadoEm || '')))).pop()];
     if (!lista.length && !exR.length && (!ed || !s.add)) return;
     if (s.t === 'doacao') {
       lista.forEach((r, i) => ps.push(pgDoacao(an, r, i + 1, ed)));
@@ -3103,8 +3106,10 @@ const CERT_FRASE = d => 'pela doação de sangue realizada em ' + d + ', um gest
 function certHtml(c, fmt) {
   const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt], apos = c.tipo === 'aposentadoria';
   // textos do CVH: a data e o nome vêm grandes, antes do texto menor
-  const texto = apos ? 'O CVH agradece por sua valiosa contribuição como doador de sangue, ajudando a salvar tantas vidas. Agora é hora de descansar dessa missão especial e seguir recebendo todo o amor e cuidado que sempre teve!'
-    : 'O CVH agradece por mais esse lindo gesto de amor e solidariedade! Sua doação faz a diferença e ajuda a escrever novas histórias de vida. Obrigado por ser um verdadeiro herói!';
+  // texto no gênero do animal (fêmea: doadora, heroína)
+  const fem = /^f/.test(semAc(an.sexo || ''));
+  const texto = apos ? 'O CVH agradece por sua valiosa contribuição como ' + (fem ? 'doadora' : 'doador') + ' de sangue, ajudando a salvar tantas vidas. Agora é hora de descansar dessa missão especial e seguir recebendo todo o amor e cuidado que sempre teve!'
+    : 'O CVH agradece por mais esse lindo gesto de amor e solidariedade! Sua doação faz a diferença e ajuda a escrever novas histórias de vida. Obrigado por ser ' + (fem ? 'uma verdadeira heroína!' : 'um verdadeiro herói!');
   const quando = apos ? 'Aposentadoria em ' + dataLonga(c.data) + (c.n ? ' · ' + c.n + (c.n === 1 ? ' doação' : ' doações') + ' de sangue' : '') : 'Doação de sangue em ' + dataLonga(c.data);
   const ca = fmt === 'a4' ? 200 : fmt === 'feed' ? 215 : 300, ci = fmt === 'a4' ? 33 : 46;
   const canto = '<svg class="ct-canto" viewBox="0 0 ' + (ca + 20) + ' ' + (ca + 20) + '" style="left:' + ci + 'px;top:' + ci + 'px;width:' + (ca + 20) + 'px;height:' + (ca + 20) + 'px"><path d="' + tuboCanto(ca) + '" fill="none" stroke="#A73E3E" stroke-width="' + (fmt === 'a4' ? 1.8 : 2.6) + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -3215,14 +3220,14 @@ function telaCertificados(aid, busca) {
 /* ═════════════ linha do tempo da saúde ═════════════ */
 const LT_COR = { doacao: '#A83D3D', vacina: '#5F130F', vermifugo: '#C49A6C', ecto: '#C6B098', historico: '#5F130F', obs: '#C6B098', tcle: '#C49A6C', receita: '#A83D3D', laudo: '#5F130F', cert: '#C49A6C', agenda: '#5F130F', marco: '#5F130F' };
 function eventosLinha(an, regs) {
-  const ev = [], d0 = x => x || {};
+  const ev = [], d0 = x => x || {}, histUlt = regs.filter(r => r.tipo === 'historico').sort((a, b) => String(a.data + (a.assinadoEm || '')).localeCompare(String(b.data + (b.assinadoEm || '')))).pop();
   regs.forEach(r => {
     const d = d0(r.dados);
     if (r.tipo === 'doacao') ev.push({ data: r.data, t: 'doacao', tit: d.naoColetado ? 'Avaliação para doação, sem coleta' : 'Doação de sangue', det: [d.peso ? d.peso + ' kg' : '', d.ht ? 'Ht ' + d.ht + '%' : '', d.hb ? 'Hb ' + d.hb + ' g/dL' : ''].filter(Boolean).join(' · '), id: r.id });
     else if (r.tipo === 'vacina') ev.push({ data: r.data, t: 'vacina', tit: 'Vacina', det: produtos(r).join(' + ') + (r.proxima ? ' · próxima em ' + br(r.proxima) : ''), id: r.id });
     else if (r.tipo === 'vermifugo') ev.push({ data: r.data, t: 'vermifugo', tit: 'Vermífugo', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
     else if (r.tipo === 'ecto') ev.push({ data: r.data, t: 'ecto', tit: 'Antiparasitário', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
-    else if (r.tipo === 'historico') ev.push({ data: r.data, t: 'historico', tit: 'Histórico laboratorial', det: [d.exames, d.periodo].filter(Boolean).join(' · '), id: r.id });
+    else if (r.tipo === 'historico') { if (r === histUlt) ev.push({ data: r.data, t: 'historico', tit: 'Histórico laboratorial', det: [d.exames, d.periodo].filter(Boolean).join(' · '), id: r.id }); }
     else if (r.tipo === 'obs') ev.push({ data: r.data, t: 'obs', tit: 'Observação da equipe', det: String(d.texto || d.obs || Object.values(d).find(v => typeof v === 'string') || '').slice(0, 140), id: r.id });
     else if (r.tipo === 'tcle') ev.push({ data: r.data, t: 'tcle', tit: 'Termo de consentimento assinado', det: d.numero ? 'Termo nº ' + d.numero : '', id: r.id });
     else if (r.tipo === 'receita') ev.push({ data: r.data, t: 'receita', tit: 'Receita', det: (d.itens || []).map(i => i.med).filter(Boolean).join(', '), id: r.id });
@@ -3251,8 +3256,9 @@ function paginasLinha(an, regs) {
 function paginasCert(an) {
   const l = certificadosDe(an.id); if (!l.length) return [];
   const out = [];
-  for (let i = 0; i < l.length; i += 3) out.push(pagina(an, '<div class="sec"><h2>Certificados</h2></div>' + (i ? '' : '<p class="lt-int">Um certificado para cada doação, com versão para imprimir e imagens para postar.</p>') +
-    l.slice(i, i + 3).map(c => '<article class="ct-cart" data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + (c.tipo === 'aposentadoria' ? 'Aposentadoria' : 'Doação de sangue') + '</small><b>' + dataLonga(c.data) + '</b><span class="ct-lks"><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">PDF</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="feed">Feed</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="story">Stories</button></span></div></article>').join('')));
+  // 4 certificados na primeira página (que tem o texto de abertura) e 5 nas seguintes
+  for (let i = 0, por = 4; i < l.length; i += por, por = 5) out.push(pagina(an, '<div class="sec"><h2>Certificados</h2></div>' + (i ? '' : '<p class="lt-int">Um certificado para cada doação, com versão para imprimir e imagens para postar.</p>') +
+    l.slice(i, i + por).map(c => '<article class="ct-cart" data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + (c.tipo === 'aposentadoria' ? 'Aposentadoria' : 'Doação de sangue') + '</small><b>' + dataLonga(c.data) + '</b><span class="ct-lks"><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">PDF</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="feed">Feed</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="story">Stories</button></span></div></article>').join('')));
   return out;
 }
 
@@ -3281,14 +3287,17 @@ function avisosDe(aid) {
   return { novos, primeiro, lembretes: lembretes.sort((a, b) => (b.venc ? 1 : 0) - (a.venc ? 1 : 0)) };
 }
 const agoraLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-function contaAvisos(aid) { const a = avisosDe(aid); return a.primeiro ? 0 : a.novos.length + a.lembretes.filter(l => l.venc || l.classe === 'comp').length; }
+// lembretes marcados como lidos neste aparelho (voltam se mudar a data ou o texto)
+const chaveLidos = aid => 'cvh_avl_' + (E.token || 'painel') + '_' + aid, chaveLemb = l => l.tit + '|' + l.det;
+function lidosDe(aid) { try { return JSON.parse(localStorage.getItem(chaveLidos(aid)) || '[]'); } catch (_) { return []; } }
+function contaAvisos(aid) { const a = avisosDe(aid), lid = lidosDe(aid); return a.primeiro ? 0 : a.novos.length + a.lembretes.filter(l => (l.venc || l.classe === 'comp') && !lid.includes(chaveLemb(l))).length; }
 function telaAvisos(aid) {
-  const a = avisosDe(aid), an = animalDe(aid) || {};
-  const li = (x, cls) => '<li class="av-i ' + (cls || x.classe || 'novo') + '"><div>' + (x.rot ? '<span class="av-rot">' + x.rot + '</span>' : '') + '<b>' + esc(x.tit) + '</b>' + (x.det ? '<small>' + esc(x.det) + '</small>' : '') +
+  const a = avisosDe(aid), an = animalDe(aid) || {}, lid = lidosDe(aid), pend = a.lembretes.filter(l => (l.venc || l.classe === 'comp') && !lid.includes(chaveLemb(l))).length;
+  const li = (x, cls) => '<li class="av-i ' + (cls || x.classe || 'novo') + (x.tit && !cls && lid.includes(chaveLemb(x)) ? ' lido' : '') + '"><div>' + (x.rot ? '<span class="av-rot">' + x.rot + '</span>' : '') + '<b>' + esc(x.tit) + '</b>' + (x.det ? '<small>' + esc(x.det) + '</small>' : '') +
     (x.cert ? '<button class="lt-lk" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + x.cert + '" data-v="a4">Ver certificado</button>' : x.id ? '<button class="lt-lk" data-acao="av-ir" data-id="' + x.id + '">Ver na carteira</button>' : '') + '</div></li>';
   abrirFolha('Avisos · ' + (an.nome || ''),
     (a.novos.length ? '<h4 class="av-h">Novidades</h4><ul class="av">' + a.novos.map(x => li(x, 'novo')).join('') + '</ul>' : '<p class="nota">Nenhuma novidade desde a última visita.</p>') +
-    (a.lembretes.length ? '<h4 class="av-h">Lembretes</h4><p class="nota">Obrigações são exigências (para doar, por exemplo). Recomendações preventivas ajudam a manter a saúde em dia.</p><ul class="av">' + a.lembretes.map(x => li(x)).join('') + '</ul>' : '<p class="nota">Nenhum lembrete para os próximos 30 dias.</p>'));
+    (a.lembretes.length ? '<h4 class="av-h">Lembretes</h4><p class="nota">Obrigações são exigências (para doar, por exemplo). Recomendações preventivas ajudam a manter a saúde em dia.</p><ul class="av">' + a.lembretes.map(x => li(x)).join('') + '</ul>' + (pend ? '<button class="btn sec2" data-acao="av-lidas" data-aid="' + aid + '">Marcar como lidas</button>' : '') : '<p class="nota">Nenhum lembrete para os próximos 30 dias.</p>'));
   try { localStorage.setItem(chaveAvisos(aid), agoraLocal()); } catch (_) { }
   const bt = $('#btAvisos'); if (bt) { const n = contaAvisos(aid); bt.innerHTML = IC_SINO + (n ? '<i>' + n + '</i>' : ''); }
 }
@@ -3773,7 +3782,9 @@ function calcularAlertas(res, sits) {
       const base = { animalId: aid, grupo: u.grupo, exame: u.exame, chaveEx: u.chave, lab: met, data: u.data, hist };
       let card = null;
       const fora = mn != null && v < mn ? 'abaixo' : mx != null && v > mx ? 'acima' : '';
-      if (on.referencia && fora && !(u.chave === 'chcm' && fora === 'acima')) {
+      // plaqueta baixa só no Citopet, com outro método dentro da referência no mesmo período: não vira alerta
+      const plaqCit = u.chave === 'plaq' && u.lab === 'Citopet' && fora === 'abaixo' && rs.some(r => r.chave === u.chave && metodoCanon(r.chave, metodoDe(r)) !== met && r.excluido !== '1' && numA(r.valor) != null && Math.abs(dias(r.data, u.data)) <= 15 && dentroRef(r));
+      if (on.referencia && fora && !plaqCit && !(u.chave === 'chcm' && fora === 'acima')) {
         const desv = larg ? (fora === 'abaixo' ? mn - v : v - mx) / larg : 0;
         card = Object.assign({ tipo: 'referencia', nivel: desv >= 0.25 ? 'urgente' : 'normal', titulo: u.exame + ' ' + fora + ' da referência', detalhe: fmtA(v, u.unidade) + ' em ' + br(u.data) + ' · ' + met + (ref ? ' · ' + ref : ''), notas: [] }, base);
         // cruzamento entre laboratórios no mesmo período
@@ -5514,8 +5525,8 @@ const PONTE = {
     const an = animalDe(aidFixo || o.autoAid || E.animal);
     const a4 = await api('salvarArquivo', E.sessao, an.id, o.a4.nome, 'application/pdf', o.a4.b64);
     const cel = await api('salvarArquivo', E.sessao, an.id, o.cel.nome, 'application/pdf', o.cel.b64);
-    // mesma data do último exame: atualiza o registro que já existe, em vez de empilhar versões iguais
-    const igual = regsDe(an.id).find(r => r.tipo === 'historico' && r.data === o.data);
+    // um histórico só por animal: cada atualização substitui o anterior (a data mostra "atualizado em")
+    const igual = regsDe(an.id).filter(r => r.tipo === 'historico').sort((a, b) => String(b.data + (b.assinadoEm || '')).localeCompare(String(a.data + (a.assinadoEm || ''))))[0];
     guardarRegistro(await api('salvarRegistro', E.sessao, { id: igual ? igual.id : '', animalId: an.id, tipo: 'historico', grupo: 'historico', data: o.data, proxima: '', dados: Object.assign({}, o.dados, { cel, a4 }) }));
     if (o.anexo) { try { await api('salvarResultados', E.sessao, an.id, resultadosDoHistorico(o.anexo), igual ? igual.id : ''); E.alertas = null; } catch (e) { toast('O histórico foi salvo, mas não entrou na base de alertas. ' + e.message, 6000); } }
     return { atualizado: !!igual, animal: an.nome };
@@ -6367,10 +6378,13 @@ const ACOES = {
   fechar: fecharFolha,
   'como-resp': () => verComoResponsavel(E.resp),
   'voltar-painel': voltarAoPainel,
+  'av-lidas': b => { const aid = b.dataset.aid, a = avisosDe(aid); try { localStorage.setItem(chaveLidos(aid), JSON.stringify(a.lembretes.map(chaveLemb))); } catch (_) {} telaAvisos(aid); },
   'teclado-comp': b => {
     const i = $('#fComp'); if (!i) return;
-    const num = i.inputMode !== 'text';
-    i.blur(); i.inputMode = num ? 'text' : 'decimal'; b.textContent = num ? '123' : 'abc'; i.focus();
+    // o teclado só troca com o campo fora de foco (iPhone): tira o foco, troca e devolve o foco depois
+    const num = (i.getAttribute('inputmode') || 'decimal') !== 'text';
+    i.blur(); i.setAttribute('inputmode', num ? 'text' : 'decimal'); b.textContent = num ? '123' : 'abc';
+    setTimeout(() => { try { i.focus({ preventScroll: true }); const n = i.value.length; i.setSelectionRange(n, n); } catch (_) {} }, 60);
   },
   'soma-comp': b => {
     const i = $('#fComp'); if (!i) return;
