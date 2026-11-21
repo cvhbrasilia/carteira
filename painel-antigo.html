@@ -821,7 +821,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121001616';
+  var VERSAO = '20261121002832';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2828,6 +2828,29 @@ function caber(pags) {
   return out;
 }
 function reabrir(ref) { if (E.animal) abrirCarteira(E.animal, ref != null ? ref : (E.livro ? E.livro.i : 0)); }
+// iPhone: ao voltar para o app (ou de um PDF), a página às vezes fica deslocada para cima e a barra com o Voltar some
+function desrolar() { const ae = document.activeElement; if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; if (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop) { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } }
+['pageshow', 'focus', 'orientationchange', 'resize', 'scroll'].forEach(ev => addEventListener(ev, () => setTimeout(desrolar, 80)));
+if (window.visualViewport) visualViewport.addEventListener('resize', () => setTimeout(desrolar, 80));
+// dados novos sem fechar o app: ao voltar para ele e a cada 2 minutos, busca de novo; se mudou, repinta a tela inicial ou a carteira aberta
+let ocultoDesde = 0, buscandoNovos = false;
+document.addEventListener('visibilitychange', () => { if (document.hidden) { ocultoDesde = Date.now(); return; } setTimeout(desrolar, 80); if (Date.now() - ocultoDesde > 15000) dadosNovos(); });
+setInterval(() => { if (!document.hidden) dadosNovos(); }, 120000);
+function podeRepintar() { const ae = document.activeElement, f = $('#folha'); return !(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) && !E.modAberto && !(f && !f.hidden) && !(E.livro && E.livro.ocupado); }
+async function dadosNovos() {
+  if (buscandoNovos || !E.d || E.previa || E.token === 'demo' || !podeRepintar()) return;
+  const noPainel = E.modo === 'painel' && E.sessao && !E.comoResp;
+  if (!noPainel && !E.token) return;
+  buscandoNovos = true;
+  try {
+    const d = noPainel ? await api('painelDados', E.sessao) : await api('carteiraPublica', E.token);
+    const marca = x => JSON.stringify([x.registros, x.animais, x.responsaveis, x.agenda, x.exames]);
+    if (!d || marca(d) === marca(E.d) || !podeRepintar()) return;
+    const home = !!$('.mods'), livro = !!$('#livro'), aid = E.animal;
+    if (noPainel) { d.laudosReceptor = d.laudosReceptor || []; E.d = d; E.u = d.usuario; } else E.d = d;
+    if (home) telaHome(); else if (livro && aid && animalDe(aid)) reabrir();
+  } catch (_) { } finally { buscandoNovos = false; }
+}
 
 /* ═════════════ responsável ═════════════ */
 async function iniciarResponsavel() {
@@ -4907,9 +4930,8 @@ function pintarHemoIA() {
 function laudosDe(aid) { return regsDe(aid).filter(r => r.tipo === 'laudo').sort((a, b) => (b.data + (b.assinadoEm || '')).localeCompare(a.data + (a.assinadoEm || ''))); }
 // laudo de receptor sem cadastro: salvo e assinado como os outros, com animalId 'receptor' (fica só no painel de laudos)
 async function salvarLaudoReceptor(o) {
-  const a4 = await api('salvarArquivo', E.sessao, 'receptor', o.a4.nome, 'application/pdf', o.a4.b64, false);
-  const cel = await api('salvarArquivo', E.sessao, 'receptor', o.cel.nome, 'application/pdf', o.cel.b64, false);
-  let edicao = null; if (o.edicao) { try { const r = await api('laudoEdicaoGuardar', E.sessao, 'receptor', o.edicao); if (r && r.id) edicao = { id: r.id }; } catch (_) {} }
+  const [a4, cel, edicao] = await Promise.all([api('salvarArquivo', E.sessao, 'receptor', o.a4.nome, 'application/pdf', o.a4.b64, false), api('salvarArquivo', E.sessao, 'receptor', o.cel.nome, 'application/pdf', o.cel.b64, false),
+    o.edicao ? api('laudoEdicaoGuardar', E.sessao, 'receptor', o.edicao).then(r => (r && r.id ? { id: r.id } : null), () => null) : Promise.resolve(null)]);
   const L = E.d.laudosReceptor || (E.d.laudosReceptor = []), antigo = o.regId ? L.find(r => r.id === o.regId) : null;
   const salvo = await api('salvarRegistro', E.sessao, { id: antigo ? antigo.id : '', animalId: 'receptor', tipo: 'laudo', grupo: 'laudo', data: o.data, proxima: '', vetId: o.vetId || '', dados: Object.assign({}, o.dados, { a4, cel, envio: { carteira: false, historico: false } }, edicao ? { edicao } : {}) });
   const i = L.findIndex(r => r.id === salvo.id); if (i >= 0) L[i] = salvo; else L.unshift(salvo);
@@ -5563,14 +5585,16 @@ const PONTE = {
     if (o.dados && o.dados.paciente) racaNova(o.dados.paciente.especie, o.dados.paciente.raca);
     E.animal = an.id;
     // o laudo não entra na carteira; os PDFs ficam com link para o responsável abrir pelo WhatsApp
-    const a4 = await api('salvarArquivo', E.sessao, an.id, o.a4.nome, 'application/pdf', o.a4.b64, false);
-    const cel = await api('salvarArquivo', E.sessao, an.id, o.cel.nome, 'application/pdf', o.cel.b64, false);
-    // PDF original da IDEXX ou da TECSA fica privado no Drive: o Histórico Laboratorial lê dele os resultados
-    const origens = [];
-    for (const f of o.origens || []) { try { const r = await api('salvarArquivo', E.sessao, an.id, 'Original ' + f.nome, 'application/pdf', f.b64, true); origens.push({ id: r.id, nome: f.nome }); } catch (_) {} }
-    if (origens.length) o.dados = Object.assign({}, o.dados, { origens });
+    // os envios vão juntos (PDFs, originais do laboratório e a parte editável), para salvar mais rápido
+    // PDF original da IDEXX ou da TECSA fica privado: o Histórico Laboratorial lê dele os resultados
     // a parte editável do laudo fica guardada com o registro, para corrigir depois sem refazer tudo
-    let edicao = null; if (o.edicao) { try { const r = await api('laudoEdicaoGuardar', E.sessao, an.id, o.edicao); if (r && r.id) edicao = { id: r.id }; } catch (_) {} }
+    const [a4, cel, origens0, edicao] = await Promise.all([
+      api('salvarArquivo', E.sessao, an.id, o.a4.nome, 'application/pdf', o.a4.b64, false),
+      api('salvarArquivo', E.sessao, an.id, o.cel.nome, 'application/pdf', o.cel.b64, false),
+      Promise.all((o.origens || []).map(f => api('salvarArquivo', E.sessao, an.id, 'Original ' + f.nome, 'application/pdf', f.b64, true).then(r => ({ id: r.id, nome: f.nome }), () => null))),
+      o.edicao ? api('laudoEdicaoGuardar', E.sessao, an.id, o.edicao).then(r => (r && r.id ? { id: r.id } : null), () => null) : Promise.resolve(null)]);
+    const origens = origens0.filter(Boolean);
+    if (origens.length) o.dados = Object.assign({}, o.dados, { origens });
     const antigo = o.regId ? regsDe(an.id).find(r => r.id === o.regId && r.tipo === 'laudo') : null;
     if (antigo && !origens.length && (antigo.dados || {}).origens) o.dados = Object.assign({}, o.dados, { origens: antigo.dados.origens });
     const envio = antigo ? Object.assign({ carteira: true, historico: !!(antigo.dados || {}).origens }, (antigo.dados || {}).envio || {}) : { carteira: false, historico: false };
