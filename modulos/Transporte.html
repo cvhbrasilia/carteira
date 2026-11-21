@@ -214,7 +214,7 @@ const ROT_AT = { aberto: "Aberto", possivel: "Possível venda", autorizado: "Aut
 const COR_AT = { pronta: "al", preparo: "av", fracionamento: "av", retirada: "av", entregue: "ok", concluido: "ok", cancelado: "ne" };
 function telaTransporte() {
   const at = S.at.filter((a) => !["concluido", "cancelado"].includes(a.etapa)), fim = S.at.filter((a) => ["concluido", "cancelado"].includes(a.etapa)).slice(0, 20);
-  const lin = (a) => '<div class="lin" data-a="at" data-v="' + esc(a.id) + '" style="cursor:pointer"><div class="t"><b>' + esc(a.destino) + (a.paciente ? " · " + esc(a.paciente) : "") + ((a.dados || {}).pedido ? ' <span class="chip ' + (a.dados.pedido.urgencia === "emergencia" ? "al" : "av") + '">pedido pelo app · ' + esc(URG_PED[a.dados.pedido.urgencia] || "") + "</span>" : "") + ((a.dados || {}).requisicao && a.dados.requisicao.pendente ? ' <span class="chip av">aguardando assinatura</span>' : "") + "</b><small>" + (a.modalidade === "uber" ? "Uber" : "Motoboy") + (a.remessa_id ? " · caixa " + esc(a.remessa_id) : "") + " · " + esc(hora(a.criado)) + '</small></div><span class="chip ' + (COR_AT[a.etapa] || "") + '">' + esc(ROT_AT[a.etapa] || a.etapa) + "</span></div>";
+  const lin = (a) => '<div class="lin" data-a="at" data-v="' + esc(a.id) + '" style="cursor:pointer"><div class="t"><b>' + esc(a.destino) + (a.paciente ? " · " + esc(a.paciente) : "") + ((a.dados || {}).pedido ? ' <span class="chip ' + (a.dados.pedido.urgencia === "emergencia" ? "al" : "av") + '">pedido pelo app · ' + esc(URG_PED[a.dados.pedido.urgencia] || "") + "</span>" : "") + ((a.dados || {}).requisicao && a.dados.requisicao.pendente ? ' <span class="chip av">aguardando assinatura</span>' : "") + prazosPedido(a).map(([c, t]) => ' <span class="chip ' + c + '">' + esc(t) + "</span>").join("") + "</b><small>" + (a.modalidade === "uber" ? "Uber" : "Motoboy") + (a.remessa_id ? " · caixa " + esc(a.remessa_id) : "") + " · " + esc(hora(a.criado)) + '</small></div><span class="chip ' + (COR_AT[a.etapa] || "") + '">' + esc(ROT_AT[a.etapa] || a.etapa) + "</span></div>";
   return '<div class="bts" style="margin-bottom:12px"><button class="btn" data-a="atNovo">Novo atendimento</button>' + '</div><div id="apLink"></div>' +
     '<div class="cx"><h2>Em andamento</h2>' + (at.length ? at.map(lin).join("") : '<p class="vazio">Nenhum atendimento em andamento.</p>') + "</div>" + (fim.length ? '<div class="cx"><h2>Encerrados</h2>' + fim.map(lin).join("") + "</div>" : "");
 }
@@ -228,7 +228,18 @@ function formAtendimento(a) {
 const dtLocal = (iso) => { const d = iso ? new Date(iso) : new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) + "T" + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
 /* ── pedido da Intensivet e requisição (10.13 a 10.15) ── */
 const TESTES_PED = { tipagem: "Tipagem sanguínea", prova: "Prova de compatibilidade", coombs: "Teste de Coombs (antiglobulina direto)" };
-const URG_PED = { rotina: "Rotina", urgente: "Urgente", emergencia: "Emergência" };
+const URG_PED = { rotina: "Rotina", reserva: "Reserva", urgente: "Urgência", emergencia: "Emergência" };
+// prazos do pedido (pagamento a partir do link, envio a partir da amostra) e chegada fora do horário
+function prazosPedido(a) {
+  const p = (a.dados || {}).pedido || {}, z = (a.dados || {}).prazos || {}, t = [], agora = Date.now();
+  if (p.foraHorario) t.push(["av", "recebido fora do horário" + (p.abreQuando && p.abreEm && Date.parse(p.abreEm) > agora ? " · alerta " + p.abreQuando : "")]);
+  if (p.reservaPara) t.push(["", "reserva para " + hora(p.reservaPara)]);
+  if (a.etapa === "autorizado" && z.pagamento) t.push([Date.parse(z.pagamento) < agora ? "al" : "av", (Date.parse(z.pagamento) < agora ? "prazo de pagamento terminou " : "pagamento até ") + hora(z.pagamento)]);
+  if (z.envio && ["pago", "testes", "fracionamento", "preparo"].includes(a.etapa)) t.push([Date.parse(z.envio) - agora < 18e5 ? "al" : "av", "envio até " + hora(z.envio)]);
+  if (p.urgencia === "emergencia" && ["pago"].includes(a.etapa)) t.push(["al", "emergência · pode enviar antes da amostra"]);
+  return t;
+}
+const REGRA_PED = { urgente: "Urgência. O responsável tem até 30 minutos para pagar depois do link de pagamento. Envio em até 3 horas a partir do recebimento da amostra.", emergencia: "Emergência. O responsável tem até 10 minutos para pagar depois do link de pagamento. A bolsa pode sair antes da amostra, e os testes com a amostra pré-transfusional confirmam depois." };
 function textoPedido(a) {
   const p = (a.dados || {}).pedido || {}, P = p.paciente || {}, R = p.responsavel || {}, V = p.vet || {};
   return [
@@ -246,7 +257,8 @@ function htmlPedidoReq(a) {
   const d = a.dados || {}, p = d.pedido, r = d.requisicao;
   let h = "";
   if (p) { const P = p.paciente || {}, R = p.responsavel || {};
-    h += '<div class="cx" style="margin:8px 0;' + (p.urgencia === "emergencia" ? "border-color:#A83D3D" : "") + '"><h2>Pedido da ' + esc(a.destino) + " · " + esc(URG_PED[p.urgencia] || "") + "</h2><dl class=\"dl\"><dt>Pede</dt><dd>" + esc((p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES_PED[t] || t)).join(" · ")) + "</dd>" +
+    const pz = prazosPedido(a);
+    h += '<div class="cx" style="margin:8px 0;' + (p.urgencia === "emergencia" || p.urgencia === "urgente" ? "border-color:#A83D3D" : "") + '"><h2>Pedido da ' + esc(a.destino) + " · " + esc(URG_PED[p.urgencia] || "") + "</h2>" + (pz.length ? "<p>" + pz.map(([c, t]) => '<span class="chip ' + c + '">' + esc(t) + "</span>").join(" ") + "</p>" : "") + (REGRA_PED[p.urgencia] ? '<p><small>' + REGRA_PED[p.urgencia] + "</small></p>" : "") + "<dl class=\"dl\"><dt>Pede</dt><dd>" + esc((p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => TESTES_PED[t] || t)).join(" · ")) + "</dd>" +
       "<dt>Paciente</dt><dd>" + esc([P.nome, P.especie, P.raca, P.sexo, P.idade].filter(Boolean).join(", ")) + "<br><small>" + esc([P.peso ? P.peso + " kg" : "", P.ht ? "Ht " + P.ht + "%" : "", P.tipagem ? "tipagem " + P.tipagem : "", P.transfundido ? "transfundido antes: " + P.transfundido : ""].filter(Boolean).join(" · ")) + "</small></dd>" +
       (p.indicacao ? "<dt>Indicação</dt><dd>" + esc(p.indicacao) + "</dd>" : "") +
       "<dt>Responsável</dt><dd>" + esc([R.nome, R.telefone].filter(Boolean).join(" · ")) + "<br><small>" + (R.contato === "ciente" ? "Ciente. O CVH pode entrar em contato." : "Aguardando o veterinário avisar o responsável.") + "</small>" + (R.contato === "ciente" && R.telefone ? ' <a href="https://wa.me/55' + esc(String(R.telefone).replace(/\D/g, "").replace(/^55/, "")) + '" target="_blank" rel="noopener">WhatsApp</a>' : "") + "</dd>" +
@@ -270,7 +282,7 @@ function abrirAtendimento(id) {
   if (a.etapa === "possivel") ac = B("autorizado", "Autorizado · link de pagamento solicitado", " ");
   if (a.etapa === "autorizado") ac = S.admin ? '<button class="btn peq" data-a="atPago" data-v="' + esc(a.id) + '">Pagamento confirmado</button>' : "<small>Aguardando o Plínio confirmar o pagamento.</small>";
   if (["pago", "testes", "fracionamento", "preparo"].includes(a.etapa) && am.buscar && !am.chegouEm) ac += B("amostraChegou", "Amostra chegou no CVH");
-  if (a.etapa === "pago") ac += B("testes", "Testes concluídos · laudo em elaboração", " ");
+  if (a.etapa === "pago") ac += B("testes", "Testes concluídos · laudo em elaboração", " ") + (((a.dados || {}).pedido || {}).urgencia === "emergencia" ? B("preparo", "Emergência · preparar o envio antes dos testes", " ") : "");
   if (a.etapa === "testes") ac += B("fracionamento", "Fracionamento da bolsa escolhida") + B("preparo", "Em preparação para envio", " ");
   if (a.etapa === "fracionamento") ac += B("preparo", "Em preparação para envio", " ");
   if (a.etapa === "preparo") ac += B("pronta", "Embalagem pronta para retirada", " ");
@@ -436,7 +448,7 @@ document.addEventListener("click", async (ev) => {
   } catch (e) { toast(e.message || String(e), 7000); } finally { if (b) b.disabled = false; }
 });
 window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharGaveta(); return true; } if (S.aba !== "hoje") { S.aba = "hoje"; pintar(); return true; } return false; };
-(async () => { try { await recarregar(); const pode = () => { const ae = document.activeElement; return !document.hidden && !$("#gaveta").classList.contains("on") && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)); }; setInterval(() => { if (pode()) { const y = window.scrollY; recarregar().then(() => window.scrollTo(0, y)).catch(() => {}); } }, 25000); document.addEventListener("visibilitychange", () => { if (pode()) recarregar().catch(() => {}); }); } catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o módulo. ' + esc(e.message || String(e)) + "</div>"; } })();
+(async () => { try { await recarregar(); try { const c = await ponte("contexto"); if (c && c.abrirPedido) { S.aba = "ped"; pintar(); abrirAtendimento(c.abrirPedido); } } catch (_) {} const pode = () => { const ae = document.activeElement; return !document.hidden && !$("#gaveta").classList.contains("on") && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)); }; setInterval(() => { if (pode()) { const y = window.scrollY; recarregar().then(() => window.scrollTo(0, y)).catch(() => {}); } }, 25000); document.addEventListener("visibilitychange", () => { if (pode()) recarregar().catch(() => {}); }); } catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o módulo. ' + esc(e.message || String(e)) + "</div>"; } })();
 </script>
 <!--CVH-TRANSPORTE-COMPLETO-->
 </body></html>

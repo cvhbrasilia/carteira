@@ -825,7 +825,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121105303';
+  var VERSAO = '20261121105540';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5662,6 +5662,9 @@ const PONTE = {
   rascunhoSalvar: async o => { const r = await api('laudoRascunhoSalvar', E.sessao, o); E.rascunhos = null; return r; },
   arquivoLab: async id => api('lerArquivoDrive', E.sessao, id),
   labQualidade: async () => (await api('laboratoriosListar', E.sessao, false)).filter(x => ehQualidade(x) && x.situacao !== 'feito' && x.situacao !== 'ignorado').map(x => ({ labId: x.id, arquivoId: x.arquivoId, nome: x.nomeArquivo })),
+  // laudos IDEXX de controle de qualidade de uma coleta (ST_BOLSA 574-6, CH_BOLSA 574-6, PF_BOLSA 574-6...), por etapa
+  qcDaColeta: async c => { const L = await api('laboratoriosListar', E.sessao, true), k = String(c || '').trim(); if (!k) return [];
+    return L.filter(x => ehQualidade(x) && String(x.nomeArquivo || '').includes(k)).map(x => { const n = String(x.nomeArquivo || ''); return { nome: n, url: window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '', em: x.criadoEm, etapa: /^ST/i.test(n) ? 'ST' : /^CH/i.test(n) ? 'CH com SAG' : /^PF/i.test(n) ? 'PFC' : /^(CP|PLAQ)/i.test(n) ? 'CP' : /^CRIO/i.test(n) ? 'CRIO' : 'outro', resumo: x.resumo || [] }; }); },
   labFeito: async ids => { for (const id of ids || []) { try { await api('laboratorioMarcar', E.sessao, id, { situacao: 'feito' }); } catch (_) {} } return true; },
   // botões do laudo recém-assinado: últimos exames da carteira e Histórico Laboratorial, separados
   // pedidos da Intensivet ainda abertos (para mandar o laudo do receptor de volta para a internação)
