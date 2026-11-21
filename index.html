@@ -252,6 +252,7 @@ button{cursor:pointer}
 .ped-t.urgente{background:#F6D9C9;color:#8a2a1f}.ped-t.emergencia{background:var(--vermelho);color:#fff}
 .login .manter{display:flex;align-items:center;gap:8px;font-size:14px;color:#6b5a52;margin:2px 0 10px;cursor:pointer}.login .manter input{width:18px;height:18px;accent-color:#5F130F}
 .colar-zona{border:1px dashed #C6B098;border-radius:12px;padding:12px;margin:0 0 12px;text-align:center;font-size:16px;color:#7a6a62;height:48px;overflow:hidden;outline:none;-webkit-user-select:text;user-select:text;background:#FBF8F4;caret-color:transparent}.colar-zona:empty::before{content:attr(data-ph);font-size:14px;color:#7a6a62}.colar-zona *{display:none!important}
+.atalho-ol{margin:10px 0;padding-left:20px;line-height:1.5;font-size:14px}.atalho-ol li{margin-bottom:6px}.atalho-link{white-space:pre-wrap;word-break:break-all;background:#F6F1EB;border:1px solid #E2D6C8;border-radius:10px;padding:10px;font-size:12.5px;margin:4px 0 8px;-webkit-user-select:all;user-select:all}
 .al-home{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;border:0;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#fff;box-shadow:0 2px 10px rgba(95,19,15,.12);font-family:inherit;cursor:pointer;text-align:left}
 .al-home b{color:var(--vinho);font-size:16px}
 .al-dir{display:flex!important;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.al-home i.b.novo{background:#C49A6C;color:#fff;font-style:normal;font-weight:700;border-radius:999px;padding:4px 11px;cursor:pointer;box-shadow:0 0 0 0 rgba(196,154,108,.6);animation:pulsoNovo 2.4s ease-out 3}
@@ -843,7 +844,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
   window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
-  function sessao() { try { return sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
   function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
   function reescrever(x) {
@@ -867,7 +868,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121172124';
+  var VERSAO = '20261121173419';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5190,13 +5191,28 @@ function arquivoColado(dt) {
   const pdf = /pdf/i.test(f.type || '') || /\.pdf$/i.test(f.name || ''); return f.type && !/pdf/i.test(f.type) || !pdf ? f : new File([f], f.name && /\.pdf$/i.test(f.name) ? f.name : 'PDF colado.pdf', { type: 'application/pdf' });
 }
 const tiposColados = dt => { const t = [...((dt || {}).items || [])].map(x => x.kind + ':' + (x.type || '?')); return t.length ? t.join(', ') : 'nada'; };
+// passo a passo do Atalho "Enviar ao CVH" (o link leva a chave da pessoa ou do celular)
+function passosAtalho(link, onde) {
+  return '<ol class="atalho-ol"><li>Abra o app <b>Atalhos</b> e toque em <b>+</b>.</li><li>Toque no nome lá em cima e escreva <b>Enviar ao CVH</b>.</li>' +
+    '<li>Toque em <b>Adicionar Ação</b>, procure <b>Obter Conteúdo do URL</b> e toque nele.</li><li>Toque em <b>URL</b> e cole o link abaixo.</li>' +
+    '<li>Toque na setinha ao lado da ação (Mostrar Mais) e mude: <b>Método</b> para POST, <b>Corpo da Solicitação</b> para Arquivo, e em <b>Arquivo</b> escolha Entrada do Atalho.</li>' +
+    '<li>Toque no <b>ⓘ</b> embaixo e ligue <b>Mostrar na Folha de Compartilhamento</b>. Em tipos, deixe Arquivos (PDF) e Imagens.</li><li>Opcional: adicione a ação <b>Mostrar Notificação</b> para ver "Enviado ao CVH".</li></ol>' +
+    '<p class="nota">Link do Atalho (é pessoal, não compartilhe)</p><pre class="atalho-link">' + esc(link) + '</pre><button class="btn sec2 peq" data-acao="atalho-copiar" data-v="' + esc(link) + '">Copiar o link</button>' +
+    '<p class="nota">Para usar: abra o PDF no WhatsApp ou no e-mail, toque em Compartilhar e escolha <b>Enviar ao CVH</b>. Volte ao app: ' + onde + ' recebe o arquivo em poucos segundos.</p>';
+}
+// enquanto a HemoCalculadora IA está aberta, pega o PDF que chegou pelo Atalho
+function vigiarCaixa(aoChegar) {
+  clearInterval(E.tCaixa); let ocupado = false;
+  const olhar = async () => { if (ocupado || document.hidden) return; if (!$('#hiArq')) { clearInterval(E.tCaixa); return; } ocupado = true; try { const x = await api('caixaPegar', E.sessao); if (x && x.b64) { const u8 = Uint8Array.from(atob(x.b64), c => c.charCodeAt(0)); await aoChegar(new File([u8], x.nome, { type: x.mime })); toast('PDF recebido pelo Compartilhar: ' + x.nome, 5000); } } catch (_) {} ocupado = false; };
+  E.tCaixa = setInterval(olhar, 3000); olhar(); if (E.olharCaixa) document.removeEventListener('visibilitychange', E.olharCaixa); E.olharCaixa = olhar; document.addEventListener('visibilitychange', olhar);
+}
 function telaHemoIA() {
   const T = E.tx || {}, H = E.hia = E.hia || { arq: null, val: {}, sit: '', clin: '', res: null, msg: 'curta' };
   const cmp = (id, rot, v) => campo(id, rot, inp(id, v || '', 'inputmode="decimal" autocomplete="off"'));
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" id="hiVolta">‹ HemoCalculadora</button></div>' +
     '<header class="topo"><div class="t"><span>Leitura do hemograma e indicação</span><b>HemoCalculadora IA</b></div></header>' +
     '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
-    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem copiada (print do laudo)</button><div id="hiColarZona" class="colar-zona" contenteditable="true" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div>' +
+    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem copiada (print do laudo)</button><div id="hiColarZona" class="colar-zona" contenteditable="true" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div><p class="nota" style="margin:-4px 0 12px">PDF do WhatsApp ou do e-mail sem salvar: Compartilhar, <b>Enviar ao CVH</b>. <a href="#" data-acao="conta">Configurar o Atalho</a></p>' +
     '<div class="grade">' + cmp('hiPeso', 'Peso (kg)', T.peso) + '</div>' +
     '<details class="tx-av"' + (Object.keys(H.val).length ? ' open' : '') + '><summary>Digitar os valores (sem arquivo ou para corrigir a leitura)</summary><div class="grade">' + HC_VALS.map(([k, t]) => cmp('hiV_' + k, t, H.val[k])).join('') + '</div></details>' +
     '<h3>Situação</h3><div class="filtros hc-sit">' + HC_SIT.map(([k, t]) => '<button class="filtro' + (H.sit === k ? ' on' : '') + '" data-sit="' + k + '">' + t + '</button>').join('') + '</div>' +
@@ -5213,6 +5229,7 @@ function telaHemoIA() {
     // PDF com texto (a maioria dos laboratórios): manda só o texto, bem mais rápido que o arquivo inteiro
     if (H.arq.mime === 'application/pdf') { try { const tx = await textoDoPdfIdx(u8); if (tx.trim().length > 80) H.arq.texto = tx; } catch (_) { } } };
   $('#hiArq').onchange = ev => usarArq(ev.target.files[0]);
+  vigiarCaixa(f => usarArq(f));
   // colar uma imagem ou um PDF copiado (Cmd+V no computador, Colar no celular)
   const zona = $('#hiColarZona');
   document.onpaste = ev => { if (!$('#hiArq')) { document.onpaste = null; return; } const f = arquivoColado(ev.clipboardData), naZona = zona && (ev.target === zona || zona.contains(ev.target));
@@ -5509,6 +5526,7 @@ function telaConta() {
     '<button class="btn sec2 peq" data-acao="trocar-senha">Trocar senha</button><p class="nota">Ao trocar a senha, todos os outros aparelhos conectados com o seu usuário saem na hora.</p></section>' +
     '<section class="cartao"><h3>Aparelhos conectados</h3><p class="nota">Esqueceu o painel aberto em outro computador ou celular? Encerre o acesso de todos os outros aparelhos. Este continua conectado.</p>' +
     '<button class="btn sec2 peq" data-acao="sair-outros">Sair de todos os outros aparelhos</button></section>' +
+    '<section class="cartao" id="atalhoCx"><h3>Enviar PDF pelo Compartilhar do iPhone</h3><p class="nota">O iPhone não deixa colar PDF no app. Com o Atalho "Enviar ao CVH", o PDF do WhatsApp ou do e-mail vai direto para a HemoCalculadora IA aberta, sem salvar no celular.</p><button class="btn sec2 peq" data-acao="atalho-cvh">Configurar o Atalho neste iPhone</button><div id="atalhoPassos"></div></section>' +
     '<section class="cartao"><h3>Notificações</h3><p class="nota" id="notifEstado">' + esc(notifEstado()) + '</p>' +
     '<div class="mini-bts" style="flex-wrap:wrap"><button class="btn peq" data-acao="notif-ativar">Ativar notificações neste aparelho</button>' +
     '<button class="btn sec2 peq" data-acao="notif-teste" data-v="normal">Testar aviso</button><button class="btn sec2 peq" data-acao="notif-teste" data-v="critico">Testar alerta crítico</button><button class="btn sec2 peq" data-acao="notif-fechado">Testar com o app fechado</button></div>' +
@@ -6831,6 +6849,8 @@ const ACOES = {
   'prep-emb': b => preparoTx(b, 'embalar'),
   'prep-voltar': () => { E.pedAbrir = E.prepAt; E.modulo = 'transporte'; return abrirModulo('transporte'); },
   'prep-calcular': () => { E.modulo = 'transfusao'; return escolherAtTx(E.prepAt); },
+  'atalho-cvh': async b => { b.disabled = true; try { const ch = await api('caixaChave', E.sessao); $('#atalhoPassos').innerHTML = passosAtalho(CVH_SERVIDOR.api + '?caixa=' + ch, 'a HemoCalculadora IA aberta'); } catch (e) { toast(e.message, 6000); } b.disabled = false; },
+  'atalho-copiar': async b => { try { await navigator.clipboard.writeText(b.dataset.v); toast('Link copiado.'); } catch (_) { toast('Toque e segure no link para copiar.', 5000); } },
   'cartao-fisico': async b => {
     const an = animalDe(b.dataset.id); if (!an) return; const v = an.cartaoFisico === b.dataset.v ? '' : b.dataset.v; b.disabled = true;
     try { const at = await api('animalCartaoFisico', E.sessao, an.id, v); Object.assign(an, at); reabrir(); toast(v === 'cvh' ? 'Marcado: cartão no CVH.' : v === 'responsavel' ? 'Marcado: cartão com o responsável.' : 'Marcação retirada.'); } catch (e) { b.disabled = false; toast(e.message, 5000); }

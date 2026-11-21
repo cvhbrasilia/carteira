@@ -13,7 +13,7 @@
   if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
   window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
-  function sessao() { try { return sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
   function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
   function reescrever(x) {
@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121172124';
+  var VERSAO = '20261121173419';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -532,6 +532,18 @@ async function colarExames() {
     toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L);
   } catch (_) { const z = $("#exColarZona"); if (z) { z.focus(); toast("Toque e segure no quadro tracejado e escolha Colar.", 5000); } }
 }
+// "Enviar ao CVH": enquanto o pedido está aberto, o PDF que chegou pelo Atalho entra sozinho
+let T_CAIXA = null;
+function vigiarCaixa() {
+  clearInterval(T_CAIXA); let ocupado = false;
+  const olhar = async () => { if (ocupado || document.hidden) return; if (!$("#exArq") || !$("#modal").classList.contains("on")) { clearInterval(T_CAIXA); return; } ocupado = true; try { const x = await srv("intCaixaPegar"); if (x && x.b64) { const u8 = Uint8Array.from(atob(x.b64), (c) => c.charCodeAt(0)); toast("PDF recebido pelo Compartilhar: " + x.nome, 4000); await anexarExames([new File([u8], x.nome, { type: x.mime })]); } } catch (_) {} ocupado = false; };
+  T_CAIXA = setInterval(olhar, 3000); olhar(); document.onvisibilitychange = olhar;
+}
+async function mostrarAtalho() {
+  const ch = await srv("intCaixaChave"), link = window.CVH_SERVIDOR.api + "?caixa=" + ch;
+  const el = document.createElement("div"); el.className = "atalho"; el.innerHTML = '<h2 style="margin-top:14px">Atalho Enviar ao CVH</h2><ol style="padding-left:20px;line-height:1.5;font-size:14px"><li>Abra o app <b>Atalhos</b> e toque em <b>+</b>.</li><li>Toque no nome lá em cima e escreva <b>Enviar ao CVH</b>.</li><li>Toque em <b>Adicionar Ação</b>, procure <b>Obter Conteúdo do URL</b> e toque nele.</li><li>Toque em <b>URL</b> e cole o link abaixo.</li><li>Toque na setinha ao lado da ação (Mostrar Mais) e mude: <b>Método</b> para POST, <b>Corpo da Solicitação</b> para Arquivo, e em <b>Arquivo</b> escolha Entrada do Atalho.</li><li>Toque no <b>ⓘ</b> embaixo e ligue <b>Mostrar na Folha de Compartilhamento</b>. Em tipos, deixe Arquivos (PDF) e Imagens.</li></ol><p><small>Link deste celular (não compartilhe)</small></p><pre style="white-space:pre-wrap;word-break:break-all;background:#F6F1EB;border:1px solid #E2D6C8;border-radius:10px;padding:10px;font-size:12.5px;-webkit-user-select:all;user-select:all">' + esc(link) + '</pre><div class="bts" style="margin-top:6px"><button class="btn sec peq" data-a="atalhoCopiar" data-v="' + esc(link) + '">Copiar o link</button></div><p><small>Para usar: abra o PDF no WhatsApp ou no e-mail, toque em Compartilhar e escolha Enviar ao CVH. Volte para este pedido: o arquivo entra em poucos segundos.</small></p>';
+  const g = document.querySelector(".ganhe"); if (g && !document.querySelector(".atalho")) g.insertAdjacentElement("afterend", el);
+}
 async function anexarExames(files) {
   for (const f of [...files].slice(0, 4 - EXAMES.length)) {
     if (f.size > 7e6) { toast("O arquivo " + f.name + " é grande demais.", 5000); continue; }
@@ -550,7 +562,7 @@ function formSolicitar() {
   const Hr = D.horario || {}, fechado = Hr.aberto === false;
   Object.keys(ESC).forEach((k) => delete ESC[k]); ESC.esp = "Canina";
   modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. No horário de funcionamento o pedido chega na hora para a equipe do CVH.</small></p>" +
-    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF, foto ou print da tela). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar imagem copiada (print do laudo)</button><div id="exColarZona" contenteditable="true" class="colar" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
+    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF, foto ou print da tela). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar imagem copiada (print do laudo)</button><div id="exColarZona" contenteditable="true" class="colar" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div><p style="margin:10px 0 0;font-size:13px">PDF do WhatsApp ou do e-mail sem salvar: Compartilhar, <b>Enviar ao CVH</b>. <a href="#" data-a="atalho" style="color:#EEE5DB">Configurar o Atalho</a></p></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
     "<label>O que precisa</label>" + ["CH", "PFC", "CRIO", "CP"].map((c) => '<label class="op" style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="sB" value="' + c + '"> <span style="flex:1">' + { CH: "CH · concentrado de hemácias", PFC: "PFC · plasma fresco congelado", CRIO: "CRIO · crioprecipitado", CP: "CP · concentrado de plaquetas" }[c] + '</span><input type="number" inputmode="numeric" min="1" max="10" value="1" class="sQ" data-c="' + c + '" style="width:70px" aria-label="quantidade"></label>').join("") +
     TESTES_PED.map(([k, t]) => '<label class="op"><input type="checkbox" class="sT" value="' + k + '"> ' + t + "</label>").join("") +
     '<p id="sAmHint" hidden><small>Para prova de compatibilidade, tipagem e Coombs, colete sangue do paciente em tubo de EDTA (1 mL) e identifique com o nome.</small></p>' +
@@ -575,7 +587,7 @@ function formSolicitar() {
     '<div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="assLimpar">Limpar assinatura</button><button class="btn sec peq" data-a="sAnexar">Anexar requisição em PDF</button></div><input type="file" id="sArq" accept="application/pdf,image/*" hidden><p id="sArqNome"></p>' +
     '<label>Observações</label><p style="margin:0 0 4px"><small>Alguma observação que considera importante para o CVH?</small></p><textarea id="sObs" rows="4" style="width:100%"></textarea>' +
     '<div class="bts"><button class="btn" data-a="solicitarOk">Enviar pedido ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
-  EXAMES = []; pintarTipagem(); ligarNumeros(); ligarVet();
+  EXAMES = []; pintarTipagem(); ligarNumeros(); ligarVet(); vigiarCaixa();
   sugerir($("#sRaca"), () => (ESC.esp === "Felina" ? RACAS_GATO : RACAS_CAO).map((t) => ({ t })));
   $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
   ASS = { tracos: 0, anexo: null }; const cv = $("#sAss"), cx = cv.getContext("2d"); cx.lineWidth = 3; cx.lineCap = "round"; cx.strokeStyle = "#2b2320";
@@ -664,6 +676,8 @@ document.addEventListener("click", async (ev) => {
     if (a === "solicitar") return formSolicitar();
     if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
     if (a === "exColar") return colarExames();
+    if (a === "atalho") { ev.preventDefault(); return mostrarAtalho(); }
+    if (a === "atalhoCopiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado.", 2500); } catch (_) { toast("Toque e segure no link para copiar.", 5000); } return; }
     if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
     if (a === "esc") { const k = b.dataset.k; marcar(k, ESC[k] === v && k !== "esp" ? "" : v); if (k === "resDef" && ESC.resDef) $("#sResQ").value = ""; return; }
     if (a === "solicitarOk") return solicitarOk(b);
