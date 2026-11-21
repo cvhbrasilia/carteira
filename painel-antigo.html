@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121191203';
+  var VERSAO = '20261121191706';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5090,7 +5090,7 @@ async function montarPedidoLaudo(id, tipo, bolsas) {
   let provas = ids.map(uid => { const u = (d.unidades || []).find(x => x.id === uid) || {}; return { bolsa: '', doador: String(u.coleta || uid).split(' ')[0], unidade: uid }; });
   // escolha feita na ficha do atendimento (marcadas e digitadas à mão) substitui a lista automática
   if (Array.isArray(bolsas)) provas = bolsas.map(String).filter(Boolean).map(b => { const u = (d.unidades || []).find(x => x.id === b || String(x.coleta || '').split(' ')[0] === b || x.id.split(' ')[0] === b) || {}; return { bolsa: '', doador: String(u.coleta || b).split(' ')[0], unidade: u.id || '' }; });
-  E.laudoPedido = { id: a.id, paciente: { nome: P.nome || a.paciente || '', especie: P.especie || '', raca: P.raca || '', sexo: P.sexo || '', idade: P.idade || '', peso: P.peso || '' }, resp: (ped.responsavel || {}).nome || '', solicitante: [V.nome, V.crmv].filter(Boolean).join(', ') || a.solicitante || '', clinica: a.destino || '', provas, dea1: P.dea1 || '', dal: P.dal || '', felino: P.felino || '' };
+  E.laudoPedido = { id: a.id, paciente: { nome: P.nome || a.paciente || '', especie: P.especie || '', raca: P.raca || '', sexo: P.sexo || '', idade: P.idade || '', peso: P.peso || '' }, resp: (ped.responsavel || {}).nome || '', solicitante: [V.nome, V.crmv].filter(Boolean).join(', ') || a.solicitante || '', solNome: V.nome || '', solCrmv: V.crmv || '', clinica: a.destino || '', provas, dea1: P.dea1 || '', dal: P.dal || '', felino: P.felino || '' };
   if (tipo === 'requisicao') {
     const R = ped.responsavel || {}, rq = (a.dados || {}).requisicao || {}, q = new Date(a.criado), p2 = n => String(n).padStart(2, '0');
     const URG = { rotina: 'Rotina', reserva: 'Reserva', urgente: 'Urgência', emergencia: 'Emergência' }, CT = { orientado: 'já orientado a falar com o CVH', orientar: 'a internação vai orientar o responsável a falar com o CVH', ciente: 'ciente, o CVH pode entrar em contato', aguardar: 'aguardar o médico veterinário avisar' };

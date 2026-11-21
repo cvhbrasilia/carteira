@@ -3679,6 +3679,10 @@ function lidoLeitor(c) {
   if (CAM_FIM) return CAM_FIM(c);
   const st = $("#st"), msg = (t, erro) => { if (st) { st.className = "st" + (erro ? " erro" : ""); st.textContent = t; } };
   if (!estado.tipo) { bipe(false); return msg("Escolha o tipo de laudo antes de ler a etiqueta.", true); }
+  // etiqueta do tubo da amostra (sistema da Intensivet e outros): o código vem com símbolos de controle e sem o hífen ("!9202" = 920-2)
+  const limpo = String(c || "").replace(/^[^0-9A-Za-z]+|[^0-9A-Za-z]+$/g, "").trim();
+  if (/^\d{2,8}$/.test(limpo)) { const num = limpo.slice(0, -1) + "-" + limpo.slice(-1), f = aplicarEtiqueta({ amostra: num }); bipe(); mudou(true); return msg("Etiqueta lida: amostra " + num + ". Confira com o número impresso no tubo."); }
+  c = limpo || c;
   const m = c.toUpperCase().replace(/\s+/g, " ").match(/^(\d{1,6}-\d{1,2})(?:\s+(CH|PFC|CRIO|CP|PPC|ST))?$/);
   if (estado.tipo === "compat" && m) {
     const L = estado.t.provas; if (L.some((p) => p.doador === m[1])) { bipe(); return msg("A doação " + m[1] + " já está na prova."); }
@@ -3703,7 +3707,7 @@ async function pintarProvasRes() {
 async function usarProva(i) {
   const x = (PROVAS_RES || [])[i]; if (!x) return; const L = estado.t.provas;
   let p = L.find((y) => !String(y.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); } p.doador = x.doacao;
-  if (x.atendimento && !String(estado.paciente.nome || "").trim()) { try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) { estado.exame.solicitante = o.solNome || o.solicitante || ""; if (o.solNome && !estado.exame.solicitanteCrmv) estado.exame.solicitanteCrmv = o.solCrmv || ""; } if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
+  if (x.atendimento && (!String(estado.paciente.nome || "").trim() || !estado.paciente.tipo)) { const vazio = !String(estado.paciente.nome || "").trim(); try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o && !vazio) { if (!estado.paciente.tipo && (o.paciente || {}).tipo) estado.paciente.tipo = o.paciente.tipo; } else if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) { estado.exame.solicitante = o.solNome || o.solicitante || ""; if (o.solNome && !estado.exame.solicitanteCrmv) estado.exame.solicitanteCrmv = o.solCrmv || ""; } if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
   mudou(true); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Doação " + x.doacao + " na prova" + (x.paciente ? ", paciente " + x.paciente : "") + ". Confira."; }
 }
 window.CVH_LAUDO_TESTE = (lidos) => { if (estado.tipo !== "idexx") iniciarTipo("idexx"); aplicarLeitura(lidos); montarForm(); renderPrevia(); };
