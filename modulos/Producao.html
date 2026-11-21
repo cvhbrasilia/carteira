@@ -160,6 +160,21 @@ function sag(p) {
   return { vol, calc: Math.max(0, calc), ht, medido: htM != null, suficiente: calc <= P.sagBolsa };
 }
 const volPeso = (peso, tara, dens) => { const p = num(peso); return p == null || p <= tara ? null : (p - tara) / dens; };
+// controle de qualidade integrado (5.3): o que já foi registrado na doação e na produção, por etapa, sem repetir ficha; nomes para a IDEXX prontos para copiar (5.5)
+function qcColetaHtml(coleta, D) {
+  const c = sag(D), us = S.uni.filter((u) => u.coleta === coleta), linha = (t, v) => v ? "<dt>" + t + "</dt><dd>" + v + "</dd>" : "";
+  const cor = (comp) => { const u = us.find((x) => x.componente === comp), L = ((u || {}).dados || {}).coloracoes || []; return L.length ? (L[L.length - 1].resultado === "normal" ? "coloração dentro do padrão" : "coloração fora do padrão") : ""; };
+  const pfc = us.find((x) => x.componente === "PFC"), cong = ((pfc || {}).dados || {}).congelamento, crio = us.find((x) => x.componente === "CRIO");
+  const nomes = [["ST", "ST_BOLSA " + coleta], ["CH com SAG", "CH_BOLSA " + coleta], ["PFC", "PF_BOLSA " + coleta]];
+  return '<h2 style="margin-top:14px">Controle de qualidade da coleta</h2><dl class="dl">' +
+    linha("ST", [D.pesoST != null ? "peso bruto " + fmt(D.pesoST, 1) + " g" : "", D.htST != null ? "micro-Ht " + fmt(D.htST, 1) + "%" : ""].filter(Boolean).join(" · ")) +
+    linha("CH sem SAG", [D.pesoCHsem != null ? "peso " + fmt(D.pesoCHsem, 1) + " g" : "", c ? "volume " + fmt(c.vol) + " mL · Ht " + (c.medido ? "medido " : "pela média do CVH ") + fmt(c.ht, 1) + "%" : ""].filter(Boolean).join(" · ")) +
+    linha("CH com SAG", [c ? "SAG calculado " + fmt(c.calc) + " mL" : "", D.sagAdicionado != null ? "acrescentado " + fmt(D.sagAdicionado) + " mL" : "", D.pesoCHfinal != null ? "peso final " + fmt(D.pesoCHfinal, 1) + " g" : "", D.htCHfinal != null ? "micro-Ht " + fmt(D.htCHfinal, 1) + "%" : ""].filter(Boolean).join(" · ")) +
+    linha("CP", D.semCP ? "não houve CP" : [D.pesoCP != null ? "peso " + fmt(D.pesoCP, 1) + " g" : "", cor("CP")].filter(Boolean).join(" · ")) +
+    linha("PFC", [D.pesoPFC != null ? "peso " + fmt(D.pesoPFC, 1) + " g" : "", cor("PFC"), cong && cong.inicio ? "congelamento " + hora(cong.inicio) + (cong.conferido ? " · conferido" : "") : ""].filter(Boolean).join(" · ")) +
+    linha("CRIO", crio ? [crio.id, ((crio.dados || {}).crio || {}).ppcDescartado ? "PPC descartado" : ""].filter(Boolean).join(" · ") : "") + "</dl>" +
+    '<p class="nota">Nomes para a IDEXX (o laudo entra sozinho nesta coleta):</p><div class="bts">' + nomes.map(([e, n]) => '<button class="btn sec peq" data-a="copiar" data-v="' + esc(n) + '">' + esc(n) + "</button>").join("") + "</div>";
+}
 function abrirProducao(coleta) {
   const p = S.prod.find((x) => x.coleta === coleta) || { coleta, etapa: "peso_st", dados: {} }, d = doacao(coleta) || {}, a = animalDe(d.animalId || p.animal_id);
   S.prodAberta = coleta;
@@ -187,7 +202,8 @@ function abrirProducao(coleta) {
       '<label><input type="checkbox" id="pSemCP"' + (D.semCP ? " checked" : "") + '> Não houve CP nesta coleta</label><label><input type="checkbox" id="pCong" checked> Iniciar o congelamento do PFC agora (conferência amanhã)</label>' +
       '<button class="btn grande" data-a="pConcluir" style="margin-top:12px">Concluir a produção e guardar as bolsas</button>';
   } else { const us = S.uni.filter((u) => u.coleta === coleta); corpo = '<p class="nota">Produção concluída. As bolsas estão no estoque.</p>' + us.map(linhaUnidade).join("") + (us.length ? escolherEtiqueta(us.map((u) => u.id)) : ""); if (us.length) setTimeout(() => previaEtiqueta(us[0].id), 50); }
-  abrirGaveta("Produção da coleta " + coleta, passos + cab + corpo);
+  abrirGaveta("Produção da coleta " + coleta, passos + cab + corpo + qcColetaHtml(coleta, D) + '<div id="qcIdexx"></div>');
+  ponte("qcDaColeta", coleta).then((L) => { const el = $("#qcIdexx"); if (!el || S.prodAberta !== coleta) return; el.innerHTML = '<h2 style="margin-top:14px">Laudos IDEXX desta coleta</h2>' + (L.length ? L.sort((a, b) => String(a.em).localeCompare(String(b.em))).map((x) => '<div class="lin"><div class="t"><b>' + esc(x.etapa) + " · " + esc(x.nome) + "</b><small>" + esc(hora(x.em)) + (x.resumo.length ? " · " + esc(x.resumo.slice(0, 4).map((r) => (r.nome || r.k || "") + " " + (r.valor ?? r.v ?? "")).join(", ")) : "") + "</small></div>" + (x.url ? '<a class="btn sec peq" href="' + esc(x.url) + '" target="_blank" rel="noopener">PDF</a>' : "") + "</div>").join("") : '<p class="nota">Nenhum laudo IDEXX chegou ainda com o número ' + esc(coleta) + '. Eles aparecem aqui sozinhos quando chegam, mesmo depois de concluída a produção.</p>'); }).catch(() => {});
 }
 async function salvarProd(coleta, etapa, dados, msg) {
   const d = doacao(coleta) || {};
@@ -994,7 +1010,7 @@ document.addEventListener("click", async (ev) => {
   }
   if (a === "remMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
-  if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado."); } catch (e) { toast("Selecione o link e copie."); } return; }
+  if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast(/^https?:\/\//.test(v) ? "Link copiado." : "Copiado: " + v); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
   if (a === "cfAdd") { const i = $("#cfCod"); if (i && i.value.trim()) lidoConf(i.value.trim().toUpperCase().replace(/\s+/g, " ")); return; }
   if (a === "cfLimpar") { S.conf.lidos = []; S.conf.res = null; return pintar(); }
