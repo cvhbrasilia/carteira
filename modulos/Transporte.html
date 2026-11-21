@@ -380,7 +380,8 @@ function abrirAtendimento(id) {
   const cAt = (a.dados || {}).calculo || {}, bolsaT = (cAt.escolhida || {}).id || (cAt.prova || []).join(", ");
   const blocoFeita = provaFeita && !abrirNova && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" style="margin:8px 0;background:#F1F6EE"><h2>Prova de compatibilidade feita ✓</h2><p>' + esc(provaFeita.titulo) + " · " + esc(hora(provaFeita.em)) + (bolsaT ? " · bolsa " + esc(bolsaT) : "") + (provaFeita.url ? ' · <a href="' + esc(provaFeita.url) + '" target="_blank" rel="noopener">ver o laudo</a>' : "") + "</p>" +
     '<div class="bts">' + (bolsaT ? '<button class="btn peq" data-a="embalar" data-id="' + esc(a.id) + '" data-v="' + esc((cAt.escolhida || {}).id || (cAt.prova || [])[0]) + '">Etiqueta da bolsa e da caixa de isopor</button>' : "") + '<button class="btn peq sec" data-a="novaProva" data-id="' + esc(a.id) + '">Nova prova de compatibilidade</button></div></div>' : "";
-  const blocoProva = blocoFeita ? blocoFeita : (a.dados || {}).pedido && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" id="provaCx" data-id="' + esc(a.id) + '" style="margin:8px 0"><h2>' + (provaFeita ? "Nova prova de compatibilidade" : "Prova de compatibilidade") + '</h2><div id="provaBolsas"><small>Procurando as bolsas separadas…</small></div>' +
+  const blocoEmb = htmlEmb(a, r);
+  const blocoProva = blocoEmb ? blocoEmb : blocoFeita ? blocoFeita : (a.dados || {}).pedido && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" id="provaCx" data-id="' + esc(a.id) + '" style="margin:8px 0"><h2>' + (provaFeita ? "Nova prova de compatibilidade" : "Prova de compatibilidade") + '</h2><div id="provaBolsas"><small>Procurando as bolsas separadas…</small></div>' +
     '<label>Outra bolsa (número da doação, ex.: 572-0)</label><input type="text" id="provaManual" placeholder="digite ou passe a etiqueta no leitor" autocomplete="off">' +
     '<div class="bts" style="margin-top:6px"><button class="btn peq sec" data-a="provaLer">Ler a etiqueta da bolsa com a câmera</button><button class="btn peq sec" data-a="hcCalc" data-v="' + esc(a.id) + '">Trocar a bolsa na HemoCalculadora</button></div><p><small>Para trocar a bolsa, desmarque a anterior e leia ou digite a nova.</small></p>' +
     '<div class="bts" style="margin-top:8px"><button class="btn" data-a="iniciarProva" data-id="' + esc(a.id) + '">Iniciar prova de compatibilidade</button></div></div>' : "";
@@ -391,6 +392,38 @@ function abrirAtendimento(id) {
     '<h2 style="margin-top:16px">Dados</h2>' + formAtendimento(a));
   ligarClinica(); tiqueRelogios(); if (blocoProva && !blocoFeita) pintarProvaCx(a.id);
 }
+// embalagem e saída (no Motoboy): etiquetas, ler a bolsa, foto da bolsa na caixa, ler a caixa e dar a saída
+function htmlEmb(a, r) {
+  const cA = (a.dados || {}).calculo || {}, uid = (cA.escolhida || {}).id || (cA.prova || [])[0] || "";
+  if (!uid || !["testes", "fracionamento", "preparo", "pronta"].includes(a.etapa) || (r && r.situacao !== "preparo")) return "";
+  const M = S.emb = S.emb && S.emb.at === a.id ? S.emb : { at: a.id, uni: uid, bolsa: false, caixa: false, foto: "", via: a.modalidade === "uber" ? "uber" : "motoboy", link: a.link_uber || ((a.amostra || {}).uber || "") };
+  M.uni = uid; M.rem = r ? r.id : "";
+  const ok = (x) => x ? ' <b style="color:#2E7D32">✓</b>' : "";
+  return '<div class="cx" style="margin:8px 0;border-color:var(--vinho)"><h2>Embalagem e saída</h2>' +
+    '<p><b>Bolsa ' + esc(uid) + "</b>" + (r ? " · caixa <b>" + esc(r.id) + "</b>" : "") + "</p>" +
+    '<div class="bts"><button class="btn peq sec" data-a="embalar" data-id="' + esc(a.id) + '" data-v="' + esc(uid) + '">Etiquetas da bolsa e da caixa</button>' + (r ? "" : '<button class="btn peq" data-a="embCaixa" data-id="' + esc(a.id) + '">Criar a caixa de isopor</button>') + "</div>" +
+    (r ? '<div class="ev"><b>1. Ler a etiqueta da bolsa</b>' + ok(M.bolsa) + (M.bolsa ? "" : ' <button class="btn peq sec" data-a="embLer" data-v="bolsa">Ler com a câmera</button>') + "</div>" +
+      '<div class="ev"><b>2. Foto da bolsa na caixa</b>' + ok(M.foto) + ' <button class="btn peq sec" data-a="embFoto">' + (M.foto ? "Tirar outra" : "Tirar a foto") + "</button></div>" +
+      '<div class="ev"><b>3. Ler o QR da caixa</b>' + ok(M.caixa) + (M.caixa ? "" : ' <button class="btn peq sec" data-a="embLer" data-v="caixa">Ler com a câmera</button>') + "</div>" +
+      '<div class="ev"><b>4. Saída</b><div class="filtros" style="margin:6px 0">' + [["uber", "Uber"], ["motoboy", "Motoboy"]].map(([k, t]) => '<button class="' + (M.via === k ? "on" : "") + '" data-a="embVia" data-v="' + k + '">' + t + "</button>").join("") + "</div>" +
+      (M.via === "uber" ? '<input type="text" id="embUber" placeholder="link da corrida (opcional)" value="' + esc(M.link || "") + '">' : "") +
+      '<div class="bts" style="margin-top:8px"><button class="btn" data-a="embSaida"' + (M.bolsa && M.caixa ? "" : " disabled") + ">Dar a saída · em trânsito</button></div>" + (M.bolsa && M.caixa ? "" : "<small>Leia a bolsa e a caixa para liberar a saída. No computador, dá para passar no leitor.</small>") + "</div>" : "") + "</div>";
+}
+function embLido(c) {
+  const M = S.emb; if (!M) return false; const C = codigo(c).toUpperCase().replace(/\s+/g, " ");
+  if (C === M.uni.toUpperCase()) { M.bolsa = true; bipe(true); toast("Bolsa " + M.uni + " conferida.", 2500); abrirAtendimento(M.at); return true; }
+  if (M.rem && C === M.rem.toUpperCase()) { M.caixa = true; bipe(true); toast("Caixa " + M.rem + " conferida.", 2500); abrirAtendimento(M.at); return true; }
+  bipe(false); toast("Código " + C + " não é a bolsa " + M.uni + (M.rem ? " nem a caixa " + M.rem : "") + ".", 6000); return true;
+}
+// leitor USB com a ficha aberta na embalagem
+let LEITT = { buf: "", t0: 0, ult: 0 };
+document.addEventListener("keydown", (e) => { if (!S.emb || !document.querySelector('[data-a="embSaida"]') || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; const t = performance.now();
+  if (e.key === "Enter") { const c = LEITT.buf; LEITT.buf = ""; if (c.length >= 3 && t - LEITT.t0 < 45 * c.length + 150) { e.preventDefault(); embLido(c.trim()); } return; }
+  if (e.key.length !== 1) return; if (t - LEITT.ult > 60) { LEITT.buf = ""; LEITT.t0 = t; } LEITT.ult = t; LEITT.buf += e.key; }, true);
+document.addEventListener("change", async (e) => { const i = e.target; if (!i || i.id !== "embFotoIn" || !i.files.length || !S.emb) return;
+  try { const f = i.files[0], img = await new Promise((ok, erro) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => erro(new Error("Não consegui abrir a foto.")); im.src = u; });
+    const k = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight)), cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    S.emb.foto = cv.toDataURL("image/jpeg", 0.78); toast("Foto da bolsa guardada.", 2500); abrirAtendimento(S.emb.at); } catch (err) { toast(err.message, 6000); } });
 // números de doação num texto (etiqueta lida "572-0 CH", vários separados por vírgula ou espaço)
 // número só com algarismos ganha o hífen antes do último dígito (5673 vira 567-3)
 const hifen = (x) => /^\d{2,7}$/.test(x) ? x.slice(0, -1) + "-" + x.slice(-1) : x;
@@ -596,6 +629,20 @@ document.addEventListener("click", async (ev) => {
   if (a === "hcCalc") return ponte("hemocalc", v);
   if (a === "laudoPed") return ponte("laudoPedido", { id: b.dataset.id, tipo: v });
   if (a === "embalar") return ponte("embalagem", { id: b.dataset.id, unidade: v });
+  if (a === "embLer") { const t = await lerQR(v === "caixa" ? "Leia o QR da caixa de isopor" : "Leia a etiqueta da bolsa"); if (t) embLido(t); return; }
+  if (a === "embFoto") { const i = $("#embFotoIn"); i.value = ""; return i.click(); }
+  if (a === "embVia") { if (S.emb) { S.emb.link = ($("#embUber") || {}).value || S.emb.link || ""; S.emb.via = v; abrirAtendimento(S.emb.at); } return; }
+  if (a === "embCaixa") { const at = S.at.find((x) => x.id === b.dataset.id) || {}, M = S.emb; if (!M) return; b.disabled = true;
+    try { const r = await est("estRemessaCriar", { unidades: [M.uni], destino: at.destino || "Intensivet", finalidade: "Atendimento " + at.id + (at.paciente ? " · " + at.paciente : ""), modalidade: at.modalidade || "" });
+      await est("estAtendimentoSalvar", { id: at.id, destino: at.destino, endereco: at.endereco, paciente: at.paciente, solicitante: at.solicitante, modalidade: at.modalidade, remessa: r.id });
+      await recarregar(); abrirAtendimento(at.id); toast("Caixa " + r.id + " criada. Imprima as etiquetas e siga os passos.", 6000); } catch (e) { b.disabled = false; toast(e.message, 7000); } return; }
+  if (a === "embSaida") { const M = S.emb; if (!M || !M.rem) return; b.disabled = true;
+    try { const link = ($("#embUber") || {}).value || "", at = S.at.find((x) => x.id === M.at) || {};
+      await est("estRemessaAcao", M.rem, "saida", { modalidade: M.via, linkUber: link, foto: M.foto ? M.foto.split(",")[1] : "", conferida: { bolsa: M.bolsa, caixa: M.caixa } });
+      if (["testes", "fracionamento", "preparo"].includes(at.etapa)) await est("estAtendimentoEtapa", M.at, "pronta", {}).catch(() => null);
+      if (M.via === "uber" && link) await est("estAtendimentoEtapa", M.at, "uber", { link }).catch(() => null);
+      await est("estAtendimentoEtapa", M.at, "retirada", {}).catch(() => null);
+      S.emb = null; await recarregar(); abrirAtendimento(M.at); toast("Saída registrada. A caixa está em trânsito e a Intensivet foi avisada.", 7000); } catch (e) { b.disabled = false; toast(e.message, 8000); } return; }
   if (a === "novaProva") { S.novaProva = b.dataset.id; return abrirAtendimento(b.dataset.id); }
   if (a === "provaLer") { const t = await lerQR("Leia a etiqueta da bolsa"); if (t) provaLida(codigo(t)); return; }
   if (a === "iniciarProva") { const L = [...document.querySelectorAll(".provaCk:checked")].map((x) => x.value), m = doacoesDe(($("#provaManual") || {}).value);
@@ -632,4 +679,5 @@ window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharG
 </script>
 <!--CVH-TRANSPORTE-COMPLETO-->
 <div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
+<input type="file" id="embFotoIn" accept="image/*" capture="environment" hidden>
 </body></html>

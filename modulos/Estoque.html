@@ -87,6 +87,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 <div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
 <div id="veu"></div>
 <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+<input type="file" id="embFotoIn" accept="image/*" capture="environment" hidden>
 <div id="camE"><video playsinline muted></video><div class="mira"></div><div class="flash"></div><div class="base"><p id="camEt">Aponte para o código da bolsa</p><div id="camEl" style="font-size:13.5px;max-height:22vh;overflow:auto"></div><button class="btn sec" id="camEsair" style="width:100%;margin-top:8px">Fechar a câmera</button></div></div>
 <aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
 <script>
@@ -830,13 +831,30 @@ function imprimirDoc(titulo, corpo) {
   const t0 = document.title; document.title = titulo;
   setTimeout(() => { try { window.print(); } catch (e) { toast("A impressão está bloqueada neste aparelho. Abra o painel pelo navegador.", 7000); } document.title = t0; }, 60);
 }
+// foto da bolsa na caixa: reduzida no aparelho e guardada até a saída
+document.addEventListener("change", async (e) => { const i = e.target; if (!i || i.id !== "embFotoIn" || !i.files.length || !S.emb) return;
+  try { const f = i.files[0], img = await new Promise((ok, erro) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => erro(new Error("Não consegui abrir a foto.")); im.src = u; });
+    const k = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight)), cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    S.emb.foto = cv.toDataURL("image/jpeg", 0.78); toast("Foto da bolsa guardada.", 2500); embalagem({ unidade: S.emb.uni, atendimento: S.emb.at }); } catch (err) { toast(err.message, 6000); } });
+// sequência da embalagem: ler a bolsa, foto da bolsa, ler a caixa e dar a saída (Uber ou motoboy)
+function passosEmb(u, r, at) {
+  const M = S.emb = S.emb && S.emb.rem === r.id ? S.emb : { rem: r.id, uni: u.id, at: at.id || "", bolsa: false, caixa: false, foto: "", via: at.modalidade === "uber" ? "uber" : "motoboy" };
+  const ok = (x) => x ? ' <b style="color:#2E7D32">✓</b>' : "";
+  return '<p><b>Caixa ' + esc(r.id) + "</b> criada para este atendimento. Etiquetas abaixo.</p>" +
+    '<div class="lin"><b>1. Ler a etiqueta da bolsa ' + esc(u.id) + "</b>" + ok(M.bolsa) + (M.bolsa ? "" : ' <button class="btn peq sec" data-a="camera">Ler com a câmera</button><small> ou passe no leitor</small>') + "</div>" +
+    '<div class="lin"><b>2. Foto da bolsa na caixa</b>' + ok(M.foto) + ' <button class="btn peq sec" data-a="embFoto">' + (M.foto ? "Tirar outra" : "Tirar a foto") + "</button></div>" +
+    '<div class="lin"><b>3. Ler o QR da caixa ' + esc(r.id) + "</b>" + ok(M.caixa) + (M.caixa ? "" : ' <button class="btn peq sec" data-a="camera">Ler com a câmera</button>') + "</div>" +
+    '<div class="lin"><b>4. Saída</b><div class="filtros" style="margin:6px 0">' + [["uber", "Uber"], ["motoboy", "Motoboy"]].map(([k, t]) => '<button class="' + (M.via === k ? "on" : "") + '" data-a="embVia" data-v="' + k + '">' + t + "</button>").join("") + "</div>" +
+    (M.via === "uber" ? '<input type="text" id="embUber" placeholder="link da corrida (opcional)" value="' + esc(M.link || "") + '">' : "") +
+    '<div class="bts" style="margin-top:8px"><button class="btn" data-a="embSaida"' + (M.bolsa && M.caixa ? "" : " disabled") + ">Dar a saída · amostra/bolsa em trânsito</button></div>" + (M.bolsa && M.caixa ? "" : "<small>Leia a bolsa e a caixa para liberar a saída.</small>") + "</div>";
+}
 // embalagem de um atendimento (vindo do preparo): etiqueta nova da bolsa e etiqueta (QR) da caixa de isopor
 function embalagem(E0) {
   const u = S.uni.find((x) => x.id === E0.unidade); if (!u) return toast("Bolsa " + E0.unidade + " não encontrada no estoque.", 6000);
   const at = S.at.find((x) => x.id === E0.atendimento) || {}, r = at.remessa_id ? S.rem.find((x) => x.id === at.remessa_id) : null;
   abrirUnidade(u.id);
   $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px;border-color:var(--vinho)"><h2>Embalagem · atendimento ' + esc(at.id || E0.atendimento) + (at.paciente ? " · " + esc(at.paciente) : "") + '</h2><p class="nota">1. Imprima a etiqueta nova da bolsa (abaixo). 2. Imprima a etiqueta da caixa de isopor, com o QR que a Intensivet lê ao receber.</p>' +
-    (r ? "<p><b>Caixa " + esc(r.id) + "</b> criada para este atendimento. A etiqueta da caixa está logo abaixo da etiqueta da bolsa.</p>" : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa de isopor</button></div>') + "</div>" + escolherEtiqueta([u.id]) + (r ? escolherQr("caixa", r.id) : "");
+    (r && r.situacao !== "preparo" ? "<p><b>Caixa " + esc(r.id) + "</b> já saiu (" + esc(r.situacao) + ").</p>" : r ? passosEmb(u, r, at) : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa de isopor</button></div>') + "</div>" + escolherEtiqueta([u.id]) + (r ? escolherQr("caixa", r.id) : "");
   previaEtiqueta(u.id);
 }
 function escolherEtiqueta(ids) {
@@ -859,6 +877,10 @@ document.addEventListener("keydown", (e) => {
 function lido(txt) {
   const c = String(txt).trim().replace(/^.*[?&](?:u|c|e)=/, ""), C = c.toUpperCase().replace(/\s+/g, " ");
   if (S.aba === "conf" && S.conf && !$("#gaveta").classList.contains("on")) return lidoConf(C);
+  if (S.emb && document.querySelector('[data-a="embSaida"]')) { const M = S.emb;
+    if (C === M.uni.toUpperCase()) { M.bolsa = true; bip(); toast("Bolsa " + M.uni + " conferida.", 2500); return embalagem({ unidade: M.uni, atendimento: M.at }); }
+    if (C === M.rem.toUpperCase()) { M.caixa = true; bip(); toast("Caixa " + M.rem + " conferida.", 2500); return embalagem({ unidade: M.uni, atendimento: M.at }); }
+    if (S.uni.some((x) => x.id.toUpperCase() === C) || S.rem.some((x) => x.id === C)) { bip(false); return toast("Esta não é a bolsa " + M.uni + " nem a caixa " + M.rem + ". Confira.", 6000); } }
   const u = S.uni.find((x) => x.id.toUpperCase() === C), r = S.rem.find((x) => x.id === C);
   // remessa em montagem: a leitura marca a bolsa
   const cx = document.querySelector('[data-sel="' + (u ? u.id.replace(/"/g, "") : "") + '"]');
@@ -1039,6 +1061,17 @@ document.addEventListener("click", async (ev) => {
   if (a === "ctSalvar") { try { const r = await est("estUnidadeAcao", v, "contato", { notas: $("#ctNotas").value }); const u = S.uni.find((x) => x.id === v); if (u) Object.assign(u, r); toast("Salvo."); abrirUnidade(v); } catch (e) { toast(e.message, 6000); } return; }
   if (a === "ctCopiar") { const u = S.uni.find((x) => x.id === v); if (!u) return; const t = textoRequisicao(Object.assign({}, u, { dados: Object.assign({}, u.dados, { contatoCVH: { notas: ($("#ctNotas") || {}).value || "" } }) })); try { await navigator.clipboard.writeText(t); toast("Dados copiados. Cole no formulário da requisição.", 5000); } catch (e) { $("#ctNotas").value += "\n\n" + t; toast("Não consegui copiar sozinho. Os dados foram para o campo; selecione e copie.", 7000); } return; }
   if (a === "rem") return abrirRem(v);
+  if (a === "embVia") { if (S.emb) { S.emb.link = ($("#embUber") || {}).value || S.emb.link || ""; S.emb.via = v; } return embalagem({ unidade: S.emb.uni, atendimento: S.emb.at }); }
+  if (a === "embFoto") { const i = $("#embFotoIn"); i.value = ""; return i.click(); }
+  if (a === "embSaida") { const M = S.emb; if (!M) return; b.disabled = true;
+    try { const link = ($("#embUber") || {}).value || "";
+      await est("estRemessaAcao", M.rem, "saida", { modalidade: M.via, linkUber: link, foto: M.foto ? M.foto.split(",")[1] : "", conferida: { bolsa: M.bolsa, caixa: M.caixa } });
+      if (M.at) { const at = S.at.find((x) => x.id === M.at) || {};
+        if (["testes", "fracionamento", "preparo"].includes(at.etapa)) await est("estAtendimentoEtapa", M.at, "pronta", {}).catch(() => null);
+        if (M.via === "uber" && link) await est("estAtendimentoEtapa", M.at, "uber", { link }).catch(() => null);
+        await est("estAtendimentoEtapa", M.at, "retirada", {}).catch(() => null); }
+      S.emb = null; await recarregar(); toast("Saída registrada. A caixa está em trânsito e a Intensivet foi avisada.", 7000); return fecharGaveta ? fecharGaveta() : null; }
+    catch (e) { b.disabled = false; return toast(e.message, 8000); } }
   if (a === "embCaixaImp") { const r = S.rem.find((x) => x.id === v); if (r) return imprimirQRRem(r); return; }
   if (a === "embCaixa") { b.disabled = true; try { const at = S.at.find((x) => x.id === b.dataset.at) || {};
       const r = await est("estRemessaCriar", { unidades: [v], destino: at.destino || "Intensivet", finalidade: at.id ? "Atendimento " + at.id + (at.paciente ? " · " + at.paciente : "") : "Transfusão", modalidade: at.modalidade || "" });

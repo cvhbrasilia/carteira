@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121203151';
+  var VERSAO = '20261121204345';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5195,8 +5195,7 @@ async function preparoTx(b, modo) {
   try {
     await api('estAtendimentoPreparo', E.sessao, P.id, { unidade: uid, modo, provaConfirmada: conf }); E.txEst = null;
     if (modo === 'fracionar') { E.fracAbrir = { unidade: uid, volume: P.alvo, atendimento: P.id, paciente: P.paciente }; const k = pode('estoque') || pode('admin') ? 'estoque' : 'producao'; E.modulo = k; toast('Atendimento em fracionamento. O motoboy foi avisado.', 5000); return abrirModulo(k); }
-    if (pode('estoque') || pode('admin')) { toast('Bolsa ' + uid + ' reservada para o atendimento. Imprima a etiqueta da bolsa e a da caixa de isopor.', 6000); E.embAbrir = { atendimento: P.id, unidade: uid }; E.modulo = 'estoque'; return abrirModulo('estoque'); }
-    toast('Bolsa ' + uid + ' reservada para o atendimento. Siga para a embalagem.', 5000); E.pedAbrir = P.id; E.modulo = 'transporte'; return abrirModulo('transporte');
+    toast('Bolsa ' + uid + ' reservada para o atendimento. Siga a embalagem e a saída na ficha.', 5000); E.pedAbrir = P.id; E.modulo = 'transporte'; return abrirModulo('transporte');
   } catch (e) { b.disabled = false; toast(e.message, 7000); }
 }
 function telaTransfusao() {
