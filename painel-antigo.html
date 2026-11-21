@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121173726';
+  var VERSAO = '20261121174223';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5193,12 +5193,13 @@ function arquivoColado(dt) {
 }
 const tiposColados = dt => { const t = [...((dt || {}).items || [])].map(x => x.kind + ':' + (x.type || '?')); return t.length ? t.join(', ') : 'nada'; };
 // passo a passo do Atalho "Enviar ao CVH" (o link leva a chave da pessoa ou do celular)
+const textoAtalho = link => 'Mostrar na Folha de Compartilhamento, recebendo PDFs e imagens. Usar a ação Obter Conteúdo do URL com o URL ' + link + ', método POST, corpo da solicitação Arquivo, e o arquivo é a Entrada do Atalho. Depois mostrar uma notificação com o conteúdo recebido.';
 function passosAtalho(link, onde) {
   return '<ol class="atalho-ol"><li>Abra o app <b>Atalhos</b> e toque em <b>+</b>.</li><li>Toque no nome lá em cima e escreva <b>Enviar ao CVH</b>.</li>' +
     '<li>Toque em <b>Adicionar Ação</b>, procure <b>Obter Conteúdo do URL</b> e toque nele.</li><li>Toque em <b>URL</b> e cole o link abaixo.</li>' +
     '<li>Toque na setinha ao lado da ação (Mostrar Mais) e mude: <b>Método</b> para POST, <b>Corpo da Solicitação</b> para Arquivo, e em <b>Arquivo</b> escolha Entrada do Atalho.</li>' +
     '<li>Toque no <b>ⓘ</b> embaixo e ligue <b>Mostrar na Folha de Compartilhamento</b>. Em tipos, deixe Arquivos (PDF) e Imagens.</li><li>Opcional: adicione a ação <b>Mostrar Notificação</b> para ver "Enviado ao CVH".</li></ol>' +
-    '<p class="nota">Link do Atalho (é pessoal, não compartilhe)</p><pre class="atalho-link">' + esc(link) + '</pre><button class="btn sec2 peq" data-acao="atalho-copiar" data-v="' + esc(link) + '">Copiar o link</button>' +
+    '<p class="nota">Link do Atalho (é pessoal, não compartilhe)</p><pre class="atalho-link">' + esc(link) + '</pre><div class="mini-bts" style="flex-wrap:wrap"><button class="btn sec2 peq" data-acao="atalho-copiar" data-v="' + esc(link) + '">Copiar o link</button><button class="btn sec2 peq" data-acao="atalho-copiar" data-v="' + esc(textoAtalho(link)) + '">Copiar o texto para "Descreva uma alteração"</button></div>' +
     '<p class="nota">Para usar: abra o PDF no WhatsApp ou no e-mail, toque em Compartilhar e escolha <b>Enviar ao CVH</b>. Volte ao app: ' + onde + ' recebe o arquivo em poucos segundos.</p>';
 }
 // enquanto a HemoCalculadora IA está aberta, pega o PDF que chegou pelo Atalho

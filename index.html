@@ -868,7 +868,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121174223';
+  var VERSAO = '20261121180148';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5245,7 +5245,7 @@ function telaHemoIA() {
       toast('Não há imagem copiada. No iPhone, o navegador não deixa colar PDF em página da internet, só imagem. Tire um print do laudo e cole aqui, ou use Escolher foto ou PDF.', 9000);
     } catch (_) { if (zona) zona.focus(); toast('Toque e segure no quadro tracejado e escolha Colar (no computador, Cmd+V também cola PDF).', 6000); } };
   $('#hiIr').onclick = async () => {
-    T.peso = $('#hiPeso').value; H.clin = $('#hiClin').value.trim(); H.val = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) H.val[k] = v; });
+    const T = E.tx = E.tx || {}; T.peso = $('#hiPeso').value; H.clin = $('#hiClin').value.trim(); H.val = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) H.val[k] = v; });
     if (!H.arq && !Object.keys(H.val).length) return toast('Mande o hemograma ou digite os valores.');
     const b = $('#hiIr'); b.disabled = true; $('#hiSt').textContent = 'Analisando o hemograma…';
     try { H.res = await iaHemo({ especie: T.esp || 'Cão', peso: T.peso, situacao: (HC_SIT.find(x => x[0] === H.sit) || [0, ''])[1], clinica: H.clin, valores: Object.keys(H.val).length ? H.val : null, mime: H.arq && H.arq.mime, b64: H.arq && H.arq.b64, texto: H.arq && H.arq.texto }); $('#hiSt').textContent = ''; pintarHemoIA(); }
@@ -5254,17 +5254,18 @@ function telaHemoIA() {
   if (H.res) pintarHemoIA();
 }
 function pintarHemoIA() {
-  const T = E.tx, H = E.hia, R = H.res || {}, V = Object.assign({}, R.valores || {}, H.val), peso = numTx(T.peso);
+  // o estado da calculadora pode ter sido recriado enquanto a tela estava aberta: o peso vem também do campo da tela
+  const T = E.tx = E.tx || {}, H = E.hia, R = H.res || {}, V = Object.assign({}, R.valores || {}, H.val), pc = $('#hiPeso'), peso = numTx(pc && pc.value) || numTx(T.peso); if (peso) T.peso = String(peso).replace('.', ',');
   const hb = numTx(V.hb), ht = numTx(V.ht), eq = R.htPelaHb && numTx(R.htPelaHb.valor) || (hb ? hb * 3 : null);
   if (H.usarHb == null) H.usarHb = !!(R.htPelaHb && R.htPelaHb.usar);
   const ind = R.indicacoes || {}, linhas = [];
   // doses: as mesmas contas da HemoCalculadora simples
-  const base = Object.assign({}, T, { rec: String(H.usarHb && eq ? Math.round(eq * 10) / 10 : ht || ''), hb: '', usarHb: false });
+  const base = Object.assign({ des: '26', doa: '65', bolsa: '250', esp: 'Cão', cpKg: '10', cpVol: '50', pfcDose: '10', pfcBolsa: '200', crioKg: '10' }, T, { peso: String(peso || ''), rec: String(H.usarHb && eq ? Math.round(eq * 10) / 10 : ht || ''), hb: '', usarHb: false }); if (!numTx(base.des)) base.des = '26'; if (!numTx(base.doa)) base.doa = '65'; if (!numTx(base.fator)) base.fator = String(TX_FATOR[base.esp] || TX_FATOR['Cão']);
   const dose = (comp, sit) => { const X = Object.assign({}, base, { comp, sit }), r = calcComp(X); return r ? msgComp(X, r, sit) : ''; };
   const sitDe = s => s === 'indicado' ? 'grave' : s === 'reservar' ? 'cirurgia' : 'sem';
   ['CH', 'CP', 'PFC', 'CRIO'].forEach(c => { const i = ind[c] || {}; if (!i.situacao) return; const nome = { CH: 'Concentrado de hemácias', CP: 'Concentrado de plaquetas', PFC: 'Plasma fresco congelado', CRIO: 'Crioprecipitado' }[c], st = HC_SITU[i.situacao] || ['Avaliar', 'novo'];
-    linhas.push({ c, nome, st, motivo: i.motivo || '', msg: i.situacao === 'nao_indicado' && c === 'CH' ? '' : i.situacao === 'nao_indicado' && !((c === 'CP' && numTx(V.plaquetas) != null && numTx(V.plaquetas) < 100) || (c === 'PFC' && (V.tp || V.ttpa)) || (c === 'CRIO' && V.fibrinogenio)) ? '' : c === 'CH' ? (peso && base.rec && numTx(T.des) > numTx(base.rec) ? dose('CH') : '') : (peso ? dose(c, sitDe(i.situacao)) : '') }); });
-  const curta = linhas.filter(l => l.msg).map(l => l.msg).join('\n\n');
+    linhas.push({ c, nome, st, motivo: i.motivo || '', msg: i.situacao === 'nao_indicado' && c === 'CH' ? '' : i.situacao === 'nao_indicado' && !((c === 'CP' && numTx(V.plaquetas) != null && numTx(V.plaquetas) < 100) || (c === 'PFC' && (V.tp || V.ttpa)) || (c === 'CRIO' && V.fibrinogenio)) ? '' : c === 'CH' ? (peso && base.rec && numTx(base.des) > numTx(base.rec) ? dose('CH') : '') : (peso ? dose(c, sitDe(i.situacao)) : '') }); });
+  const curta = linhas.filter(l => l.msg).map(l => l.msg).join('\n\n') || (!peso ? 'Informe o peso do paciente para calcular as doses.' : linhas.length && linhas.every(l => (ind[l.c] || {}).situacao === 'nao_indicado') ? 'Pelo hemograma, sem indicação de hemocomponentes no momento.' : '');
   const longa = (R.analise ? R.analise.trim() + '\n\n' : '') + curta;
   const vt = [['Ht', V.ht, '%'], ['Hb', V.hb, 'g/dL'], ['VCM', V.vcm, 'fL'], ['CHCM', V.chcm, 'g/dL'], ['Reticulócitos', V.reticulocitos, 'mil/µL'], ['Plaquetas', V.plaquetas, 'mil/µL'], ['Leucócitos', V.leucocitos, 'mil/µL'], ['TP', V.tp, 's'], ['TTPa', V.ttpa, 's'], ['Fibrinogênio', V.fibrinogenio, 'mg/dL'], ['Proteína total', V.proteinaTotal, 'g/dL']].filter(x => x[1] != null && x[1] !== '');
   $('#hiRes').innerHTML = '<section class="cartao"><h3>Leitura' + (R.laboratorio ? ' · ' + esc(R.laboratorio) : '') + (R.data ? ' · ' + br(R.data) : '') + '</h3>' +
