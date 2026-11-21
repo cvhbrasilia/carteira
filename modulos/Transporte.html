@@ -323,7 +323,7 @@ function htmlPedidoReq(a) {
   else if (r && r.tipo === "link") h += r.pendente ? '<p><span class="chip av">Aguardando assinatura do veterinário</span> <small>gerada ' + esc(hora(r.geradaEm)) + " por " + esc(r.geradaPor) + '</small></p><div class="bts"><button class="btn sec peq" data-a="reqCopiar" data-v="' + esc(r.token) + '">Copiar o link</button><button class="btn sec peq" data-a="reqEnviar" data-v="' + esc(r.token) + '">Enviar</button></div>'
     : "<p>Assinada pelo link por <b>" + esc(r.nome) + "</b> (" + esc(r.crmv) + ") " + esc(hora(r.assinadoEm)) + "</p>" + (r.assinaturaUrl ? '<a class="btn sec peq" href="' + esc(r.assinaturaUrl) + '" target="_blank" rel="noopener">Ver assinatura</a>' : "");
   else h += '<p><small>Ainda sem requisição. Se o veterinário já enviou, anexe o PDF. Senão, gere a requisição e mande o link para ele assinar.</small></p>';
-  if (p && r && !(r.tipo === "link" && r.pendente)) h += '<div class="bts" style="margin-top:6px"><button class="btn peq" data-a="laudoPed" data-id="' + esc(a.id) + '" data-v="requisicao">PDF da requisição, salvo no receptor</button></div>';
+  if (p && r && !(r.tipo === "link" && r.pendente)) h += '<div class="bts" style="margin-top:6px"><button class="btn peq" data-a="laudoPed" data-id="' + esc(a.id) + '" data-v="requisicao">PDF da requisição, salvo no receptor</button><button class="btn peq sec" data-a="receptorPed" data-id="' + esc(a.id) + '">Cadastro do receptor</button></div>';
   if (!r || (r.tipo === "link" && r.pendente)) h += '<label>Dados para a requisição (confira e complete com o que conversou com o responsável)</label><textarea id="reqTxt" rows="7" style="width:100%">' + esc((r && r.texto) || textoPedido(a)) + '</textarea>' +
     '<div class="bts"><button class="btn sec peq" data-a="reqCopiarDados">Copiar dados para a requisição</button><button class="btn peq" data-a="reqGerar" data-v="emergencia">Gerar requisição de emergência</button><button class="btn peq" data-a="reqGerar" data-v="comum">Gerar requisição de bolsa comum</button><button class="btn sec peq" data-a="reqAnexar">Anexar requisição em PDF</button></div><input type="file" id="reqArq" accept="application/pdf,image/*" hidden>';
   return h + "</div>";
@@ -629,6 +629,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "hcCalc") return ponte("hemocalc", v);
   if (a === "laudoPed") return ponte("laudoPedido", { id: b.dataset.id, tipo: v });
   if (a === "embalar") return ponte("embalagem", { id: b.dataset.id, unidade: v });
+  if (a === "receptorPed") return ponte("receptorDoPedido", { id: b.dataset.id });
   if (a === "embLer") { const t = await lerQR(v === "caixa" ? "Leia o QR da caixa de isopor" : "Leia a etiqueta da bolsa"); if (t) embLido(t); return; }
   if (a === "embFoto") { const i = $("#embFotoIn"); i.value = ""; return i.click(); }
   if (a === "embVia") { if (S.emb) { S.emb.link = ($("#embUber") || {}).value || S.emb.link || ""; S.emb.via = v; abrirAtendimento(S.emb.at); } return; }
