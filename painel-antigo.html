@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121184654';
+  var VERSAO = '20261121185656';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5013,7 +5013,7 @@ async function bolsasTx(T, r) {
     (at ? '<div class="mini-bts"><button class="mini" data-acao="tx-salvar">' + (calc ? 'Atualizar o cálculo no atendimento' : 'Salvar o cálculo no atendimento') + '</button>' + (at.etapa === 'aberto' && at.modalidade !== 'uber' ? '<button class="mini" data-acao="tx-possivel">Avisar possível venda</button>' : '') + '</div>' + (calc ? '<p class="nota">Cálculo salvo ' + esc(hmTx(calc.em)) + ' por ' + esc(calc.por || '') + (calc.prova && calc.prova.length ? ' · para a prova ' + esc(calc.prova.join(', ')) : '') + '. Ele reabre no preparo da bolsa.</p>' : '')
       : '<div class="mini-bts"><button class="mini" data-acao="tx-novo-at">Abrir atendimento com este cálculo</button></div>') + '</div>';
   box.innerHTML = cab + blocoAt + (L.length ? '<p class="nota">Necessidade de ' + n0h(r.vol) + ' mL + margem de ' + n0h(margem) + ' mL (busca ' + n0h(alvo) + ' mL). Sugestões, a decisão fica com você:</p>' + L.map(x => { const a = animalDe(x.u.animal_id) || {};
-      return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button></div></div>'; }).join('') +
+      return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(x.u.id) + ' · ' + n0h(x.v) + ' mL</b> · ' + esc([a.nome, x.comp.txt].filter(Boolean).join(', ')) + '<small>' + esc(just(x)) + '</small></div><div class="mini-bts"><button class="mini" data-acao="tx-prova" data-v="' + esc(x.u.id) + '">Selecionar para prova de compatibilidade</button>' + (x.v >= alvo + 50 && (pode('estoque') || pode('producao') || pode('admin')) ? '<button class="mini" data-acao="tx-frac" data-v="' + esc(x.u.id) + '" data-vol="' + Math.round(alvo) + '">Fracionar ' + n0h(alvo) + ' mL desta bolsa</button>' : '') + '</div></div>'; }).join('') +
       '<p class="nota">A escolha no estoque não substitui a prova de compatibilidade.</p>' : '<p class="nota">Nenhuma bolsa de CH disponível que combine com a espécie' + (T.tipPac ? ' e a tipagem' : '') + '.</p>') + '</section>';
   ligar();
 }
@@ -5059,8 +5059,20 @@ function alvoArquivo(w, mime) {
   };
   setInterval(olhar, 4000); document.addEventListener('visibilitychange', olhar); })();
 async function laudoDoPedido(id, tipo) {
-  let d; try { d = await estoqueTx(true); } catch (e) { toast(e.message, 6000); return; }
-  const a = (d.atendimentos || []).find(x => x.id === id); if (!a) { toast('Atendimento não encontrado.'); return; }
+  let o; try { o = await montarPedidoLaudo(id, tipo); } catch (e) { toast(e.message, 6000); return; }
+  E.laudoPedido = o; E.laudoReceptor = true; E.laudoTipo = tipo; E.modulo = 'laudos'; abrirModulo('laudos', null);
+}
+// bolsas separadas para a prova de compatibilidade (pela HemoCalculadora ou no fracionamento), para o laudo do receptor
+async function provasReservadas() {
+  const d = await estoqueTx(true), ats = d.atendimentos || [];
+  return (d.unidades || []).filter(u => u.situacao === 'reservada' && u.componente === 'CH' && (/^Prova de compatibilidade|^Atendimento /.test(u.reserva || '') || ((u.dados || {}).reservaInfo || {}).atendimento)).map(u => {
+    const ri = (u.dados || {}).reservaInfo || {}, at = ri.atendimento || (String(u.reserva || '').match(/atendimento (\w+)/i) || [])[1] || (String(u.reserva || '').match(/^Atendimento (\w+)/) || [])[1] || '', a = ats.find(x => x.id === at) || {};
+    return { unidade: u.id, doacao: String(u.coleta || u.id).split(' ')[0], volume: u.volume_ml, doador: (animalDe(u.animal_id) || {}).nome || '', atendimento: at, paciente: a.paciente || (String(u.reserva || '').split(' · ')[1] || '') };
+  });
+}
+async function montarPedidoLaudo(id, tipo) {
+  const d = await estoqueTx(true);
+  const a = (d.atendimentos || []).find(x => x.id === id); if (!a) throw new Error('Atendimento não encontrado.');
   const ped = (a.dados || {}).pedido || {}, P = ped.paciente || {}, c = (a.dados || {}).calculo || {}, V = ped.vet || {};
   const ids = [...new Set([].concat(c.prova || [], (d.unidades || []).filter(u => u.situacao === 'reservada' && ((u.dados || {}).reservaInfo || {}).atendimento === id).map(u => u.id)))];
   const provas = ids.map(uid => { const u = (d.unidades || []).find(x => x.id === uid) || {}; return { bolsa: '', doador: String(u.coleta || uid).split(' ')[0], unidade: uid }; });
@@ -5085,7 +5097,7 @@ async function laudoDoPedido(id, tipo) {
     if (rq.assinaturaUrl) try { const bl = await (await fetch(rq.assinaturaUrl)).blob(), url = await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(bl); }), im = await new Promise((ok, er) => { const i = new Image(); i.onload = () => ok(i); i.onerror = er; i.src = url; }); assinatura = { url, w: im.naturalWidth, h: im.naturalHeight }; } catch (_) {}
     E.laudoPedido.req = { linhas, assinatura, data: q.getFullYear() + '-' + p2(q.getMonth() + 1) + '-' + p2(q.getDate()), hora: p2(q.getHours()) + ':' + p2(q.getMinutes()), solicitante: { nome: rq.nome || V.nome || '', crmv: rq.crmv || V.crmv || '', quando: rq.assinadoEm ? 'assinada em ' + hmTx(rq.assinadoEm) + (rq.no ? ' no ' + rq.no : '') : '', anexo: rq.tipo === 'pdf' } };
   }
-  E.laudoReceptor = true; E.laudoTipo = tipo; E.modulo = 'laudos'; abrirModulo('laudos', null);
+  return E.laudoPedido;
 }
 function pacienteTx(id) { const a = ((E.txEst && E.txEst.d && E.txEst.d.atendimentos) || []).find(x => x.id === id); return a ? (a.paciente || '') : ''; }
 async function salvarCalcTx(extra) {
@@ -5941,6 +5953,8 @@ const PONTE = {
   hemocalc: id => { setTimeout(() => { E.modulo = 'transfusao'; escolherAtTx(String(id || '')); }, 0); return true; },
   abrirAtendimento: id => { setTimeout(() => { E.pedAbrir = String(id || ''); E.modulo = 'transporte'; abrirModulo('transporte'); }, 0); return true; },
   // atendimento da Intensivet: abre o laudo do receptor (prova de compatibilidade, tipagem ou Coombs) já preenchido com o pedido e as bolsas da prova
+  provasReservadas: () => provasReservadas(),
+  pedidoParaLaudo: o => montarPedidoLaudo(String((o || {}).id || ''), String((o || {}).tipo || 'compat')).then(r => { E.laudoPedido = null; return r; }),
   laudoPedido: o => { setTimeout(() => laudoDoPedido(String((o || {}).id || ''), String((o || {}).tipo || 'compat')), 0); return true; },
   hemocalcPreparo: id => { setTimeout(() => telaPreparoTx(String(id || '')), 0); return true; },
   salvarRascunho: async o => {
@@ -6880,6 +6894,11 @@ const ACOES = {
     try { await api('estUnidadeAcao', E.sessao, b.dataset.v, 'reservar', { reserva: 'Prova de compatibilidade · ' + (String(pac).trim() || 'paciente da HemoCalculadora') + (at ? ' · atendimento ' + at : ''), atendimento: at || '', obs: 'Separada pela HemoCalculadora para a prova de compatibilidade' }); if (at) await salvarCalcTx({ prova: [b.dataset.v] }); else { const ps = E.tx.provaSem = E.tx.provaSem || { uids: [], pac: '' }; ps.uids.push(b.dataset.v); ps.pac = ps.pac || String(pac).trim(); } E.txEst = null; b.textContent = 'Reservada para a prova ✓'; toast('Bolsa reservada para a prova de compatibilidade' + (at ? ' e ligada ao atendimento ' + at : '') + '.'); }
     catch (e) { b.disabled = false; toast(e.message, 6000); }
   },
+  // bolsa maior que a necessidade: abre o fracionamento com o volume da dose e da margem (e o atendimento, se houver)
+  'tx-frac': async b => { const at = E.tx && E.tx.at, uid = b.dataset.v, vol = +b.dataset.vol || 0;
+    if (!confirm('Fracionar ' + vol + ' mL da bolsa ' + uid + (at ? ' para o atendimento ' + at : '') + '? O restante volta ao estoque.')) return;
+    try { if (at && E.txCalc) await salvarCalcTx(); } catch (_) {}
+    E.fracAbrir = { unidade: uid, volume: vol, atendimento: at || '', paciente: at ? pacienteTx(at) : '' }; const k = pode('estoque') || pode('admin') ? 'estoque' : 'producao'; E.modulo = k; return abrirModulo(k); },
   'tx-salvar': async b => { b.disabled = true; try { await salvarCalcTx(); b.textContent = 'Cálculo salvo ✓'; toast('Cálculo salvo no atendimento ' + E.tx.at + '. Ele reabre no preparo da bolsa.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'tx-possivel': async b => { b.disabled = true; try { await salvarCalcTx(); await api('estAtendimentoEtapa', E.sessao, E.tx.at, 'possivel', {}); E.txEst = null; b.textContent = 'Possível venda avisada ✓'; toast('Aviso de possível venda enviado ao motoboy.', 5000); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'tx-novo-at': async b => {
