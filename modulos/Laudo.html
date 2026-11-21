@@ -3487,7 +3487,7 @@ function ligar() {
     else if (t.dataset.t) { estado.t[t.dataset.t] = t.value; if (t.dataset.t === "nota") estado.t.notaEditada = true; if (t.dataset.t === "davr") return mudou(true); if (t.dataset.t === "kit") { Object.assign(estado.t, KITS_FIV[t.value] || {}); estado.t.lote = ""; estado.t.validade = ""; kitsNoLaudo(); return mudou(true); } }
     else if (t.dataset.tb) { estado.t[t.dataset.tb] = t.checked; return mudou(true); }
     else if (t.dataset.ts) { setCaminho(estado.t, t.dataset.ts, t.type === "checkbox" ? t.checked : t.value); if (t.type === "checkbox") { ajustarNota(); return mudou(true); } }
-    else if (t.dataset.pvC) { estado.t.provas[+t.dataset.i][t.dataset.pvC] = t.value; }
+    else if (t.dataset.pvC) { estado.t.provas[+t.dataset.i][t.dataset.pvC] = t.value; if (t.dataset.pvC === "doador" && /^\d{1,6}-\d$/.test(t.value.trim())) preencherSegmentos(); }
     else if (t.dataset.exC) { const e = estado.t.exames.find((x) => x.id === +t.closest("[data-ex]").dataset.ex); if (!e) return; e[t.dataset.exC] = t.type === "checkbox" ? t.checked : t.value; if (t.type === "checkbox") { estado.exame.titulo = tituloPadrao(); return mudou(true); } }
     else if (t.dataset.vet) { const v = VETS.find((x) => x.id === t.value); if (v) estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || "" }; }
     else if (t.dataset.rcp) { const r = RECEPTORES[+t.value]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
@@ -3694,8 +3694,16 @@ function lidoLeitor(c) {
   bipe(false); msg("Código lido (" + c + "), mas não reconheci a etiqueta.", true);
 }
 // bolsas separadas para a prova (HemoCalculadora ou fracionamento): um toque põe a doação na prova e, se a bolsa é de um pedido, traz o paciente
-let PROVAS_RES = null;
+let PROVAS_RES = null, SEGS = null;
+// segmento da bolsa vem da ficha de doação quando o número da doação é conhecido
+async function preencherSegmentos() {
+  if (estado.tipo !== "compat" || (estado.t || {}).doadorExterno) return;
+  try { if (!SEGS) SEGS = await ponte("segmentos"); } catch (_) { SEGS = {}; }
+  let mudouAlgo = false; (estado.t.provas || []).forEach((p, i) => { const n = String(p.doador || "").trim(), sg = SEGS[n]; if (sg && !String(p.bolsa || "").trim()) { p.bolsa = sg; mudouAlgo = true; const el = document.querySelector('[data-pv-c="bolsa"][data-i="' + i + '"]'); if (el) el.value = sg; } });
+  if (mudouAlgo) mudou(false);
+}
 async function pintarProvasRes() {
+  preencherSegmentos();
   const alvo = document.querySelector("#form .cx:last-of-type"); if (!alvo || document.querySelector("#provasRes")) return;
   const box = document.createElement("div"); box.className = "cx"; box.id = "provasRes"; box.innerHTML = '<h3>Bolsas separadas para a prova</h3><p class="nota">Carregando…</p>';
   const ref = document.querySelector("#form [data-comxm], #form [data-tb]"); (ref ? ref.closest(".cx") : alvo).insertAdjacentElement("beforebegin", box);

@@ -82,6 +82,15 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 #camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
 #camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
 #camE .flash.on{opacity:1;transition:none}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+#cam .linha{display:flex;gap:8px;margin:8px 0}#cam .linha input{flex:1;border:1px solid #C6B098;border-radius:10px;padding:10px;font-size:16px}#cam #camT{margin:0 0 4px;font-weight:700;color:#5F130F}#cam .bts .btn{width:100%}
 </style>
 <style>.tb{width:100%;border-collapse:collapse;font-size:13.5px}.tb th,.tb td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--areia2);vertical-align:top}.tb th{color:var(--tinta2);font-weight:700}details summary{cursor:pointer}</style>
 </head>
@@ -365,7 +374,8 @@ function abrirAtendimento(id) {
   const avisoUber = !moto && ["preparo", "pronta"].includes(a.etapa) && !a.link_uber ? '<div class="cx" style="background:#FBF0DC;margin:8px 0"><b>Esta entrega será por Uber. Chamar o Uber e acrescentar o link da corrida.</b></div>' : "";
   const dst = destinoDe(a.destino), endTxt = a.endereco || (dst ? [dst.endereco, dst.bairro].filter(Boolean).join(", ") : "");
   const blocoProva = (a.dados || {}).pedido && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) ? '<div class="cx" id="provaCx" data-id="' + esc(a.id) + '" style="margin:8px 0"><h2>Prova de compatibilidade</h2><div id="provaBolsas"><small>Procurando as bolsas separadas…</small></div>' +
-    '<label>Outra bolsa (número da doação, ex.: 572-0)</label><input type="text" id="provaManual" placeholder="digite se a bolsa não aparece acima" autocomplete="off">' +
+    '<label>Outra bolsa (número da doação, ex.: 572-0)</label><input type="text" id="provaManual" placeholder="digite ou passe a etiqueta no leitor" autocomplete="off">' +
+    '<div class="bts" style="margin-top:6px"><button class="btn peq sec" data-a="provaLer">Ler a etiqueta da bolsa com a câmera</button></div><p><small>Para trocar a bolsa, desmarque a anterior e leia ou digite a nova.</small></p>' +
     '<div class="bts" style="margin-top:8px"><button class="btn" data-a="iniciarProva" data-id="' + esc(a.id) + '">Iniciar prova de compatibilidade</button></div></div>' : "";
   abrirGaveta("Atendimento " + a.id, avisoUber + htmlChecagem(a) + htmlPedidoReq(a) + blocoProva + blocoAmUber + '<dl class="dl"><dt>Destino</dt><dd>' + esc(a.destino) + (endTxt ? "<br><small>" + esc(endTxt) + "</small>" : "") + ' <a href="' + esc(linkMapa(dst || { nome: a.destino, endereco: a.endereco })) + '" target="_blank" rel="noopener">Google Maps</a></dd>' + (a.paciente ? "<dt>Paciente</dt><dd>" + esc(a.paciente) + "</dd>" : "") + (a.solicitante ? "<dt>Solicitante</dt><dd>" + esc(a.solicitante) + "</dd>" : "") + "<dt>Transporte</dt><dd>" + (moto ? "Motoboy terceirizado" : "Uber") + (a.link_uber ? ' · <a href="' + esc(a.link_uber) + '" target="_blank" rel="noopener">abrir a corrida</a>' : "") + "</dd><dt>Etapa</dt><dd>" + esc(ROT_AT[a.etapa] || a.etapa) + "</dd>" +
     (am.buscar != null ? "<dt>Amostra</dt><dd>" + (am.buscar ? "buscar em " + esc(am.local || "") + (am.prazoBusca ? " até " + esc(hora(am.prazoBusca)) : "") : "já estava no CVH") + (am.buscadaEm ? "<br><small>buscada " + esc(hora(am.buscadaEm)) + "</small>" : "") + (am.chegouEm ? "<br><small>chegou " + esc(hora(am.chegouEm)) + "</small>" : "") + (am.previsaoTestes ? "<br><small>testes previstos " + esc(hora(am.previsaoTestes)) + "</small>" : "") + "</dd>" : "") +
@@ -374,6 +384,14 @@ function abrirAtendimento(id) {
     '<h2 style="margin-top:16px">Dados</h2>' + formAtendimento(a));
   ligarClinica(); tiqueRelogios(); if (blocoProva) pintarProvaCx(a.id);
 }
+// números de doação num texto (etiqueta lida "572-0 CH", vários separados por vírgula ou espaço)
+function doacoesDe(t) { const r = String(t || "").toUpperCase().match(/\d{1,6}-\d{1,2}/g); return r ? [...new Set(r)] : String(t || "").split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /\d/.test(x)); }
+function provaLida(c) {
+  const L = doacoesDe(c), inp = $("#provaManual"); if (!L.length || !inp) { bipe(false); toast("Código lido (" + c + "), mas não é a etiqueta de uma bolsa.", 5000); return; }
+  const ja = doacoesDe(inp.value); inp.value = [...new Set(ja.concat(L))].join(", "); bipe(true); toast("Bolsa " + L.join(", ") + " na prova. Desmarque a anterior se for troca.", 5000);
+}
+// leitor de código de barras USB ou Bluetooth no campo da outra bolsa: o Enter do leitor não inicia nada, só organiza o número
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target && e.target.id === "provaManual") { e.preventDefault(); const v = e.target.value; e.target.value = ""; provaLida(v); } }, true);
 // bolsas reservadas para a prova deste atendimento vêm marcadas; as separadas sem atendimento aparecem para marcar
 async function pintarProvaCx(id) {
   const el = $("#provaBolsas"); if (!el) return; let L = [];
@@ -468,6 +486,55 @@ async function enviarLink(v, q) {
   if (navigator.share) { try { await navigator.share({ title: "CVH", text: txt }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
   window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
 }
+/* leitura da etiqueta da bolsa pela câmera (copiado do laudo) */
+let AUDIO = null;
+function bipe(ok) { try { AUDIO = AUDIO || new (window.AudioContext || window.webkitAudioContext)(); const o = AUDIO.createOscillator(), g = AUDIO.createGain(); o.type = "square"; o.frequency.value = ok === false ? 220 : 1760; g.gain.setValueAtTime(0.12, AUDIO.currentTime); g.gain.exponentialRampToValueAtTime(0.001, AUDIO.currentTime + (ok === false ? 0.45 : 0.14)); o.connect(g).connect(AUDIO.destination); o.start(); o.stop(AUDIO.currentTime + (ok === false ? 0.45 : 0.14)); } catch (_) {} }
+let JSQR = null, CAM_FIM = null;
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+function lerQR(titulo) {
+  return new Promise(async (resolve) => {
+    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
+    let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
+    $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
+    $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
+    try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
+    catch (e) { if (!vivo) return; toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
+    let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
+    const passo = async () => {
+      if (!vivo) return;
+      try {
+        if (v.readyState >= 2) {
+          if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(60); return fim(r[0].rawValue); } }
+          else if (zx && (++n % 2 || !jq)) { const t = zx(v); if (t) { if (navigator.vibrate) navigator.vibrate(60); return fim(t); } }
+          else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(60); return fim(r.data); } }
+        }
+      } catch (e) {}
+      setTimeout(passo, det ? 90 : 40);
+    };
+    passo();
+  });
+}
+
+// código de barras (Code 128) pela câmera quando o celular não tem leitor próprio (iPhone): ZXing na faixa do meio da imagem
+let ZXP = null;
+function carregarZX() {
+  if (window.ZXing) return Promise.resolve(window.ZXing); if (ZXP) return ZXP;
+  ZXP = new Promise((ok, erro) => { const tenta = (src, depois) => { const sc = document.createElement("script"); sc.src = src; sc.onload = () => window.ZXing ? ok(window.ZXing) : depois(); sc.onerror = depois; document.head.appendChild(sc); }; let local = "bibliotecas/zxing.min.js"; try { if (window.parent !== window) local = new URL(local, window.parent.location.href).href; } catch (e) {} tenta(local, () => tenta("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js", () => { ZXP = null; erro(new Error("zxing")); })); });
+  return ZXP;
+}
+function leitorBarras(Z) {
+  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); const r = new Z.MultiFormatReader(); r.setHints(h);
+  const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height);
+    try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
+}
+// o QR pode trazer só o código ou um endereço com ?u= / ?c= / ?e=
+const codigo = (t) => { t = String(t || "").trim(); const m = t.match(/[?&](?:u|c|e)=([^&#]+)/); return (m ? decodeURIComponent(m[1]) : t).trim(); };
+const norm = (t) => codigo(t).toUpperCase().replace(/\s+/g, " ");
+
 async function recarregar() { const r = await trp("trpDados", S.dia); S.D = r; S.at = r.pedidos; S.rem = r.remessas; S.admin = r.admin; pintar(); }
 const recarregarEst = recarregar;
 
@@ -518,7 +585,8 @@ document.addEventListener("click", async (ev) => {
   if (a === "at") return abrirAtendimento(v);
   if (a === "hcCalc") return ponte("hemocalc", v);
   if (a === "laudoPed") return ponte("laudoPedido", { id: b.dataset.id, tipo: v });
-  if (a === "iniciarProva") { const L = [...document.querySelectorAll(".provaCk:checked")].map((x) => x.value), m = String(($("#provaManual") || {}).value || "").split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean);
+  if (a === "provaLer") { const t = await lerQR("Leia a etiqueta da bolsa"); if (t) provaLida(codigo(t)); return; }
+  if (a === "iniciarProva") { const L = [...document.querySelectorAll(".provaCk:checked")].map((x) => x.value), m = doacoesDe(($("#provaManual") || {}).value);
     return ponte("laudoPedido", { id: b.dataset.id, tipo: "compat", bolsas: [...new Set(L.concat(m))], escolhidas: true }); }
   if (a === "amVia") { S.viaAm = S.viaAm || {}; S.viaAm[b.dataset.id] = v; return abrirAtendimento(b.dataset.id); }
   if (a === "amBusca") { b.disabled = true; try { const r = await est("estAmostraBusca", b.dataset.id, { acao: v, via: (S.viaAm && S.viaAm[b.dataset.id]) || ((S.at.find((x) => x.id === b.dataset.id) || {}).amostra || {}).via || "uber", link: ($("#amUber") || {}).value || "", hora: ($("#amHora") || {}).value || "" }); const i = S.at.findIndex((x) => x.id === r.id); if (i >= 0) S.at[i] = r; pintar(); abrirAtendimento(r.id); toast(v === "transito" ? "Amostra em trânsito." : "A Intensivet foi avisada.", 4000); } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; } return; }
@@ -547,4 +615,5 @@ window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharG
 (async () => { try { await recarregar(); try { const c = await ponte("contexto"); if (c && c.abrirPedido) { S.aba = "ped"; pintar(); abrirAtendimento(c.abrirPedido); } } catch (_) {} const pode = () => { const ae = document.activeElement; return !document.hidden && !$("#gaveta").classList.contains("on") && !(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)); }; setInterval(() => { if (pode()) { const y = window.scrollY; recarregar().then(() => window.scrollTo(0, y)).catch(() => {}); } }, 25000); document.addEventListener("visibilitychange", () => { if (pode()) recarregar().catch(() => {}); }); } catch (e) { $("#app").innerHTML = '<div class="cx vazio">Não consegui abrir o módulo. ' + esc(e.message || String(e)) + "</div>"; } })();
 </script>
 <!--CVH-TRANSPORTE-COMPLETO-->
+<div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
 </body></html>
