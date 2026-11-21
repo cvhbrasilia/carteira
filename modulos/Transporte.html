@@ -356,8 +356,8 @@ function abrirAtendimento(id) {
   if (a.etapa === "pago") ac += B("testes", "Testes concluídos · laudo em elaboração", " ") + (((a.dados || {}).pedido || {}).urgencia === "emergencia" ? B("preparo", "Emergência · preparar o envio antes dos testes", " ") : "");
   if (a.etapa === "testes") ac += B("fracionamento", "Fracionamento da bolsa escolhida") + B("preparo", "Em preparação para envio", " ");
   if (a.etapa === "fracionamento") ac += B("preparo", "Em preparação para envio", " ");
-  const escU = (((a.dados || {}).calculo || {}).escolhida || {}).id || "";
-  if (["preparo", "pronta"].includes(a.etapa) && escU) ac = '<button class="btn peq" data-a="embalar" data-id="' + esc(a.id) + '" data-v="' + esc(escU) + '">Etiqueta da bolsa ' + esc(escU) + ' e da caixa de isopor</button>' + ac;
+  const cA = (a.dados || {}).calculo || {}, escU = (cA.escolhida || {}).id || (cA.prova || [])[0] || "";
+  if (["pago", "testes", "fracionamento", "preparo", "pronta"].includes(a.etapa) && escU) ac = '<button class="btn peq" data-a="embalar" data-id="' + esc(a.id) + '" data-v="' + esc(escU) + '">Etiqueta da bolsa ' + esc(escU) + ' e da caixa de isopor</button>' + ac;
   if (a.etapa === "preparo") ac += B("pronta", "Embalagem pronta para retirada", " ");
   if (a.etapa === "pronta") ac += B("retirada", "Registrar a retirada", " ");
   if (a.etapa === "retirada" && moto) ac += B("entregue", "Marcar entregue");
