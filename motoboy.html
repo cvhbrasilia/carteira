@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121232302';
+  var VERSAO = '20261121235045';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -64,7 +64,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png"><link rel="icon" type="image/png" href="motoboy-192.png"><link rel="manifest" href="motoboy.webmanifest">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>Motoboy CVH</title>
+<title>Motoboy</title>
 <style>
 :root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
 *{box-sizing:border-box}
@@ -1559,12 +1559,12 @@ function pedidos() {
 function principal() {
   const F = fase(), pend = fila(), ul = ultima();
   if (F.f === "sem") return '<div class="cx"><div class="etapa">Bom trabalho</div><div class="dest">Olá, ' + esc(D.aparelho.nome) + "</div><p>" + (pend.length ? pend.length + (pend.length > 1 ? " paradas programadas." : " parada programada.") : "Nenhuma parada programada no momento.") + "</p>" + (ul ? "<small>Última leitura " + fKm(ul.km) + " km em " + hora(ul.em) + "</small>" : "") + '<button class="btn grande" style="margin-top:12px" data-a="iniciar">Iniciar expediente</button></div>';
-  if (F.f === "pausa") return '<div class="cx" style="border:2px solid var(--bege)"><div class="etapa">Fora de serviço</div><div class="dest">' + esc(F.motivo || "Uso pessoal") + "</div><p>Desde " + hhmm(F.desde) + ". Os quilômetros deste intervalo não contam como despesa do CVH.</p>" + '<button class="btn grande" data-a="retomar">Retomar serviço</button></div>';
+  if (F.f === "pausa") return '<div class="cx" style="border:2px solid var(--bege)"><div class="etapa">Fora de serviço</div><div class="dest">' + esc(F.motivo || "Uso pessoal") + "</div><p>Desde " + hhmm(F.desde) + ". Os quilômetros deste intervalo não contam como despesa do " + esc(D.empresa || "CVH") + ".</p>" + '<button class="btn grande" data-a="retomar">Retomar serviço</button></div>';
   if (F.f === "livre") {
     const n = F.prox;
     if (n) return '<div class="cx ' + (n.prioridade === "urgente" ? "urg" : "") + '"><div class="etapa">' + (concluidasHoje().length ? "Próximo destino" : "Primeira parada") + (n.prioridade === "urgente" ? ' <span class="chip red">URGENTE</span>' : "") + '</div><div class="dest">' + esc(n.nome) + '</div><div class="addr">' + esc(n.endereco || "Endereço não cadastrado") + "</div>" + chips(n) + (n.obs ? '<div class="obs">' + esc(n.obs) + "</div>" : "") +
       '<a class="btn grande sec" style="display:block;text-align:center;text-decoration:none;margin-top:12px" href="' + maps(n) + '" target="_blank" rel="noopener">Abrir mapa</a><button class="btn grande" data-a="saida" data-v="' + esc(n.id) + '">Iniciar deslocamento</button></div>';
-    return '<div class="cx"><div class="etapa">Rota concluída</div><div class="dest">Nenhuma parada pendente</div><p>' + (concluidasHoje().length ? concluidasHoje().length + " concluída(s) hoje." : "Novas paradas aparecem aqui automaticamente.") + "</p>" + (D.base ? '<button class="btn grande" data-a="base">Voltar para o CVH</button>' : "") + '<button class="btn grande sec" data-a="finalizar">Finalizar expediente</button></div>';
+    return '<div class="cx"><div class="etapa">Rota concluída</div><div class="dest">Nenhuma parada pendente</div><p>' + (concluidasHoje().length ? concluidasHoje().length + " concluída(s) hoje." : "Novas paradas aparecem aqui automaticamente.") + "</p>" + (D.base ? '<button class="btn grande" data-a="base">Voltar para a base</button>' : "") + '<button class="btn grande sec" data-a="finalizar">Finalizar expediente</button></div>';
   }
   const p = F.p;
   if (F.f === "desloc") return '<div class="cx ' + (p.prioridade === "urgente" ? "urg" : "") + '"><div class="etapa">A caminho</div><div class="dest">' + esc(p.nome) + '</div><div class="addr">' + esc(p.endereco || "") + '</div><div style="display:flex;gap:12px;align-items:center;margin-top:8px"><div class="timer" data-desde="' + esc(p.saida_em) + '">' + dur(Date.now() - Date.parse(p.saida_em)) + "</div><small>desde " + hhmm(p.saida_em) + "<br>saída com " + fKm(p.km_ini) + " km</small></div>" + chips(p) + (p.obs ? '<div class="obs">' + esc(p.obs) + "</div>" : "") +
@@ -1585,9 +1585,9 @@ function proximas() {
 function feitas() { const L = concluidasHoje(); if (!L.length) return ""; return '<div class="cx"><h2>Concluídas hoje</h2>' + L.map((p) => '<div class="prox"><div class="num ok">✓</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + hhmm(p.chegada_em) + (p.km_ini != null && p.km_fim != null ? " · " + fKm(p.km_fim - p.km_ini) + " km" : "") + "</small></div></div>").join("") + "</div>"; }
 function pintar() {
   if (!D) return; const F = fase();
-  $("#app").innerHTML = '<div class="topo"><h1>Motoboy CVH<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
+  $("#app").innerHTML = '<div class="topo"><h1>Motoboy ' + esc(D.empresa || "CVH") + '<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
     (notifOk() ? "" : '<div class="cx av"><p>Ative as notificações para receber os avisos com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>') +
-    bannerRota() + pedidos() + principal() + proximas() + feitas() + '<p class="vazio"><small>Dúvidas, fale com o CVH.</small></p>';
+    bannerRota() + pedidos() + principal() + proximas() + feitas() + '<p class="vazio"><small>Dúvidas, fale com a administração.</small></p>';
   $("#dock").innerHTML = F.f === "sem" ? "" : (F.f === "pausa" ? "" : '<button data-a="pausa">Pausa pessoal</button>') + '<button data-a="abastecer">Abastecer</button><button data-a="meuDia">Meu dia</button>' + (F.f === "livre" || F.f === "pausa" ? '<button data-a="finalizar">Finalizar</button>' : "");
 }
 setInterval(() => { document.querySelectorAll(".timer[data-desde]").forEach((el) => { el.textContent = dur(Date.now() - Date.parse(el.dataset.desde)); }); }, 1000);
@@ -1633,15 +1633,15 @@ const A = {
   async iniciar() { await pedirGps(); folhaKm({ titulo: "Iniciar expediente", sub: "Digite a quilometragem do painel da moto e fotografe o hodômetro.", foto: "obrig", botao: "Iniciar expediente", ok: async (x) => srv("motoExpediente", "iniciar", Object.assign(x, { gps: await gps() })) }); },
   saida(v) { const p = minhas().find((x) => x.id === v), ul = ultima(); folhaKm({ titulo: "Iniciar deslocamento", sub: "Destino " + esc(p.nome), sugestao: ul ? +ul.km : null, botao: "Iniciar deslocamento", ok: (x) => srv("motoParada", v, "saida", x) }); },
   chegada(v) { const p = minhas().find((x) => x.id === v); folhaKm({ titulo: "Cheguei ao destino", sub: esc(p.nome) + " · saída às " + hhmm(p.saida_em) + " com " + fKm(p.km_ini) + " km", foto: D.cfg.fotoKmChegada ? "obrig" : "opc", botao: "Registrar chegada", ok: async (x) => srv("motoParada", v, "chegada", Object.assign(x, { gps: await gps() })) }); },
-  base() { const ul = ultima(); folhaKm({ titulo: "Voltar para o CVH", sub: esc(D.base.nome), sugestao: ul ? +ul.km : null, botao: "Iniciar retorno", ok: (x) => srv("motoParada", null, "base", x) }); },
-  pausa() { const a = ativa(), ul = ultima(); folhaKm({ titulo: "Pausa para uso pessoal", sub: "O que for rodado durante a pausa não conta como despesa do CVH.", sugestao: a && a.status === "em_deslocamento" ? null : (ul ? +ul.km : null), botao: "Iniciar pausa", extra: '<label>Motivo</label><div class="bts" id="kMot"><button class="btn peq" data-m="Uso pessoal">Uso pessoal</button><button class="btn sec peq" data-m="Intervalo">Intervalo</button><button class="btn sec peq" data-m="Outro">Outro</button></div>' + (a && a.status === "em_deslocamento" ? '<div class="warnbox">O deslocamento para ' + esc(a.nome) + " será interrompido e a parada volta para a fila.</div>" : ""), ok: (x) => srv("motoExpediente", "pausa", Object.assign(x, { motivo: (document.querySelector("#kMot .btn:not(.sec)") || {}).dataset ? document.querySelector("#kMot .btn:not(.sec)").dataset.m : "Uso pessoal" })) });
+  base() { const ul = ultima(); folhaKm({ titulo: "Voltar para a base", sub: esc(D.base.nome), sugestao: ul ? +ul.km : null, botao: "Iniciar retorno", ok: (x) => srv("motoParada", null, "base", x) }); },
+  pausa() { const a = ativa(), ul = ultima(); folhaKm({ titulo: "Pausa para uso pessoal", sub: "O que for rodado durante a pausa não conta como despesa do " + (D.empresa || "CVH") + ".", sugestao: a && a.status === "em_deslocamento" ? null : (ul ? +ul.km : null), botao: "Iniciar pausa", extra: '<label>Motivo</label><div class="bts" id="kMot"><button class="btn peq" data-m="Uso pessoal">Uso pessoal</button><button class="btn sec peq" data-m="Intervalo">Intervalo</button><button class="btn sec peq" data-m="Outro">Outro</button></div>' + (a && a.status === "em_deslocamento" ? '<div class="warnbox">O deslocamento para ' + esc(a.nome) + " será interrompido e a parada volta para a fila.</div>" : ""), ok: (x) => srv("motoExpediente", "pausa", Object.assign(x, { motivo: (document.querySelector("#kMot .btn:not(.sec)") || {}).dataset ? document.querySelector("#kMot .btn:not(.sec)").dataset.m : "Uso pessoal" })) });
     document.querySelectorAll("#kMot button").forEach((b) => { b.onclick = () => document.querySelectorAll("#kMot button").forEach((x) => x.classList.toggle("sec", x !== b)); }); },
   retomar() { folhaKm({ titulo: "Retomar serviço", sub: "Informe a quilometragem atual.", foto: "opc", botao: "Retomar", ok: (x) => srv("motoExpediente", "retomar", x) }); },
   async finalizar() { const a = ativa(); if (a && a.status === "em_deslocamento") return toast("Registre a chegada ao destino antes de finalizar.", 4000); const n = fila().length;
     folhaKm({ titulo: "Finalizar expediente", sub: (n ? "Ainda há " + n + " parada(s) pendente(s). " : "") + "Informe a quilometragem final e fotografe o hodômetro.", foto: "obrig", botao: "Finalizar expediente", ok: async (x) => { const e = await srv("motoExpediente", "finalizar", Object.assign(x, { gps: await gps() })); setTimeout(() => { const t = e.resumo || {}; modal('<h2>Expediente finalizado</h2><table class="t"><tr><td>Profissional</td><td><b>' + fKm(t.prof) + " km</b></td></tr><tr><td>Particular</td><td>" + fKm(t.pes) + " km</td></tr><tr><td>Não comprovado</td><td>" + fKm(t.nc) + " km</td></tr></table>"); }, 300); } }); },
   abastecer() {
     const ul = ultima();
-    modal('<h2>Registrar abastecimento</h2><label>Litros</label><input type="text" inputmode="decimal" id="aL"><label>Valor pago (R$)</label><input type="text" inputmode="decimal" id="aV"><label>Quem pagou</label><div class="bts" id="aPg"><button class="btn peq" data-p="cvh">CVH</button><button class="btn sec peq" data-p="motoboy">Eu paguei</button></div><label class="op"><input type="checkbox" id="aCheio"> Tanque cheio</label><label>Quilometragem do hodômetro (opcional)</label><input type="text" inputmode="decimal" id="aKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "") + '"><label class="foto-bt">Fotografar o comprovante (opcional)<input type="file" accept="image/*" capture="environment" id="aFoto"></label><div id="aTh"></div><div id="aMsg"></div><div class="bts"><button class="btn" id="aOk">Salvar</button></div>');
+    modal('<h2>Registrar abastecimento</h2><label>Litros</label><input type="text" inputmode="decimal" id="aL"><label>Valor pago (R$)</label><input type="text" inputmode="decimal" id="aV"><label>Quem pagou</label><div class="bts" id="aPg"><button class="btn peq" data-p="cvh">' + esc(D.empresa || "CVH") + '</button><button class="btn sec peq" data-p="motoboy">Eu paguei</button></div><label class="op"><input type="checkbox" id="aCheio"> Tanque cheio</label><label>Quilometragem do hodômetro (opcional)</label><input type="text" inputmode="decimal" id="aKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "") + '"><label class="foto-bt">Fotografar o comprovante (opcional)<input type="file" accept="image/*" capture="environment" id="aFoto"></label><div id="aTh"></div><div id="aMsg"></div><div class="bts"><button class="btn" id="aOk">Salvar</button></div>');
     let foto = null; document.querySelectorAll("#aPg button").forEach((b) => { b.onclick = () => document.querySelectorAll("#aPg button").forEach((x) => x.classList.toggle("sec", x !== b)); });
     $("#aFoto").onchange = async (ev) => { const f = ev.target.files[0]; if (f) { foto = await lerFoto(f); $("#aTh").innerHTML = '<img class="mini" src="' + foto + '">'; } };
     $("#aOk").onclick = async () => { try { $("#aOk").disabled = true; await srv("motoExpediente", "abastecimento", { litros: $("#aL").value, valor: $("#aV").value, pagoPor: document.querySelector("#aPg .btn:not(.sec)").dataset.p, cheio: $("#aCheio").checked, km: parseKm($("#aKm").value), foto: foto ? foto.split(",")[1] : null }); fechar(); somOk(); toast("Abastecimento registrado."); carregar(); } catch (e) { $("#aOk").disabled = false; $("#aMsg").innerHTML = '<div class="errbox">' + esc(e.message) + "</div>"; } };
@@ -1666,9 +1666,9 @@ const A = {
 };
 let ULT = lsGet("cvh_moto_ult", 0);
 async function carregar(silencio) {
-  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Copie o link de ativação enviado pelo CVH e cole aqui. Também dá para abrir o link no navegador e adicionar à tela de início de novo.</p><input type="text" id="atvLink" placeholder="Cole o link aqui" style="width:100%;font-size:16px;padding:12px;border:1px solid #E2D6C8;border-radius:10px;margin:8px 0"><button class="btn" id="atvBt" style="width:100%">Ativar este celular</button></div>';
+  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Copie o link de ativação enviado pela administração e cole aqui. Também dá para abrir o link no navegador e adicionar à tela de início de novo.</p><input type="text" id="atvLink" placeholder="Cole o link aqui" style="width:100%;font-size:16px;padding:12px;border:1px solid #E2D6C8;border-radius:10px;margin:8px 0"><button class="btn" id="atvBt" style="width:100%">Ativar este celular</button></div>';
     // o app da tela de início do iPhone tem memória separada do navegador: o link colado aqui ativa o próprio app
-    $("#atvBt").onclick = () => { const v = $("#atvLink").value.trim(), m = /[?&]k=([A-Za-z0-9]+)/.exec(v), k = m ? m[1] : /^[A-Za-z0-9]{16,}$/.test(v) ? v : ""; if (!k) { alert("Esse não parece o link de ativação do CVH."); return; } try { localStorage.setItem("cvh_moto_k", k); const s2 = /[?&]s=(recepcao|internacao)/.exec(v); if (s2) localStorage.setItem("cvh_int_setor", s2[1]); } catch (e) {} K = k; carregar(); };
+    $("#atvBt").onclick = () => { const v = $("#atvLink").value.trim(), m = /[?&]k=([A-Za-z0-9]+)/.exec(v), k = m ? m[1] : /^[A-Za-z0-9]{16,}$/.test(v) ? v : ""; if (!k) { alert("Esse não parece um link de ativação."); return; } try { localStorage.setItem("cvh_moto_k", k); const s2 = /[?&]s=(recepcao|internacao)/.exec(v); if (s2) localStorage.setItem("cvh_int_setor", s2[1]); } catch (e) {} K = k; carregar(); };
     return; }
   try {
     const antes = D; D = await srv("motoDados");
@@ -1679,7 +1679,7 @@ async function carregar(silencio) {
   } catch (e) {
     if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_moto_k"); } catch (_) {} K = ""; return carregar(); }
     if (!silencio) toast(e.message || String(e), 6000);
-    if (!D) $("#app").innerHTML = '<div class="cx vazio">Sem conexão com o CVH. <div class="bts" style="justify-content:center"><button class="btn" data-a="atualizar">Tentar de novo</button></div></div>';
+    if (!D) $("#app").innerHTML = '<div class="cx vazio">Sem conexão com o servidor. <div class="bts" style="justify-content:center"><button class="btn" data-a="atualizar">Tentar de novo</button></div></div>';
   }
 }
 setInterval(() => carregar(true), 20000);
