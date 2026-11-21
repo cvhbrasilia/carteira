@@ -37,7 +37,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121171309';
+  var VERSAO = '20261121171820';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -100,6 +100,7 @@ input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;b
 .op.off{opacity:.5}
 .op.on{border-color:#5F130F;background:#5F130F;color:#fff}
 input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
+.tps{display:inline-block;vertical-align:2px;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.02em;color:#fff;white-space:nowrap}.tps.neg{background:#A83D3D}.tps.pos{background:#3F6890}.tps.gat{background:#C49A6C}
 .tipos{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
 .esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
@@ -254,9 +255,13 @@ let D = null, DIF = 0;
 const agora = () => Date.now() + DIF;
 const uniDe = (id) => (D.unidades || []).find((u) => u.id === id);
 const anDe = (id) => (D.animais || []).find((a) => a.id === id) || {};
+// etiqueta do tipo sanguíneo: DEA 1 negativo em vermelho, positivo em azul (no gato, o grupo A, B ou AB)
+const seloTipoA = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/i) || [])[1]; return g ? '<span class="tps gat">Tipo ' + g.toUpperCase() + "</span>" : ""; } return /neg/i.test(t) ? '<span class="tps neg">DEA 1 −</span>' : /pos/i.test(t) ? '<span class="tps pos">DEA 1 +</span>' : ""; };
+const tipoRestoA = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return ""; const t = String(a.tipoSanguineo || ""); return (!/neg|pos/i.test(t) && t ? t : "") + (a.dal ? (t && !/neg|pos/i.test(t) ? " · " : "") + "DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const seloTipo = (u) => seloTipoA(anDe(u.animal_id)), tipoResto = (u) => tipoRestoA(anDe(u.animal_id));
 const tipoTxt = (u) => { const a = anDe(u.animal_id), t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
 const especie = (u) => /fel|gat/i.test(anDe(u.animal_id).especie || "") ? "Felino" : "Canino";
-const linhaBolsa = (u) => "<b>" + esc(u.componente) + " · " + esc(u.coleta) + '</b><small>' + esc(NOME_COMP[u.componente] || u.componente) + " · " + esc(especie(u)) + (tipoTxt(u) ? " " + esc(tipoTxt(u)) : "") + (u.volume_ml ? " · " + esc(u.volume_ml) + " mL" : "") + (u.validade ? " · validade " + esc(dataBr(u.validade)) : "") + "</small>";
+const linhaBolsa = (u) => "<b>" + esc(u.componente) + " · " + esc(u.coleta) + seloTipo(u) + "</b>" + '<small>' + esc(NOME_COMP[u.componente] || u.componente) + " · " + esc(especie(u)) + (tipoResto(u) ? " " + esc(tipoResto(u)) : "") + (u.volume_ml ? " · " + esc(u.volume_ml) + " mL" : "") + (u.validade ? " · validade " + esc(dataBr(u.validade)) : "") + "</small>";
 const prazo = (u) => (D.prazos || {})[u.componente] || 20;
 const inicioGuarda = (r) => r && (r.entrega_em || r.recebida_em) ? Date.parse(r.entrega_em || r.recebida_em) : null;
 function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Math.abs(s), t = p2(Math.floor(a / 60)) + ":" + p2(a % 60); return '<span class="relogio' + (s < 0 ? " al" : "") + '" data-fim="' + fimMs + '">' + (s < 0 ? "atrasado " + t : t) + "</span>"; }

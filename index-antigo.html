@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png"><link rel="icon" type="image/png" href="icone-192.png"><link rel="manifest" href="carteira.webmanifest">
 
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Carteira de Saúde CVH</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Proza+Libre:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -251,7 +251,7 @@ button{cursor:pointer}
 .ped-t{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--areia);color:var(--vinho)}
 .ped-t.urgente{background:#F6D9C9;color:#8a2a1f}.ped-t.emergencia{background:var(--vermelho);color:#fff}
 .login .manter{display:flex;align-items:center;gap:8px;font-size:14px;color:#6b5a52;margin:2px 0 10px;cursor:pointer}.login .manter input{width:18px;height:18px;accent-color:#5F130F}
-.colar-zona{border:1px dashed #C6B098;border-radius:12px;padding:12px;margin:0 0 12px;text-align:center;font-size:14px;color:#7a6a62;min-height:44px;outline:none;-webkit-user-select:text;user-select:text;background:#FBF8F4}
+.colar-zona{border:1px dashed #C6B098;border-radius:12px;padding:12px;margin:0 0 12px;text-align:center;font-size:16px;color:#7a6a62;height:48px;overflow:hidden;outline:none;-webkit-user-select:text;user-select:text;background:#FBF8F4;caret-color:transparent}.colar-zona:empty::before{content:attr(data-ph);font-size:14px;color:#7a6a62}.colar-zona *{display:none!important}
 .al-home{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;border:0;border-radius:14px;padding:14px 16px;margin:0 0 14px;background:#fff;box-shadow:0 2px 10px rgba(95,19,15,.12);font-family:inherit;cursor:pointer;text-align:left}
 .al-home b{color:var(--vinho);font-size:16px}
 .al-dir{display:flex!important;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.al-home i.b.novo{background:#C49A6C;color:#fff;font-style:normal;font-weight:700;border-radius:999px;padding:4px 11px;cursor:pointer;box-shadow:0 0 0 0 rgba(196,154,108,.6);animation:pulsoNovo 2.4s ease-out 3}
@@ -867,7 +867,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121170842';
+  var VERSAO = '20261121171309';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5196,7 +5196,7 @@ function telaHemoIA() {
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" id="hiVolta">‹ HemoCalculadora</button></div>' +
     '<header class="topo"><div class="t"><span>Leitura do hemograma e indicação</span><b>HemoCalculadora IA</b></div></header>' +
     '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
-    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem ou PDF copiado</button><div id="hiColarZona" class="colar-zona" contenteditable="true" aria-label="Toque e segure aqui e escolha Colar">No iPhone, toque e segure aqui e escolha Colar</div>' +
+    '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem ou PDF copiado</button><div id="hiColarZona" class="colar-zona" contenteditable="true" data-ph="No iPhone, toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div>' +
     '<div class="grade">' + cmp('hiPeso', 'Peso (kg)', T.peso) + '</div>' +
     '<details class="tx-av"' + (Object.keys(H.val).length ? ' open' : '') + '><summary>Digitar os valores (sem arquivo ou para corrigir a leitura)</summary><div class="grade">' + HC_VALS.map(([k, t]) => cmp('hiV_' + k, t, H.val[k])).join('') + '</div></details>' +
     '<h3>Situação</h3><div class="filtros hc-sit">' + HC_SIT.map(([k, t]) => '<button class="filtro' + (H.sit === k ? ' on' : '') + '" data-sit="' + k + '">' + t + '</button>').join('') + '</div>' +
@@ -5214,10 +5214,13 @@ function telaHemoIA() {
     if (H.arq.mime === 'application/pdf') { try { const tx = await textoDoPdfIdx(u8); if (tx.trim().length > 80) H.arq.texto = tx; } catch (_) { } } };
   $('#hiArq').onchange = ev => usarArq(ev.target.files[0]);
   // colar uma imagem ou um PDF copiado (Cmd+V no computador, Colar no celular)
-  const zona = $('#hiColarZona'), zTxt = zona ? zona.textContent : '';
-  document.onpaste = ev => { if (!$('#hiArq')) { document.onpaste = null; return; } const f = arquivoColado(ev.clipboardData); if (zona) setTimeout(() => { zona.textContent = zTxt; }, 0);
-    if (!f) { if (ev.target === zona || (zona && zona.contains(ev.target))) { ev.preventDefault(); toast('O iPhone não entregou o arquivo ao colar (' + tiposColados(ev.clipboardData) + '). Use Escolher foto ou PDF.', 8000); } return; }
-    ev.preventDefault(); usarArq(f); toast('Arquivo colado.'); };
+  const zona = $('#hiColarZona');
+  document.onpaste = ev => { if (!$('#hiArq')) { document.onpaste = null; return; } const f = arquivoColado(ev.clipboardData), naZona = zona && (ev.target === zona || zona.contains(ev.target));
+    if (f) { ev.preventDefault(); if (zona) zona.innerHTML = ''; usarArq(f); toast('Arquivo colado.'); return; }
+    if (!naZona) return;
+    // o iPhone às vezes cola o PDF como figura dentro do quadro: a figura vira o arquivo do hemograma
+    const tipos = tiposColados(ev.clipboardData); setTimeout(async () => { let g = null; for (const im of [...zona.querySelectorAll('img, object, embed')]) { const src = im.getAttribute('src') || im.getAttribute('data') || ''; if (!src) continue; try { const b = await (await fetch(src)).blob(); if (b.size > 500) { g = new File([b], /pdf/i.test(b.type) ? 'PDF colado.pdf' : 'Imagem colada', { type: /pdf/i.test(b.type) ? 'application/pdf' : b.type || 'image/png' }); break; } } catch (_) {} }
+      zona.innerHTML = ''; zona.blur(); if (g) { usarArq(g); toast('Arquivo colado.'); } else toast('O iPhone não entregou o arquivo ao colar (' + tipos + '). Use Escolher foto ou PDF.', 9000); }, 400); };
   const bc = $('#hiColar'); if (bc) bc.onclick = async () => { let tipos = [];
     try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = await navigator.clipboard.read();
       for (const c of L) { tipos = tipos.concat(c.types); const t = c.types.find(x => /^image\/|pdf/i.test(x)); if (t) { const b = await c.getType(t), pdf = /pdf/i.test(t); await usarArq(new File([b], pdf ? 'PDF colado.pdf' : 'Imagem colada', { type: pdf ? 'application/pdf' : t })); toast('Arquivo colado.'); return; } }

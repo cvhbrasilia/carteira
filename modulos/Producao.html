@@ -40,7 +40,7 @@ button{cursor:pointer}
 .unid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:10px 4px;border-top:1px solid #f0e8df}
 .unid .co{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--vinho)}
 .unid .co.CP{background:#C49A6C}.unid .co.PFC,.unid .co.CRIO,.unid .co.PPC{background:#A83D3D}
-.unid .t b{color:var(--vinho)}.unid .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.unid .t b{color:var(--vinho)}.tps{display:inline-block;vertical-align:2px;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.02em;color:#fff;white-space:nowrap}.tps.neg{background:#A83D3D}.tps.pos{background:#3F6890}.tps.gat{background:#C49A6C}.unid .t small{display:block;color:var(--tinta2);font-size:12.5px}
 .unid .d{text-align:right}.unid .d small{display:block;color:var(--tinta2);font-size:12px}
 .filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .filtros button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--tinta2)}
@@ -124,6 +124,9 @@ const DOA = (CTX.doacoes || []).filter((d) => d.numero);
 const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
 const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;
 const animalDe = (id) => ANI[id] || {};
+// etiqueta do tipo sanguíneo: DEA 1 negativo em vermelho, positivo em azul (no gato, o grupo A, B ou AB)
+const seloTipo = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/i) || [])[1]; return g ? '<span class="tps gat">Tipo ' + g.toUpperCase() + "</span>" : ""; } return /neg/i.test(t) ? '<span class="tps neg">DEA 1 −</span>' : /pos/i.test(t) ? '<span class="tps pos">DEA 1 +</span>' : ""; };
+const tipoResto = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return ""; const t = String(a.tipoSanguineo || ""); return (!/neg|pos/i.test(t) && t ? t : "") + (a.dal ? (t && !/neg|pos/i.test(t) ? " · " : "") + "DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
 const tipoTxt = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
 const ROT_SIT = { quarentena: "Aguardando liberação", disponivel: "Disponível", reservada: "Reservada", transito: "Em trânsito", retirada: "Retirada para transfusão", producao_crio: "Em produção de CRIO", utilizada: "Utilizada", descartada: "Descartada", bloqueada: "Bloqueada" };
 const COR_SIT = { quarentena: "av", disponivel: "ok", reservada: "", transito: "av", retirada: "av", producao_crio: "av", utilizada: "ne", descartada: "ne", bloqueada: "al" };
@@ -254,7 +257,7 @@ function formReserva(u) {
 }
 function linhaUnidade(u, fr) {
   const a = animalDe(u.animal_id), al = alertaValidade(u);
-  return '<button class="unid' + (fr ? " fr" : "") + '" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + "</b><small>" + esc([a.nome, tipoTxt(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
+  return '<button class="unid' + (fr ? " fr" : "") + '" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + seloTipo(a) + "</b><small>" + esc([a.nome, tipoResto(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
     (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + ((u.dados || {}).qcPendente ? '<small><span class="chip al">Qualidade: aguarda decisão</span></small>' : "") + ((u.dados || {}).desleucocitacao ? '<small><span class="chip">desleucocitada</span></small>' : "") + (u.situacao === "reservada" ? '<small><span class="chip">' + esc(resumoReserva(u)) + "</span></small>" : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
 }
 // frações logo abaixo da bolsa mãe (sub-linha em outra cor); se a mãe não está na lista, a fração aparece sozinha
@@ -301,7 +304,7 @@ function abrirUnidade(id) {
     acoes += bt("descartar", "Descartar", "perigo");
   }
   if (!fim) acoes += bt("etq", "Etiqueta");
-  const h = (u.situacao === "reservada" ? blocoReserva(u) : "") + '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || D.doador || "") + (tipoTxt(a) ? " · " + esc(tipoTxt(a)) : "") + "</dd>" +
+  const h = (u.situacao === "reservada" ? blocoReserva(u) : "") + '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || D.doador || "") + seloTipo(a) + (tipoResto(a) ? " · " + esc(tipoResto(a)) : "") + "</dd>" +
     ((D.identificacao || D.loteBolsa) ? "<dt>Identificação</dt><dd>" + esc([D.identificacao, D.loteBolsa].filter(Boolean).join(" · ")) + (u.mae_id ? " <small>(fração da bolsa " + esc(u.mae_id) + ")</small>" : "") + "</dd>" : "") + (D.obs ? "<dt>Observação</dt><dd>" + esc(D.obs) + "</dd>" : "") +
     "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
     "<dt>Validade</dt><dd>" + esc(br(String(u.validade || "").slice(0, 10))) + (al ? ' <span class="chip ' + al.c + '">' + al.t + "</span>" : "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "</dd><dt>Local</dt><dd>" + esc(u.local || "") + (u.equipamento ? " · " + esc(u.equipamento) : "") + "</dd>" +
