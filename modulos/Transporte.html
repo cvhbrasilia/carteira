@@ -323,7 +323,7 @@ function htmlPedidoReq(a) {
 function htmlCalculo(a) {
   const c = (a.dados || {}).calculo; if (!c) return "";
   const f = (v) => String(Math.round(+v)).replace(".", ",");
-  return '<div class="cx" style="margin:8px 0"><h2>HemoCalculadora</h2><p>CH ' + f(c.vol) + " mL" + (c.peso ? " · " + esc(String(c.peso).replace(".", ",")) + " kg" : "") + (c.htAtual != null ? " · Ht de " + f(c.htAtual) + "% para " + f(c.htDesejado) + "%" : "") + " · margem " + f(c.margem) + " mL, busca " + f(c.alvo) + " mL</p>" +
+  return '<div class="cx" style="margin:8px 0"><h2>HemoCalculadora</h2><p>CH ' + f(c.vol) + " mL" + (c.peso ? " · " + esc(String(c.peso).replace(".", ",")) + " kg" : "") + (c.modo === "cirurgia" ? " · reserva para cirurgia, " + esc(String(c.mlkgReserva || "").replace(".", ",")) + " mL/kg" + (c.htAtual != null ? " (Ht de " + f(c.htAtual) + "%)" : "") : c.htAtual != null ? " · Ht de " + f(c.htAtual) + "% para " + f(c.htDesejado) + "%" : "") + " · margem " + f(c.margem) + " mL, busca " + f(c.alvo) + " mL</p>" +
     (c.prova && c.prova.length ? "<p><small>Reservada para a prova de compatibilidade: " + esc(c.prova.join(", ")) + "</small></p>" : "") +
     (c.escolhida ? "<p><small>Bolsa escolhida no preparo: " + esc(c.escolhida.id) + (c.escolhida.modo === "embalar" ? ", direto para a embalagem" : ", fracionamento") + (c.escolhida.testada ? "" : " (compatibilidade confirmada na troca)") + "</small></p>" : "") +
     (c.fracao ? "<p><small>Fração " + esc(c.fracao.id) + " com " + f(c.fracao.volume) + " mL separada para este atendimento</small></p>" : "") + "<p><small>Salvo " + esc(hora(c.em)) + " por " + esc(c.por || "") + "</small></p></div>";
