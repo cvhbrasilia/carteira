@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122014324';
+  var VERSAO = '20261122015712';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5496,6 +5496,9 @@ function pintarHemoIA() {
     linhas.push({ c, nome, st, motivo: i.motivo || '', msg: i.situacao === 'nao_indicado' && c === 'CH' ? '' : i.situacao === 'nao_indicado' && !((c === 'CP' && numTx(V.plaquetas) != null && numTx(V.plaquetas) < 100) || (c === 'PFC' && (V.tp || V.ttpa)) || (c === 'CRIO' && V.fibrinogenio)) ? '' : c === 'CH' ? (i.situacao === 'reservar' && peso ? (() => { const X = Object.assign({}, base, { comp: 'CH', chModo: 'cirurgia', resMlkg: '' }), r = calcComp(X); return r ? msgComp(X, r) : ''; })() : peso && base.rec && numTx(base.des) > numTx(base.rec) ? dose('CH') : '') : (peso ? dose(c, sitDe(i.situacao)) : '') }); });
   const curta = linhas.filter(l => l.msg).map(l => l.msg).join('\n\n') || (!peso ? 'Informe o peso do paciente para calcular as doses.' : linhas.length && linhas.every(l => (ind[l.c] || {}).situacao === 'nao_indicado') ? 'Pelo hemograma, sem indicação de hemocomponentes no momento.' : '');
   const longa = (R.analise ? R.analise.trim() + '\n\n' : '') + curta;
+  // CH indicado (ou reserva): as mesmas bolsas do estoque e o mesmo atendimento da calculadora, sem precisar abrir a calculadora
+  const sitCH = (ind.CH || {}).situacao, chModo = sitCH === 'reservar' ? 'cirurgia' : 'transfusao';
+  const chEst = peso && pode(['estoque', 'producao']) && (sitCH === 'indicado' || sitCH === 'reservar' || sitCH === 'avaliar') && (chModo === 'cirurgia' || (base.rec && numTx(base.des) > numTx(base.rec)));
   const vt = [['Ht', V.ht, '%'], ['Hb', V.hb, 'g/dL'], ['VCM', V.vcm, 'fL'], ['CHCM', V.chcm, 'g/dL'], ['Reticulócitos', V.reticulocitos, 'mil/µL'], ['Plaquetas', V.plaquetas, 'mil/µL'], ['Leucócitos', V.leucocitos, 'mil/µL'], ['TP', V.tp, 's'], ['TTPa', V.ttpa, 's'], ['Fibrinogênio', V.fibrinogenio, 'mg/dL'], ['Proteína total', V.proteinaTotal, 'g/dL']].filter(x => x[1] != null && x[1] !== '');
   $('#hiRes').innerHTML = '<section class="cartao"><h3>Leitura' + (R.laboratorio ? ' · ' + esc(R.laboratorio) : '') + (R.data ? ' · ' + br(R.data) : '') + '</h3>' +
     (R.maquinograma && R.maquinograma.so ? '<div class="av-i novo"><b>Só maquinograma, sem avaliação de patologista clínico</b><small>' + esc(R.maquinograma.motivo || 'Sem revisão de lâmina, as plaquetas podem estar subestimadas por agregados e os índices podem ter interferência.') + '</small></div>' : '') +
@@ -5504,11 +5507,15 @@ function pintarHemoIA() {
     ((R.achados || []).filter(Boolean).length ? '<ul class="hi-ach">' + R.achados.filter(Boolean).map(a => '<li>' + esc(a) + '</li>').join('') + '</ul>' : '') + '</section>' +
     '<section class="cartao"><h3>Hemocomponentes</h3>' + linhas.map(l => '<div class="av-i ' + l.st[1] + '"><b>' + l.nome + ' · ' + l.st[0] + '</b><small>' + esc(l.motivo) + '</small></div>').join('') +
     (!peso ? '<p class="nota">Informe o peso para calcular as doses.</p>' : '') + '</section>' +
+    (chEst ? '<section class="cartao hi-est"><div id="txEst"></div></section>' : '') +
     '<section class="cartao"><h3>Mensagem</h3><div class="filtros"><button class="filtro' + (H.msg === 'curta' ? ' on' : '') + '" data-hm="curta">Curta, só as doses</button><button class="filtro' + (H.msg === 'longa' ? ' on' : '') + '" data-hm="longa">Com a análise</button></div>' +
     '<textarea id="hiMsg" rows="12" aria-label="Mensagem">' + esc(H.msg === 'longa' ? longa : curta) + '</textarea><p class="nota">A análise é feita por IA a partir do hemograma e do contexto informado. Confira antes de enviar.</p>' +
     '<div class="acoes"><button class="btn" id="hiCopiar">Copiar mensagem</button><a class="btn sec2" id="hiZap" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn sec2" id="hiCalc">Abrir na calculadora</button></div></section>';
   const zap = () => { $('#hiZap').href = 'https://wa.me/?text=' + encodeURIComponent($('#hiMsg').value); }; zap(); $('#hiMsg').oninput = zap;
-  $('#hiCopiar').onclick = async () => toast(await copiar($('#hiMsg').value) ? 'Mensagem copiada.' : 'Selecione o texto e copie manualmente.');
+  const aplicarCH = () => Object.assign(T, { comp: 'CH', chModo, resMlkg: chModo === 'cirurgia' ? '' : T.resMlkg, des: base.des, doa: base.doa, fator: base.fator, esp: base.esp, peso: base.peso, rec: ht != null ? String(ht).replace('.', ',') : T.rec, hb: hb != null ? String(hb).replace('.', ',') : T.hb, usarHb: !!H.usarHb });
+  if (chEst) { aplicarCH(); const rc = calcComp(T); if (rc) bolsasTx(Object.assign({}, T, { rec: htUsado(T) }), rc); else { const b = $('.hi-est'); if (b) b.remove(); } }
+  $('#hiCopiar').onclick = async () => { if (chEst) orcTx('copiou'); toast(await copiar($('#hiMsg').value) ? 'Mensagem copiada.' + (chEst ? ' Orçamento registrado.' : '') : 'Selecione o texto e copie manualmente.'); };
+  $('#hiZap').addEventListener('click', () => { if (chEst) orcTx('whatsapp'); });
   document.querySelectorAll('[data-hm]').forEach(b => b.onclick = () => { H.msg = b.dataset.hm; pintarHemoIA(); });
   const u = $('#hiUsarHb'); if (u) u.onchange = () => { H.usarHb = u.checked; pintarHemoIA(); };
   $('#hiCalc').onclick = () => { Object.assign(T, { comp: 'CH', rec: ht != null ? String(ht).replace('.', ',') : T.rec, hb: hb != null ? String(hb).replace('.', ',') : T.hb, usarHb: !!H.usarHb, plq: V.plaquetas != null ? String(V.plaquetas) : T.plq, tp: V.tp != null ? String(V.tp) : T.tp, ttpa: V.ttpa != null ? String(V.ttpa) : T.ttpa, fib: V.fibrinogenio != null ? String(V.fibrinogenio) : T.fib }); telaTransfusao(); };
