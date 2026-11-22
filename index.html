@@ -804,7 +804,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
 .mod-barra{position:fixed;left:0;right:0;top:0;z-index:41;display:flex;align-items:center;gap:10px;height:calc(54px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 12px 0;background:var(--vinho);color:#fff}
 .mod-barra button{border:0;background:rgba(255,255,255,.18);color:#fff;font-weight:700;font-size:15px;border-radius:999px;padding:8px 14px;white-space:nowrap}
 .mod-barra b{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mod-barra span{font-size:12px;opacity:.8;white-space:nowrap}
+.mod-barra span{font-size:12px;opacity:.8;white-space:nowrap}.mod-barra{padding-right:calc(26px + env(safe-area-inset-right))}.mod-barra span{max-width:40vw;overflow:hidden;text-overflow:ellipsis}
 .mod-erro{position:fixed;left:12px;right:12px;top:calc(62px + env(safe-area-inset-top));z-index:42;background:#FDF1EF;border:1.5px solid #F0C9C5;color:var(--critico);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;box-shadow:0 6px 20px rgba(43,18,14,.2);overflow-wrap:anywhere}
 .mod-erro b{display:block;margin-bottom:4px}
 .inst{display:flex;flex-direction:column;gap:12px}
@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122144555';
+  var VERSAO = '20261122145225';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
