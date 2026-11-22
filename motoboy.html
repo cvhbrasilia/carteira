@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head>
-<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Motoboy CVH"><meta property="og:description" content="Rotas, pedidos e entregas do CVH. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/motoboy-512.png"><meta property="og:image:width" content="512"><meta property="og:image:height" content="512"><meta name="twitter:card" content="summary"><meta name="description" content="Rotas, pedidos e entregas do CVH. Abra neste celular e adicione à tela de início.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Motoboy"><meta property="og:description" content="Rotas e entregas do dia. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/motoboy-512.png"><meta property="og:image:width" content="512"><meta property="og:image:height" content="512"><meta name="twitter:card" content="summary"><meta name="description" content="Rotas e entregas do dia. Abra neste celular e adicione à tela de início.">
 <script>
 // Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
 (function () {
@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261121235045';
+  var VERSAO = '20261122014324';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1435,6 +1435,16 @@ function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remo
 /* ── aparelho: ativado pelo link do CVH ── */
 let K = "";
 try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_moto_k", q.get("k")); } K = localStorage.getItem("cvh_moto_k") || ""; } catch (e) {}
+// nome do app na tela de início: "Motoboy DEA+" na conta da DEA, com o mesmo ícone (a conta vem do link, ?c=dea, e fica guardada)
+function nomeApp(conta, empresa) {
+  try { if (conta) localStorage.setItem("cvh_moto_c", conta); else conta = localStorage.getItem("cvh_moto_c") || ""; } catch (e) {}
+  if (!conta || conta === "cvh") return;
+  const nome = "Motoboy " + (empresa || (conta === "dea" ? "DEA+" : conta.toUpperCase()));
+  document.title = nome;
+  const t = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (t) t.setAttribute("content", nome);
+  const m = document.querySelector('link[rel="manifest"]'); if (m && conta === "dea" && !/motoboy-dea/.test(m.getAttribute("href") || "")) m.setAttribute("href", "motoboy-dea.webmanifest");
+}
+try { nomeApp(new URLSearchParams(location.search).get("c") || ""); } catch (e) {}
 const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]);
 
 /* ── sons ── */
@@ -1641,10 +1651,10 @@ const A = {
     folhaKm({ titulo: "Finalizar expediente", sub: (n ? "Ainda há " + n + " parada(s) pendente(s). " : "") + "Informe a quilometragem final e fotografe o hodômetro.", foto: "obrig", botao: "Finalizar expediente", ok: async (x) => { const e = await srv("motoExpediente", "finalizar", Object.assign(x, { gps: await gps() })); setTimeout(() => { const t = e.resumo || {}; modal('<h2>Expediente finalizado</h2><table class="t"><tr><td>Profissional</td><td><b>' + fKm(t.prof) + " km</b></td></tr><tr><td>Particular</td><td>" + fKm(t.pes) + " km</td></tr><tr><td>Não comprovado</td><td>" + fKm(t.nc) + " km</td></tr></table>"); }, 300); } }); },
   abastecer() {
     const ul = ultima();
-    modal('<h2>Registrar abastecimento</h2><label>Litros</label><input type="text" inputmode="decimal" id="aL"><label>Valor pago (R$)</label><input type="text" inputmode="decimal" id="aV"><label>Quem pagou</label><div class="bts" id="aPg"><button class="btn peq" data-p="cvh">' + esc(D.empresa || "CVH") + '</button><button class="btn sec peq" data-p="motoboy">Eu paguei</button></div><label class="op"><input type="checkbox" id="aCheio"> Tanque cheio</label><label>Quilometragem do hodômetro (opcional)</label><input type="text" inputmode="decimal" id="aKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "") + '"><label class="foto-bt">Fotografar o comprovante (opcional)<input type="file" accept="image/*" capture="environment" id="aFoto"></label><div id="aTh"></div><div id="aMsg"></div><div class="bts"><button class="btn" id="aOk">Salvar</button></div>');
+    modal('<h2>Registrar abastecimento</h2><label>Litros</label><input type="text" inputmode="decimal" id="aL"><label>Valor pago (R$)</label><input type="text" inputmode="decimal" id="aV"><label>Quem pagou</label><div class="bts" id="aPg"><button class="btn peq" data-p="cvh">' + esc(D.empresa || "CVH") + '</button><button class="btn sec peq" data-p="motoboy">Eu paguei</button></div><label class="op"><input type="checkbox" id="aCheio"> Tanque cheio</label><label>Quilometragem do hodômetro (opcional)</label><input type="text" inputmode="decimal" id="aKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "") + '"><label class="foto-bt">Fotografar o comprovante' + (D.cfg.fotoAbastecimento === false ? " (opcional)" : " (obrigatório)") + '<input type="file" accept="image/*" capture="environment" id="aFoto"></label><div id="aTh"></div><div id="aMsg"></div><div class="bts"><button class="btn" id="aOk">Salvar</button></div>');
     let foto = null; document.querySelectorAll("#aPg button").forEach((b) => { b.onclick = () => document.querySelectorAll("#aPg button").forEach((x) => x.classList.toggle("sec", x !== b)); });
     $("#aFoto").onchange = async (ev) => { const f = ev.target.files[0]; if (f) { foto = await lerFoto(f); $("#aTh").innerHTML = '<img class="mini" src="' + foto + '">'; } };
-    $("#aOk").onclick = async () => { try { $("#aOk").disabled = true; await srv("motoExpediente", "abastecimento", { litros: $("#aL").value, valor: $("#aV").value, pagoPor: document.querySelector("#aPg .btn:not(.sec)").dataset.p, cheio: $("#aCheio").checked, km: parseKm($("#aKm").value), foto: foto ? foto.split(",")[1] : null }); fechar(); somOk(); toast("Abastecimento registrado."); carregar(); } catch (e) { $("#aOk").disabled = false; $("#aMsg").innerHTML = '<div class="errbox">' + esc(e.message) + "</div>"; } };
+    $("#aOk").onclick = async () => { try { if (!foto && D.cfg.fotoAbastecimento !== false) { $("#aMsg").innerHTML = '<div class="errbox">Fotografe o comprovante do abastecimento. Ele garante o preço e o valor pago.</div>'; return; } $("#aOk").disabled = true; await srv("motoExpediente", "abastecimento", { litros: $("#aL").value, valor: $("#aV").value, pagoPor: document.querySelector("#aPg .btn:not(.sec)").dataset.p, cheio: $("#aCheio").checked, km: parseKm($("#aKm").value), foto: foto ? foto.split(",")[1] : null }); fechar(); somOk(); toast("Abastecimento registrado."); carregar(); } catch (e) { $("#aOk").disabled = false; $("#aMsg").innerHTML = '<div class="errbox">' + esc(e.message) + "</div>"; } };
   },
   meuDia() {
     const e = expAberto() || (D.expedientes || []).find((x) => String(x.data) === hoje()); const L = e ? leituras(e) : [], t = e ? totais(e) : null;
@@ -1671,7 +1681,7 @@ async function carregar(silencio) {
     $("#atvBt").onclick = () => { const v = $("#atvLink").value.trim(), m = /[?&]k=([A-Za-z0-9]+)/.exec(v), k = m ? m[1] : /^[A-Za-z0-9]{16,}$/.test(v) ? v : ""; if (!k) { alert("Esse não parece um link de ativação."); return; } try { localStorage.setItem("cvh_moto_k", k); const s2 = /[?&]s=(recepcao|internacao)/.exec(v); if (s2) localStorage.setItem("cvh_int_setor", s2[1]); } catch (e) {} K = k; carregar(); };
     return; }
   try {
-    const antes = D; D = await srv("motoDados");
+    const antes = D; D = await srv("motoDados"); nomeApp(D.conta || "", D.empresa);
     const novos = (D.avisos || []).filter((x) => x.id > ULT).sort((a, b) => a.id - b.id);
     if (novos.length) { ULT = novos[novos.length - 1].id; lsSet("cvh_moto_ult", ULT); if (antes) { const c = novos.filter((x) => x.nivel === "critico"); if (c.length) alarme(c[c.length - 1].titulo, c[c.length - 1].corpo); else { somAviso(); toast(novos[novos.length - 1].titulo + " · " + novos[novos.length - 1].corpo, 8000); } } }
     if (antes) for (const r of D.remessas || []) { const r0 = (antes.remessas || []).find((x) => x.id === r.id) || {}; if (r.recebida_em && !r0.recebida_em) { somOk(); toast("QR lido pela Intensivet · caixa " + r.id, 8000); } }
