@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head>
-<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Motoboy"><meta property="og:description" content="Rotas e entregas do dia. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/motoboy-512.png"><meta property="og:image:width" content="512"><meta property="og:image:height" content="512"><meta name="twitter:card" content="summary"><meta name="description" content="Rotas e entregas do dia. Abra neste celular e adicione à tela de início.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Motoboy"><meta property="og:description" content="Rotas e entregas do dia. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/motoboy-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Rotas e entregas do dia. Abra neste celular e adicione à tela de início.">
 <script>
 // Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
 (function () {
@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122123446';
+  var VERSAO = '20261122144555';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1540,7 +1540,7 @@ function fase() {
   if (a && a.status === "no_local") return { f: "local", e, p: a };
   return { f: "livre", e, prox: fila()[0] || null };
 }
-const chips = (p) => (p.servicos || []).map((s) => '<span class="chip">' + esc(tipoNome(s.tipo)) + "</span>").join("") + (p.detalhe ? '<div><small>' + esc(p.detalhe) + "</small></div>" : "");
+const chips = (p) => (p.hora ? '<span class="chip" style="background:#5F130F;color:#fff">às ' + esc(p.hora) + "</span>" : "") + (p.servicos || []).map((s) => '<span class="chip">' + esc(tipoNome(s.tipo)) + "</span>").join("") + (p.detalhe ? '<div><small>' + esc(p.detalhe) + "</small></div>" : "");
 
 /* ── telas ── */
 function bannerRota() {
