@@ -623,7 +623,7 @@ a.mini{text-decoration:none;display:inline-block}
 .asd-rub{flex:1 1 auto;min-width:5.5em;position:relative;margin-left:.4em}
 .asd-rub svg{position:absolute;right:0;top:-1.3em;height:calc(100% + 1.75em);width:100%;overflow:visible}
 .asd .qr{width:2.5em;height:2.5em;margin-left:auto;flex:none}
-.asd-c{font-size:.42em;color:var(--tinta2);margin:.25em 0 0 .1em}
+.asl{display:flex;align-items:center;gap:.55em;border-top:1px dashed var(--linha);padding-top:.45em;margin-top:.4em}.asl i{width:1.9em;aspect-ratio:1;background:var(--img-selo) center/contain no-repeat;flex:none}.asl p{font-size:.48em;line-height:1.4;color:var(--tinta2);margin:0}.asl b{display:block;color:var(--vinho);font-size:1.12em}.asd-c{font-size:.42em;color:var(--tinta2);margin:.25em 0 0 .1em}
 
 /* doação */
 .doa-top{display:grid;grid-template-columns:auto 1fr auto;gap:1.2em;align-items:end;background:var(--areia);border-radius:.4em;padding:.6em .9em;position:relative;overflow:hidden}
@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122121109';
+  var VERSAO = '20261122123446';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2291,9 +2291,12 @@ const urlVerifCarteira = cod => { const b = (E.d && E.d.config && (E.d.config.ur
 const rubSvgDir = d => d ? '<svg viewBox="0 0 300 120" preserveAspectRatio="xMaxYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="' + esc(d) + '"/></svg>' : '';
 const rubSvg = (d, cls) => d ? '<svg class="' + (cls || 'rub') + '" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="' + esc(d) + '"/></svg>' : '';
 /* ═════════════ peças da página ═════════════ */
+// prévia da assinatura eletrônica no cadastro do médico veterinário (o mesmo bloco dos laudos)
+function previaAssinaturaVet(v) {
+  v = v || {}; return '<div class="asd" style="font-size:1em;width:100%"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(v.crmv || '') + '</span><span>data e hora da assinatura</span></div></div>';
+}
+// carimbo azul com a rubrica, usado nas vacinas, vermífugos e antiparasitários
 function carimbo(v, rot) {
-  // prévia da assinatura no cadastro do médico veterinário: o mesmo bloco das assinaturas eletrônicas
-  if (rot !== 'carimbo') return '<div class="asd" style="font-size:1em;width:100%"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(v.crmv || '') + '</span><span>data e hora da assinatura</span></div></div>';
   v = v || {};
   const nome = esc(v.nome || ''), crmv = esc(v.crmv || '');
   const largo = (v.nome || '').length * 10.6 > 168 ? ' textLength="168" lengthAdjust="spacingAndGlyphs"' : '';
@@ -2310,6 +2313,11 @@ function assinatura(r) {
   return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(r.vetNome || v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(r.vetCrmv || v.crmv || '') + '</span><span>' + quando(r.assinadoEm) + '</span></div>' +
     (r.codigo ? qrSvg(urlVerifCarteira(r.codigo)) : '') + '</div>' +
     (r.codigo || lib ? '<p class="asd-c">' + (r.codigo ? 'Código ' + esc(r.codigo) : '') + (lib ? (r.codigo ? ' · ' : '') + 'Liberado por ' + esc(lib) : '') + '</p>' : '');
+}
+// vacinas, vermífugos e antiparasitários: o carimbo com a rubrica e, embaixo, a linha discreta da assinatura eletrônica
+function assinaturaLinha(r) {
+  const v = vetDe(r), lib = r.dados && r.dados.liberadoPor && r.dados.liberadoPor.nome;
+  return '<div class="asl"><i></i><p><b>Assinado eletronicamente por ' + esc(r.vetNome || v.nome || '') + '</b>' + esc(r.vetCrmv || v.crmv || '') + ' · ' + quando(r.assinadoEm) + (r.codigo ? ' · Código ' + esc(r.codigo) : '') + (lib ? ' · Liberado por ' + esc(lib) : '') + '</p></div>';
 }
 const btnEd = r => '<button class="ed" data-ed="' + r.id + '">Editar</button>';
 const SETAS = '<svg viewBox="0 0 34 16" aria-hidden="true"><path d="M2 8h11M9 3l5 5-5 5M18 8h11M25 3l5 5-5 5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -2356,24 +2364,24 @@ function cVacina(r, ult, ed) {
     '<div class="linha"><div><span class="rot">Vacinado em</span><b class="val">' + br(r.data) + '</b></div>' + (novo ? chip(r.proxima) : '<span class="chip neutro">Concluída</span>') + '</div>' +
     '<div class="etqs">' + (d.etiquetas || []).map(etiqueta).join('') + '</div>' +
     (d.doencas ? '<p class="prot"><b>Protege contra</b> ' + esc(d.doencas) + '.</p>' : '') +
-    '<div class="linha"><div><span class="rot">Revacinar em</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + '</div>' +
-    assinatura(r) + '</article>';
+    '<div class="linha"><div><span class="rot">Revacinar em</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + carimbo(vetDe(r), -3) + '</div>' +
+    assinaturaLinha(r) + '</article>';
 }
 function cVerm(r, ult, ed) {
   const d = r.dados || {}, novo = ult.has(r.id);
   return '<article class="reg' + (novo ? '' : ' antigo') + '" data-id="' + r.id + '">' + (ed ? btnEd(r) : '') +
     '<div class="linha"><div><span class="rot">Vermifugado em</span><b class="val">' + br(r.data) + '</b></div>' + (novo ? chip(r.proxima) : '<span class="chip neutro">Concluído</span>') + '</div>' +
     '<div class="g3"><div><span class="rot">Vermífugo</span><b class="val">' + esc(d.produto) + '</b></div><div><span class="rot">Dose</span><b class="val">' + esc(comprimidos(d.comprimidos)) + '</b></div><div><span class="rot">Peso</span><b class="val">' + esc(d.peso) + (d.peso ? ' <small>kg</small>' : '') + '</b></div></div>' +
-    '<div class="linha"><div class="g2">' + (d.reforco ? '<div><span class="rot">Reforço</span><b class="val"><span class="marcador">' + br(d.reforco) + '</span></b></div>' : '') + '<div><span class="rot">Próximo</span><b class="val">' + (br(r.proxima) || '·') + '</b></div></div>' + '</div>' +
-    assinatura(r) + '</article>';
+    '<div class="linha"><div class="g2">' + (d.reforco ? '<div><span class="rot">Reforço</span><b class="val"><span class="marcador">' + br(d.reforco) + '</span></b></div>' : '') + '<div><span class="rot">Próximo</span><b class="val">' + (br(r.proxima) || '·') + '</b></div></div>' + carimbo(vetDe(r), 2) + '</div>' +
+    assinaturaLinha(r) + '</article>';
 }
 function cEcto(r, ult, ed) {
   const d = r.dados || {}, novo = ult.has(r.id);
   return '<article class="reg' + (novo ? '' : ' antigo') + '" data-id="' + r.id + '">' + (ed ? btnEd(r) : '') +
     '<div class="linha"><div><span class="rot">Aplicado em</span><b class="val">' + br(r.data) + '</b></div>' + (novo ? chip(r.proxima) : '<span class="chip neutro">Concluído</span>') + '</div>' +
     '<div class="g3"><div><span class="rot">Produto</span><b class="val">' + esc(d.produto) + '</b></div><div><span class="rot">Dose</span><b class="val">' + esc(d.dose || d.apresentacao) + '</b></div><div><span class="rot">Peso</span><b class="val">' + esc(d.peso) + (d.peso ? ' <small>kg</small>' : '') + '</b></div></div>' +
-    '<div class="linha"><div><span class="rot">Próxima dose</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + '</div>' +
-    assinatura(r) + '</article>';
+    '<div class="linha"><div><span class="rot">Próxima dose</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + carimbo(vetDe(r), -2) + '</div>' +
+    assinaturaLinha(r) + '</article>';
 }
 function cObs(r, ult, ed) {
   return '<article class="reg" data-id="' + r.id + '">' + (ed ? btnEd(r) : '') +
@@ -7064,7 +7072,7 @@ function abrirFormVet(v) {
     '<label class="check larga"' + (adm ? '' : ' hidden') + '><input type="checkbox" id="vPad"' + (v.padrao === '1' || !(E.d.vets || []).length ? ' checked' : '') + '> Assinatura padrão dos lembretes e registros antigos</label></div>' +
     '<div class="leg">Rubrica (desenhe com o dedo ou o mouse)</div><canvas class="pad" id="pad"></canvas>' +
     '<div class="acoes"><button class="btn sec2 peq" data-acao="limpar-pad">Limpar</button></div>' +
-    '<div class="leg">Prévia da assinatura</div><div id="previaCarimbo" style="font-size:22px;display:flex;justify-content:center;padding:8px 0 4px"></div>' +
+    '<div class="leg">Prévia do carimbo das vacinas e da assinatura dos laudos</div><div id="previaCarimbo" style="font-size:22px;display:flex;justify-content:center;padding:8px 0 4px"></div>' +
     '<button class="btn" id="bSalvar">Salvar</button>', () => {
       const pad = $('#pad'), ctx = pad.getContext('2d'), W = 300, H = 120;
       const dpr = window.devicePixelRatio || 1;
@@ -7078,7 +7086,7 @@ function abrirFormVet(v) {
         if (caminho && !tracos.length) { try { ctx.stroke(new Path2D(caminho)); } catch (_) {} }
         tracos.forEach(t => { ctx.beginPath(); t.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke(); });
       };
-      const prev = () => { $('#previaCarimbo').innerHTML = carimbo({ nome: vl('vNome') || 'Nome', crmv: vl('vCrmv') || 'CRMV', rubrica: tracos.length ? emPath() : caminho }, -3); };
+      const prev = () => { const pv = { nome: vl('vNome') || 'Nome', crmv: vl('vCrmv') || 'CRMV', rubrica: tracos.length ? emPath() : caminho }; $('#previaCarimbo').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">' + carimbo(pv, -3) + previaAssinaturaVet(pv) + '</div>'; };
       const emPath = () => tracos.filter(t => t.length > 1).map(t => {
         let s = 'M' + t[0][0].toFixed(1) + ' ' + t[0][1].toFixed(1);
         for (let i = 1; i < t.length - 1; i++) { const mx = (t[i][0] + t[i + 1][0]) / 2, my = (t[i][1] + t[i + 1][1]) / 2; s += 'Q' + t[i][0].toFixed(1) + ' ' + t[i][1].toFixed(1) + ' ' + mx.toFixed(1) + ' ' + my.toFixed(1); }
@@ -7108,7 +7116,7 @@ function abrirFormUsuario(u) {
     campo('uSenha', u.temSenha ? 'Nova senha' : 'Senha', inp('uSenha', '', 'type="password" autocomplete="new-password" placeholder="' + (u.temSenha ? 'vazio mantém a atual' : 'mínimo 4, pode ser um PIN') + '"')) +
     campo('uVet', 'Assinatura (médico veterinário)', '<select id="uVet"><option value="">Não assina (não é médico veterinário)</option>' + (E.d.vets || []).map(x => '<option value="' + x.id + '"' + (x.id === u.vetId ? ' selected' : '') + '>' + esc(x.nome + ' · ' + x.crmv) + '</option>').join('') + '<option value="__novo">+ Cadastrar o CRMV agora</option></select>', 'larga') +
     '<div class="campo larga" id="uNovoVet" hidden><div class="grade">' + campo('uVetNome', 'Nome na assinatura', inp('uVetNome', u.nome || '', 'autocomplete="off"'), 'larga') + campo('uVetCrmv', 'CRMV', inp('uVetCrmv', '', 'placeholder="CRMV-DF 0000" autocomplete="off"'), 'larga') + '</div></div></div>' +
-    '<p class="nota">Quem tem CRMV assina sozinho o que salvar. A rubrica é opcional e só aparece no carimbo das vacinas.</p>' +
+    '<p class="nota">Quem tem CRMV assina sozinho o que salvar. A rubrica é opcional. Ela aparece no carimbo das vacinas e na assinatura dos laudos.</p>' +
     '<div class="leg">Permissões</div><div class="perms">' + Object.keys(ROT_PERM).map(p => '<label class="check"><input type="checkbox" class="uPerm" value="' + p + '"' + (u.permissoes.includes(p) ? ' checked' : '') + (eu && p === 'admin' ? ' disabled' : '') + '> ' + ROT_PERM[p] + (p === 'admin' ? ' (acessa tudo, inclusive Ajustes e usuários)' : '') + '</label>').join('') + '</div>' +
     (u.id && !eu ? '<label class="check"><input type="checkbox" id="uAtivo"' + (u.ativo === '0' ? '' : ' checked') + '> Usuário ativo (desmarque para bloquear o acesso)</label>' : '') +
     '<button class="btn" id="bSalvar">Salvar</button>', () => {
