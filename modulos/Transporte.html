@@ -203,7 +203,8 @@ function cardMoto(tk, ps) {
       (p.status === "pendente" ? '<button class="btn sec peq" data-a="pMover" data-v="' + p.id + '" data-d="-1">↑</button><button class="btn sec peq" data-a="pMover" data-v="' + p.id + '" data-d="1">↓</button>' : "") + '<button class="btn sec peq" data-a="pVer" data-v="' + p.id + '">Ver</button></div></div>';
   }).join("");
   const rota = (ativa && ativa.status === "em_deslocamento" ? [ativa] : []).concat(pend);
-  return '<div class="cx"><h2>' + esc(nomeMoto(tk)) + '</h2><span class="chip ' + st.c + '">' + esc(st.t) + "</span>" + (pend.length ? '<p class="nota">Distância estimada das paradas pendentes ≈ ' + fKm(estKm) + " km (linha reta corrigida, não substitui o hodômetro).</p>" : "") +
+  const exDia = tk && (S.D.expedientes || []).filter((x) => x.motoboy === tk).sort((a, b) => String(b.inicio_em).localeCompare(String(a.inicio_em)))[0];
+  return '<div class="cx"><h2>' + esc(nomeMoto(tk)) + '</h2><span class="chip ' + st.c + '">' + esc(st.t) + "</span>" + (exDia ? ' <button class="btn peq sec" style="margin-left:6px" data-a="relDia" data-v="' + esc(exDia.id) + '">Registros da rota com fotos</button>' : "") + (pend.length ? '<p class="nota">Distância estimada das paradas pendentes ≈ ' + fKm(estKm) + " km (linha reta corrigida, não substitui o hodômetro).</p>" : "") +
     '<div class="bts" style="margin:8px 0">' + (pend.length > 1 && tk ? '<button class="btn sec peq" data-a="pOtimizar" data-v="' + tk + '">Otimizar ordem</button>' : "") + (rota.length ? botoesRota(rota, "btn sec peq") : "") + "</div>" + (lin || '<p class="vazio">Sem paradas.</p>') + "</div>";
 }
 function formParada(p) {
@@ -221,7 +222,7 @@ function formParada(p) {
 }
 function abrirParada(id) {
   const p = S.D.paradas.find((x) => x.id === id) || (S.P && S.P.paradas.find((x) => x.id === id)); if (!p) return; S.aberto = id;
-  abrirGaveta(p.nome, '<p><span class="chip ' + (COR_ST[p.status] || "") + '">' + esc(ROT_ST[p.status]) + "</span>" + (p.prioridade === "urgente" ? ' <span class="chip al">URGENTE</span>' : "") + " <small>" + esc(p.codigo) + " · " + br(p.data) + " · " + esc(nomeMoto(p.motoboy)) + "</small></p><p>" + esc(p.endereco || "") + "</p><p>" + esc((p.servicos || []).map((s) => tipoNome(s.tipo) + (s.feito ? " ✓" : "")).join(", ")) + (p.detalhe ? "<br><small>" + esc(p.detalhe) + "</small>" : "") + "</p>" + (p.obs ? '<p class="nota">' + esc(p.obs) + "</p>" : "") +
+  abrirGaveta(p.nome, (p.expediente_id ? '<div class="bts" style="margin:0 0 10px"><button class="btn peq sec" data-a="relDia" data-v="' + esc(p.expediente_id) + '">Ver a rota inteira deste dia</button></div>' : "") + '<p><span class="chip ' + (COR_ST[p.status] || "") + '">' + esc(ROT_ST[p.status]) + "</span>" + (p.prioridade === "urgente" ? ' <span class="chip al">URGENTE</span>' : "") + " <small>" + esc(p.codigo) + " · " + br(p.data) + " · " + esc(nomeMoto(p.motoboy)) + "</small></p><p>" + esc(p.endereco || "") + "</p><p>" + esc((p.servicos || []).map((s) => tipoNome(s.tipo) + (s.feito ? " ✓" : "")).join(", ")) + (p.detalhe ? "<br><small>" + esc(p.detalhe) + "</small>" : "") + "</p>" + (p.obs ? '<p class="nota">' + esc(p.obs) + "</p>" : "") +
     '<dl class="dl"><dt>Saída</dt><dd>' + (p.saida_em ? p2h(p.saida_em) + " · " + fKm(p.km_ini) + " km" : "-") + "</dd><dt>Chegada</dt><dd>" + (p.chegada_em ? p2h(p.chegada_em) + " · " + fKm(p.km_fim) + " km" : "-") + "</dd><dt>Duração</dt><dd>" + (p.saida_em && p.chegada_em ? fDur(Date.parse(p.chegada_em) - Date.parse(p.saida_em)) + " · " + fKm(p.km_fim - p.km_ini) + " km" : "-") + "</dd><dt>Conclusão</dt><dd>" + (p.concluido_em ? p2h(p.concluido_em) : "-") + "</dd>" +
     (p.gps ? '<dt>GPS na chegada</dt><dd><a href="https://www.google.com/maps/search/?api=1&query=' + p.gps.lat + "," + p.gps.lng + '" target="_blank" rel="noopener">' + p.gps.lat + ", " + p.gps.lng + "</a> (" + p.gps.acc + " m)</dd>" : "") + (p.atendimento_id ? "<dt>Pedido</dt><dd>" + esc(p.atendimento_id) + "</dd>" : "") + (p.remessa_id ? "<dt>Caixa</dt><dd>" + esc(p.remessa_id) + "</dd>" : "") + "</dl>" +
     (p.obs_motoboy ? '<p class="nota">Motoboy: ' + esc(p.obs_motoboy) + "</p>" : "") + (p.motivo_cancelamento ? '<p class="nota">Cancelada: ' + esc(p.motivo_cancelamento) + "</p>" : "") +
@@ -516,16 +517,27 @@ function telaRel() {
   const m = S.per.moto, ps = P.paradas.filter((p) => p.status !== "cancelado" && (!m || p.motoboy === m)), porMoto = {}, porDest = {};
   ps.forEach((p) => { const a = porMoto[p.motoboy] || (porMoto[p.motoboy] = { n: 0, c: 0, urg: 0, km: 0 }); a.n++; if (p.status === "concluido") a.c++; if (p.prioridade === "urgente") a.urg++; const d = porDest[p.nome] || (porDest[p.nome] = { n: 0, c: 0, km: 0, tempo: 0, nt: 0 }); d.n++; if (p.status === "concluido") d.c++; if (p.km_ini != null && p.km_fim != null) { d.km += p.km_fim - p.km_ini; } if (p.saida_em && p.chegada_em) { d.tempo += Date.parse(p.chegada_em) - Date.parse(p.saida_em); d.nt++; } });
   P.expedientes.forEach((e) => { if (m && e.motoboy !== m) return; const a = porMoto[e.motoboy] || (porMoto[e.motoboy] = { n: 0, c: 0, urg: 0, km: 0 }); a.km += totais(e).prof; });
-  const dias = P.expedientes.filter((e) => !m || e.motoboy === m).slice().sort((a, b) => String(b.inicio_em).localeCompare(String(a.inicio_em)));
-  const blocoDias = '<div class="cx"><h2>Rotas feitas</h2>' + (dias.length ? dias.map((e) => { const t = totais(e), pe = P.paradas.filter((p) => p.expediente_id === e.id && p.status !== "cancelado" && p.tipo !== "retorno");
-    return '<div class="lin" data-a="relDia" data-v="' + esc(e.id) + '" style="cursor:pointer"><div class="t"><b>' + br(e.data) + " · " + esc(nomeMoto(e.motoboy)) + "</b><small>" + pe.filter((p) => p.status === "concluido").length + " de " + pe.length + " paradas · " + fKm(t.prof) + " km · " + p2h(e.inicio_em) + (e.fim_em ? " às " + p2h(e.fim_em) : " · em andamento") + '</small></div><button class="btn peq sec" data-a="relDia" data-v="' + esc(e.id) + '">Ver a rota</button></div>'; }).join("") : '<p class="vazio">Nenhum expediente no período.</p>') + "</div>";
+  const blocoDias = blocoDiasHtml(P, m);
   const exp = '<div class="bts" style="margin:0 0 12px"><button class="btn peq sec" data-a="relCsv">Planilha das paradas</button><button class="btn peq sec" data-a="relPdf">PDF do relatório</button></div>';
-  return filtroPer(false) + exp + blocoDias + '<div class="cx"><h2>Por motoboy</h2><table class="tb"><tr><th>Motoboy</th><th>Paradas</th><th>Concluídas</th><th>Urgentes</th><th>Km profissional</th><th>Combustível estimado</th></tr>' + Object.entries(porMoto).map(([k, a]) => "<tr><td>" + esc(nomeMoto(k)) + "</td><td>" + a.n + "</td><td>" + a.c + "</td><td>" + a.urg + "</td><td>" + fKm(a.km) + "</td><td>" + fR(custo(a.km).valor) + "</td></tr>").join("") + "</table></div>" +
+  return filtroPer(false) + exp + blocoDias + RESTO_REL(P, m, ps, porMoto, porDest);
+}
+function telaRegistros() {
+  const P = S.P; if (!P) return filtroPer(false) + '<div class="cx vazio">Carregando…</div>';
+  return filtroPer(false) + '<p class="nota" style="margin:0 0 10px">Cada dia de trabalho de cada motoboy. Toque em Ver a rota para ver a linha do tempo inteira, com horários, quilometragem, serviços, fotos, abastecimentos e o caminho no mapa.</p>' + blocoDiasHtml(P, S.per.moto);
+}
+function blocoDiasHtml(P, m) {
+  const dias = P.expedientes.filter((e) => !m || e.motoboy === m).slice().sort((a, b) => String(b.inicio_em).localeCompare(String(a.inicio_em)));
+  return '<div class="cx"><h2>Rotas feitas</h2>' + (dias.length ? dias.map((e) => { const t = totais(e), pe = P.paradas.filter((p) => p.expediente_id === e.id && p.status !== "cancelado" && p.tipo !== "retorno");
+    return '<div class="lin" data-a="relDia" data-v="' + esc(e.id) + '" style="cursor:pointer"><div class="t"><b>' + br(e.data) + " · " + esc(nomeMoto(e.motoboy)) + "</b><small>" + pe.filter((p) => p.status === "concluido").length + " de " + pe.length + " paradas · " + fKm(t.prof) + " km · " + p2h(e.inicio_em) + (e.fim_em ? " às " + p2h(e.fim_em) : " · em andamento") + '</small></div><button class="btn peq sec" data-a="relDia" data-v="' + esc(e.id) + '">Ver a rota</button></div>'; }).join("") : '<p class="vazio">Nenhum expediente no período.</p>') + "</div>";
+}
+function RESTO_REL(P, m, ps, porMoto, porDest) {
+  return '<div class="cx"><h2>Por motoboy</h2><table class="tb"><tr><th>Motoboy</th><th>Paradas</th><th>Concluídas</th><th>Urgentes</th><th>Km profissional</th><th>Combustível estimado</th></tr>' + Object.entries(porMoto).map(([k, a]) => "<tr><td>" + esc(nomeMoto(k)) + "</td><td>" + a.n + "</td><td>" + a.c + "</td><td>" + a.urg + "</td><td>" + fKm(a.km) + "</td><td>" + fR(custo(a.km).valor) + "</td></tr>").join("") + "</table></div>" +
     '<div class="cx"><h2>Por destino</h2><table class="tb"><tr><th>Destino</th><th>Paradas</th><th>Concluídas</th><th>Km nos trajetos</th><th>Tempo médio de trajeto</th></tr>' + Object.entries(porDest).sort((a, b) => b[1].n - a[1].n).map(([k, d]) => "<tr><td>" + esc(k) + "</td><td>" + d.n + "</td><td>" + d.c + "</td><td>" + fKm(d.km) + "</td><td>" + (d.nt ? fDur(d.tempo / d.nt) : "-") + "</td></tr>").join("") + "</table></div>";
 }
 const NOME_LEIT = { inicio_expediente: "Início do expediente", saida: "Saída", chegada: "Chegada", pausa_inicio: "Início de pausa", pausa_fim: "Retomada", abastecimento: "Abastecimento", fim_expediente: "Fim do expediente" };
-function abrirDia(id) {
-  const P = S.P, e = P && P.expedientes.find((x) => x.id === id); if (!e) return;
+async function abrirDia(id, P0) {
+  let P = P0 || S.P, e = P && P.expedientes.find((x) => x.id === id);
+  if (!e) { const ex = (S.D.expedientes || []).find((x) => x.id === id); if (!ex) return; P = await trp("trpPeriodo", ex.data, ex.data); e = P.expedientes.find((x) => x.id === id); if (!e) return; }
   const t = totais(e), ps = P.paradas.filter((p) => p.expediente_id === e.id).sort((a, b) => String(a.saida_em || a.criado || "").localeCompare(String(b.saida_em || b.criado || "")));
   const ab = (P.abastecimentos || []).filter((a) => a.expediente_id === e.id || (a.motoboy === e.motoboy && a.data === e.data));
   const fotos = (L) => L.length ? '<div class="rel-fotos">' + L.map((u) => '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="foto" loading="lazy"></a>').join("") + "</div>" : "";
@@ -574,7 +586,7 @@ function telaCfg() {
     '<h2 style="margin-top:14px">Conferência da quilometragem</h2><div class="grade"><div><label>Aviso quando um trecho passar de (km)</label><input type="text" inputmode="decimal" id="cMax" value="' + esc(c.kmMaxTrecho) + '"></div><div><label>Aviso de velocidade média acima de (km/h)</label><input type="text" inputmode="decimal" id="cVel" value="' + esc(c.velMax) + '"></div></div>' +
     '<label style="display:flex;gap:8px;color:var(--tinta);font-weight:600"><input type="checkbox" id="cFotoCheg"' + (c.fotoKmChegada ? " checked" : "") + "> Exigir foto do hodômetro na chegada aos destinos</label>" + '<label style="display:flex;gap:8px;color:var(--tinta);font-weight:600"><input type="checkbox" id="cFotoAbast"' + (c.fotoAbastecimento !== false ? " checked" : "") + "> Exigir foto do comprovante no abastecimento</label>" + (ad ? '<div class="bts" style="margin-top:12px"><button class="btn" data-a="cfgSalvar">Salvar</button></div>' : "<p class=\"nota\">Só o administrador altera.</p>") + "</div>";
 }
-const ABAS = [["hoje", "Rotas do dia"], ["ped", "Pedidos do CVH"], ["par", "Paradas"], ["dest", "Clínicas e destinos"], ["km", "Quilometragem"], ["fuel", "Combustível"], ["rel", "Relatórios"], ["moto", "Motoboys"], ["cfg", "Configurações"]];
+const ABAS = [["hoje", "Rotas do dia"], ["ped", "Pedidos do CVH"], ["par", "Paradas"], ["reg", "Registros das rotas"], ["dest", "Clínicas e destinos"], ["km", "Quilometragem"], ["fuel", "Combustível"], ["rel", "Relatórios"], ["moto", "Motoboys"], ["cfg", "Configurações"]];
 function pintar() {
   if (!S.D) return;
   const n = S.at.filter((a) => ["pronta", "preparo"].includes(a.etapa)).length;
@@ -583,7 +595,7 @@ function pintar() {
   const cts = [...new Set((S.D.contas || []).map((x) => x.conta))];
   const verConta = cts.length ? '<div class="filtros" style="margin:6px 0 0">' + ["cvh"].concat(cts).map((k) => '<button class="' + (S.D.conta === k ? "on" : "") + '" data-a="contaVer" data-v="' + esc(k) + '">' + esc(k.toUpperCase()) + "</button>").join("") + "</div>" : "";
   $("#app").innerHTML = '<div class="topo"><h1>Motoboy' + (ext ? " · " + esc(S.D.cfg && S.D.cfg.empresa || S.D.conta.toUpperCase()) : "") + '<small>Rotas, ' + (ext ? "" : "pedidos, ") + 'destinos e quilometragem</small></h1>' + verConta + '</div><nav class="abas">' + ABAS.filter(([k]) => !(ext && k === "ped")).map(([k, t]) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (k === "ped" && n ? "<b>" + n + "</b>" : "") + "</button>").join("") + "</nav>" +
-    ({ hoje: telaHoje, ped: telaTransporte, par: telaParadas, dest: telaDestinos, km: telaKm, fuel: telaFuel, rel: telaRel, moto: telaMotoboys, cfg: telaCfg }[S.aba] || telaHoje)();
+    ({ hoje: telaHoje, ped: telaTransporte, par: telaParadas, reg: telaRegistros, dest: telaDestinos, km: telaKm, fuel: telaFuel, rel: telaRel, moto: telaMotoboys, cfg: telaCfg }[S.aba] || telaHoje)();
   tiqueRelogios();
 }
 /* links dos celulares (Mini Estação e Motoboy): sempre à mão para entrar, copiar ou enviar */
@@ -664,7 +676,7 @@ document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (ev.target.id === "veu") return fecharGaveta(); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
   try {
     if (a === "fechar") return fecharGaveta();
-    if (a === "aba") { S.aba = v; pintar(); window.scrollTo(0, 0); if (["par", "km", "fuel", "rel"].includes(v) && !S.P) { S.P = await trp("trpPeriodo", S.per.ini, S.per.fim); pintar(); } return; }
+    if (a === "aba") { S.aba = v; pintar(); window.scrollTo(0, 0); if (["par", "reg", "km", "fuel", "rel"].includes(v) && !S.P) { S.P = await trp("trpPeriodo", S.per.ini, S.per.fim); pintar(); } return; }
     if (a === "seg") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
     if (a === "consultar") { b.disabled = true; S.P = await trp("trpPeriodo", S.per.ini, S.per.fim); pintar(); return; }
     if (a === "pNova") return abrirGaveta("Nova parada", formParada());
