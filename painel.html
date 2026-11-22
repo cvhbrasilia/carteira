@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122161547';
+  var VERSAO = '20261122164756';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -971,6 +971,8 @@ const regPorId = id => E.d.registros.find(r => r.id === id) || (E.d.laudosRecept
 function respDe(an) { if (E.d.responsavel) return E.d.responsavel; return (E.d.responsaveis || []).find(r => r.id === an.responsavelId); }
 function vetDe(r) { return (E.d.vets || []).find(v => v.id === r.vetId) || { nome: r.vetNome, crmv: r.vetCrmv, rubrica: '' }; }
 const pode = p => !!E.u && (E.u.permissoes.includes('admin') || [].concat(p).some(x => E.u.permissoes.includes(x)));
+// conta separada (DEA+): o painel aparece com o nome dela (link painel-dea.html ou usuário da conta)
+const marcaDea = () => window.CVH_MARCA === 'DEA+' || !!(E.u && /conta_dea/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
 function vetLogado() { return (E.u && E.u.vetId && (E.d.vets || []).find(v => v.id === E.u.vetId)) || null; }
 const produtos = r => ((r.dados || {}).etiquetas || []).map(e => e.produto).filter(Boolean);
 function sobrepoe(a, b) { if (a.tipo !== 'vacina') return true; const pa = produtos(a); return produtos(b).some(p => pa.includes(p)); }
@@ -2975,6 +2977,12 @@ function telaCompartilharPainel() {
   $('#cpCopiar').onclick = async () => toast(await copiar(url) ? 'Link copiado.' : 'Selecione o link e copie manualmente.');
   $('#cpMsg').onclick = async () => toast(await copiar(msg) ? 'Mensagem copiada.' : 'Não consegui copiar.');
   const sh = $('#cpShare'); if (sh) sh.onclick = () => navigator.share({ title: 'Painel CVH', text: msg }).catch(() => {});
+  if (/painel\.html$/.test(url)) { const ud = url.replace(/painel\.html$/, 'painel-dea.html');
+    const md = 'Este é o Painel DEA+, para acompanhar os motoboys, as rotas e os registros.\n\nAbra o link pelo celular ou pelo computador: ' + ud + '\n\nEntre com o usuário e a senha que você recebeu.\n\nPara deixar o ícone no celular: no iPhone, abra no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". No Android, abra no Chrome, toque nos três pontinhos e em "Adicionar à tela inicial".';
+    $('#folha .acoes').insertAdjacentHTML('afterend', '<h3 style="margin-top:18px">Painel DEA+</h3><p class="nota">Para a equipe da DEA+. O link aparece no WhatsApp como Painel DEA+.</p><div class="link-box"><input readonly value="' + esc(ud) + '" aria-label="Link do painel DEA+"><button class="btn peq" id="cpCopiarD">Copiar</button></div>' +
+      '<div class="acoes"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(md) + '">Mandar pelo WhatsApp</a><button class="btn sec2" id="cpMsgD">Copiar a mensagem com as instruções</button></div>');
+    $('#cpCopiarD').onclick = async () => toast(await copiar(ud) ? 'Link copiado.' : 'Selecione o link e copie manualmente.');
+    $('#cpMsgD').onclick = async () => toast(await copiar(md) ? 'Mensagem copiada.' : 'Não consegui copiar.'); }
 }
 function telaInstalar() {
   const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1), and = /Android/.test(ua);
@@ -3130,7 +3138,7 @@ async function telaLogin() {
   carregando('Abrindo o painel');
   let st; try { st = await api('painelStatus'); } catch (e) { return telaMsg('Erro', e.message); }
   const criar = !!st.primeiroAcesso;
-  raiz.innerHTML = '<main class="tela"><form class="tela-c login" id="fLogin"><i class="lg-vert"></i><h1>Painel CVH</h1>' +
+  raiz.innerHTML = '<main class="tela"><form class="tela-c login" id="fLogin"><i class="lg-vert"></i><h1>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</h1>' +
     '<p>' + (criar ? 'Primeiro acesso. Crie o usuário administrador do painel.' : 'Entre com o seu usuário e a sua senha.') + '</p>' +
     (criar ? '<input class="cred" id="nom" autocomplete="name" placeholder="seu nome" aria-label="Seu nome">' : '') +
     '<input class="cred" id="usu" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="usuário" aria-label="Usuário">' +
@@ -4685,7 +4693,7 @@ function telaHome() {
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
   const meus = MODS.filter(m => m.livre || pode(m.perm || m.k));
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
-    '<header class="topo"><i class="lg-res"></i><div class="t"><span>Centro Veterinário de Hemoterapia</span><b>Painel CVH</b></div></header>' +
+    '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
     ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +

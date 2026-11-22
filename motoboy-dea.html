@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta property="og:type" content="website"><meta property="og:site_name" content="DEA+ Hemocentro Animal"><meta property="og:title" content="Motoboy DEA+"><meta property="og:description" content="Rotas e entregas do dia da DEA+ Hemocentro Animal. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/motoboy-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Rotas e entregas do dia da DEA+ Hemocentro Animal. Abra neste celular e adicione à tela de início.">
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  function reescrever(x) {
+    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261122164756';
+  function conferirVersao() {
+    if (document.hidden) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+      v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
+      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.onclick = function () { location.reload(); }; document.body.appendChild(d);
+    }).catch(function () {});
+  }
+  setInterval(conferirVersao, 180000);
+  document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  if (q.get('v')) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png"><link rel="icon" type="image/png" href="motoboy-192.png"><link rel="manifest" href="motoboy-dea.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Motoboy DEA+</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 90px}
+.topo{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.topo h1{margin:0;font-size:21px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12.5px;font-weight:600;color:var(--tinta2)}
+.btn{border:0;border-radius:14px;padding:12px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:8px 12px;font-size:14px;border-radius:11px}
+.btn.grande{width:100%;padding:18px;font-size:18px;margin-bottom:10px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin-bottom:12px}
+.cx h2{margin:0 0 8px;font-size:16px;color:var(--vinho)}
+.cx.al{border-color:#e3b9b4;background:#fdf3f1}
+.cx.av{border-color:#ecd7b3;background:#fdf8ef}
+.bolsa{border-top:1px solid var(--areia);padding:10px 0}
+.bolsa:first-of-type{border-top:0}
+.bolsa b{font-size:16.5px}
+.bolsa small{display:block;color:var(--tinta2)}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700;background:var(--areia);color:var(--tinta2);margin-left:4px}
+.tag.ok{background:#e4efe7;color:var(--ok)}.tag.al{background:#f7dedb;color:var(--verm)}.tag.av{background:#f6ead3;color:#8a5a12}
+.relogio{font-variant-numeric:tabular-nums;font-weight:800}
+.relogio.al{color:var(--verm)}
+.vazio{color:var(--tinta2);text-align:center;padding:14px}
+label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
+input[type=text],input[type=tel],input[type=number],textarea{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;background:#fff}
+.op{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--areia2);border-radius:12px;padding:11px;margin-top:8px;font-weight:600}
+.op input{margin-top:3px;transform:scale(1.25)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.5);z-index:20;display:none}
+#veu.on{display:block}
+#modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:16px;z-index:21;display:none}
+#modal.on{display:block}
+#modal h2{margin:0 0 6px;color:var(--vinho);font-size:18px}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:12px 16px;border-radius:14px;z-index:40;max-width:92vw;font-weight:600}
+#alarme{position:fixed;inset:0;background:var(--verm);color:#fff;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+#alarme h2{font-size:24px;margin:8px 0}
+#alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
+.etapa{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta2)}
+.agora{border-radius:14px;padding:12px;margin:10px 0;font-weight:700;background:var(--areia)}
+.agora.av{background:#f6ead3;color:#7a4e0b}.agora.al{background:var(--verm);color:#fff}.agora.ok{background:#e4efe7;color:var(--ok)}
+.dest{font-size:24px;font-weight:800;color:var(--vinho);line-height:1.15;margin:4px 0}
+.addr{color:var(--tinta2)}
+.obs{background:#fdf8ef;border-left:4px solid var(--cara);padding:8px 10px;border-radius:8px;margin-top:8px}
+.chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700;background:var(--areia);color:var(--vinho);margin:2px 4px 2px 0}
+.chip.red{background:var(--verm);color:#fff}
+.cx.urg{border:2px solid var(--verm)}
+.timer{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--vinho)}
+.svc{display:flex;gap:10px;align-items:center;border:1px solid var(--areia2);border-radius:12px;padding:12px;margin-top:8px;font-weight:700}
+.svc input{transform:scale(1.4)}
+.svc.feito{background:#e4efe7}
+.prox{display:flex;gap:10px;align-items:center;border-top:1px solid var(--areia);padding:10px 0}
+.num{width:30px;height:30px;border-radius:50%;background:var(--areia);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.num.red{background:var(--verm);color:#fff}.num.ok{background:#e4efe7;color:var(--ok)}
+.dock{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--areia2);display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:15}
+.dock button{border:0;background:none;font-weight:700;font-size:13px;color:var(--vinho);padding:6px 8px}
+.banner{background:var(--verm);color:#fff;border-radius:16px;padding:14px;margin-bottom:12px}
+.banner ul{margin:6px 0 10px;padding-left:20px}
+.qr{width:min(70vw,280px);height:auto;display:block;margin:10px auto}
+.kmin{font-size:28px!important;text-align:center;font-weight:800}
+.warnbox{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px;margin-top:10px}
+.errbox{background:#fdf3f1;border:1px solid #e3b9b4;color:var(--verm);border-radius:12px;padding:10px;margin-top:10px;font-weight:600}
+.infobox{background:var(--areia);border-radius:12px;padding:10px;margin-top:10px}
+.foto-bt{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--bege);border-radius:14px;padding:14px;font-weight:700;color:var(--vinho);cursor:pointer;margin-top:10px}
+.foto-bt input{display:none}
+.mini{width:84px;height:84px;object-fit:cover;border-radius:10px;margin:6px 6px 0 0}
+table.t{width:100%;border-collapse:collapse;font-size:14px}table.t td{border-bottom:1px solid var(--areia);padding:6px 4px}
+</style></head>
+<body>
+<div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
+<nav class="dock" id="dock"></nav>
+<div id="veu"></div><div id="modal" role="dialog" aria-modal="true"></div>
+<script>
+"use strict";
+var QRLIB = (function () {
+var M = {};
+(function(){
+M['QRMode'] = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+})();
+(function(){
+M['QRErrorCorrectLevel'] = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+})();
+(function(){
+M['QRMaskPattern'] = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+})();
+(function(){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+M['QRMath'] = QRMath;
+
+})();
+(function(){
+var QRMath = M['QRMath'];
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+M['QRPolynomial'] = QRPolynomial;
+
+})();
+(function(){
+var QRMode = M['QRMode'];
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+M['QR8bitByte'] = QR8bitByte;
+
+})();
+(function(){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+M['QRBitBuffer'] = QRBitBuffer;
+
+})();
+(function(){
+var QRErrorCorrectLevel = M['QRErrorCorrectLevel'];
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+M['QRRSBlock'] = QRRSBlock;
+
+})();
+(function(){
+var QRMode = M['QRMode'];
+var QRPolynomial = M['QRPolynomial'];
+var QRMath = M['QRMath'];
+var QRMaskPattern = M['QRMaskPattern'];
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+M['QRUtil'] = QRUtil;
+
+})();
+(function(){
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = M['QR8bitByte'];
+var QRUtil = M['QRUtil'];
+var QRPolynomial = M['QRPolynomial'];
+var QRRSBlock = M['QRRSBlock'];
+var QRBitBuffer = M['QRBitBuffer'];
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+M['index'] = QRCode;
+
+})();
+return { QRCode: M['index'], L: M['QRErrorCorrectLevel'] };
+})();
+function qrSvg(texto) {
+  try {
+    const q = new QRLIB.QRCode(-1, QRLIB.L.M); q.addData(texto); q.make(); const n = q.getModuleCount(); let d = "";
+    for (let y = 0; y < n; y++) { let x = 0; while (x < n) { if (!q.isDark(y, x)) { x++; continue; } let k = x; while (k < n && q.isDark(y, k)) k++; d += "M" + x + " " + y + "h" + (k - x) + "v1h-" + (k - x) + "z"; x = k; } }
+    return '<svg class="qr" viewBox="-2 -2 ' + (n + 4) + " " + (n + 4) + '" shape-rendering="crispEdges"><rect x="-2" y="-2" width="' + (n + 4) + '" height="' + (n + 4) + '" fill="#fff"/><path fill="#000" d="' + d + '"/></svg>';
+  } catch (_) { return ""; }
+}
+const $ = (q) => document.querySelector(q);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const p2 = (n) => String(n).padStart(2, "0");
+const hhmm = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const hora = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + " às " + hhmm(t); };
+const fKm = (v) => v == null || v === "" ? "-" : (+v).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const parseKm = (s) => { const v = +String(s || "").replace(/\s/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."); return String(s || "").trim() && isFinite(v) ? v : null; };
+const dur = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600); return (h ? h + ":" : "") + p2(Math.floor(s % 3600 / 60)) + ":" + p2(s % 60); };
+const hoje = () => { const d = new Date(); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); };
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 4000); }
+function modal(h) { $("#modal").innerHTML = '<button class="btn sec peq" data-a="fechar" style="float:right">Fechar</button>' + h; $("#modal").classList.add("on"); $("#veu").classList.add("on"); $("#modal").scrollTop = 0; }
+function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remove("on"); }
+
+/* ── aparelho: ativado pelo link do CVH ── */
+let K = "";
+try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_moto_k", q.get("k")); } K = localStorage.getItem("cvh_moto_k") || ""; } catch (e) {}
+// nome do app na tela de início: "Motoboy DEA+" na conta da DEA, com o mesmo ícone (a conta vem do link, ?c=dea, e fica guardada)
+function nomeApp(conta, empresa) {
+  try { if (conta) localStorage.setItem("cvh_moto_c", conta); else conta = localStorage.getItem("cvh_moto_c") || ""; } catch (e) {}
+  if (!conta || conta === "cvh") return;
+  const nome = "Motoboy " + (empresa || (conta === "dea" ? "DEA+" : conta.toUpperCase()));
+  document.title = nome;
+  const t = document.querySelector('meta[name="apple-mobile-web-app-title"]'); if (t) t.setAttribute("content", nome);
+  const m = document.querySelector('link[rel="manifest"]'); if (m && conta === "dea" && !/motoboy-dea/.test(m.getAttribute("href") || "")) m.setAttribute("href", "motoboy-dea.webmanifest");
+}
+try { nomeApp(new URLSearchParams(location.search).get("c") || ""); } catch (e) {}
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]);
+
+/* ── sons ── */
+let AUD = null;
+function somLiberar() { try { AUD = AUD || new (window.AudioContext || window.webkitAudioContext)(); if (AUD.state === "suspended") AUD.resume(); } catch (e) {} }
+document.addEventListener("pointerdown", somLiberar, { passive: true });
+function tom(f, ini, d, vol, tipo) { if (!AUD) return; const o = AUD.createOscillator(), g = AUD.createGain(), t = AUD.currentTime + ini; o.type = tipo || "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(AUD.destination); o.start(t); o.stop(t + d + 0.05); }
+function somAviso() { tom(659.3, 0, 0.9, 0.22); tom(880, 0.18, 1.2, 0.2); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); }
+function somOk() { tom(784, 0, 0.35, 0.18); tom(1046.5, 0.12, 0.5, 0.16); }
+let ALARME = null;
+function alarme(titulo, corpo) {
+  if ($("#alarme")) $("#alarme").remove(); clearInterval(ALARME);
+  const ov = document.createElement("div"); ov.id = "alarme"; ov.innerHTML = "<div><b>ALTA PRIORIDADE</b><h2>" + esc(titulo) + "</h2><p>" + esc(corpo) + '</p><button class="btn" id="alOk">Entendi</button></div>'; document.body.appendChild(ov);
+  const ciclo = () => { for (let i = 0; i < 4; i++) { tom(853, i * 0.5, 0.24, 0.35, "square"); tom(960, i * 0.5 + 0.25, 0.24, 0.35, "square"); } if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600]); };
+  ciclo(); ALARME = setInterval(ciclo, 2600);
+  $("#alOk").onclick = () => { clearInterval(ALARME); ov.remove(); if (navigator.vibrate) navigator.vibrate(0); };
+}
+
+/* ── notificações com o app fechado ── */
+async function ativarNotif() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error(/iPhone|iPad/.test(navigator.userAgent) ? "No iPhone, adicione esta página à tela de início (Compartilhar, Adicionar à Tela de Início) e abra por lá para ativar as notificações." : "Este navegador não recebe notificações.");
+  somLiberar(); const p = await Notification.requestPermission(); if (p !== "granted") throw new Error("Permissão de notificação não concedida.");
+  const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
+  const chave = await window.CVH_SERVIDOR.chamar("pushChave", []); if (!chave) throw new Error("O servidor ainda não tem a chave das notificações.");
+  const b = Uint8Array.from(atob(chave.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((chave.length + 3) % 4)), (c) => c.charCodeAt(0));
+  let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b });
+  await srv("apPushAssinar", sub.toJSON());
+}
+const notifOk = () => { try { return "Notification" in window && Notification.permission === "granted"; } catch (e) { return false; } };
+try { if (navigator.serviceWorker) { navigator.serviceWorker.register("sw.js").catch(() => {}); navigator.serviceWorker.addEventListener("message", () => carregar(true)); } } catch (e) {}
+
+/* ── localização só nos registros (início, chegada e fim), com consentimento ── */
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+function gps() {
+  return new Promise((res) => {
+    if (!lsGet("cvh_moto_gps", false) || !navigator.geolocation) return res(null); let ok = false; const fim = (v) => { if (!ok) { ok = true; res(v); } };
+    setTimeout(() => fim(null), 7000);
+    try { navigator.geolocation.getCurrentPosition((p) => fim({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), acc: Math.round(p.coords.accuracy) }), () => fim(null), { enableHighAccuracy: true, timeout: 6500, maximumAge: 60000 }); } catch (e) { fim(null); }
+  });
+}
+function pedirGps() {
+  return new Promise((res) => {
+    if (lsGet("cvh_moto_gps_perg", false)) return res();
+    modal('<h2>Localização</h2><p>O aplicativo pode registrar a localização do celular apenas no início do expediente, na chegada aos destinos e no fim do expediente, para comprovar os atendimentos. Não há rastreamento contínuo.</p><p><small>Finalidade exclusivamente operacional (LGPD). Dá para mudar depois em Meu dia.</small></p><div class="bts"><button class="btn" id="gSim">Autorizar</button><button class="btn sec" id="gNao">Não autorizar</button></div>');
+    $("#gSim").onclick = () => { lsSet("cvh_moto_gps_perg", true); lsSet("cvh_moto_gps", true); fechar(); res(); };
+    $("#gNao").onclick = () => { lsSet("cvh_moto_gps_perg", true); lsSet("cvh_moto_gps", false); fechar(); res(); };
+  });
+}
+
+/* ── fotos: reduzidas, com data no canto ── */
+function lerFoto(file) {
+  return new Promise((ok) => {
+    const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { URL.revokeObjectURL(u); const k = Math.min(1, 1280 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); const x = c.getContext("2d"); x.drawImage(im, 0, 0, c.width, c.height); x.font = "bold " + Math.round(c.width / 32) + "px sans-serif"; x.fillStyle = "rgba(0,0,0,.55)"; x.fillRect(0, c.height - c.width / 20, c.width, c.width / 20); x.fillStyle = "#fff"; x.fillText("CVH · " + new Date().toLocaleString("pt-BR"), 10, c.height - c.width / 70); ok(c.toDataURL("image/jpeg", 0.72)); };
+    im.onerror = () => ok(null); im.src = u;
+  });
+}
+
+/* ── estado ── */
+let D = null;
+const tipoNome = (id) => id === "retorno" ? "Retorno à base" : ((D.cfg.tipos || []).find((t) => t.id === id) || {}).nome || id;
+const tipoFoto = (id) => !!((D.cfg.tipos || []).find((t) => t.id === id) || {}).foto;
+const leituras = (e) => (e && e.leituras || []).slice().sort((a, b) => String(a.em).localeCompare(String(b.em)) || (a.seq || 0) - (b.seq || 0));
+const expAberto = () => (D.expedientes || []).find((e) => e.status === "aberto") || null;
+const ultima = () => { for (const e of D.expedientes || []) { const L = leituras(e); if (L.length) return L[L.length - 1]; } return null; };
+function estadoExp(e) { let st = null; for (const r of leituras(e)) st = { inicio_expediente: "parado", saida: "prof", chegada: "parado", pausa_inicio: "pessoal", pausa_fim: "parado", fim_expediente: "fora" }[r.tipo] || st; return st; }
+function trechos(e) { const L = leituras(e), out = []; let st = null; for (let i = 0; i < L.length; i++) { const r = L[i]; if (i) { const p = L[i - 1], d = Math.round((+r.km - +p.km) * 10) / 10; if (d !== 0 || st === "prof") out.push({ km: d, cls: st === "prof" ? "prof" : st === "pessoal" ? "pes" : "nc" }); } st = { inicio_expediente: "parado", saida: "prof", chegada: "parado", pausa_inicio: "pessoal", pausa_fim: "parado", fim_expediente: "fora" }[r.tipo] || st; } return out; }
+const totais = (e) => { const t = { prof: 0, pes: 0, nc: 0 }; trechos(e).forEach((x) => { if (x.km >= 0) t[x.cls] += x.km; }); Object.keys(t).forEach((k) => { t[k] = Math.round(t[k] * 10) / 10; }); return t; };
+const minhas = () => (D.paradas || []).filter((p) => p.status !== "cancelado");
+const fila = () => minhas().filter((p) => p.status === "pendente" && p.data <= hoje()).sort((a, b) => String(a.data).localeCompare(String(b.data)) || (+a.ordem) - (+b.ordem));
+const ativa = () => minhas().find((p) => p.status === "em_deslocamento" || p.status === "no_local") || null;
+const concluidasHoje = () => minhas().filter((p) => p.status === "concluido" && p.tipo !== "retorno" && p.concluido_em && new Date(p.concluido_em).toDateString() === new Date().toDateString());
+// Google Maps: navegação de moto direto para a parada; a rota completa vai em trechos de até 4 paradas
+// (no celular o Google Maps aceita no máximo 3 paradas intermediárias por link; acima disso ignora as demais)
+const pontoMaps = (p) => p.lat != null && p.lng != null ? p.lat + "," + p.lng : [p.endereco, p.nome].filter(Boolean).join(", ");
+const maps = (p) => "https://www.google.com/maps/dir/?api=1&travelmode=two-wheeler&dir_action=navigate&destination=" + encodeURIComponent(pontoMaps(p));
+function trechosRota(L) {
+  const pts = L.map(pontoMaps).filter(Boolean), T = [];
+  for (let i = 0; i < pts.length; i += 4) {
+    const parte = pts.slice(i, i + 4), origem = i ? pts[i - 1] : "";
+    T.push({ de: i + 1, ate: i + parte.length, url: "https://www.google.com/maps/dir/?api=1&travelmode=two-wheeler" + (origem ? "&origin=" + encodeURIComponent(origem) : "") + "&destination=" + encodeURIComponent(parte[parte.length - 1]) + (parte.length > 1 ? "&waypoints=" + encodeURIComponent(parte.slice(0, -1).join("|")) : "") });
+  }
+  return T;
+}
+const rotaMaps = (L) => (trechosRota(L)[0] || {}).url || "";
+const botoesRota = (L, cls) => { const T = trechosRota(L); return T.map((t) => '<a class="' + cls + '" style="display:inline-block;margin:8px 6px 0 0;text-decoration:none" href="' + t.url + '" target="_blank" rel="noopener">' + (T.length === 1 ? "Ver rota completa no mapa" : "Rota no mapa · paradas " + t.de + " a " + t.ate) + "</a>").join(""); };
+function fase() {
+  const e = expAberto(); if (!e) return { f: "sem" };
+  const st = estadoExp(e), a = ativa();
+  if (st === "pessoal") { const L = leituras(e); return { f: "pausa", e, desde: L[L.length - 1].em, motivo: L[L.length - 1].motivo }; }
+  if (a && a.status === "em_deslocamento") return { f: "desloc", e, p: a };
+  if (a && a.status === "no_local") return { f: "local", e, p: a };
+  return { f: "livre", e, prox: fila()[0] || null };
+}
+const chips = (p) => (p.hora ? '<span class="chip" style="background:#5F130F;color:#fff">às ' + esc(p.hora) + "</span>" : "") + (p.servicos || []).map((s) => '<span class="chip">' + esc(tipoNome(s.tipo)) + "</span>").join("") + (p.detalhe ? '<div><small>' + esc(p.detalhe) + "</small></div>" : "");
+
+/* ── telas ── */
+function bannerRota() {
+  const alt = (D.paradas || []).filter((p) => p.ciente === false); if (!alt.length) return "";
+  const txt = (p) => p.status === "cancelado" ? "Cancelada " + p.nome : p.alteracao === "nova" ? (p.prioridade === "urgente" ? "URGENTE " : "") + "Nova parada " + p.nome : p.alteracao === "ordem" ? "Ordem alterada " + p.nome : "Alterada " + p.nome;
+  return '<div class="banner"><b style="font-size:18px">Rota atualizada pela administração</b><ul>' + alt.map((p) => "<li>" + esc(txt(p)) + "</li>").join("") + '</ul><button class="btn" style="background:#fff;color:var(--verm);width:100%" data-a="ciente">Entendi</button></div>';
+}
+const ROTP = { possivel: "Possível atendimento", autorizado: "Atendimento autorizado", pago: "Venda confirmada", testes: "Laudo em elaboração", fracionamento: "Bolsa em preparo", preparo: "Embalagem em preparação", pronta: "Pronto para retirada", retirada: "Em entrega", entregue: "Entregue · aguardando a leitura do QR" };
+function pedidos() {
+  const L = (D.atendimentos || []).filter((a) => a.etapa !== "concluido"); if (!L.length) return "";
+  return L.map((a) => {
+    const am = a.amostra || {}, r = (D.remessas || []).find((x) => x.id === a.remessa_id); let t = "", cls = "";
+    if (a.etapa === "possivel") t = "Há um possível atendimento. Ainda não é necessário se deslocar.";
+    if (a.etapa === "autorizado") t = "Atendimento autorizado, aguardando a confirmação do pagamento.";
+    if (a.etapa === "pago") t = "Venda confirmada." + (am.buscar && !am.buscadaEm ? " Buscar a amostra em " + (am.local || "local a combinar") + (am.prazoBusca ? " até " + hora(am.prazoBusca) : "") + "." : "") + (am.previsaoTestes ? " Testes previstos para " + hora(am.previsaoTestes) + "." : "");
+    if (a.etapa === "testes") { cls = "av"; t = "Os testes terminaram e a equipe está emitindo o laudo. Fique atento: a retirada está próxima."; }
+    if (a.etapa === "fracionamento") { cls = "al"; t = "A bolsa da entrega já está em preparo."; }
+    if (a.etapa === "preparo") { cls = "al"; t = "Embalagem em preparação no CVH."; }
+    if (a.etapa === "pronta") { cls = "al"; t = "PRONTO PARA RETIRADA no CVH. Destino " + a.destino + "."; }
+    if (a.etapa === "retirada") { cls = "av"; t = "Em entrega para " + a.destino + "."; }
+    let qr = "";
+    if (a.etapa === "entregue") { if (r && r.recebida_em) { cls = "ok"; t = "QR lido pela Intensivet às " + hhmm(r.recebida_em) + ". Obrigado."; } else { cls = "av"; t = "Mostre este QR para a recepção ler antes de abrir a caixa."; if (a.remessa_id) qr = qrSvg(a.remessa_id) + '<p style="text-align:center;font-size:22px;font-weight:800;letter-spacing:.08em">' + esc(a.remessa_id) + "</p>"; } }
+    return '<div class="cx"><div class="etapa">Pedido do CVH · ' + esc(ROTP[a.etapa] || a.etapa) + "</div><b>" + esc(a.destino) + "</b>" + (a.paciente ? " · " + esc(a.paciente) : "") + '<div class="agora ' + cls + '">' + esc(t) + "</div>" + qr + "</div>";
+  }).join("");
+}
+function principal() {
+  const F = fase(), pend = fila(), ul = ultima();
+  if (F.f === "sem") return '<div class="cx"><div class="etapa">Bom trabalho</div><div class="dest">Olá, ' + esc(D.aparelho.nome) + "</div><p>" + (pend.length ? pend.length + (pend.length > 1 ? " paradas programadas." : " parada programada.") : "Nenhuma parada programada no momento.") + "</p>" + (ul ? "<small>Última leitura " + fKm(ul.km) + " km em " + hora(ul.em) + "</small>" : "") + '<button class="btn grande" style="margin-top:12px" data-a="iniciar">Iniciar expediente</button></div>';
+  if (F.f === "pausa") return '<div class="cx" style="border:2px solid var(--bege)"><div class="etapa">Fora de serviço</div><div class="dest">' + esc(F.motivo || "Uso pessoal") + "</div><p>Desde " + hhmm(F.desde) + ". Os quilômetros deste intervalo não contam como despesa do " + esc(D.empresa || "CVH") + ".</p>" + '<button class="btn grande" data-a="retomar">Retomar serviço</button></div>';
+  if (F.f === "livre") {
+    const n = F.prox;
+    if (n) return '<div class="cx ' + (n.prioridade === "urgente" ? "urg" : "") + '"><div class="etapa">' + (concluidasHoje().length ? "Próximo destino" : "Primeira parada") + (n.prioridade === "urgente" ? ' <span class="chip red">URGENTE</span>' : "") + '</div><div class="dest">' + esc(n.nome) + '</div><div class="addr">' + esc(n.endereco || "Endereço não cadastrado") + "</div>" + chips(n) + (n.obs ? '<div class="obs">' + esc(n.obs) + "</div>" : "") +
+      '<a class="btn grande sec" style="display:block;text-align:center;text-decoration:none;margin-top:12px" href="' + maps(n) + '" target="_blank" rel="noopener">Abrir mapa</a><button class="btn grande" data-a="saida" data-v="' + esc(n.id) + '">Iniciar deslocamento</button></div>';
+    return '<div class="cx"><div class="etapa">Rota concluída</div><div class="dest">Nenhuma parada pendente</div><p>' + (concluidasHoje().length ? concluidasHoje().length + " concluída(s) hoje." : "Novas paradas aparecem aqui automaticamente.") + "</p>" + (D.base ? '<button class="btn grande" data-a="base">Voltar para a base</button>' : "") + '<button class="btn grande sec" data-a="finalizar">Finalizar expediente</button></div>';
+  }
+  const p = F.p;
+  if (F.f === "desloc") return '<div class="cx ' + (p.prioridade === "urgente" ? "urg" : "") + '"><div class="etapa">A caminho</div><div class="dest">' + esc(p.nome) + '</div><div class="addr">' + esc(p.endereco || "") + '</div><div style="display:flex;gap:12px;align-items:center;margin-top:8px"><div class="timer" data-desde="' + esc(p.saida_em) + '">' + dur(Date.now() - Date.parse(p.saida_em)) + "</div><small>desde " + hhmm(p.saida_em) + "<br>saída com " + fKm(p.km_ini) + " km</small></div>" + chips(p) + (p.obs ? '<div class="obs">' + esc(p.obs) + "</div>" : "") +
+    '<a class="btn grande sec" style="display:block;text-align:center;text-decoration:none;margin-top:12px" href="' + maps(p) + '" target="_blank" rel="noopener">Abrir mapa</a><button class="btn grande" data-a="chegada" data-v="' + esc(p.id) + '">Cheguei ao destino</button></div>';
+  const fotos = (p.fotos || []).filter((f) => f.tipo === "servico"), precisa = (p.servicos || []).some((s) => tipoFoto(s.tipo)), r = p.remessa_id ? (D.remessas || []).find((x) => x.id === p.remessa_id) : null, entrega = (p.servicos || []).some((s) => s.tipo === "entrega");
+  return '<div class="cx ' + (p.prioridade === "urgente" ? "urg" : "") + '"><div class="etapa">No local desde ' + hhmm(p.chegada_em) + '</div><div class="dest">' + esc(p.nome) + "</div>" + (p.obs ? '<div class="obs">' + esc(p.obs) + "</div>" : "") +
+    (entrega && p.remessa_id ? (r && r.recebida_em ? '<div class="agora ok">QR lido pela ' + esc(p.nome) + " às " + hhmm(r.recebida_em) + ".</div>" : '<div class="agora av">Mostre este QR para a recepção ler antes de abrir a caixa.</div>' + qrSvg(p.remessa_id) + '<p style="text-align:center;font-size:22px;font-weight:800;letter-spacing:.08em">' + esc(p.remessa_id) + "</p>") : "") +
+    "<b>Serviços</b>" + (p.servicos || []).map((s, i) => '<label class="svc ' + (s.feito ? "feito" : "") + '"><input type="checkbox" data-a="svc" data-v="' + esc(p.id) + '" data-i="' + i + '"' + (s.feito ? " checked" : "") + "><span>" + esc(tipoNome(s.tipo)) + (tipoFoto(s.tipo) ? "<br><small>Exige fotografia</small>" : "") + "</span></label>").join("") + (p.detalhe ? "<p><small>" + esc(p.detalhe) + "</small></p>" : "") +
+    '<label class="foto-bt">' + (fotos.length ? "Adicionar outra foto" : "Fotografar comprovação") + (precisa ? "" : " (opcional)") + '<input type="file" accept="image/*" capture="environment" data-a="fotoSvc" data-v="' + esc(p.id) + '"></label>' + (fotos.length ? "<div>" + fotos.map((f) => '<img class="mini" src="' + esc(f.url) + '" alt="foto">').join("") + "</div>" : "") +
+    '<button class="btn grande" style="margin-top:12px;background:var(--ok)" data-a="confirmar" data-v="' + esc(p.id) + '">Confirmar serviço</button></div>';
+}
+function proximas() {
+  const F = fase(), pend = fila(), outras = F.f === "livre" && F.prox ? pend.slice(1) : pend; if (!outras.length) return "";
+  const todas = (F.prox ? [F.prox] : []).concat(outras);
+  return '<div class="cx"><h2>Próximas paradas</h2>' + outras.map((p, i) => '<div class="prox"><div class="num ' + (p.prioridade === "urgente" ? "red" : "") + '">' + (i + (F.f === "livre" && F.prox ? 2 : 1)) + '</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + (p.servicos || []).map((s) => esc(tipoNome(s.tipo))).join(", ") + "</small></div>" + (F.f === "livre" ? '<button class="btn sec peq" data-a="agora" data-v="' + esc(p.id) + '">Fazer agora</button>' : "") + "</div>").join("") +
+    (todas.length > 1 ? botoesRota(todas, "btn sec peq") : "") + "</div>";
+}
+function feitas() { const L = concluidasHoje(); if (!L.length) return ""; return '<div class="cx"><h2>Concluídas hoje</h2>' + L.map((p) => '<div class="prox"><div class="num ok">✓</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + hhmm(p.chegada_em) + (p.km_ini != null && p.km_fim != null ? " · " + fKm(p.km_fim - p.km_ini) + " km" : "") + "</small></div></div>").join("") + "</div>"; }
+function pintar() {
+  if (!D) return; const F = fase();
+  $("#app").innerHTML = '<div class="topo"><h1>Motoboy ' + esc(D.empresa || "CVH") + '<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
+    (notifOk() ? "" : '<div class="cx av"><p>Ative as notificações para receber os avisos com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>') +
+    bannerRota() + pedidos() + principal() + proximas() + feitas() + '<p class="vazio"><small>Dúvidas, fale com a administração.</small></p>';
+  $("#dock").innerHTML = F.f === "sem" ? "" : (F.f === "pausa" ? "" : '<button data-a="pausa">Pausa pessoal</button>') + '<button data-a="abastecer">Abastecer</button><button data-a="meuDia">Meu dia</button>' + (F.f === "livre" || F.f === "pausa" ? '<button data-a="finalizar">Finalizar</button>' : "");
+}
+setInterval(() => { document.querySelectorAll(".timer[data-desde]").forEach((el) => { el.textContent = dur(Date.now() - Date.parse(el.dataset.desde)); }); }, 1000);
+
+/* ── folha da quilometragem (como no app do DEA+) ── */
+function folhaKm(o) {
+  const ul = ultima(), sug = o.sugestao != null;
+  modal("<h2>" + esc(o.titulo) + "</h2>" + (o.sub ? "<p><small>" + o.sub + "</small></p>" : "") + (o.extra || "") +
+    (sug ? '<div id="kSug"><label>Quilometragem do hodômetro</label><button class="btn grande" id="kOkSug">Confirmar ' + fKm(o.sugestao) + ' km</button><button class="btn sec" style="width:100%" id="kEd">O hodômetro mostra outro valor</button></div>' : "") +
+    '<div id="kEdBox"' + (sug ? ' style="display:none"' : "") + '><label>Quilometragem do hodômetro</label><input type="text" inputmode="decimal" class="kmin" id="kKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "000000") + '">' + (ul ? '<p style="text-align:center"><small>Última leitura ' + fKm(ul.km) + " km às " + hhmm(ul.em) + "</small></p>" : "") + "</div>" +
+    (o.foto ? '<label class="foto-bt">' + esc(o.fotoRot || "Fotografar o hodômetro") + (o.foto === "obrig" ? "" : " (opcional)") + '<input type="file" accept="image/*" capture="environment" id="kFoto"></label><div id="kTh"></div>' : "") +
+    '<div id="kMsg"></div><div class="bts" id="kActs"' + (sug ? ' style="display:none"' : "") + '><button class="btn" id="kOk">' + esc(o.botao || "Salvar") + "</button></div>");
+  let foto = null, confirmou = false, ocupado = false;
+  if ($("#kFoto")) $("#kFoto").onchange = async (ev) => { const f = ev.target.files[0]; if (!f) return; foto = await lerFoto(f); if (foto) $("#kTh").innerHTML = '<img class="mini" src="' + foto + '">'; ev.target.value = ""; };
+  const mostrarEd = () => { if ($("#kSug")) $("#kSug").style.display = "none"; $("#kEdBox").style.display = ""; $("#kActs").style.display = ""; setTimeout(() => $("#kKm").focus(), 50); };
+  if ($("#kEd")) $("#kEd").onclick = mostrarEd;
+  const enviar = async (usaSug) => {
+    if (ocupado) return; const km = usaSug ? o.sugestao : parseKm($("#kKm").value), msg = $("#kMsg");
+    if (km == null || km < 0) { msg.innerHTML = '<div class="errbox">Informe a quilometragem do hodômetro.</div>'; if (usaSug) mostrarEd(); return; }
+    if (o.foto === "obrig" && !foto) { msg.innerHTML = '<div class="errbox">A fotografia do hodômetro é obrigatória neste momento.</div>'; if (usaSug) mostrarEd(); return; }
+    const av = []; let just = "", pedeJust = false;
+    if (ul) { const d = km - ul.km; if (d < 0) { av.push("O valor é menor que a última leitura (" + fKm(ul.km) + " km). Hodômetro não volta. Confira ou justifique."); pedeJust = true; } else { if (d > (D.cfg.kmMaxTrecho || 60)) av.push("Diferença de " + fKm(d) + " km desde a última leitura. Confira o número."); const h = (Date.now() - Date.parse(ul.em)) / 36e5; if (h > 0.08 && d / h > (D.cfg.velMax || 100)) av.push("A variação implica velocidade média acima de " + (D.cfg.velMax || 100) + " km/h. Confira o número."); } }
+    if (av.length && !confirmou) {
+      msg.innerHTML = '<div class="warnbox"><b>Confira a leitura</b>' + av.map((x) => "<p>" + esc(x) + "</p>").join("") + (pedeJust ? '<label>Justificativa (obrigatória)</label><textarea id="kJust" rows="2"></textarea>' : "") + '<button class="btn" style="width:100%" id="kConf">O valor ' + fKm(km) + " km está correto</button></div>";
+      if (usaSug) mostrarEd();
+      $("#kConf").onclick = () => { if (pedeJust) { just = ($("#kJust").value || "").trim(); if (just.length < 5) return toast("Escreva a justificativa."); } confirmou = true; salvar(km, just); };
+      return;
+    }
+    salvar(km, just);
+  };
+  const salvar = async (km, just) => {
+    ocupado = true; $("#kMsg").innerHTML = '<div class="infobox">Salvando…</div>';
+    try { await o.ok({ km, foto: foto ? foto.split(",")[1] : null, just }); fechar(); somOk(); await carregar(); }
+    catch (e) { ocupado = false; $("#kMsg").innerHTML = '<div class="errbox">' + esc(e.message || "Não foi possível salvar.") + "</div>"; }
+  };
+  if ($("#kOkSug")) $("#kOkSug").onclick = () => enviar(true);
+  $("#kOk").onclick = () => enviar(false);
+  $("#kKm").onkeydown = (e) => { if (e.key === "Enter") enviar(false); };
+}
+
+/* ── ações ── */
+const A = {
+  async iniciar() { await pedirGps(); folhaKm({ titulo: "Iniciar expediente", sub: "Digite a quilometragem do painel da moto e fotografe o hodômetro.", foto: "obrig", botao: "Iniciar expediente", ok: async (x) => srv("motoExpediente", "iniciar", Object.assign(x, { gps: await gps() })) }); },
+  saida(v) { const p = minhas().find((x) => x.id === v), ul = ultima(); folhaKm({ titulo: "Iniciar deslocamento", sub: "Destino " + esc(p.nome), sugestao: ul ? +ul.km : null, botao: "Iniciar deslocamento", ok: (x) => srv("motoParada", v, "saida", x) }); },
+  chegada(v) { const p = minhas().find((x) => x.id === v); folhaKm({ titulo: "Cheguei ao destino", sub: esc(p.nome) + " · saída às " + hhmm(p.saida_em) + " com " + fKm(p.km_ini) + " km", foto: D.cfg.fotoKmChegada ? "obrig" : "opc", botao: "Registrar chegada", ok: async (x) => srv("motoParada", v, "chegada", Object.assign(x, { gps: await gps() })) }); },
+  base() { const ul = ultima(); folhaKm({ titulo: "Voltar para a base", sub: esc(D.base.nome), sugestao: ul ? +ul.km : null, botao: "Iniciar retorno", ok: (x) => srv("motoParada", null, "base", x) }); },
+  pausa() { const a = ativa(), ul = ultima(); folhaKm({ titulo: "Pausa para uso pessoal", sub: "O que for rodado durante a pausa não conta como despesa do " + (D.empresa || "CVH") + ".", sugestao: a && a.status === "em_deslocamento" ? null : (ul ? +ul.km : null), botao: "Iniciar pausa", extra: '<label>Motivo</label><div class="bts" id="kMot"><button class="btn peq" data-m="Uso pessoal">Uso pessoal</button><button class="btn sec peq" data-m="Intervalo">Intervalo</button><button class="btn sec peq" data-m="Outro">Outro</button></div>' + (a && a.status === "em_deslocamento" ? '<div class="warnbox">O deslocamento para ' + esc(a.nome) + " será interrompido e a parada volta para a fila.</div>" : ""), ok: (x) => srv("motoExpediente", "pausa", Object.assign(x, { motivo: (document.querySelector("#kMot .btn:not(.sec)") || {}).dataset ? document.querySelector("#kMot .btn:not(.sec)").dataset.m : "Uso pessoal" })) });
+    document.querySelectorAll("#kMot button").forEach((b) => { b.onclick = () => document.querySelectorAll("#kMot button").forEach((x) => x.classList.toggle("sec", x !== b)); }); },
+  retomar() { folhaKm({ titulo: "Retomar serviço", sub: "Informe a quilometragem atual.", foto: "opc", botao: "Retomar", ok: (x) => srv("motoExpediente", "retomar", x) }); },
+  async finalizar() { const a = ativa(); if (a && a.status === "em_deslocamento") return toast("Registre a chegada ao destino antes de finalizar.", 4000); const n = fila().length;
+    folhaKm({ titulo: "Finalizar expediente", sub: (n ? "Ainda há " + n + " parada(s) pendente(s). " : "") + "Informe a quilometragem final e fotografe o hodômetro.", foto: "obrig", botao: "Finalizar expediente", ok: async (x) => { const e = await srv("motoExpediente", "finalizar", Object.assign(x, { gps: await gps() })); setTimeout(() => { const t = e.resumo || {}; modal('<h2>Expediente finalizado</h2><table class="t"><tr><td>Profissional</td><td><b>' + fKm(t.prof) + " km</b></td></tr><tr><td>Particular</td><td>" + fKm(t.pes) + " km</td></tr><tr><td>Não comprovado</td><td>" + fKm(t.nc) + " km</td></tr></table>"); }, 300); } }); },
+  abastecer() {
+    const ul = ultima();
+    modal('<h2>Registrar abastecimento</h2><label>Litros</label><input type="text" inputmode="decimal" id="aL"><label>Valor pago (R$)</label><input type="text" inputmode="decimal" id="aV"><label>Quem pagou</label><div class="bts" id="aPg"><button class="btn peq" data-p="cvh">' + esc(D.empresa || "CVH") + '</button><button class="btn sec peq" data-p="motoboy">Eu paguei</button></div><label class="op"><input type="checkbox" id="aCheio"> Tanque cheio</label><label>Quilometragem do hodômetro (opcional)</label><input type="text" inputmode="decimal" id="aKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "") + '"><label class="foto-bt">Fotografar o comprovante' + (D.cfg.fotoAbastecimento === false ? " (opcional)" : " (obrigatório)") + '<input type="file" accept="image/*" capture="environment" id="aFoto"></label><div id="aTh"></div><div id="aMsg"></div><div class="bts"><button class="btn" id="aOk">Salvar</button></div>');
+    let foto = null; document.querySelectorAll("#aPg button").forEach((b) => { b.onclick = () => document.querySelectorAll("#aPg button").forEach((x) => x.classList.toggle("sec", x !== b)); });
+    $("#aFoto").onchange = async (ev) => { const f = ev.target.files[0]; if (f) { foto = await lerFoto(f); $("#aTh").innerHTML = '<img class="mini" src="' + foto + '">'; } };
+    $("#aOk").onclick = async () => { try { if (!foto && D.cfg.fotoAbastecimento !== false) { $("#aMsg").innerHTML = '<div class="errbox">Fotografe o comprovante do abastecimento. Ele garante o preço e o valor pago.</div>'; return; } $("#aOk").disabled = true; await srv("motoExpediente", "abastecimento", { litros: $("#aL").value, valor: $("#aV").value, pagoPor: document.querySelector("#aPg .btn:not(.sec)").dataset.p, cheio: $("#aCheio").checked, km: parseKm($("#aKm").value), foto: foto ? foto.split(",")[1] : null }); fechar(); somOk(); toast("Abastecimento registrado."); carregar(); } catch (e) { $("#aOk").disabled = false; $("#aMsg").innerHTML = '<div class="errbox">' + esc(e.message) + "</div>"; } };
+  },
+  meuDia() {
+    const e = expAberto() || (D.expedientes || []).find((x) => String(x.data) === hoje()); const L = e ? leituras(e) : [], t = e ? totais(e) : null;
+    const NOME = { inicio_expediente: "Início do expediente", saida: "Saída", chegada: "Chegada", pausa_inicio: "Início de pausa", pausa_fim: "Retomada", abastecimento: "Abastecimento", fim_expediente: "Fim do expediente" };
+    modal("<h2>Meu dia</h2>" + (t ? '<table class="t"><tr><td>Profissional</td><td><b>' + fKm(t.prof) + " km</b></td></tr><tr><td>Particular</td><td>" + fKm(t.pes) + " km</td></tr><tr><td>Não comprovado</td><td>" + fKm(t.nc) + " km</td></tr></table>" : "<p>Nenhum expediente hoje.</p>") +
+      (L.length ? '<table class="t" style="margin-top:10px">' + L.map((r) => { const p = r.parada && minhas().find((x) => x.id === r.parada); return "<tr><td>" + hhmm(r.em) + "</td><td>" + esc(NOME[r.tipo] || r.tipo) + (p ? "<br><small>" + esc(p.nome) + "</small>" : "") + (r.motivo ? "<br><small>" + esc(r.motivo) + "</small>" : "") + '</td><td style="text-align:right">' + fKm(r.km) + "</td></tr>"; }).join("") + "</table>" : "") +
+      '<p><small>Localização nos registros ' + (lsGet("cvh_moto_gps", false) ? "autorizada" : "não autorizada") + '.</small> <button class="btn sec peq" id="gTroca">' + (lsGet("cvh_moto_gps", false) ? "Revogar" : "Autorizar") + "</button></p>");
+    $("#gTroca").onclick = () => { lsSet("cvh_moto_gps", !lsGet("cvh_moto_gps", false)); lsSet("cvh_moto_gps_perg", true); A.meuDia(); };
+  },
+  async confirmar(v, b) {
+    const p = minhas().find((x) => x.id === v), sv = p.servicos || [], faltam = sv.filter((s) => !s.feito);
+    if (sv.some((s) => tipoFoto(s.tipo)) && !(p.fotos || []).some((f) => f.tipo === "servico")) return toast("Este serviço exige fotografia. Toque em Fotografar comprovação.", 4000);
+    if (faltam.length && sv.length > 1) { modal('<h2>Confirmar serviço</h2><p>Nem todos os itens foram marcados.</p><div class="bts" style="flex-direction:column"><button class="btn" id="cTodos">Todos foram realizados</button><button class="btn sec" id="cParte">Alguns não foram realizados</button></div><div id="cObs"></div>');
+      $("#cTodos").onclick = async () => { fechar(); await srv("motoParada", v, "confirmar", {}); somOk(); carregar(); };
+      $("#cParte").onclick = () => { $("#cObs").innerHTML = '<label>O que não foi realizado?</label><textarea id="cTxt" rows="3"></textarea><button class="btn" id="cOk" style="margin-top:8px">Concluir</button>'; $("#cOk").onclick = async () => { const t = $("#cTxt").value.trim(); if (!t) return toast("Descreva o que faltou."); fechar(); await srv("motoParada", v, "confirmar", { obs: t, parcial: true }); somOk(); carregar(); }; };
+      return; }
+    b.disabled = true; await srv("motoParada", v, "confirmar", {}); somOk(); toast("Serviço confirmado."); await carregar();
+  },
+};
+let ULT = lsGet("cvh_moto_ult", 0);
+async function carregar(silencio) {
+  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Copie o link de ativação enviado pela administração e cole aqui. Também dá para abrir o link no navegador e adicionar à tela de início de novo.</p><input type="text" id="atvLink" placeholder="Cole o link aqui" style="width:100%;font-size:16px;padding:12px;border:1px solid #E2D6C8;border-radius:10px;margin:8px 0"><button class="btn" id="atvBt" style="width:100%">Ativar este celular</button></div>';
+    // o app da tela de início do iPhone tem memória separada do navegador: o link colado aqui ativa o próprio app
+    $("#atvBt").onclick = () => { const v = $("#atvLink").value.trim(), m = /[?&]k=([A-Za-z0-9]+)/.exec(v), k = m ? m[1] : /^[A-Za-z0-9]{16,}$/.test(v) ? v : ""; if (!k) { alert("Esse não parece um link de ativação."); return; } try { localStorage.setItem("cvh_moto_k", k); const s2 = /[?&]s=(recepcao|internacao)/.exec(v); if (s2) localStorage.setItem("cvh_int_setor", s2[1]); } catch (e) {} K = k; carregar(); };
+    return; }
+  try {
+    const antes = D; D = await srv("motoDados"); nomeApp(D.conta || "", D.empresa);
+    const novos = (D.avisos || []).filter((x) => x.id > ULT).sort((a, b) => a.id - b.id);
+    if (novos.length) { ULT = novos[novos.length - 1].id; lsSet("cvh_moto_ult", ULT); if (antes) { const c = novos.filter((x) => x.nivel === "critico"); if (c.length) alarme(c[c.length - 1].titulo, c[c.length - 1].corpo); else { somAviso(); toast(novos[novos.length - 1].titulo + " · " + novos[novos.length - 1].corpo, 8000); } } }
+    if (antes) for (const r of D.remessas || []) { const r0 = (antes.remessas || []).find((x) => x.id === r.id) || {}; if (r.recebida_em && !r0.recebida_em) { somOk(); toast("QR lido pela Intensivet · caixa " + r.id, 8000); } }
+    if (!$("#modal").classList.contains("on")) pintar();
+  } catch (e) {
+    if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_moto_k"); } catch (_) {} K = ""; return carregar(); }
+    if (!silencio) toast(e.message || String(e), 6000);
+    if (!D) $("#app").innerHTML = '<div class="cx vazio">Sem conexão com o servidor. <div class="bts" style="justify-content:center"><button class="btn" data-a="atualizar">Tentar de novo</button></div></div>';
+  }
+}
+setInterval(() => carregar(true), 20000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) carregar(true); });
+document.addEventListener("change", async (ev) => {
+  const el = ev.target; if (!el.dataset || !el.dataset.a) return;
+  try {
+    if (el.dataset.a === "svc") { await srv("motoParada", el.dataset.v, "servico", { i: +el.dataset.i, feito: el.checked }); await carregar(true); }
+    if (el.dataset.a === "fotoSvc") { const f = el.files[0]; el.value = ""; if (!f) return; toast("Enviando a foto…", 15000); const d = await lerFoto(f); await srv("motoParada", el.dataset.v, "foto", { foto: d.split(",")[1] }); toast("Foto registrada."); await carregar(true); }
+  } catch (e) { toast(e.message || String(e), 6000); }
+});
+document.addEventListener("click", async (ev) => {
+  if (ev.target.id === "veu") return fechar();
+  const b = ev.target.closest("[data-a]"); if (!b || b.tagName === "INPUT") return; const a = b.dataset.a, v = b.dataset.v;
+  try {
+    if (a === "fechar") return fechar();
+    if (a === "atualizar") { await carregar(); return toast("Atualizado.", 1500); }
+    if (a === "notif") { await ativarNotif(); toast("Notificações ativadas.", 4000); return pintar(); }
+    if (a === "ciente") { await srv("motoCiente"); return carregar(); }
+    if (a === "agora") { await srv("motoParada", v, "fazerAgora", {}); return carregar(); }
+    if (a === "confirmar") return A.confirmar(v, b);
+    if (A[a]) return A[a](v, b);
+  } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; }
+});
+carregar();
+</script>
+</body></html>
