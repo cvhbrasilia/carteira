@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122155126';
+  var VERSAO = '20261122161547';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6219,6 +6219,30 @@ const PONTE = {
   origem: () => location.origin + location.pathname.replace(/[^/]*$/, ''),
   // o administrador do CVH pode ver e mexer numa conta separada do Motoboy (ex.: DEA): a sessão leva a conta escolhida
   trp: (fn, ...a) => { if (!/^trp[A-Z]\w+$/.test(String(fn))) throw new Error('Função não permitida.'); return api(fn, E.sessao + (E.contaVer ? '|' + E.contaVer : ''), ...JSON.parse(JSON.stringify(a))); },
+  // documento em PDF montado por um módulo: A4 em páginas ou página única contínua para o celular
+  pdfDoc: async o => { o = o || {}; const W = o.celular ? 430 : 794, box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-30000px;top:0;width:' + W + 'px';
+    box.innerHTML = '<div style="width:' + W + 'px;padding:' + (o.celular ? 22 : 44) + 'px;background:#fff;box-sizing:border-box;font-family:Proza Libre,Georgia,serif;color:#3B2622">' + String(o.html || '') + '</div>';
+    box.querySelectorAll('script,iframe,object,embed').forEach(x => x.remove()); box.querySelectorAll('*').forEach(x => [...x.attributes].forEach(at => { if (/^on/i.test(at.name)) x.removeAttribute(at.name); }));
+    document.body.appendChild(box);
+    try {
+      if (!window.htmlToImage) await carregarScript(LIB_IMG); if (!window.PDFLib) await carregarScript(LIB_PDF);
+      if (document.fonts) await document.fonts.ready;
+      const el = box.firstElementChild;
+      // as fotos não passam pela captura da página: cada uma é recortada num canvas e desenhada direto no PDF, na mesma posição
+      const fotos = await Promise.all([...el.querySelectorAll('img')].map(async im => { const u = im.getAttribute('src') || ''; im.style.visibility = 'hidden';
+        try { const bl = await (await fetch(u)).blob(), bm = await createImageBitmap(bl), r = im.getBoundingClientRect(), r0 = el.getBoundingClientRect();
+          const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height)), c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+          const k = Math.max(c.width / bm.width, c.height / bm.height), sw = c.width / k, sh = c.height / k; c.getContext('2d').drawImage(bm, (bm.width - sw) / 2, (bm.height - sh) / 2, sw, sh, 0, 0, c.width, c.height);
+          return { x: r.left - r0.left, y: r.top - r0.top, w, h, url: c.toDataURL('image/jpeg', 0.88) }; } catch (_) { return null; } }));
+      const Hh = Math.ceil(el.getBoundingClientRect().height), url = await htmlToImage.toJpeg(el, { width: W, height: Hh, pixelRatio: 2, quality: 0.9, backgroundColor: '#ffffff', cacheBust: false });
+      const pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(bytesDeUrl(url)), F = [];
+      for (const f of fotos) if (f) F.push(Object.assign(f, { img: await pdf.embedJpg(bytesDeUrl(f.url)) }));
+      const desenhar = (pg, k, topo, altPg) => { F.forEach(f => { const y = altPg - (f.y - topo + f.h) * k; if (y + f.h * k < 0 || y > altPg) return; pg.drawImage(f.img, { x: f.x * k, y, width: f.w * k, height: f.h * k }); }); };
+      if (o.celular) { const k = 595.28 / W, alt = Hh * k, pg = pdf.addPage([595.28, alt]); pg.drawImage(img, { x: 0, y: 0, width: 595.28, height: alt }); desenhar(pg, k, 0, alt); }
+      else { const pgH = 1123, n = Math.ceil(Hh / pgH), k = 595.28 / 794; for (let i = 0; i < n; i++) { const pg = pdf.addPage([595.28, 841.89]); pg.drawImage(img, { x: 0, y: 841.89 - (Hh - i * pgH) * k, width: 595.28, height: Hh * k }); desenhar(pg, k, i * pgH, 841.89); } }
+      entregarArquivo(new Blob([await pdf.save()], { type: 'application/pdf' }), String(o.nome || 'Documento').replace(/[\\/:*?"<>|]/g, '-') + '.pdf'); return true;
+    } finally { box.remove(); }
+  },
   contaVer: v => { E.contaVer = /^[a-z0-9]+$/.test(String(v || '')) && v !== 'cvh' ? String(v) : ''; return E.contaVer || 'cvh'; },
   est: (fn, ...a) => { if (!/^est[A-Z]\w+$/.test(String(fn))) throw new Error('Função não permitida.'); return api(fn, E.sessao, ...JSON.parse(JSON.stringify(a))); },
   qc: (fn, ...a) => {

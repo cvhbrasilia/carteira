@@ -547,9 +547,30 @@ async function abrirDia(id, P0) {
     return '<div class="rel-it"><span class="rel-h">' + p2h(r.em) + '</span><div class="rel-c"><b>' + esc(NOME_LEIT[r.tipo] || r.tipo) + (p && p.nome ? " · " + esc(p.nome) : "") + "</b><small>" + fKm(r.km) + " km" + (r.motivo ? " · " + esc(r.motivo) : "") + (r.just ? " · justificativa " + esc(r.just) : "") + (sv ? "<br>" + esc(sv) : "") + (p && r.tipo === "chegada" && p.detalhe ? "<br>" + esc(p.detalhe) : "") + "</small>" +
       fotos([r.fotoUrl].concat(p && r.tipo === "chegada" ? (p.fotos || []).map((f) => f.url) : []).filter(Boolean)) + "</div></div>"; }).join("");
   const abH = ab.length ? '<h3>Abastecimentos</h3>' + ab.map((a) => '<div class="rel-it"><span class="rel-h">' + p2h(a.em) + '</span><div class="rel-c"><b>' + fKm(a.litros) + " L · " + fR(a.valor) + "</b><small>pago por " + esc(a.pago_por === "motoboy" ? "motoboy" : (S.D.cfg && S.D.cfg.empresa) || "CVH") + (a.km != null ? " · " + fKm(a.km) + " km" : "") + "</small>" + fotos([a.fotoUrl].filter(Boolean)) + "</div></div>").join("") : "";
-  abrirGaveta("Rota de " + br(e.data) + " · " + nomeMoto(e.motoboy), '<div class="kpis"><div class="kpi"><b>' + fKm(t.prof) + '</b><span>Km profissional</span></div><div class="kpi"><b>' + feitas.filter((p) => p.status === "concluido").length + "/" + feitas.length + '</b><span>Paradas concluídas</span></div><div class="kpi"><b>' + fDur(t.tempo) + '</b><span>Em deslocamento</span></div><div class="kpi"><b>' + fKm(t.pes) + '</b><span>Km particular</span></div></div>' +
+  S.diaDoc = { e, P, ps, ab, feitas, rota, t };
+  abrirGaveta("Rota de " + br(e.data) + " · " + nomeMoto(e.motoboy), '<div class="bts" style="margin:0 0 10px"><button class="btn peq" data-a="diaPdf">Baixar PDF (A4)</button><button class="btn peq sec" data-a="diaPdfCel">PDF para celular</button></div><div class="kpis"><div class="kpi"><b>' + fKm(t.prof) + '</b><span>Km profissional</span></div><div class="kpi"><b>' + feitas.filter((p) => p.status === "concluido").length + "/" + feitas.length + '</b><span>Paradas concluídas</span></div><div class="kpi"><b>' + fDur(t.tempo) + '</b><span>Em deslocamento</span></div><div class="kpi"><b>' + fKm(t.pes) + '</b><span>Km particular</span></div></div>' +
     (rota ? '<div class="bts" style="margin:0 0 12px"><a class="btn peq sec" target="_blank" rel="noopener" href="' + esc(rota) + '">Ver o caminho no Google Maps</a></div>' : "") +
     "<h3>Linha do tempo</h3>" + (itens || '<p class="vazio">Sem registros.</p>') + abH);
+}
+// a rota do dia como documento (PDF montado pelo painel)
+async function diaPdf(celular, b) {
+  const X = S.diaDoc; if (!X) return; const { e, ps, ab, feitas, rota, t } = X, emp = (S.D.cfg && S.D.cfg.empresa) || "CVH";
+  const V = "#5F130F", C = "#A83D3D", L = "#E0D0BE", T2 = "#6B4A40";
+  const kp = (v, r) => '<div style="flex:1 1 0;border:1px solid ' + L + ';border-radius:10px;padding:8px 10px"><div style="font-size:18px;font-weight:700;color:' + V + '">' + v + '</div><div style="font-size:11px;color:' + T2 + '">' + r + "</div></div>";
+  const fotos = (Lf) => Lf.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + Lf.map((u) => '<img src="' + esc(u) + '" crossorigin="anonymous" style="width:' + (celular ? 120 : 150) + "px;height:" + (celular ? 120 : 150) + 'px;object-fit:cover;border-radius:8px;border:1px solid ' + L + '">').join("") + "</div>" : "";
+  const linha = (h, tit, sub, fs) => '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid ' + L + '"><div style="width:44px;flex:none;font-weight:700;color:' + V + '">' + h + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + tit + '</div><div style="font-size:12px;color:' + T2 + '">' + sub + "</div>" + fs + "</div></div>";
+  const itens = leituras(e).map((r) => { const p = r.parada && ps.find((x) => x.id === r.parada), cheg = p && r.tipo === "chegada";
+    const sv = cheg ? (p.servicos || []).map((x) => (x.feito ? "✓ " : "· ") + tipoNome(x.tipo)).join(" · ") : "";
+    return linha(p2h(r.em), esc(NOME_LEIT[r.tipo] || r.tipo) + (p && p.nome ? " · " + esc(p.nome) : ""), fKm(r.km) + " km" + (r.motivo ? " · " + esc(r.motivo) : "") + (r.just ? " · justificativa " + esc(r.just) : "") + (sv ? "<br>" + esc(sv) : "") + (cheg && p.detalhe ? "<br>" + esc(p.detalhe) : "") + (cheg && p.endereco ? "<br>" + esc(p.endereco) : ""), fotos([r.fotoUrl].concat(cheg ? (p.fotos || []).map((f) => f.url) : []).filter(Boolean))); }).join("");
+  const abs = ab.map((a) => linha(p2h(a.em), fKm(a.litros) + " L · " + fR(a.valor), "pago por " + esc(a.pago_por === "motoboy" ? "motoboy" : emp) + (a.km != null ? " · " + fKm(a.km) + " km" : ""), fotos([a.fotoUrl].filter(Boolean)))).join("");
+  const html = '<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:' + C + '">Motoboy · ' + esc(emp) + '</div><div style="font-size:' + (celular ? 22 : 26) + "px;font-weight:700;color:" + V + ';margin:2px 0 4px">Rota de ' + br(e.data) + " · " + esc(nomeMoto(e.motoboy)) + '</div><div style="font-size:12px;color:' + T2 + ';margin-bottom:12px">Expediente ' + p2h(e.inicio_em) + (e.fim_em ? " às " + p2h(e.fim_em) : " (em andamento)") + " · gerado em " + new Date().toLocaleString("pt-BR") + "</div>" +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">' + kp(fKm(t.prof) + " km", "profissional") + kp(feitas.filter((p) => p.status === "concluido").length + "/" + feitas.length, "paradas concluídas") + kp(fDur(t.tempo), "em deslocamento") + kp(fKm(t.pes) + " km", "particular") + "</div>" +
+    (rota ? '<div style="font-size:12px;margin-bottom:10px">Caminho no Google Maps: <span style="color:' + V + ';word-break:break-all">' + esc(rota) + "</span></div>" : "") +
+    '<div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:' + C + ';margin:10px 0 2px">Linha do tempo</div>' + itens +
+    (abs ? '<div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:' + C + ';margin:14px 0 2px">Abastecimentos</div>' + abs : "");
+  const t0 = b && b.textContent; if (b) { b.disabled = true; b.textContent = "Gerando…"; }
+  try { await ponte("pdfDoc", { html, celular: !!celular, nome: "Rota " + nomeMoto(e.motoboy) + " " + br(e.data).replace(/\//g, "-") + (celular ? " celular" : "") }); }
+  catch (err) { toast(err.message); } finally { if (b) { b.disabled = false; b.textContent = t0; } }
 }
 // exportar: planilha (CSV, abre no Numbers e no Excel) e PDF (impressão)
 function linhasRel() {
@@ -682,6 +703,8 @@ document.addEventListener("click", async (ev) => {
     if (a === "pNova") return abrirGaveta("Nova parada", formParada());
     if (a === "pVer") return abrirParada(v);
     if (a === "relDia") return abrirDia(v);
+    if (a === "diaPdf") return diaPdf(false, b);
+    if (a === "diaPdfCel") return diaPdf(true, b);
     if (a === "relCsv") return relCsv();
     if (a === "relPdf") return relPdf();
     if (a === "pEditar") { const p = S.D.paradas.find((x) => x.id === v); return abrirGaveta("Editar parada", formParada(p)); }
