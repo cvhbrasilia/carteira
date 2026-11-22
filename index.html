@@ -534,7 +534,7 @@ a.btn{text-decoration:none}
 .pd-bt{display:flex;flex-direction:column;gap:4px}.pd-bt button{border:0;background:none;color:#8A5A2B;font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}
 .mod .conta{position:absolute;top:10px;right:10px;min-width:22px;height:22px;border-radius:99px;background:#A83D3D;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px}
 .termos-tp{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:0 0 12px}.termos-tp .tt{display:flex;flex-direction:column;gap:2px;text-align:left;background:#fff;border:1px solid #eadfd6;border-radius:12px;padding:10px 12px;font:inherit;color:#3b1512;cursor:pointer}.termos-tp .tt b{color:#5F130F;font-size:14px}.termos-tp .tt span{font-size:12px;color:#7a6a62}.termos-tp .tt i{font-style:normal;font-size:11px;font-weight:600;color:#A83D3D;margin-top:3px}.termos-tp .tt.on{border-color:#5F130F;box-shadow:inset 0 0 0 1px #5F130F}
-.hc-nu{text-transform:none}.hc-ia{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;margin:0 0 12px;padding:12px 16px}.hc-ia small{font-weight:400;opacity:.85;font-size:12.5px}.hc-comp{margin:10px 0 12px}.hc-sit{margin:0 0 10px}.hc-chk{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;margin-top:8px;font-weight:600;color:#5F130F}.hc-chk input{width:auto}.hi-arq{display:flex;flex-direction:column;gap:2px;border:1.5px dashed #C6B098;border-radius:12px;padding:14px;margin:10px 0 12px;cursor:pointer;background:#fff}.hi-arq b{color:#5F130F}.hi-arq small{color:#7a6a62}.hi-vals{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;margin:8px 0 10px;font-size:13px}.hi-vals span{display:flex;justify-content:space-between;border-bottom:1px dotted #eadfd6;padding:3px 0}.hi-ach{margin:6px 0 0;padding-left:18px;font-size:13.5px}
+.hc-nu{text-transform:none}.hc-ia{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;margin:0 0 12px;padding:12px 16px}.hc-ia small{font-weight:400;opacity:.85;font-size:12.5px}.hi-escolha{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hi-escolha .btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 10px}.hi-escolha .btn small{font-weight:400;opacity:.85;font-size:12px}@media(max-width:420px){.hi-escolha{grid-template-columns:1fr}}.hc-comp{margin:10px 0 12px}.hc-sit{margin:0 0 10px}.hc-chk{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;margin-top:8px;font-weight:600;color:#5F130F}.hc-chk input{width:auto}.hi-arq{display:flex;flex-direction:column;gap:2px;border:1.5px dashed #C6B098;border-radius:12px;padding:14px;margin:10px 0 12px;cursor:pointer;background:#fff}.hi-arq b{color:#5F130F}.hi-arq small{color:#7a6a62}.hi-vals{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 12px;margin:8px 0 10px;font-size:13px}.hi-vals span{display:flex;justify-content:space-between;border-bottom:1px dotted #eadfd6;padding:3px 0}.hi-ach{margin:6px 0 0;padding-left:18px;font-size:13.5px}
 .pf-tipos{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:-4px 0 16px}.pf-tipos>b{flex-basis:100%;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#7a5b55}.pf-tipos span{display:flex;flex-direction:column;background:#fff;border:1px solid #eadfd6;border-radius:10px;padding:7px 12px 7px 10px;font-weight:600;color:#3b1512;min-width:96px}.pf-tipos span i{font-style:normal;font-size:20px;color:#5F130F;line-height:1.1}.pf-tipos small{font-weight:400;color:#8a7a72;font-size:11px}
 .pf-ks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 14px}.pf-ks .ci-k small{line-height:1.3}@media (max-width:700px){.pf-ks{grid-template-columns:1fr 1fr}}
 .pf-acoes{margin:2px 0 12px}
@@ -869,7 +869,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122015712';
+  var VERSAO = '20261122121109';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5346,7 +5346,7 @@ function telaTransfusao() {
   };
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>CH, CP, PFC e crioprecipitado</span><b>HemoCalculadora</b></div><button class="pill" data-acao="orc-lista">Orçamentos</button></header>' +
-    '<button class="btn hc-ia" id="hcIa">HemoCalculadora IA<small>manda o hemograma de qualquer laboratório e ela indica os hemocomponentes</small></button>' +
+    '<button class="btn hc-ia" id="hcIa">Ler hemograma<small>foto ou PDF de qualquer laboratório · só preencher a calculadora ou analisar com a IA</small></button>' +
     '<section class="cartao">' + recTxHtml(T) + '<div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
     '<div class="filtros hc-comp">' + HC_COMP.map(([k, t]) => '<button class="filtro' + (T.comp === k ? ' on' : '') + '" data-comp="' + k + '">' + t + '</button>').join('') + '</div><div id="hcCampos">' + campos() + '</div></section>' +
     '<section class="cartao" id="txRes"></section></div></main>';
@@ -5439,14 +5439,14 @@ function telaHemoIA() {
   const T = E.tx || {}, H = E.hia = E.hia || { arq: null, val: {}, sit: '', clin: '', res: null, msg: 'curta' };
   const cmp = (id, rot, v) => campo(id, rot, inp(id, v || '', 'inputmode="decimal" autocomplete="off"'));
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" id="hiVolta">‹ HemoCalculadora</button></div>' +
-    '<header class="topo"><div class="t"><span>Leitura do hemograma e indicação</span><b>HemoCalculadora IA</b></div></header>' +
+    '<header class="topo"><div class="t"><span>Preencher a calculadora ou analisar com a IA</span><b>Ler hemograma</b></div></header>' +
     '<section class="cartao"><div class="filtros tx-esp"><button class="filtro" data-esp="Cão">' + IC_CAO + 'Cão</button><button class="filtro" data-esp="Gato">' + IC_GATO + 'Gato</button></div>' +
     '<label class="hi-arq"><input type="file" id="hiArq" accept="application/pdf,image/*" hidden><b>' + (H.arq ? esc(H.arq.nome) : 'Escolher foto ou PDF do hemograma') + '</b><small>Qualquer laboratório ou aparelho, em português ou inglês. Pode juntar o coagulograma na mesma foto.</small></label><button class="btn sec2 peq" id="hiColar" type="button" style="margin:6px 0 4px">Colar imagem copiada (print do laudo)</button><div id="hiColarZona" class="colar-zona" contenteditable="true" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div><p class="nota" style="margin:-4px 0 12px">PDF do WhatsApp ou do e-mail sem salvar: Compartilhar, <b>Enviar ao CVH</b>. <a href="#" data-acao="conta">Configurar o Atalho</a></p>' +
     '<div class="grade">' + cmp('hiPeso', 'Peso (kg)', T.peso) + '</div>' +
     '<details class="tx-av"' + (Object.keys(H.val).length ? ' open' : '') + '><summary>Digitar os valores (sem arquivo ou para corrigir a leitura)</summary><div class="grade">' + HC_VALS.map(([k, t]) => cmp('hiV_' + k, t, H.val[k])).join('') + '</div></details>' +
     '<h3>Situação</h3><div class="filtros hc-sit">' + HC_SIT.map(([k, t]) => '<button class="filtro' + (H.sit === k ? ' on' : '') + '" data-sit="' + k + '">' + t + '</button>').join('') + '</div>' +
     campo('hiClin', 'Contexto clínico (opcional)', '<textarea id="hiClin" rows="3" placeholder="ex. anemia hemolítica imunomediada, sem sangramento, mucosas pálidas, lactato 4">' + esc(H.clin) + '</textarea>') +
-    '<button class="btn" id="hiIr">Analisar</button><p class="nota" id="hiSt"></p></section><section id="hiRes"></section></div></main>';
+    '<div class="acoes hi-escolha"><button class="btn sec2" id="hiLer">Só ler e preencher a calculadora<small>sem IA</small></button><button class="btn" id="hiIr">Analisar com IA<small>leitura, indicação e mensagem</small></button></div><p class="nota">PDF com texto é lido no próprio aparelho, sem IA. Foto ou PDF escaneado precisa da IA para ler os números, mas sem análise.</p><p class="nota" id="hiSt"></p></section><section id="hiRes"></section></div></main>';
   const pEsp = () => document.querySelectorAll('.tx-esp .filtro').forEach(b => b.classList.toggle('on', b.dataset.esp === (T.esp || 'Cão')));
   pEsp(); document.querySelectorAll('.tx-esp .filtro').forEach(b => b.onclick = () => { T.esp = b.dataset.esp; T.fator = String(TX_FATOR[T.esp]); pEsp(); });
   $('#hiVolta').onclick = () => telaTransfusao();
@@ -5479,7 +5479,52 @@ function telaHemoIA() {
     try { H.res = await iaHemo({ especie: T.esp || 'Cão', peso: T.peso, situacao: (HC_SIT.find(x => x[0] === H.sit) || [0, ''])[1], clinica: H.clin, valores: Object.keys(H.val).length ? H.val : null, mime: H.arq && H.arq.mime, b64: H.arq && H.arq.b64, texto: H.arq && H.arq.texto }); $('#hiSt').textContent = ''; pintarHemoIA(); }
     catch (e) { $('#hiSt').textContent = e.message; } b.disabled = false;
   };
+  $('#hiLer').onclick = async () => {
+    const T = E.tx = E.tx || {}; T.peso = $('#hiPeso').value; const dig = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) dig[k] = v; });
+    let V = {}, como = 'digitados';
+    if (H.arq && H.arq.texto) { V = valoresDoTexto(H.arq.texto); como = 'lidos do PDF sem IA'; }
+    if (H.arq && V.ht == null && V.hb == null) {
+      if (!E.d.config.temGemini) return toast('Este arquivo é foto ou PDF escaneado e só a IA consegue ler os números. Digite os valores.', 7000);
+      if (!confirm((H.arq.texto ? 'Não achei o Ht nem a Hb no texto do PDF.' : 'Foto ou PDF escaneado só é lido com a IA.') + ' Usar a IA só para ler os números, sem análise?')) return;
+      const b = $('#hiLer'); b.disabled = true; $('#hiSt').textContent = 'Lendo os números do laudo…';
+      try { const r = await iaHemo({ soLer: true, especie: T.esp || 'Cão', mime: H.arq.mime, b64: H.arq.b64, texto: H.arq.texto }); V = r.valores || {}; como = 'lidos pela IA, sem análise'; $('#hiSt').textContent = ''; }
+      catch (e) { $('#hiSt').textContent = e.message; b.disabled = false; return; } b.disabled = false;
+    }
+    V = Object.assign({}, V, dig);
+    if (V.ht == null && V.hb == null && V.plaquetas == null && V.tp == null && V.ttpa == null && V.fibrinogenio == null) return toast(H.arq ? 'Não encontrei os valores no laudo. Digite os valores ou use Analisar com IA.' : 'Mande o hemograma ou digite os valores.', 6000);
+    const s = v => String(v).replace('.', ',');
+    Object.assign(T, { comp: V.ht != null || V.hb != null ? 'CH' : V.plaquetas != null ? 'CP' : V.fibrinogenio != null ? 'CRIO' : 'PFC', rec: V.ht != null ? s(V.ht) : T.rec, hb: V.hb != null ? s(V.hb) : T.hb, plq: V.plaquetas != null ? s(V.plaquetas) : T.plq, tp: V.tp != null ? s(V.tp) : T.tp, ttpa: V.ttpa != null ? s(V.ttpa) : T.ttpa, fib: V.fibrinogenio != null ? s(V.fibrinogenio) : T.fib });
+    if (V.ht == null && V.hb != null) T.usarHb = true;
+    const lista = [['Ht', V.ht, '%'], ['Hb', V.hb, ' g/dL'], ['plaquetas', V.plaquetas, ' mil/µL'], ['TP', V.tp, ' s'], ['TTPa', V.ttpa, ' s'], ['fibrinogênio', V.fibrinogenio, ' mg/dL']].filter(x => x[1] != null).map(x => x[0] + ' ' + s(x[1]) + x[2]).join(', ');
+    telaTransfusao(); toast('Valores ' + como + '. ' + lista + '. Confira antes de seguir.', 8000);
+  };
   if (H.res) pintarHemoIA();
+}
+// Leitura sem IA do texto de um PDF de hemograma: acha cada parâmetro pelo nome e pega o primeiro número depois dele (o resultado vem antes da referência)
+function valoresDoTexto(tx) {
+  const t = String(tx || '').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ');
+  const NUM = '(\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?)';
+  const num = x => { x = String(x); if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x)) x = x.replace(/\./g, '').replace(',', '.'); else x = x.replace(',', '.'); const n = parseFloat(x); return isNaN(n) ? null : n; };
+  const achar = (rotulos, min, max, mil) => {
+    for (const r of rotulos) {
+      const re = new RegExp(r + '[^\\d\\n]{0,80}?' + NUM, 'gi'); let m;
+      while ((m = re.exec(t))) { let v = num(m[m.length - 1]); if (v == null) continue; if (mil && v >= 1000) v = v / 1000; if (v >= min && v <= max) return Math.round(v * 100) / 100; }
+    }
+    return null;
+  };
+  const V = {
+    ht: achar(['hemat[óo]crito', '\\bht\\b', '\\bhct\\b', 'volume globular', '\\bvg\\b', '\\bpcv\\b'], 3, 80),
+    hb: achar(['hemoglobina(?!\\s*corp)(?!\\s*glob)', '\\bhgb\\b', '\\bhb\\b(?!\\s*corp)'], 1, 26),
+    vcm: achar(['\\bvcm\\b', '\\bmcv\\b', 'volume corpuscular'], 30, 120),
+    chcm: achar(['\\bchcm\\b', '\\bmchc\\b', 'concentra[çc][ãa]o de hemoglobina corpuscular'], 15, 50),
+    plaquetas: achar(['plaquetas', '\\bplt\\b', '\\bplq\\b', 'contagem de plaquetas'], 1, 2500, true),
+    leucocitos: achar(['leuc[óo]citos totais', 'leuc[óo]citos', '\\bwbc\\b', 'leucometria global'], 0.1, 300, true),
+    tp: achar(['tempo de protrombina', '\\btp\\b(?!\\s*plasm)', '\\bpt\\b(?=\\s*\\(?s)'], 3, 120),
+    ttpa: achar(['tempo de tromboplastina parcial ativada', '\\bttpa\\b', '\\baptt\\b', '\\bptt\\b'], 5, 300),
+    fibrinogenio: achar(['fibrinog[êe]nio', 'fibrinogen'], 20, 1500)
+  };
+  Object.keys(V).forEach(k => { if (V[k] == null) delete V[k]; });
+  return V;
 }
 function pintarHemoIA() {
   // o estado da calculadora pode ter sido recriado enquanto a tela estava aberta: o peso vem também do campo da tela
