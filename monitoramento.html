@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Ficha de monitoramento da transfusão · CVH"><meta property="og:description" content="Ficha para preencher durante a transfusão, assinar e exportar em PDF."><meta property="og:image" content="https://carteira.cvh.vet.br/painel-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Ficha para preencher durante a transfusão, assinar e exportar em PDF.">
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  function reescrever(x) {
+    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261123023711';
+  function conferirVersao() {
+    if (document.hidden) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+      v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
+      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.onclick = function () { location.reload(); }; document.body.appendChild(d);
+    }).catch(function () {});
+  }
+  setInterval(conferirVersao, 180000);
+  document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  if (q.get('v')) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png"><link rel="icon" type="image/png" href="painel-192.png"><link rel="manifest" href="painel.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Ficha de monitoramento da transfusão · CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:15.5px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:18px 12px 80px}
+h1{margin:0;font-size:20px;color:var(--vinho)}.sub{color:var(--tinta2);font-size:13px;margin:2px 0 10px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin:10px 0}
+.cx h2{margin:0 0 6px;font-size:15px;color:var(--vinho)}
+label{display:block;font-size:13px;font-weight:700;color:var(--tinta2);margin:9px 0 3px}
+input,textarea,select{width:100%;border:1px solid var(--areia2);border-radius:11px;padding:10px;font:inherit;background:#fff;min-width:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.esc{display:flex;flex-wrap:wrap;gap:6px}.esc button{flex:1 1 auto;border:1px solid var(--areia2);background:#fff;border-radius:11px;padding:9px 10px;font:inherit;font-weight:600;color:var(--vinho)}.esc button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}
+.btn{border:0;border-radius:13px;padding:13px 16px;background:var(--vinho);color:#fff;font:inherit;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}.btn.peq{padding:8px 12px;font-size:14px}
+.bts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th{font-size:11.5px;color:var(--tinta2);text-align:left;padding:4px 3px}td{padding:3px}td input{padding:7px 6px;border-radius:8px}
+.tabw{overflow-x:auto}.tabw table{min-width:620px}
+.st{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:opacity .2s;z-index:9}.st.on{opacity:1}
+canvas{width:100%;height:150px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff;display:block}
+.ok{color:var(--ok);font-weight:700}.erro{color:var(--verm);font-weight:700}
+.lock input,.lock textarea,.lock select{background:#f7f3ee;pointer-events:none}.lock .esc button{pointer-events:none}
+small{color:var(--tinta2)}
+</style></head><body>
+<div class="wrap" id="app"><p>Abrindo a ficha…</p></div><div class="st" id="st"></div>
+<script>
+// ficha de monitoramento da transfusão: o médico veterinário preenche durante a transfusão, assina e exporta em PDF (A4 e celular)
+const $ = (q) => document.querySelector(q), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const p2 = (n) => String(n).padStart(2, "0");
+const hora = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const T = new URLSearchParams(location.search).get("m") || "";
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, a);
+const MOMENTOS = ["Antes", "5 min", "15 min", "30 min", "1 h", "2 h", "3 h", "4 h", "Fim", "1 h depois"];
+const SINAIS = ["Febre", "Tremores", "Urticária ou prurido", "Edema facial", "Vômito ou salivação", "Taquicardia", "Taquipneia ou dispneia", "Hipotensão ou colapso", "Hemoglobinúria"];
+const ACESSOS = ["Cefálica", "Safena", "Jugular", "Intraóssea", "Outro"];
+const HTMOM = ["Logo após", "Após 6 h", "Após 12 h", "Após 24 h"];
+let F = null, D = {}, tSalvar = null, tracos = 0;
+function st(m, ms) { const e = $("#st"); e.textContent = m; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), ms || 1800); }
+async function abrir() {
+  try { F = await srv("monDados", T); } catch (e) { $("#app").innerHTML = '<h1>Ficha de monitoramento</h1><div class="cx"><p class="erro">' + esc(e.message || e) + "</p></div>"; return; }
+  D = F.dados || {}; D.paciente = D.paciente || {}; D.vet = D.vet || {}; D.bolsa = D.bolsa || {}; D.reacao = D.reacao || {}; D.sinais = D.sinais && D.sinais.length ? D.sinais : MOMENTOS.map((m) => ({ m })); D.htPos = D.htPos || [];
+  pintar();
+}
+const v = (k, o) => esc(((o || D)[k]) == null ? "" : (o || D)[k]);
+const campo = (rot, path, extra) => '<div><label>' + rot + '</label><input data-p="' + path + '" value="' + esc(pega(path)) + '" ' + (extra || "") + "></div>";
+function pega(path) { return path.split(".").reduce((o, k) => (o == null ? "" : o[k]), D) ?? ""; }
+function poe(path, val) { const ks = path.split("."), last = ks.pop(); const o = ks.reduce((x, k) => (x[k] = x[k] || {}), D); o[last] = val; }
+const chips = (path, ops, multi) => { const cur = pega(path); return '<div class="esc" data-c="' + path + '"' + (multi ? ' data-multi="1"' : "") + ">" + ops.map((o) => '<button type="button" data-v="' + esc(o) + '" class="' + ((multi ? (cur || []).includes(o) : cur === o) ? "on" : "") + '">' + esc(o) + "</button>").join("") + "</div>"; };
+function pintar() {
+  const A = F.assinatura, lock = !!A;
+  $("#app").innerHTML = '<h1>Ficha de monitoramento da transfusão</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + (F.unidade ? " · bolsa " + esc(F.unidade) : "") + "</div>" +
+    '<div class="' + (lock ? "lock" : "") + '">' +
+    '<div class="cx"><h2>Paciente</h2><div class="g2">' + campo("Nome", "paciente.nome") + campo("Espécie", "paciente.especie") + campo("Peso (kg)", "paciente.peso", 'inputmode="decimal"') + campo("Idade", "paciente.idade") + "</div>" + campo("Responsável", "responsavel") + campo("Indicação da transfusão", "indicacao") + "</div>" +
+    '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Componente", "bolsa.componente") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + campo("Tipo sanguíneo da bolsa", "bolsa.tipo") + "</div>" +
+      '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Não feita", "Incompatível"]) + '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" +
+      '<label>Acesso</label>' + chips("acesso", ACESSOS) + '<div class="g3">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') + "</div>" +
+      '<div class="g2">' + campo("Início", "inicio", 'type="time"') + campo("Término", "fim", 'type="time"') + "</div></div>" +
+    '<div class="cx"><h2>Sinais vitais</h2><div class="tabw"><table><tr><th>Momento</th><th>Hora</th><th>T (°C)</th><th>FC</th><th>FR</th><th>PAS</th><th>Mucosas / TPC</th><th>Observação</th></tr>' +
+      D.sinais.map((r, i) => "<tr><td><b>" + esc(r.m) + "</b></td>" + ["h", "t", "fc", "fr", "pas", "muc", "obs"].map((k) => '<td><input data-s="' + i + '" data-k="' + k + '" value="' + v(k, r) + '"' + (k === "h" ? ' type="time"' : /t|fc|fr|pas/.test(k) && k !== "muc" ? ' inputmode="decimal"' : "") + "></td>").join("") + "</tr>").join("") + "</table></div></div>" +
+    '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", ["não", "sim"]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, true) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", ["não", "sim"]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
+    '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + "</div>" + campo("Evolução e observações", "obs") + "</div></div>" +
+    '<div class="cx"><h2>Assinatura do médico veterinário</h2>' + (A ? '<p class="ok">Assinada por ' + esc(A.nome) + " (" + esc(A.crmv) + ") em " + esc(hora(A.em)) + '.</p><div class="bts"><button class="btn sec peq" id="reabrir">Reabrir para editar</button></div>' :
+      '<div class="g2"><div><label>Nome</label><input id="aNome" value="' + esc(D.vet.nome || "") + '"></div><div><label>CRMV</label><input id="aCrmv" value="' + esc(D.vet.crmv || "") + '"></div></div><label>Assinatura com o dedo</label><canvas id="aCv" width="900" height="260"></canvas><div class="bts"><button class="btn sec peq" id="aLimpar">Limpar</button><button class="btn" id="aOk">Assinar a ficha</button></div><p id="aSt"></p>') + "</div>" +
+    '<div class="cx"><h2>Exportar</h2><p><small>O PDF sai com tudo o que está preenchido' + (A ? " e a assinatura" : " (ainda sem assinatura)") + '. Use para anexar ao prontuário da clínica.</small></p><div class="bts"><button class="btn peq" id="pdfA4">PDF A4</button><button class="btn sec peq" id="pdfCel">PDF para celular</button></div></div>' +
+    '<p><small>As alterações são salvas sozinhas. Dúvidas, fale com o CVH.</small></p>';
+  ligar();
+}
+function salvarDepois() { clearTimeout(tSalvar); tSalvar = setTimeout(async () => { try { await srv("monSalvar", T, D); st("Salvo"); } catch (e) { st(e.message, 4000); } }, 700); }
+function ligar() {
+  document.querySelectorAll("input[data-p]").forEach((el) => el.oninput = () => { const p = el.dataset.p; if (/^htPos\./.test(p)) { D.htPos[+p.split(".")[1]] = el.value; } else poe(p, el.value); salvarDepois(); });
+  document.querySelectorAll("input[data-s]").forEach((el) => el.oninput = () => { D.sinais[+el.dataset.s][el.dataset.k] = el.value; salvarDepois(); });
+  document.querySelectorAll(".esc[data-c] button").forEach((b) => b.onclick = () => { const box = b.parentNode, p = box.dataset.c;
+    if (box.dataset.multi) { const L = pega(p) || []; poe(p, L.includes(b.dataset.v) ? L.filter((x) => x !== b.dataset.v) : L.concat([b.dataset.v])); } else poe(p, pega(p) === b.dataset.v ? "" : b.dataset.v);
+    salvarDepois(); if (p === "reacao.houve") return pintar(); box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", box.dataset.multi ? (pega(p) || []).includes(x.dataset.v) : pega(p) === x.dataset.v)); });
+  // hora de cada momento: toca no campo vazio e já vem a hora atual
+  document.querySelectorAll('input[data-k="h"]').forEach((el) => el.addEventListener("focus", () => { if (!el.value) { const d = new Date(); el.value = p2(d.getHours()) + ":" + p2(d.getMinutes()); el.oninput(); } }));
+  $("#pdfA4").onclick = () => exportar(false); $("#pdfCel").onclick = () => exportar(true);
+  const re = $("#reabrir"); if (re) re.onclick = async () => { const m = prompt("Motivo para reabrir a ficha (a assinatura atual será removida):"); if (!m) return; try { await srv("monReabrir", T, m); abrir(); } catch (e) { st(e.message, 4000); } };
+  const cv = $("#aCv"); if (!cv) return; tracos = 0; const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.lineWidth = 4; cx.lineCap = "round"; cx.strokeStyle = "#2b2320"; let des = false;
+  const pos = (e) => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * cv.width / b.width, (e.clientY - b.top) * cv.height / b.height]; };
+  cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
+  cv.onpointermove = (e) => { if (!des) return; const [x, y] = pos(e); cx.lineTo(x, y); cx.stroke(); tracos++; };
+  cv.onpointerup = cv.onpointercancel = () => { des = false; };
+  $("#aLimpar").onclick = () => { cx.fillRect(0, 0, cv.width, cv.height); tracos = 0; };
+  $("#aOk").onclick = async () => { const s2 = $("#aSt"); if (tracos < 8) { s2.className = "erro"; s2.textContent = "Assine no quadro."; return; }
+    $("#aOk").disabled = true; try { clearTimeout(tSalvar); await srv("monSalvar", T, D); await srv("monAssinar", T, { nome: $("#aNome").value.trim(), crmv: $("#aCrmv").value.trim(), assinatura: cv.toDataURL("image/png").split(",")[1] }); abrir(); } catch (e) { $("#aOk").disabled = false; s2.className = "erro"; s2.textContent = e.message; } };
+}
+/* ── PDF (A4 com páginas e celular em página única contínua) ── */
+const carregarJs = (src) => new Promise((ok, erro) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => erro(new Error("Sem internet para gerar o PDF.")); document.head.appendChild(s); });
+function htmlPdf(cel) {
+  const A = F.assinatura, W = cel ? 430 : 794, lin = (r, x) => x ? '<tr><td style="color:#6b5a52;padding:3px 8px 3px 0;width:42%">' + r + "</td><td style=\"padding:3px 0\"><b>" + esc(x) + "</b></td></tr>" : "";
+  const vit = D.sinais.filter((r) => ["h", "t", "fc", "fr", "pas", "muc", "obs"].some((k) => r[k]));
+  return '<div style="width:' + W + "px;padding:" + (cel ? 20 : 44) + 'px;background:#fff;color:#2b2320;font:' + (cel ? 12.5 : 12) + 'px/1.45 Helvetica,Arial,sans-serif">' +
+    '<div style="color:#5F130F;font-weight:800;font-size:' + (cel ? 16 : 18) + 'px">Ficha de monitoramento da transfusão</div><div style="color:#6b5a52;font-size:11.5px;margin-bottom:12px">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + "</div>" +
+    '<table style="width:100%;border-collapse:collapse">' + lin("Paciente", [D.paciente.nome, D.paciente.especie, D.paciente.peso ? D.paciente.peso + " kg" : "", D.paciente.idade].filter(Boolean).join(" · ")) + lin("Responsável", D.responsavel) + lin("Indicação", D.indicacao) +
+      lin("Bolsa", [D.bolsa.id, D.bolsa.componente, D.bolsa.volume ? D.bolsa.volume + " mL" : "", D.bolsa.tipo].filter(Boolean).join(" · ")) + lin("Prova de compatibilidade", D.prova) + lin("Hematócrito antes", D.htPre ? D.htPre + "%" : "") + lin("Pré-medicação", D.premed) + lin("Acesso", D.acesso) +
+      lin("Taxa", [D.taxa1 ? D.taxa1 + " mL/kg/h no início" : "", D.taxa2 ? D.taxa2 + " mL/kg/h após 15 min" : ""].filter(Boolean).join(" · ")) + lin("Volume transfundido", D.volTx ? D.volTx + " mL" : "") + lin("Horário", [D.inicio ? "início " + D.inicio : "", D.fim ? "término " + D.fim : ""].filter(Boolean).join(" · ")) + "</table>" +
+    (vit.length ? '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Sinais vitais</div><table style="width:100%;border-collapse:collapse;font-size:' + (cel ? 11 : 11.5) + 'px"><tr style="color:#6b5a52;text-align:left"><th>Momento</th><th>Hora</th><th>T</th><th>FC</th><th>FR</th><th>PAS</th><th>Mucosas</th><th>Obs.</th></tr>' + vit.map((r) => '<tr style="border-top:1px solid #eee">' + ["m", "h", "t", "fc", "fr", "pas", "muc", "obs"].map((k) => '<td style="padding:3px 4px 3px 0">' + esc(r[k] || "") + "</td>").join("") + "</tr>").join("") + "</table>" : "") +
+    '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Reação transfusional</div><div>' + (D.reacao.houve === "sim" ? "<b>Sim</b>: " + esc((D.reacao.sinais || []).concat(D.reacao.outro ? [D.reacao.outro] : []).join(", ")) + (D.reacao.interrompida === "sim" ? " · transfusão interrompida" : "") + (D.reacao.conduta ? "<br>Conduta: " + esc(D.reacao.conduta) : "") : D.reacao.houve === "não" ? "Não" : "Não informado") + "</div>" +
+    (D.htPos.some(Boolean) ? '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Hematócrito depois</div><div>' + HTMOM.map((m, i) => D.htPos[i] ? m + ": <b>" + esc(D.htPos[i]) + "%</b>" : "").filter(Boolean).join(" · ") + "</div>" : "") +
+    (D.obs ? '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Evolução e observações</div><div style="white-space:pre-wrap">' + esc(D.obs) + "</div>" : "") +
+    '<div style="margin-top:22px;border-top:1px solid #5F130F;padding-top:6px;max-width:320px">' + (A ? '<img src="' + A.img + '" style="height:64px;max-width:100%;object-fit:contain;display:block">' : '<div style="height:64px"></div>') + "<b>" + esc(A ? A.nome : D.vet.nome || "") + "</b><br><small>" + esc(A ? A.crmv + " · assinado em " + hora(A.em) : "sem assinatura") + "</small></div></div>";
+}
+async function exportar(cel) {
+  st("Gerando o PDF…", 8000);
+  try {
+    if (!window.htmlToImage) await carregarJs("https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js");
+    if (!window.PDFLib) await carregarJs("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js");
+    const box = document.createElement("div"); box.style.cssText = "position:fixed;left:-10000px;top:0"; box.innerHTML = htmlPdf(cel); document.body.appendChild(box);
+    const el = box.firstChild, W = cel ? 430 : 794, Hh = Math.ceil(el.getBoundingClientRect().height);
+    const url = await htmlToImage.toJpeg(el, { width: W, height: Hh, pixelRatio: 2, quality: 0.92, backgroundColor: "#ffffff" }); box.remove();
+    const pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(await (await fetch(url)).arrayBuffer()), k = 595.28 / W;
+    if (cel) { const pg = pdf.addPage([595.28, Hh * k]); pg.drawImage(img, { x: 0, y: 0, width: 595.28, height: Hh * k }); }
+    else { const pgH = 1123; for (let y = 0; y < Hh; y += pgH) { const pg = pdf.addPage([595.28, 841.89]); pg.drawImage(img, { x: 0, y: 841.89 - (Hh - y) * k, width: 595.28, height: Hh * k }); } }
+    const blob = new Blob([await pdf.save()], { type: "application/pdf" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "Monitoramento " + (D.paciente.nome || "transfusão") + (cel ? " celular" : "") + ".pdf"; document.body.appendChild(a); a.click(); a.remove(); st("PDF pronto");
+  } catch (e) { st(e.message || String(e), 5000); }
+}
+abrir();
+</script></body></html>

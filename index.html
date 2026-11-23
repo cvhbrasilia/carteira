@@ -870,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123023102';
+  var VERSAO = '20261123023711';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4669,7 +4669,18 @@ async function telaAgenda(dia) {
     (d0 === h && prev.some(p => p.contato) ? '<section class="ag-chamar"><h3>Convites enviados</h3>' + prev.filter(p => p.contato).map(cartaoPrevisao).join('') + '</section>' : '') +
     '</div></main>';
   const ir = raiz.querySelector('.ag-ir'); ir.onchange = () => { if (ir.value) telaAgenda(ir.value); };
-  telaClasse('tela-ag');
+  telaClasse('tela-ag');  camarasNaAgenda(d0, sem);
+}
+// câmaras portáteis do dia (entregas e buscas) na agenda, para quem cuida do estoque ou do transporte
+async function camarasNaAgenda(d0, sem) {
+  if (!pode(['transporte', 'estoque'])) return;
+  try { if (!E.camAg || E.camAg.sem !== sem || Date.now() - E.camAg.em > 120000) E.camAg = { sem, em: Date.now(), D: await api('camDados', E.sessao, sem, somaDiasIso(sem, 6)) }; } catch (_) { return; }
+  if (E.diaAg !== d0 || !$('#agLista')) return;
+  const dia = (t) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }, hm = (t) => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const cam = (id) => ((E.camAg.D.camaras || []).find((c) => c.id === id) || {}).nome || id, L = [];
+  (E.camAg.D.reservas || []).filter((r) => r.situacao !== 'cancelada').forEach((r) => { if (dia(r.inicio) === d0) L.push({ h: hm(r.inicio), t: 'Entrega da ' + cam(r.camara_id), r }); if (dia(r.fim) === d0) L.push({ h: hm(r.fim), t: 'Busca da ' + cam(r.camara_id), r }); });
+  if (!L.length) return;
+  $('#agLista').insertAdjacentHTML('beforebegin', '<section class="ag-chamar"><h3>Câmaras portáteis (' + L.length + ')</h3>' + L.sort((a, b) => a.h.localeCompare(b.h)).map((x) => '<button class="item" data-acao="modulo" data-k="camaras"><div class="t"><b>' + esc(x.h + ' · ' + x.t) + '</b><small>' + esc(((x.r.paciente || {}).nome || '') + ' · ' + x.r.clinica + (x.r.unidade_id ? ' · bolsa ' + x.r.unidade_id : '') + (((x.r.dados || {}).checagem || []).some((c) => c.nivel === 'bloqueio') && !(x.r.dados || {}).liberacao ? ' · BLOQUEADA para análise' : '')) + '</small></div></button>').join('') + '</section>');
 }
 // todas as doações previstas, sempre visíveis, por mês; tocar abre pendências, triagem e os botões
 function listaPrevistas(lista) {

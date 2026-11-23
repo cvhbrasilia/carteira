@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123023102';
+  var VERSAO = '20261123023711';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -308,7 +308,7 @@ function pintar() {
   const dez = (u) => Date.parse(((u.dados || {}).uso || {}).retiradaEm) + 6e5;
   const ret = (D.unidades || []).filter((u) => u.situacao === "retirada" || (u.situacao === "utilizada" && dez(u) > agora()));
   if (ret.length) h += '<div class="cx av"><h2>Retiradas para uso</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora(), feita = u.situacao === "utilizada";
-    return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + (feita ? " · transfundida em " + esc(((u.dados.uso || {}).paciente || {}).nome || "") : "") + (u.reserva ? " · reserva " + esc(u.reserva) : "") + '</small><div class="bts">' + (interna && !feita ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">TRANSFUNDIDO</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">' + (feita ? "Corrigir: não foi usada" : "CANCELAR E DEVOLVER AO ESTOQUE") + " (" + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
+    return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + (feita ? " · transfundida em " + esc(((u.dados.uso || {}).paciente || {}).nome || "") : "") + (u.reserva ? " · reserva " + esc(u.reserva) : "") + '</small><div class="bts">' + (interna && !feita ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">TRANSFUNDIDO</button>' : "") + (interna ? '<button class="btn sec peq" data-a="monit" data-v="' + esc(u.id) + '">Ficha de monitoramento</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">' + (feita ? "Corrigir: não foi usada" : "CANCELAR E DEVOLVER AO ESTOQUE") + " (" + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
   h += '<button class="btn grande sec" data-a="lerEtiqueta">Ler etiqueta da bolsa</button>';
   // miniestoque
   const est = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada"].includes(u.situacao));
@@ -320,7 +320,7 @@ function pintar() {
   if (feitas.length) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
     feitas.sort((a, b) => String(b.dados.uso.transfundidaEm).localeCompare(String(a.dados.uso.transfundidaEm))).map((u) => { const U = u.dados.uso || {}, ac = U.acomp || {}, hts = ac.hts || [];
       const st = !U.acomp ? '<span class="tag al">acompanhamento pendente</span>' : (ac.reacao === "sim" ? '<span class="tag al">reação registrada</span> ' : ac.reacao === "nao" ? '<span class="tag ok">sem reação</span> ' : "") + (hts.length ? '<span class="tag ok">Ht ' + esc(hts.map((x) => x.valor + "%").join(" · ")) + "</span>" : '<span class="tag">falta o Ht de controle</span>');
-      return '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · " + esc(hora(U.transfundidaEm)) + "</small><div>" + st + '</div><div class="bts">' + (Date.now() - Date.parse(U.transfundidaEm) < 4 * 864e5 ? '<button class="btn peq' + (U.acomp ? " sec" : "") + '" data-a="acomp" data-v="' + esc(u.id) + '">' + (U.acomp ? "Completar ou corrigir" : "Acompanhamento") + "</button>" : "") + "</div></div>"; }).join("") + "</div>";
+      return '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · " + esc(hora(U.transfundidaEm)) + "</small><div>" + st + '</div><div class="bts">' + (Date.now() - Date.parse(U.transfundidaEm) < 4 * 864e5 ? '<button class="btn peq' + (U.acomp ? " sec" : "") + '" data-a="acomp" data-v="' + esc(u.id) + '">' + (U.acomp ? "Completar ou corrigir" : "Acompanhamento") + "</button>" : "") + '<button class="btn sec peq" data-a="monit" data-v="' + esc(u.id) + '">' + (U.monitoramento ? "Ficha de monitoramento ✓" : "Ficha de monitoramento") + "</button></div></div>"; }).join("") + "</div>";
   h += '<p class="vazio"><small>Dúvidas sobre as bolsas, fale com o CVH.</small></p>';
   $("#app").innerHTML = h;
 }
@@ -768,6 +768,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
     if (a === "transfundir") return formTransfusao(v);
     if (a === "acomp") return formAcomp(v);
+    if (a === "monit") { b.disabled = true; const w = window.open("", "_blank"); try { const t = await srv("intMonLink", v), url = location.origin + location.pathname.replace(/[^/]*$/, "") + "monitoramento.html?m=" + t; if (w) w.location = url; else location.href = url; } catch (e) { if (w) w.close(); toast(e.message, 6000); } finally { b.disabled = false; } return; }
     if (a === "acChip") return acChip(b.dataset.k, v);
     if (a === "acHtAdd") return acHtAdd();
     if (a === "acHtDel") { ev.preventDefault(); AC.hts.splice(+v, 1); return pintarHts(); }
