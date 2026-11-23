@@ -2021,7 +2021,7 @@ function sairSub() { if (!subGuardado) return; estado.t = subGuardado[0]; estado
 const tipAtual = () => (estado.tipo === "tipagem" ? estado.t : estado.tipo === "compat" ? estado.tip : null);
 function iniciarTipo(k) {
   sairSub(); estado.tip = null; if (estado.assinadoAntes) { estado.regId = ""; estado.assinadoAntes = false; } estado.alertaOk = "";
-  estado.tipo = k; estado.obs = ""; estado.fotos = {}; AMOSTRA_IMG.tubo = null; AMOSTRA_IMG.gel = []; AMOSTRA_IMG.cache = {}; salvo = null; estado.kitContado = false; estado.kitForm = ""; estado.emitido = null;
+  estado.tipo = k; estado.obs = ""; estado.fotos = {}; estado.fotoSo = {}; AMOSTRA_IMG.tubo = null; AMOSTRA_IMG.gel = []; AMOSTRA_IMG.cache = {}; salvo = null; estado.kitContado = false; estado.kitForm = ""; estado.emitido = null;
   const g = felino(), tsA = semAc(an.tipoSanguineo || ""), dalA = semAc(an.dal || "");
   estado.exame = { titulo: "", data: hojeISO(), hora: "", equip: "", solicitante: estado.vet && !estado.receptor ? estado.vet.nome : "", clinica: "", amostra: "", doacao: "" };
   const ult = doacoesDoAnimal()[0]; if (ult && (k === "tipagem" || k === "fiv")) { estado.exame.doacao = ult.numero; if (ult.data) estado.exame.data = ult.data; }
@@ -2834,7 +2834,7 @@ function paginaCelular() {
 function sincronizarImagens() {
   IMG_DIN = {};
   if (estado.tipo === "idexx" && estado.graficos) Object.assign(IMG_DIN, GRAF);
-  if (estado.tipo === "compat") { imagensAmostra(); if (estado.t.metodo === "gel") estado.t.provas.forEach((_, i) => { if (estado.fotos["gel" + i]) IMG_DIN["fotoGel" + i] = estado.fotos["gel" + i]; }); if (estado.fotos.tubo) IMG_DIN.fotoTubo = estado.fotos.tubo; }
+  if (estado.tipo === "compat") { imagensAmostra(); const so = estado.fotoSo || {}; if (estado.t.metodo === "gel") estado.t.provas.forEach((_, i) => { if (estado.fotos["gel" + i] && !so["gel" + i]) IMG_DIN["fotoGel" + i] = estado.fotos["gel" + i]; }); if (estado.fotos.tubo && !so.tubo) IMG_DIN.fotoTubo = estado.fotos.tubo; }
   const tp = tipAtual();
   if (tp && !felino() && tp.dal && tp.dal.on && estado.fotos.dal) IMG_DIN.fotoDal = estado.fotos.dal;
   if (tp && !felino() && tp.dea1 && tp.dea1.on && estado.fotos.dea) IMG_DIN.fotoDea = estado.fotos.dea;
@@ -3331,8 +3331,8 @@ function caixaExame() {
 const caixaObs = () => `<div class="cx"><h3>Observações</h3>${campo("Observações (opcional, saem no laudo)", `<textarea rows="3" data-p="obs" placeholder="Escreva aqui o que precisar acrescentar">${esc(estado.obs)}</textarea>`)}${estado.tipo === "compat" && estado.t.metodo === "gel" ? `<div class="chips">${OBS_GEL.map((o, i) => `<button type="button" class="chip" data-a="obs-padrao" data-i="${i}">+ ${esc(o)}</button>`).join("")}</div>` : ""}</div>`;
 const caixaSugestao = () => estado.sugestao ? `<div class="sugere"><p>O número ${esc(estado.sugestao.numero)} é da doação de <b>${esc(estado.sugestao.nome || "um doador")}</b>. Este laudo é do doador?</p><button type="button" class="btn mini" data-a="usar-doador">Usar o cadastro de ${esc(estado.sugestao.nome || "doador")}</button></div>` : "";
 function caixaFoto(alvo, rot, dica) {
-  const f = estado.fotos[alvo];
-  return `<div class="foto-cx">${f ? `<img src="${f.url}" alt="${esc(rot)}">` : ""}<div><b>${esc(rot)}</b><p class="nota">${esc(dica)}</p><button type="button" class="btn sec mini" data-a="fotoCam" data-alvo="${alvo}">${f ? "Tirar outra foto" : "Tirar a foto"}</button> <button type="button" class="btn sec mini" data-a="foto" data-alvo="${alvo}">${f ? "Trocar pela galeria" : "Escolher da galeria"}</button>${f ? ` <button type="button" class="lnk" data-a="tirar-foto" data-alvo="${alvo}">tirar</button>` : ""}</div></div>`;
+  const f = estado.fotos[alvo], so = f && (alvo === "tubo" || /^gel\d+$/.test(alvo)) ? `<label class="chk" style="margin:6px 0"><span><input type="checkbox" data-fotoso="${alvo}"${(estado.fotoSo || {})[alvo] ? " checked" : ""}> Só guardar a foto (não sai no laudo)</span></label>` : "";
+  return `<div class="foto-cx">${f ? `<img src="${f.url}" alt="${esc(rot)}">` : ""}<div><b>${esc(rot)}</b><p class="nota">${esc(dica)}</p>${so}<button type="button" class="btn sec mini" data-a="fotoCam" data-alvo="${alvo}">${f ? "Tirar outra foto" : "Tirar a foto"}</button> <button type="button" class="btn sec mini" data-a="foto" data-alvo="${alvo}">${f ? "Trocar pela galeria" : "Escolher da galeria"}</button>${f ? ` <button type="button" class="lnk" data-a="tirar-foto" data-alvo="${alvo}">tirar</button>` : ""}</div></div>`;
 }
 function comTipForm() { const a = SUB; SUB = true; try { return formTipo(); } finally { SUB = a; } }
 function formTipo() {
@@ -3533,9 +3533,20 @@ async function salvar() {
     st.textContent = "Enviando para o Drive…";
     const fora = dados.resumo.filter((r) => r.alerta).map((r) => r.nome);
     const origens = (estado.tipo === "idexx" || estado.tipo === "tecsa") ? (estado.origens || []) : [];
-    const res = await ponte("salvarLaudo", { receptor: !!estado.receptor, labIds: estado.labIds || [], regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) } });
+    const res = await ponte("salvarLaudo", { receptor: !!estado.receptor, labIds: estado.labIds || [], regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) }, fotos: fotosParaGuardar() });
     salvo.res = res; if (res && res.id) estado.regId = res.id; estado.assinadoAntes = true; await contarKits(); marcarSujo(false); renderPrevia(); mostrarSalvo(res); st.textContent = "";
   } catch (e) { salvo = null; bt.disabled = false; st.className = "st erro"; st.textContent = "Não consegui salvar. " + (e.message || e); renderPrevia(); }
+}
+// fotos do plasma e dos cartões de gel ficam guardadas com o laudo (privadas), mesmo as que não saem no PDF
+function fotosParaGuardar() {
+  if (estado.tipo !== "compat") return [];
+  const so = estado.fotoSo || {}, L = [];
+  Object.keys(estado.fotos || {}).filter((k) => k === "tubo" || /^gel\d+$/.test(k)).forEach((k) => {
+    const f = estado.fotos[k]; if (!f || !/^data:image\/jpeg;base64,/.test(f.url || "")) return;
+    const p = /^gel(\d+)$/.exec(k), bolsa = p ? ((estado.t.provas[+p[1]] || {}).doador || (estado.t.provas[+p[1]] || {}).bolsa || "bolsa " + (+p[1] + 1)) : "";
+    L.push({ alvo: k, nome: (k === "tubo" ? "Foto do plasma " : "Foto do cartão de gel " + bolsa + " ") + (estado.paciente.nome || "") + " " + (estado.exame.data || "") + ".jpg", b64: f.url.split(",")[1], noLaudo: !so[k] });
+  });
+  return L;
 }
 function mostrarSalvo(res) {
   $("#salvo").innerHTML = `<h3>Laudo salvo e assinado</h3><div class="sv-doc"><div><b>${esc(estado.exame.titulo)} de ${esc(estado.paciente.nome)}</b><small>Código ${esc(salvo.codigo)}. Fica na seção Laudos de exames do painel.</small></div>
@@ -3574,6 +3585,7 @@ function ligar() {
     if (t.closest && t.closest('[data-sub="tip"]')) entrarSub();
     if (t.dataset.x) { estado.exame[t.dataset.x] = t.dataset.x === "clinica" && /^\s*cvh\s*$/i.test(t.value) ? CLINICA_CVH : t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
     else if (t.dataset.rq != null && estado.tipo === "requisicao") { estado.t.linhas[+t.dataset.rq][1] = t.value; mudou(false); }
+    else if (t.dataset.fotoso) { estado.fotoSo = Object.assign({}, estado.fotoSo || {}, { [t.dataset.fotoso]: t.checked }); mudou(false); return; }
     else if (t.dataset.tp) { estado.paciente.tipo = lerTipo(t); mudou(false); return; }
     else if (t.dataset.pa) { estado.paciente[t.dataset.pa] = t.value; if (t.dataset.pa === "nome" && estado.receptor) sugerirReceptor(t.value, false); if (t.dataset.pa === "especie" && estado.tipo) { const x = estado.t; if (estado.tipo === "tipagem" && !felino() && x.dea1 && !x.dea1.on && !x.dal.on) { x.dea1.on = true; x.dal.on = true; } kitsNoLaudo(); ajustarNota(); return mudou(true); } }
     else if (t.dataset.r) estado.resp[t.dataset.r] = t.value;

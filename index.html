@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123215040';
+  var VERSAO = '20261123215528';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6088,11 +6088,17 @@ function laudosDe(aid) { return regsDe(aid).filter(r => r.tipo === 'laudo').sort
 async function salvarLaudoReceptor(o) {
   const [a4, cel, edicao] = await Promise.all([api('salvarArquivo', E.sessao, 'receptor', o.a4.nome, 'application/pdf', o.a4.b64, false), api('salvarArquivo', E.sessao, 'receptor', o.cel.nome, 'application/pdf', o.cel.b64, false),
     o.edicao ? api('laudoEdicaoGuardar', E.sessao, 'receptor', o.edicao).then(r => (r && r.id ? { id: r.id } : null), () => null) : Promise.resolve(null)]);
+  const fotos = await guardarFotosLaudo('receptor', o.fotos); if (fotos.length) o.dados = Object.assign({}, o.dados, { fotos });
   const L = E.d.laudosReceptor || (E.d.laudosReceptor = []), antigo = o.regId ? L.find(r => r.id === o.regId) : null;
   const salvo = await api('salvarRegistro', E.sessao, { id: antigo ? antigo.id : '', animalId: 'receptor', tipo: 'laudo', grupo: 'laudo', data: o.data, proxima: '', vetId: o.vetId || '', dados: Object.assign({}, o.dados, { a4, cel, envio: { carteira: false, historico: false } }, edicao ? { edicao } : {}) });
   const i = L.findIndex(r => r.id === salvo.id); if (i >= 0) L[i] = salvo; else L.unshift(salvo);
   if (o.rascunhoId) { try { await api('laudoRascunhoApagar', E.sessao, o.rascunhoId); E.rascunhos = null; } catch (_) {} }
   return { id: salvo.id, whats: '', historico: false };
+}
+// fotos do laudo (plasma e cartões de gel): guardadas como arquivos internos do CVH
+async function guardarFotosLaudo(aid, fotos) {
+  const L = await Promise.all((fotos || []).map(f => api('salvarArquivo', E.sessao, aid, f.nome, 'image/jpeg', f.b64, true).then(r => ({ id: r.id, nome: f.nome, alvo: f.alvo, noLaudo: !!f.noLaudo }), () => null)));
+  return L.filter(Boolean);
 }
 function laudosTodos() { return E.d.registros.filter(r => r.tipo === 'laudo' && r.excluido !== '1' && animalDe(r.animalId)).concat((E.d.laudosReceptor || []).filter(r => r.excluido !== '1')).sort((a, b) => (b.data + (b.assinadoEm || '')).localeCompare(a.data + (a.assinadoEm || ''))); }
 const foraLaudo = d => (d.linhas || []).filter(l => l.v != null && ((l.rmin != null && l.v < l.rmin) || (l.rmax != null && l.v > l.rmax)));
@@ -6111,7 +6117,7 @@ function itemLaudo(r, comAnimal) {
   const sit = idx ? (fo.length ? '<span class="ld-fo">Fora da referência: ' + esc(fo.map(l => l.nome).join(', ')) + '</span>' : '<span class="ld-ok">Todos dentro da referência</span>')
     : rs.length ? rs.slice(0, 8).map(x => '<span class="' + (x.alerta ? 'ld-fo' : 'ld-ok') + '">' + esc(x.nome + ': ' + x.texto) + '</span>').join(' ') : '';
   return '<div class="ld-i"><div class="ld-t"><b>' + (comAnimal ? esc(an.nome) + ' · ' : '') + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(r.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', (d.exame || {}).equip, idx ? (d.linhas || []).length + ' resultados' : '', r.vetNome].filter(Boolean).join(' · ')) + '</small>' + sit + '</div>' +
-    '<div class="acoes">' + lk(d.cel, 'PDF celular') + lk(d.a4, 'PDF A4') + (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' : '') +
+    '<div class="acoes">' + lk(d.cel, 'PDF celular') + lk(d.a4, 'PDF A4') + (d.fotos || []).map(f => '<a class="btn sec2 peq" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(f.id) : '#') + '" target="_blank" rel="noopener">' + (f.alvo === 'tubo' ? 'Foto do plasma' : 'Foto do cartão') + (f.noLaudo ? '' : ' (só guardada)') + '</a>').join('') + (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' : '') +
     (((d.edicao && d.edicao.id) || edicaoDeAntigo(d)) && pode('laudos') ? '<button class="btn sec2 peq" data-acao="laudo-corrigir" data-id="' + r.id + '">Corrigir</button>' : '') +
     (pode('laudos') && !rec ? (() => { const ev = envioDe(r); return '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' + (d.origens && pode('historico') ? '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : ''); })() : '') +
     (pode(['historico']) ? '<button class="btn sec2 peq rc-del" data-acao="laudo-apagar" data-id="' + r.id + '">Apagar</button>' : '') + '</div>' +
@@ -6858,6 +6864,7 @@ const PONTE = {
       o.edicao ? api('laudoEdicaoGuardar', E.sessao, an.id, o.edicao).then(r => (r && r.id ? { id: r.id } : null), () => null) : Promise.resolve(null)]);
     const origens = origens0.filter(Boolean);
     if (origens.length) o.dados = Object.assign({}, o.dados, { origens });
+    const fotos = await guardarFotosLaudo(an.id, o.fotos); if (fotos.length) o.dados = Object.assign({}, o.dados, { fotos });
     const antigo = o.regId ? regsDe(an.id).find(r => r.id === o.regId && r.tipo === 'laudo') : null;
     if (antigo && !origens.length && (antigo.dados || {}).origens) o.dados = Object.assign({}, o.dados, { origens: antigo.dados.origens });
     const envio = antigo ? Object.assign({ carteira: true, historico: !!(antigo.dados || {}).origens }, (antigo.dados || {}).envio || {}) : { carteira: false, historico: false };
