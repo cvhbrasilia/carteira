@@ -2296,9 +2296,10 @@ function solicitanteTxt() {
   const crmv = crmvSolicitante();
   return nome + (crmv ? "  ·  " + (/crmv/i.test(crmv) ? crmv : "CRMV " + crmv) : "");
 }
-// laudo de laboratório externo (Citopet): sai com a data e a hora em que o laboratório liberou o exame, não com o dia em que o laudo foi feito
+// laudo de laboratório externo (Citopet e TECSA): sai com a data e a hora em que o laboratório liberou o exame, não com o dia em que o laudo foi feito
 function libLab() {
-  const X = estado.exame || {};
+  const X = estado.exame || {}, T0 = estado.t || {};
+  if (estado.tipo === "tecsa") return /^\d{4}-\d{2}-\d{2}$/.test(T0.liberado || "") ? { iso: T0.liberado, hora: "" } : null;
   return estado.tipo === "idexx" && !estado.misto && X.labNome && /^\d{4}-\d{2}-\d{2}$/.test(X.labLiberado || "") ? { iso: X.labLiberado, hora: X.labHora || "" } : null;
 }
 const diaLaudo = () => { const l = libLab(); return l ? l.iso : hojeISO(); };

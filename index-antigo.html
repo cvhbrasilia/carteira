@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123225610';
+  var VERSAO = '20261123230913';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1084,6 +1084,8 @@ const somaDias = (iso, n) => new Date(utc(iso) + n * 864e5).toISOString().slice(
 function somaMeses(iso, n) { const y = +iso.slice(0, 4), m = +iso.slice(5, 7) - 1 + n, d = +iso.slice(8, 10); const ult = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); return new Date(Date.UTC(y, m, Math.min(d, ult))).toISOString().slice(0, 10); }
 function idade(n) { if (!n) return ''; const h = hoje(); let a = +h.slice(0, 4) - +n.slice(0, 4); if (h.slice(5) < n.slice(5)) a--; if (a >= 1) return a + (a === 1 ? ' ano' : ' anos'); const m = Math.max(0, Math.floor(dias(n, h) / 30.44)); return m + (m === 1 ? ' mês' : ' meses'); }
 const quando = s => s ? br(s.slice(0, 10)) + ' às ' + s.slice(11, 13) + 'h' + s.slice(14, 16) : '';
+// laudo de laboratório externo: fica com a data (e a hora) em que o laboratório liberou o exame
+const quandoAss = r => { const q = r && r.dados && r.dados.assinadoEm; return q && q.lab ? q.data + (q.hora ? ' às ' + q.hora.replace(':', 'h') : '') : quando(r && r.assinadoEm); };
 function listaPt(a) { a = a.filter(Boolean); return a.length < 2 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1]; }
 const num = v => String(v == null ? '' : v).trim();
 
@@ -2436,14 +2438,14 @@ function carimbo(v, rot) {
 function assinatura(r) {
   const v = vetDe(r), lib = r.dados && r.dados.liberadoPor && r.dados.liberadoPor.nome;
   // mesmo modelo dos laudos: a rubrica fica à direita do nome, terminando junto com a linha do CRMV
-  return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(r.vetNome || v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(r.vetCrmv || v.crmv || '') + '</span><span>' + quando(r.assinadoEm) + '</span></div>' +
+  return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(r.vetNome || v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(r.vetCrmv || v.crmv || '') + '</span><span>' + quandoAss(r) + '</span></div>' +
     (r.codigo ? qrSvg(urlVerifCarteira(r.codigo)) : '') + '</div>' +
     (r.codigo || lib ? '<p class="asd-c">' + (r.codigo ? 'Código ' + esc(r.codigo) : '') + (lib ? (r.codigo ? ' · ' : '') + 'Liberado por ' + esc(lib) : '') + '</p>' : '');
 }
 // vacinas, vermífugos e ectoparasitas: o carimbo com a rubrica e, embaixo, a linha discreta da assinatura eletrônica
 function assinaturaLinha(r) {
   const v = vetDe(r), lib = r.dados && r.dados.liberadoPor && r.dados.liberadoPor.nome;
-  return '<div class="asl"><i></i><p><b>Assinado eletronicamente por ' + esc(r.vetNome || v.nome || '') + '</b>' + esc(r.vetCrmv || v.crmv || '') + ' · ' + quando(r.assinadoEm) + (r.codigo ? ' · Código ' + esc(r.codigo) : '') + (lib ? ' · Liberado por ' + esc(lib) : '') + '</p></div>';
+  return '<div class="asl"><i></i><p><b>Assinado eletronicamente por ' + esc(r.vetNome || v.nome || '') + '</b>' + esc(r.vetCrmv || v.crmv || '') + ' · ' + quandoAss(r) + (r.codigo ? ' · Código ' + esc(r.codigo) : '') + (lib ? ' · Liberado por ' + esc(lib) : '') + '</p></div>';
 }
 const btnEd = r => '<button class="ed" data-ed="' + r.id + '">Editar</button>';
 const SETAS = '<svg viewBox="0 0 34 16" aria-hidden="true"><path d="M2 8h11M9 3l5 5-5 5M18 8h11M25 3l5 5-5 5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
