@@ -921,7 +921,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123025155';
+  var VERSAO = '20261123025745';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6255,7 +6255,12 @@ async function abrirModulo(nome, aid, rid) {
     racasExtra: { cao: racasExtra(false), gato: racasExtra(true) } };
   if (nome === 'fichas') { E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.rascunhos = an ? andamentoDe(aid) : []; E.ponte.abrir = E.fichaAbrir || null; E.fichaAbrir = null;
     // quem não é médico veterinário salva a ficha assinada pelo médico veterinário escolhido, com o nome de quem liberou
-    if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; } }
+    if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; }
+    // à prova de erros: o que a ficha precisa conferir antes de ir para a carteira (intervalo, impedimentos e pendências do doador)
+    E.ponte.admin = pode('admin');
+    if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
+      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, intervaloMeses: INTERVALO_DOACAO_MESES,
+        doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })) }; } }
   if (nome === 'tcle') {
     E.ponte.resp = rp.id ? { id: rp.id, nome: rp.nome, email: rp.email, tel: rp.telefone, cpf: rp.cpf || '', cep: rp.cep || '', logradouro: rp.logradouro || '', numero: rp.numero || '', complemento: rp.complemento || '', bairro: rp.bairro || '', cidade: rp.cidade || '', uf: rp.uf || '' } : null;
     E.ponte.animais = rp.id ? E.d.animais.filter(a => a.responsavelId === rp.id).map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, nascimento: a.nascimento, doador: a.doador, ativo: a.ativo })) : [];
@@ -6516,6 +6521,7 @@ const PONTE = {
     }
     return { docs, codigo: salvo.codigo };
   },
+  pedirAnaliseFicha: o => api('fichaPedirAnalise', E.sessao, { animalId: E.animal, numero: (o || {}).numero || '', motivos: (o || {}).motivos || [] }),
   salvarFicha: async o => {
     const an = animalDe(E.animal);
     try { const f = (o.dados && o.dados.ficha) || {}; racaNova(an.especie || 'Canina', f.raca || (o.dados || {}).raca); } catch (_) {}

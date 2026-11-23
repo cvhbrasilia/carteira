@@ -2836,28 +2836,66 @@ init();
       naoColetado: S.tempo === "NC", ficha };
   }
 
+  // à prova de erros na ficha de doação. Graves (bloqueio): intervalo menor que o combinado, impedimento laboratorial, doador aposentado ou fora do cadastro,
+  // peso ou hematócrito abaixo do mínimo. Avisos: pendências do doador e valores que parecem digitados errado.
+  const MIN_DOADOR = { Canina: { peso: 25, ht: 40 }, Felina: { peso: 4, ht: 30 } };
+  function checarDoacao(iso) {
+    const T = ctx.triagem || {}, graves = [], avisos = [], nc = S.tempo === "NC";
+    const n = (k) => { const v = sv(k); if (!v) return NaN; const x = parseFloat(v.replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(x) ? x : NaN; };
+    const gato = /fel|gat/i.test((ctx.animal || {}).especie || ""), M = MIN_DOADOR[gato ? "Felina" : "Canina"];
+    const peso = n("peso"), ht = n("ht"), temp = n("temp"), fc = n("fc"), hb = n("hb");
+    if (!isNaN(peso) && (peso < 0.5 || peso > 100)) avisos.push("Peso " + sv("peso") + " kg parece digitado errado.");
+    if (!isNaN(ht) && (ht < 5 || ht > 75)) avisos.push("Hematócrito " + sv("ht") + "% parece digitado errado.");
+    if (!isNaN(hb) && (hb < 2 || hb > 25)) avisos.push("Hemoglobina " + sv("hb") + " g/dL parece digitada errada.");
+    if (!isNaN(temp) && (temp < 36 || temp > 41.5)) avisos.push("Temperatura " + sv("temp") + " °C fora do esperado.");
+    if (!isNaN(fc) && (fc < 40 || fc > 260)) avisos.push("Frequência cardíaca " + sv("fc") + " bpm fora do esperado.");
+    (T.pend || []).forEach((p) => avisos.push("Pendência do doador: " + p + "."));
+    if (nc) return { graves, avisos };   // sem coleta: registrar a inaptidão é o certo, nada bloqueia
+    if (T.aposentado) graves.push("O doador está aposentado.");
+    else if (T.doador === false) graves.push("O animal não está marcado como doador no cadastro.");
+    (T.imp || []).forEach((p) => graves.push("Impedimento laboratorial: " + p + "."));
+    const meses = T.intervaloMeses || 3, ant = (T.doacoes || []).filter((d) => d.data && d.data < iso && !(S.numero && d.numero === S.numero)).map((d) => d.data).sort().pop();
+    if (ant) { const lib = new Date(ant + "T12:00:00"); lib.setMonth(lib.getMonth() + meses); const libIso = lib.toISOString().slice(0, 10); if (iso < libIso) graves.push("Intervalo menor que " + meses + " meses. Última doação em " + isoBR(ant) + ", liberado a partir de " + isoBR(libIso) + "."); }
+    if (!isNaN(peso) && peso >= 0.5 && peso < M.peso) graves.push("Peso " + sv("peso") + " kg abaixo do mínimo para doador (" + M.peso + " kg).");
+    if (!isNaN(ht) && ht >= 5 && ht < M.ht) graves.push("Hematócrito " + sv("ht") + "% abaixo do mínimo para doador (" + M.ht + "%).");
+    return { graves, avisos };
+  }
   async function salvarCarteira() {
     const vAss = assinante();
     if (!vAss) { toast("Seu usuário não tem CRMV vinculado, então não pode assinar a ficha."); return; }
     if (!S.ass) { toast("Assine a ficha antes de salvar na carteira."); $("#secAss").scrollIntoView({ behavior: "smooth" }); return; }
     if (dig(S.ass.crmv) !== dig((/(\d[\d.\-\/]*)\s*$/.exec(vAss.crmv) || [""])[0]) || (!ctx.vet && S.ass.por !== ctx.liberador.nome)) { toast("A ficha foi assinada por outra pessoa. Remova a assinatura e assine de novo."); return; }
     const a = ctx.animal || {}, avisos = [];
-    if (S.animal && a.nome && !nomeIgual(S.animal, a.nome)) avisos.push(`O nome na ficha (${S.animal}) é diferente do cadastro (${a.nome}).`);
-    if (dig(S.microchip) && dig(a.microchip) && dig(S.microchip) !== dig(a.microchip)) avisos.push("O microchip da ficha é diferente do cadastro.");
+    if (S.animal && a.nome && !nomeIgual(S.animal, a.nome)) avisos.push(`O nome na ficha (${S.animal}) é diferente do cadastro (${a.nome}). Confira se a ficha é mesmo deste animal.`);
+    if (dig(S.microchip) && dig(a.microchip) && dig(S.microchip) !== dig(a.microchip)) avisos.push("O microchip da ficha é diferente do cadastro. Confira se a ficha é mesmo deste animal.");
     const iso = /^\d{4}-\d{2}-\d{2}$/.test(S.data || "") ? S.data : todayISO();
     const ja = (ctx.fichas || []).find((f) => f.numero && f.numero === S.numero);
+    const chk = checarDoacao(iso), graves = chk.graves;
+    avisos.push(...chk.avisos);
+    const precisaAnalise = graves.length && !ctx.admin;
     const div = document.createElement("div"); div.className = "cvh-conf";
     div.innerHTML = `<div class="cx" role="dialog" aria-modal="true"><h3>Salvar na carteira de ${esc(a.nome || S.animal)}</h3>
       <dl><dt>Doação nº</dt><dd>${esc(S.numero || "sem número")}</dd><dt>Data</dt><dd>${esc(isoBR(iso))}</dd><dt>Assinatura</dt><dd>${esc(S.ass.nome)} · CRMV-${esc(S.ass.uf)} ${esc(S.ass.crmv)}${S.ass.por ? ", liberado por " + esc(S.ass.por) : ""}</dd></dl>
-      ${avisos.map((t) => `<div class="av">${esc(t)} Confira se a ficha é mesmo deste animal.</div>`).join("")}
+      ${graves.map((t) => `<div class="av" style="color:#8A1D14;background:#FBE9E7;border-color:#e3b9b4"><b>Bloqueio.</b> ${esc(t)}</div>`).join("")}
+      ${avisos.map((t) => `<div class="av">${esc(t)}</div>`).join("")}
+      ${graves.length && ctx.admin ? `<label style="display:block;margin:8px 0 4px;font-size:13px">Justificativa para salvar mesmo assim</label><input type="text" id="cfJus" style="width:100%;padding:8px;border:1px solid #C6B098;border-radius:8px" placeholder="Ex.: analisei, doação autorizada por mim">` : ""}
+      ${precisaAnalise ? `<p style="margin:0;color:#8A1D14">Esta ficha só vai para a carteira depois da análise do administrador. Ela fica guardada como rascunho e o administrador recebe o aviso agora.</p>` : ""}
       ${ja ? `<div class="av" style="color:#7A6A63;background:#F5EFE7;border-color:#EADFD3">Já existe na carteira uma ficha com este número. Ela será atualizada.</div>` : ""}
       <p style="margin:0">Vão para o Drive o PDF digital (A4 com timbrado), o PDF smartphone${fotoAtual ? " e a imagem da ficha original" : ""}. Na carteira entram o exame físico, os sinais vitais e a triagem, sem número da bolsa, lote ou tempo de coleta.</p>
       <p class="st" id="cfSt" aria-live="polite"></p>
-      <div class="bts"><button class="btn" type="button" id="cfNao">Cancelar</button><button class="btn carteira" type="button" id="cfSim">Salvar na carteira</button></div></div>`;
+      <div class="bts"><button class="btn" type="button" id="cfNao">Cancelar</button><button class="btn carteira" type="button" id="cfSim">${precisaAnalise ? "Enviar para análise" : "Salvar na carteira"}</button></div></div>`;
     document.body.appendChild(div);
     div.querySelector("#cfNao").onclick = () => div.remove();
     div.querySelector("#cfSim").onclick = async (ev) => {
       const bt = ev.currentTarget, nao = div.querySelector("#cfNao"), st = div.querySelector("#cfSt");
+      let liberacao = null;
+      if (precisaAnalise) {
+        bt.disabled = nao.disabled = true; st.textContent = "Guardando o rascunho e avisando o administrador...";
+        try { if (!(await salvar(true))) throw new Error("O rascunho não foi salvo."); await ponte("pedirAnaliseFicha", { numero: S.numero || "", motivos: graves }); div.remove(); toast("Ficha guardada como rascunho. O administrador foi avisado para analisar.", 6000); }
+        catch (e) { st.textContent = "Não foi possível enviar. " + ((e && e.message) || ""); bt.disabled = nao.disabled = false; }
+        return;
+      }
+      if (graves.length) { const j = (div.querySelector("#cfJus") || {}).value || ""; if (j.trim().length < 5) { st.textContent = "Escreva a justificativa para salvar com bloqueio."; return; } liberacao = { por: (ctx.vet || {}).nome || (ctx.liberador || {}).nome || "", em: new Date().toISOString(), motivo: j.trim().slice(0, 300), avisos: graves }; }
       bt.disabled = nao.disabled = true;
       try {
         st.textContent = "Gerando os PDFs...";
@@ -2865,7 +2903,7 @@ init();
         st.textContent = "Enviando para o Drive e para a carteira...";
         let foto = null;   // a foto ou o escaneamento da ficha em papel também vai para o Drive
         if (fotoAtual) { try { const bl = await (await fetch(fotoAtual)).blob(); foto = { nome: nomeArq("jpg", "ficha original"), mime: bl.type || "image/jpeg", b64: b64De(new Uint8Array(await bl.arrayBuffer())) }; } catch (e) { foto = null; } }
-        const r = await ponte("salvarFicha", { data: iso, numero: S.numero || "", vetId: ctx.vet ? "" : vAss.id, dados: dadosCarteira(), foto, rascunhoId: S.srvId || "",
+        const r = await ponte("salvarFicha", { data: iso, numero: S.numero || "", vetId: ctx.vet ? "" : vAss.id, dados: Object.assign(dadosCarteira(), liberacao ? { liberacao } : {}, avisos.length ? { avisos } : {}), foto, rascunhoId: S.srvId || "",
           a4: { nome: nomeArq("pdf", "digital"), b64: b64De(a4) }, cel: { nome: nomeArq("pdf", "smartphone"), b64: b64De(cel) } });
         ctx.fichas = r.fichas || ctx.fichas; S.srvId = "";
         try { const o = locais(); if (S.id && o[S.id]) { delete o[S.id]; lsSet(LS_FICHAS, o); } lsSet(LS_ATUAL, null); } catch (e) {}
