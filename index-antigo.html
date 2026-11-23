@@ -760,6 +760,14 @@ button.pdf{font-family:inherit;cursor:pointer}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .chip-an{border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);font-weight:700;font-size:13px;border-radius:999px;padding:5px 11px}
 .chip-an span{font-weight:500;color:var(--tinta2);margin-left:4px}
+.chip-an.rev-atualizado,.rev-op.rev-atualizado.on,.rev-f.rev-atualizado.on,.rev-pill.rev-atualizado{background:#5F130F;border-color:#5F130F;color:#fff}.chip-an.rev-atualizado span{color:#EEE5DB}
+.chip-an.rev-incompleto,.rev-op.rev-incompleto.on,.rev-f.rev-incompleto.on,.rev-pill.rev-incompleto{background:#C49A6C;border-color:#C49A6C;color:#3a1a0c}.chip-an.rev-incompleto span{color:#4a2a14}
+.chip-an.rev-positivo,.rev-op.rev-positivo.on,.rev-f.rev-positivo.on,.rev-pill.rev-positivo{background:#A83D3D;border-color:#A83D3D;color:#fff}.chip-an.rev-positivo span{color:#f3dcd6}
+.rev-n{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:2px;opacity:.85}
+.rev-filtro{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.rev-f,.rev-op{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);border-radius:999px;padding:6px 12px;cursor:pointer}.rev-f b{font-weight:800;margin-left:2px}
+.rev-f.rev-atualizado{border-color:#5F130F}.rev-f.rev-incompleto{border-color:#C49A6C}.rev-f.rev-positivo{border-color:#A83D3D}.rev-f.on:not([class*=rev-a]):not([class*=rev-i]):not([class*=rev-p]){background:var(--vinho);color:#fff}
+.rev-ops{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}.rev-op{font-size:15px;padding:10px 16px}.rev-op.on{outline:2px solid #5F130F;outline-offset:2px}
+.rev-op.rev-atualizado{border-color:#5F130F}.rev-op.rev-incompleto{border-color:#C49A6C}.rev-op.rev-positivo{border-color:#A83D3D}
 .venc{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--linha);font-size:14px;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
 .venc:first-of-type{border-top:0}
 .venc .t{flex:1;min-width:0}
@@ -930,7 +938,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123121628';
+  var VERSAO = '20261123123246';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2954,7 +2962,7 @@ function abrirCarteira(id, ini) {
   E.animal = id;
   const an = animalDe(id), painel = E.modo === 'painel';
   let barra = '';
-  if (painel) barra = '<div class="barra"><button class="pill" data-acao="voltar-resp">‹ Voltar</button><div class="titulo">' + esc(an.nome) + (E.previa ? ' · prévia do responsável' : '') + '</div>' + (E.previa ? '<button class="pill av-bt" id="btAvisos" data-acao="avisos" aria-label="Avisos">' + IC_SINO + '</button>' : '') + '<button class="pill escura" data-acao="menu-animal">Opções</button></div>';
+  if (painel) barra = '<div class="barra"><button class="pill" data-acao="voltar-resp">‹ Voltar</button><div class="titulo">' + esc(an.nome) + (E.previa ? ' · prévia do responsável' : '') + '</div>' + (E.previa ? '<button class="pill av-bt" id="btAvisos" data-acao="avisos" aria-label="Avisos">' + IC_SINO + '</button>' : '') + (pode('admin') && !E.previa && !E.comoResp ? '<button class="pill rev-pill' + (revSit(id) ? ' rev-' + revSit(id) : '') + '" data-acao="rev-abrir">' + (revSit(id) ? REV_NOME[revSit(id)] : 'Revisão') + ((E.rev && E.rev[id] || {}).nota ? ' · nota' : '') + '</button>' : '') + '<button class="pill escura" data-acao="menu-animal">Opções</button></div>';
   else if (E.d.temporario) barra = '<div class="barra"><div class="titulo"></div><span class="av-tmp">Link temporário, válido até ' + br(E.d.temporario.expiraEm) + '</span></div>';
   else { const n = contaAvisos(id); barra = '<div class="barra">' + BT_PAINEL() + (E.d.animais.length > 1 ? '<button class="pill" data-acao="escolha">‹ Meus animais</button>' : '') + '<div class="titulo"></div><button class="pill av-bt" id="btAvisos" data-acao="avisos" aria-label="Avisos">' + IC_SINO + (n ? '<i>' + n + '</i>' : '') + '</button><button class="pill escura" data-acao="menu-resp">Opções</button></div>'; }
   raiz.innerHTML = '<div class="app">' + barra + '<div class="palco"><div class="par"><div class="livro esq lado-esq" id="livroEsq"><div class="lv-pg"></div></div><div class="livro" id="livro"></div></div></div></div>' + '';
@@ -3300,6 +3308,7 @@ async function carregarPainel() {
   E.d = await api('painelDados', E.sessao);
   E.u = E.d.usuario;
   if (E.u.trocarSenha) return telaTrocarSenha();
+  E.rev = {}; if (pode('admin')) { try { E.rev = await api('revisaoListar', E.sessao) || {}; } catch (_) { E.rev = {}; } }
   telaHome();
   // toque numa notificação com o app fechado: abre o módulo do assunto
   { const q = new URLSearchParams(location.search); if (q.get('abrir')) { const k = q.get('abrir'), aba = q.get('aba') || ''; try { history.replaceState(null, '', location.pathname); } catch (_) {} abrirDestino(k, aba); } }
@@ -6226,15 +6235,19 @@ function telaInicio(busca) {
     '<section class="cartao" id="lista"></section></div></main>' + '';
   const pinta = () => {
     const q = $('#busca').value.trim().toLowerCase();
+    const adm = pode('admin') && E.rev, fr = adm ? (E.revFiltro || '') : '', passa = a => !fr || revSit(a.id) === (fr === 'sem' ? '' : fr);
     const rs = E.d.responsaveis.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt')).filter(r => {
-      if (!q) return true;
       const ans = E.d.animais.filter(a => a.responsavelId === r.id);
+      if (fr && !ans.some(a => a.ativo !== '0' && passa(a))) return false;
+      if (!q) return true;
       return (r.nome + ' ' + r.email + ' ' + r.telefone + ' ' + ans.map(a => a.nome + ' ' + a.microchip).join(' ')).toLowerCase().includes(q);
     });
-    $('#lista').innerHTML = '<h3>Responsáveis (' + rs.length + ')</h3>' + (rs.length ? rs.map(r => {
-      const ans = E.d.animais.filter(a => a.responsavelId === r.id && a.ativo !== '0');
+    const vivos = E.d.animais.filter(a => a.ativo !== '0'), conta = k => vivos.filter(a => revSit(a.id) === k).length;
+    $('#lista').innerHTML = (adm ? '<div class="rev-filtro">' + [['', 'Todos', vivos.length], ['sem', 'Sem marca', conta('')]].concat(REV_SIT.map(([k, t]) => [k, t, conta(k)])).map(([k, t, n]) => '<button class="rev-f' + (k && k !== 'sem' ? ' rev-' + k : '') + (fr === k ? ' on' : '') + '" data-acao="rev-filtro" data-v="' + k + '">' + t + ' <b>' + n + '</b></button>').join('') + '</div>' : '') +
+      '<h3>Responsáveis (' + rs.length + ')</h3>' + (rs.length ? rs.map(r => {
+      const ans = E.d.animais.filter(a => a.responsavelId === r.id && a.ativo !== '0' && passa(a));
       return '<div class="item"><div class="t"><button class="item" style="padding:0" data-acao="abrir-resp" data-id="' + r.id + '"><div class="t"><b>' + esc(r.nome) + '</b><small>' + esc(r.email || r.telefone || 'sem contato') + '</small></div><span class="seta">›</span></button>' +
-        (ans.length ? '<div class="chips">' + ans.map(a => '<button class="chip-an" data-acao="abrir-animal" data-id="' + a.id + '">' + esc(a.nome) + (tipoTxt(a) ? '<span>' + esc(tipoTxt(a)) + '</span>' : '') + (a.aposentadoEm ? '<span>aposentado</span>' : '') + '</button>').join('') + '</div>' : '') + '</div></div>';
+        (ans.length ? '<div class="chips">' + ans.map(a => '<button class="chip-an' + (adm && revSit(a.id) ? ' rev-' + revSit(a.id) : '') + '" data-acao="abrir-animal" data-id="' + a.id + '">' + (adm && (E.rev[a.id] || {}).nota ? '<i class="rev-n" title="tem nota"></i>' : '') + esc(a.nome) + (tipoTxt(a) ? '<span>' + esc(tipoTxt(a)) + '</span>' : '') + (a.aposentadoEm ? '<span>aposentado</span>' : '') + '</button>').join('') + '</div>' : '') + '</div></div>';
     }).join('') : '<p class="vazio-p">Nenhum responsável encontrado.</p>');
   };
   $('#busca').oninput = pinta; pinta();
@@ -7378,6 +7391,18 @@ async function mostrarPdfFicha(id, b) {
   } catch (e) { out.innerHTML = '<p class="nota">Não consegui abrir o PDF. ' + esc(e.message) + '</p>'; }
   b.disabled = false;
 }
+/* ── revisão do cadastro (só o administrador): marca colorida e nota pessoal ── */
+const REV_SIT = [['incompleto', 'Incompleto'], ['atualizado', 'Atualizado'], ['positivo', 'Positivo']];
+const REV_NOME = Object.fromEntries(REV_SIT);
+const revSit = aid => ((E.rev || {})[aid] || {}).situacao || '';
+function abrirRevisao(aid) {
+  const an = animalDe(aid), r = (E.rev || {})[aid] || {}; E.revSel = r.situacao || '';
+  abrirFolha(an.nome + ' · revisão', '<p class="nota">Só você vê esta marca e a nota. A cor aparece no nome do animal nas listas.</p><div class="rev-ops">' +
+    [['', 'Sem marca']].concat(REV_SIT).map(([k, t]) => '<button class="rev-op' + (k ? ' rev-' + k : '') + (E.revSel === k ? ' on' : '') + '" data-acao="rev-sit" data-v="' + k + '">' + t + '</button>').join('') + '</div>' +
+    '<label class="rot" for="revNota">Nota para você</label><textarea id="revNota" rows="5" placeholder="Ex.: falta a vacina de 2026, conferir o peso, pedir o hemograma">' + esc(r.nota || '') + '</textarea>' +
+    (r.atualizado ? '<p class="nota">Última alteração: ' + esc(new Date(r.atualizado).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })) + '</p>' : '') +
+    '<button class="btn" data-acao="rev-salvar" data-id="' + aid + '">Salvar</button>');
+}
 function menuAnimal() {
   const an = animalDe(E.animal);
   abrirFolha(an.nome, '<div style="display:flex;flex-direction:column;gap:10px">' +
@@ -7866,6 +7891,10 @@ const ACOES = {
   'novo-animal': () => abrirFormAnimal(),
   'editar-animal': () => abrirFormAnimal(animalDe(E.animal)),
   'menu-animal': menuAnimal,
+  'rev-abrir': () => abrirRevisao(E.animal),
+  'rev-sit': b => { E.revSel = b.dataset.v || ''; document.querySelectorAll('.rev-op').forEach(x => x.classList.toggle('on', (x.dataset.v || '') === E.revSel)); },
+  'rev-salvar': async b => { b.disabled = true; try { const r = await api('revisaoSalvar', E.sessao, b.dataset.id, { situacao: E.revSel, nota: $('#revNota').value }); E.rev = E.rev || {}; if (r) E.rev[b.dataset.id] = r; else delete E.rev[b.dataset.id]; fecharFolha(); toast('Revisão salva.', 2500); if (E.animal === b.dataset.id && $('#livro')) reabrir(); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
+  'rev-filtro': b => { E.revFiltro = b.dataset.v || ''; const i = $('#busca'); if (i) i.dispatchEvent(new Event('input')); },
   aba: b => { if (E.livro) E.livro.irPara(+b.dataset.i); },
   'fichas-todas': () => telaFichas(null),
   'nova-ficha': b => abrirModulo('fichas', b.dataset.id),

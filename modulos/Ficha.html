@@ -374,6 +374,10 @@ table.kv{width:100%;border-collapse:collapse;table-layout:fixed}
 .cvh-conf .bts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .cvh-conf .st{color:#7A6A63;min-height:1.2em;margin:0}
 .sign-auto{background:#F5EFE7;border-radius:10px;padding:10px 12px;font-size:14px;color:#5F130F;margin-bottom:10px}
+.scanbt{border:0;background:none;padding:6px 6px 6px 0;margin:0 2px 0 -2px;cursor:pointer;display:flex;align-items:center}.scanbt .ic{width:22px;height:22px;margin:0}
+#leitorCB{position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column}#leitorCB video{flex:1;width:100%;object-fit:cover;min-height:0}#leitorCB .lt{color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 10px;font-weight:700}
+#leitorCB .mira{position:absolute;left:8%;right:8%;top:42%;height:16%;border:2px solid #C49A6C;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.35);pointer-events:none}
+#leitorCB .lb{display:flex;gap:8px;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#1c1412}#leitorCB .lb input{flex:1;font:inherit;padding:10px;border-radius:9px;border:1px solid #5a4a42;background:#2a201d;color:#fff}#leitorCB .lb button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:10px 14px;background:#5F130F;color:#fff}#leitorCB .lb button.sec{background:#3a2e2a}
 </style>
 </head>
 <body>
@@ -519,6 +523,38 @@ const GRAUS_LIPEMIA=['Ausente','+','++','+++'];
 const UFS=["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 
 /* ================= ícones ================= */
+// leitura do código de barras pela câmera (número da doação, microchip, lote): BarcodeDetector quando o aparelho tem; senão a biblioteca ZXing do próprio site
+let ZXP=null;
+function carregarZX(){if(window.ZXing)return Promise.resolve(window.ZXing);if(ZXP)return ZXP;ZXP=new Promise((ok,erro)=>{const tenta=(src,depois)=>{const sc=document.createElement('script');sc.src=src;sc.onload=()=>window.ZXing?ok(window.ZXing):depois();sc.onerror=depois;document.head.appendChild(sc);};let local='bibliotecas/zxing.min.js';try{if(window.parent!==window)local=new URL(local,window.parent.location.href).href;}catch(e){}tenta(local,()=>tenta('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',()=>{ZXP=null;erro(new Error('leitor'));}));});return ZXP;}
+function lerCodigoBarras(titulo){
+  return new Promise(async resolve=>{
+    const ov=document.createElement('div');ov.id='leitorCB';ov.innerHTML='<div class="lt"></div><video playsinline muted autoplay></video><div class="mira"></div><div class="lb"><input id="cbTxt" placeholder="ou digite o código" autocapitalize="characters"><button id="cbOk">Usar</button><button class="sec" id="cbSair">Voltar</button></div>';
+    ov.querySelector('.lt').textContent=titulo||'Aponte a câmera para o código de barras';document.body.appendChild(ov);
+    const v=ov.querySelector('video');let fluxo=null,vivo=true,det=null,zx=null;
+    const fim=txt=>{if(!vivo)return;vivo=false;if(fluxo)fluxo.getTracks().forEach(x=>x.stop());ov.remove();if(txt&&navigator.vibrate)navigator.vibrate(60);resolve(txt?String(txt).trim():null);};
+    ov.querySelector('#cbSair').onclick=()=>fim(null);ov.querySelector('#cbOk').onclick=()=>{const x=ov.querySelector('#cbTxt').value.trim();if(x)fim(x);};
+    ov.querySelector('#cbTxt').onkeydown=e=>{if(e.key==='Enter')ov.querySelector('#cbOk').click();};
+    try{fluxo=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});v.srcObject=fluxo;await v.play();}
+    catch(e){toast('Não consegui abrir a câmera. Digite o código.',5000);ov.querySelector('#cbTxt').focus();return;}
+    const FMT=['code_128','code_39','ean_13','ean_8','itf','upc_a','qr_code','data_matrix'];
+    try{if('BarcodeDetector' in window){const f=await BarcodeDetector.getSupportedFormats();const ok=FMT.filter(x=>f.includes(x));if(ok.length)det=new BarcodeDetector({formats:ok});}}catch(e){det=null;}
+    if(!det){try{const Z=await carregarZX();const h=new Map();h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[Z.BarcodeFormat.CODE_128,Z.BarcodeFormat.CODE_39,Z.BarcodeFormat.EAN_13,Z.BarcodeFormat.EAN_8,Z.BarcodeFormat.ITF,Z.BarcodeFormat.QR_CODE,Z.BarcodeFormat.DATA_MATRIX]);h.set(Z.DecodeHintType.TRY_HARDER,true);const r=new Z.MultiFormatReader();r.setHints(h);const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+      zx=()=>{const vw=v.videoWidth,vh=v.videoHeight;if(!vw)return null;const w=Math.min(1100,vw),k=w/vw,y0=Math.round(vh*.3),fh=Math.round(vh*.4);cv.width=w;cv.height=Math.round(fh*k);cx.drawImage(v,0,y0,vw,fh,0,0,cv.width,cv.height);try{return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText();}catch(e){return null;}};}catch(e){toast('Leitor indisponível. Digite o código.',5000);}}
+    const passo=async()=>{if(!vivo)return;try{if(v.readyState>=2){if(det){const r=await det.detect(v);if(r&&r[0]&&r[0].rawValue)return fim(r[0].rawValue);}else if(zx){const x=zx();if(x)return fim(x);}}}catch(e){}setTimeout(passo,det?120:180);};
+    passo();
+  });
+}
+function gs1(s){s=String(s||'').replace(/^\]C1|^\]d2|^\]Q3/,'');const o={};const GS='\x1d';let i=0;const fixo={'00':18,'01':14,'02':14,'11':6,'13':6,'15':6,'17':6};
+  if(!/^(01|17|10|11|21)\d/.test(s.replace(/[()]/g,'')))return o;s=s.replace(/\((\d{2,4})\)/g,(m,a)=>GS+a).replace(/^\x1d/,'');
+  while(i<s.length-2){const ai=s.slice(i,i+2);i+=2;if(fixo[ai]){const v=s.slice(i,i+fixo[ai]);i+=fixo[ai];if(ai==='17'&&/^\d{6}$/.test(v))o.validade=v.slice(2,4)+'/'+v.slice(0,2);if(s[i]===GS)i++;}
+    else{let j=s.indexOf(GS,i);if(j<0)j=s.length;const v=s.slice(i,j);i=j+1;if(ai==='10')o.lote=v;}}
+  return o;}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-scanbt]');if(!b)return;e.preventDefault();const k=b.dataset.scanbt,i=document.getElementById('i_'+k);if(!i)return;
+  const lb=(b.closest('.f,.campo,label,div')||{}).querySelector?((b.closest('.f')||b.parentNode.parentNode).querySelector('label,.lbl')||{}).textContent:'';
+  let x=await lerCodigoBarras('Leia o código de barras'+(lb?' · '+String(lb).trim():''));if(!x)return;
+  // etiqueta da bolsa no padrão GS1: (17) validade AAMMDD e (10) lote; preenche os dois
+  if(k==='lote'){const g=gs1(x);if(g.lote||g.validade){if(g.validade){const iv=document.getElementById('i_validade');if(iv){iv.value=g.validade;iv.dispatchEvent(new Event('input',{bubbles:true}));iv.dispatchEvent(new Event('change',{bubbles:true}));}}if(g.lote)x=g.lote;}}
+  i.value=x;i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));toast('Código lido: '+x,2500);});
 const IC={scan:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6v12M7 6v12M10 6v12M14 6v12M16 6v12M20 6v12"/></svg>'};
 
 /* ================= construção do formulário ================= */
@@ -526,7 +562,7 @@ function fld(k,label,o={}){
   const ni=o.ni!==false;
   return `<div class="f ${o.cls||''}" data-wrap="${k}">
     <div class="fl"><label for="i_${k}">${label}</label><button type="button" class="cf" data-cf="${k}">Conferido</button>${ni?(o.nc?'<button type="button" class="ni" data-nc="1" aria-pressed="false">Não coletado</button>':`<button type="button" class="ni" data-ni="${k}" aria-pressed="false" title="Marcar como não informado">NI</button>`):''}</div>
-    <div class="fi">${o.scan?IC.scan:''}<input id="i_${k}" data-f="${k}" type="${o.type||'text'}" ${o.im?`inputmode="${o.im}"`:''} placeholder="${o.ph||''}" autocomplete="off" spellcheck="false" ${o.scan?'data-scan="1"':''}>${o.unit?`<span class="u">${o.unit}</span>`:''}${o.now?`<button type="button" class="now" data-now="${k}">Agora</button>`:''}${o.ofeg?`<button type="button" class="now" data-ofeg="1" aria-pressed="false">Ofegante</button>`:''}</div>
+    <div class="fi">${o.scan?`<button type="button" class="scanbt" data-scanbt="${k}" aria-label="Ler o código de barras com a câmera">${IC.scan}</button>`:''}<input id="i_${k}" data-f="${k}" type="${o.type||'text'}" ${o.im?`inputmode="${o.im}"`:''} placeholder="${o.ph||''}" autocomplete="off" spellcheck="false" ${o.scan?'data-scan="1"':''}>${o.unit?`<span class="u">${o.unit}</span>`:''}${o.now?`<button type="button" class="now" data-now="${k}">Agora</button>`:''}${o.ofeg?`<button type="button" class="now" data-ofeg="1" aria-pressed="false">Ofegante</button>`:''}</div>
     <div class="nitext">Não informado</div>${o.hint?`<div class="hint">${o.hint}</div>`:''}${o.ac?'<ul class="ac" id="ac" role="listbox"></ul>':''}</div>`;
 }
 function chips(k,label,opts,o={}){
@@ -592,7 +628,7 @@ function buildForm(){
       ${fld('volume','Volume coletado',{cls:'s3 m1',unit:'mL',im:'numeric',ph:'450'})}
       ${fld('lote','Lote da bolsa',{cls:'s3',scan:1,ph:'Leia ou digite'})}
       ${fld('validade','Validade da bolsa',{cls:'s3',im:'numeric',ph:'mm/aa'})}
-      ${fld('seguimento','Seguimento',{cls:'s6',ph:'Segmento do tubo da bolsa'})}
+      ${fld('seguimento','Seguimento',{cls:'s6',scan:1,ph:'Leia o código do segmento ou digite'})}
     </div>
   </section>
 
