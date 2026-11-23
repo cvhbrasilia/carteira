@@ -3596,7 +3596,7 @@ function ligar() {
   });
   document.addEventListener("click", async (ev) => {
     const b = ev.target.closest("[data-a]"); if (!b) return;
-    const a = b.dataset.a; if (b.closest('[data-sub="tip"]')) entrarSub();
+    const a = b.dataset.a; if (b.closest('[data-sub="tip"]') && !b.closest("#provasRes")) entrarSub();
     if (a === "pedEnviar") { const v = ($("#pedSel") || {}).value, st = $("#stPed"); if (!v) { st.className = "st erro"; st.textContent = "Escolha o pedido."; return; } b.disabled = true;
       try { await ponte("laudoParaPedido", { pedido: v, regId: salvo.res.id }); b.textContent = "Enviado para a Intensivet ✓"; } catch (e) { b.disabled = false; st.className = "st erro"; st.textContent = e.message || String(e); } return; }
     if (a === "env-carteira" || a === "env-historico") {
@@ -3719,18 +3719,27 @@ document.addEventListener("keydown", (e) => {
 let JSQR = null, CAM_FIM = null;
 const toast = (m) => { const st = $("#st"); if (st) { st.className = "st"; st.textContent = m; } };
 function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
-// câmera aberta uma vez e reaproveitada por 2 minutos: leituras seguidas não pedem autorização de novo nem esperam o foco outra vez
+// câmera aberta uma vez e reaproveitada por 5 minutos: leituras seguidas não pedem autorização de novo nem esperam o foco outra vez
 const CAMV = { fluxo: null, timer: null };
 async function camPegar() {
   clearTimeout(CAMV.timer);
   if (CAMV.fluxo && CAMV.fluxo.getVideoTracks().some((x) => x.readyState === "live")) return CAMV.fluxo;
-  const f = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
-  const tr = f.getVideoTracks()[0]; let cap = {}; try { cap = tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) {}
-  const adv = {}; if (cap.focusMode && cap.focusMode.includes("continuous")) adv.focusMode = "continuous"; if (cap.zoom && cap.zoom.max > 1) adv.zoom = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, 1.5));
+  // iPhone com várias câmeras: a câmera tripla (ou dupla grande-angular) troca sozinha para a macro e foca de perto
+  const base = { width: { ideal: 1920 }, height: { ideal: 1080 } }, md = navigator.mediaDevices;
+  let id = ""; try { id = localStorage.getItem("cvh_cam") || ""; } catch (e) {}
+  let f;
+  try { f = await md.getUserMedia({ video: id ? { ...base, deviceId: { exact: id } } : { ...base, facingMode: "environment" }, audio: false }); }
+  catch (e) { if (!id) throw e; try { localStorage.removeItem("cvh_cam"); } catch (_) {} id = ""; f = await md.getUserMedia({ video: { ...base, facingMode: "environment" }, audio: false }); }
+  if (!id) { try {
+    const L = (await md.enumerateDevices()).filter((d) => d.kind === "videoinput"), melhor = L.find((d) => /tripla|triple/i.test(d.label)) || L.find((d) => /dupla grande|dual wide/i.test(d.label));
+    if (melhor && melhor.deviceId) { const atual = (f.getVideoTracks()[0].getSettings() || {}).deviceId; if (atual !== melhor.deviceId) { f.getTracks().forEach((x) => x.stop()); f = await md.getUserMedia({ video: { ...base, deviceId: { exact: melhor.deviceId } }, audio: false }); } try { localStorage.setItem("cvh_cam", melhor.deviceId); } catch (_) {} }
+  } catch (e) {} }
+  const tr = f.getVideoTracks()[0], virt = /tripla|triple|dupla grande|dual wide/i.test(tr.label || ""); let cap = {}; try { cap = tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) {}
+  const adv = {}; if (cap.focusMode && cap.focusMode.includes("continuous")) adv.focusMode = "continuous"; if (cap.zoom && cap.zoom.max > 1) adv.zoom = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, virt ? 3 : 1.5));
   try { if (Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); } catch (e) {}
   CAMV.fluxo = f; return f;
 }
-function camSoltar(agora) { clearTimeout(CAMV.timer); const parar = () => { if (CAMV.fluxo) CAMV.fluxo.getTracks().forEach((x) => x.stop()); CAMV.fluxo = null; }; if (agora) parar(); else CAMV.timer = setTimeout(parar, 120000); }
+function camSoltar(agora) { clearTimeout(CAMV.timer); const parar = () => { if (CAMV.fluxo) CAMV.fluxo.getTracks().forEach((x) => x.stop()); CAMV.fluxo = null; }; if (agora) parar(); else CAMV.timer = setTimeout(parar, 300000); }
 document.addEventListener("visibilitychange", () => { if (document.hidden) camSoltar(true); });
 window.addEventListener("pagehide", () => camSoltar(true));
 function lerQR(titulo) {
@@ -3812,7 +3821,8 @@ async function pintarProvasRes() {
   preencherSegmentos();
   const alvo = document.querySelector("#form .cx:last-of-type"); if (!alvo || document.querySelector("#provasRes")) return;
   const box = document.createElement("div"); box.className = "cx"; box.id = "provasRes"; box.innerHTML = '<h3>Bolsas separadas para a prova</h3><p class="nota">Carregando…</p>';
-  const ref = document.querySelector("#form [data-comxm], #form [data-tb]"); (ref ? ref.closest(".cx") : alvo).insertAdjacentElement("beforebegin", box);
+  const ref = document.querySelector("#form [data-comxm], #form [data-tb]"), antes = ref ? ref.closest(".cx") : alvo, sub = antes.parentElement && antes.parentElement.closest('[data-sub="tip"]');
+  (sub || antes).insertAdjacentElement("beforebegin", box);
   try { if (!PROVAS_RES) PROVAS_RES = await ponte("provasReservadas"); } catch (_) { PROVAS_RES = []; }
   const em = (estado.t.provas || []).map((p) => p.doador);
   box.innerHTML = PROVAS_RES.length ? '<h3>Bolsas separadas para a prova</h3><p class="nota">Toque para usar na prova. Se a bolsa é de um pedido, o paciente, o solicitante e a clínica vêm junto.</p><div class="mini-bts" style="flex-wrap:wrap">' +
@@ -3826,7 +3836,7 @@ function trocaHtml(em) {
   return '<p class="nota" style="margin-top:8px">A prova deste pedido usa ' + esc(em.filter(Boolean).join(", ")) + ", e a bolsa separada antes era " + esc(sobra.map((x) => x.unidade).join(", ")) + '.</p><button type="button" class="btn mini" data-a="trocarProva">Trocar a reserva para ' + esc(em.filter(Boolean).join(", ")) + "</button>";
 }
 async function usarProva(i) {
-  const x = (PROVAS_RES || [])[i]; if (!x) return; const L = estado.t.provas;
+  sairSub(); const x = (PROVAS_RES || [])[i]; if (!x || !estado.t || !Array.isArray(estado.t.provas)) return; const L = estado.t.provas;
   let p = L.find((y) => !String(y.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); } p.doador = x.doacao;
   if (x.atendimento && (!String(estado.paciente.nome || "").trim() || !estado.paciente.tipo)) { const vazio = !String(estado.paciente.nome || "").trim(); try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o && o.htReceptor && estado.tipo === "compat" && !String(estado.t.htReceptor || "").trim()) estado.t.htReceptor = o.htReceptor; if (o && !vazio) { if (!estado.paciente.tipo && (o.paciente || {}).tipo) estado.paciente.tipo = o.paciente.tipo; } else if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) { estado.exame.solicitante = o.solNome || o.solicitante || ""; if (o.solNome && !estado.exame.solicitanteCrmv) estado.exame.solicitanteCrmv = o.solCrmv || ""; } if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
   mudou(true); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Doação " + x.doacao + " na prova" + (x.paciente ? ", paciente " + x.paciente : "") + ". Confira."; }
