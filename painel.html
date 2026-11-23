@@ -949,7 +949,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123213839';
+  var VERSAO = '20261123213955';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6202,7 +6202,7 @@ function telaLaudos(aid, busca) {
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Voltar</button></div>' +
     '<header class="topo"><div class="t"><span>Laudos de exames</span><b>' + (an ? esc(an.nome) + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') : 'Todos os laudos') + '</b></div></header>' +
     (an ? '<button class="btn" data-acao="laudo-novo" data-id="' + aid + '">+ Novo laudo</button><p class="nota">IDEXX, TECSA, tipagem sanguínea, FIV e FeLV, Coombs ou prova de compatibilidade. O laudo sai no padrão do CVH, em A4 e para celular, assinado com o seu CRMV. Fica guardado aqui e pode ser enviado ao responsável por WhatsApp. Não entra na carteira.</p>' :
-      '<div class="ld-novos"><button class="btn" data-acao="laudo-receptor">+ Laudo de receptor (sem cadastro)</button> <button class="btn sec2" data-acao="laudo-tecsa">+ Laudo da TECSA pelo número da doação</button></div><p class="nota">No laudo de receptor você digita os dados do paciente, e o laudo fica salvo e assinado aqui e no painel de laudos. No da TECSA, o painel acha o doador pelo número da doação.</p>') +
+      '<div class="ld-novos"><button class="btn" data-acao="laudo-receptor">+ Laudo de receptor</button> <button class="btn sec2" data-acao="laudo-tecsa">+ Laudo da TECSA pelo número da doação</button></div><p class="nota">No laudo de receptor você escolhe um receptor cadastrado ou cadastra um novo no próprio laudo, que fica salvo e assinado aqui e no painel de laudos. No da TECSA, o painel acha o doador pelo número da doação.</p>') +
     (an ? '' : '<section class="cartao" id="ldAfazer" hidden></section>') +
     '<div class="busca"><input id="buscaLd" type="search" placeholder="Buscar por animal, exame ou data" value="' + esc(busca || '') + '" aria-label="Buscar laudos"></div><section class="cartao" id="listaEd" hidden></section><section class="cartao" id="listaLd"></section></div></main>';
   pintarRascunhos(aid); if (!an) provasAfazer();
@@ -6371,7 +6371,7 @@ function telaInicio(busca) {
     '<header class="topo"><div class="t"><span>' + TIT[0] + '</span><b>' + TIT[1] + '</b></div></header>' +
     (mod === 'historico' ? '<p class="nota">Toque no animal para ver os exames dele na tela. Para incluir exames novos, use Adicionar exames. O PDF vai para o Drive e entra sozinho na carteira dele.</p>' : '') +
     (mod === 'laudos' ? '<button class="btn" data-acao="laudos-painel" style="margin-bottom:10px">Painel de laudos: alertas, por tipo e por etapa</button>' : '') +
-    (mod === 'laudos' ? '<p class="nota">Toque no animal para fazer um laudo ou ver os laudos dele. Para receptor sem cadastro, o laudo fica salvo e assinado no painel de laudos.</p><button class="btn" data-acao="laudo-receptor">Laudo de receptor (sem cadastro)</button> <button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button> <button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
+    (mod === 'laudos' ? '<p class="nota">Toque no animal para fazer um laudo ou ver os laudos dele. Para receptor, o laudo fica salvo e assinado no painel de laudos.</p><button class="btn" data-acao="laudo-receptor">Laudo de receptor</button> <button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button> <button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
     (mod === 'tcle' ? termosTipos() + '<p class="nota">Toque no responsável para preparar o TCLE com os dados do cadastro. Para ver os termos em andamento e os que aguardam a assinatura do CVH, use o botão abaixo.</p><button class="btn sec2" data-acao="tcle-todos">Ver todos os termos</button>' : '') +
