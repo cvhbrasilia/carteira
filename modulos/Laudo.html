@@ -2227,6 +2227,19 @@ function sugerirReceptor(nome, final) {
   if (!box) return;
   box.innerHTML = L.length && !(iguais.length === 1 && estado.rcpSel === String(iguais[0][1])) ? '<span class="nota">Já cadastrado: </span>' + L.slice(0, 4).map(([r, i]) => `<button type="button" class="btn sec mini" data-a="rcp-usar" data-v="${i}">${esc([r.paciente.nome, r.resp && r.resp.nome, r.exame && r.exame.clinica].filter(Boolean).join(" · "))}</button>`).join(" ") : "";
 }
+// clínicas do cadastro único: aparecem enquanto digita; escolher uma traz o médico veterinário e o CRMV, se estiverem vazios
+let CLINICAS = [];
+ponte("clinicas").then((L) => { CLINICAS = Array.isArray(L) ? L : []; const d = $("#lCliLaudo"); if (d) d.innerHTML = CLINICAS.map((c) => `<option value="${esc(c.nome)}">`).join(""); }, () => {});
+function sugerirClinica(txt) {
+  const box = $("#cliSug"); if (!box) return; const n = semAc(txt).trim();
+  const L = n.length < 2 ? [] : CLINICAS.filter((c) => semAc(c.nome).includes(n) && semAc(c.nome) !== n).slice(0, 5);
+  box.innerHTML = L.length ? '<span style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + L.map((c, i) => `<button type="button" class="btn sec mini" data-a="cli-usar" data-v="${esc(c.nome)}">${esc(c.nome)}</button>`).join("") + "</span>" : "";
+}
+function usarClinica(nome) {
+  const c = CLINICAS.find((x) => x.nome === nome); if (!c) return; const X = estado.exame; X.clinica = c.nome;
+  const v = (c.vets || [])[0]; if (v && !String(X.solicitante || "").trim()) { X.solicitante = v.nome; if (!String(X.solicitanteCrmv || "").trim()) X.solicitanteCrmv = v.crmv || ""; }
+  mudou(true);
+}
 function campoTipo() {
   const p = partesTipo(tipoSanguineoTxt()), op = (v, txt, cur) => `<option value="${v}"${v === cur ? " selected" : ""}>${txt}</option>`;
   if (felino()) return `<span class="tipo-cx"><select data-tp="gato" aria-label="Grupo sanguíneo">${op("", "não tipado", p.gato)}${op("A", "Grupo A", p.gato)}${op("B", "Grupo B", p.gato)}${op("AB", "Grupo AB", p.gato)}</select></span>`;
@@ -3324,7 +3337,7 @@ function caixaExame() {
   if (X.doacao && !ds.some((d) => d.numero === X.doacao)) opDoa.push([X.doacao, X.doacao]);
   const doa = estado.receptor ? "" : campo("Doação", sel('data-x="doacao"', X.doacao, opDoa));
   return `<div class="cx"><h3>Exame</h3><div class="grade">${campo("Título do laudo", inp('data-x="titulo"', X.titulo), "larga")}${campo(idx ? "Data da análise" : "Data da coleta", inp('data-x="data" type="date"', X.data))}${idx ? campo("Hora", inp('data-x="hora" type="time"', X.hora)) + doa + campo("Equipamento", inp('data-x="equip"', X.equip)) : doa}${lab ? campo("Laboratório", inp('data-x="labNome"', X.labNome)) + campo("Número no laboratório", inp('data-x="labNumero"', X.labNumero || "")) + campo("Liberado em", inp('data-x="labLiberado" type="date"', X.labLiberado || "")) + campo("Hora da liberação", inp('data-x="labHora" type="time"', X.labHora || "")) + campo("Liberado por (laboratório)", inp('data-x="labRt"', X.labRt || "", 'placeholder="nome e CRMV de quem liberou no laboratório"'), "larga") : ""}
-    ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="obrigatório (do cadastro, se for do CVH)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH && !estado.receptor && estado.tipo !== "compat" ? "" : X.clinica || "", estado.receptor || estado.tipo === "compat" ? 'placeholder="obrigatória: clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"'))}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
+    ${campo("Solicitante", inp('data-x="solicitante"', X.solicitante, 'placeholder="médico veterinário que pediu o exame"'))}${campo("CRMV do solicitante", inp('data-x="solicitanteCrmv"', X.solicitanteCrmv || "", 'placeholder="obrigatório (do cadastro, se for do CVH)"'))}${campo("Clínica solicitante", inp('data-x="clinica"', X.clinica === CLINICA_CVH && !estado.receptor && estado.tipo !== "compat" ? "" : X.clinica || "", (estado.receptor || estado.tipo === "compat" ? 'placeholder="obrigatória: clínica de onde veio a amostra"' : 'placeholder="em branco, sai só CVH - Centro Veterinário de Hemoterapia"') + ' list="lCliLaudo" autocomplete="off"') + `<datalist id="lCliLaudo">${CLINICAS.map((c) => `<option value="${esc(c.nome)}">`).join("")}</datalist><span id="cliSug"></span>`)}${X.doacao ? "" : campo("Número da amostra", inp('data-x="amostra"', X.amostra || "", 'placeholder="ex.: 912-1"'))}
     <div class="larga"><button type="button" class="btn sec mini" data-a="lerCodigo">Ler a etiqueta com a câmera (código de barras ou QR)</button><span class="nota"> Ou passe a etiqueta no leitor de código de barras. O painel bipa e preenche o número${estado.tipo === "compat" ? " da doação na prova" : " da amostra"}.</span></div>
     ${CTX.temGemini ? `<div class="larga"><button type="button" class="btn sec mini" data-a="etiqueta">Ler a etiqueta da amostra</button><span class="nota" id="stEtq"> Com a foto da etiqueta do tubo ou do cartão, o painel preenche paciente, responsável, clínica, número, data da coleta e idade.</span></div>` : ""}
     ${estado.liberador ? campo("Assinado por", sel('data-vet="1"', estado.vet ? estado.vet.id : "", VETS.map((v) => [v.id, v.nome + (v.crmv ? " · " + v.crmv : "")])), "larga") + `<p class="nota larga">Você libera o laudo, que sai assinado pelo médico veterinário escolhido. Seu nome aparece discreto abaixo da assinatura.</p>` : ""}</div></div>`;
@@ -3585,6 +3598,7 @@ function ligar() {
     if (t.dataset.comtip) { const antes = tituloPadrao(); estado.tip = t.checked ? comTip0() : null; kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.dataset.comxm) { if (estado.tipo !== "tipagem") return; const antes = tituloPadrao(); estado.tip = estado.t; estado.tipo = "compat"; estado.t = novaCompat(); kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.closest && t.closest('[data-sub="tip"]')) entrarSub();
+    if (t.dataset.x === "clinica") sugerirClinica(t.value);
     if (t.dataset.x) { estado.exame[t.dataset.x] = t.dataset.x === "clinica" && /^\s*cvh\s*$/i.test(t.value) ? CLINICA_CVH : t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
     else if (t.dataset.rq != null && estado.tipo === "requisicao") { estado.t.linhas[+t.dataset.rq][1] = t.value; mudou(false); }
     else if (t.dataset.fotoso) { estado.fotoSo = Object.assign({}, estado.fotoSo || {}, { [t.dataset.fotoso]: t.checked }); mudou(false); return; }
@@ -3615,6 +3629,7 @@ function ligar() {
     const t = ev.target;
     // no iPhone a lista de opções pode mudar sem o evento "input": repete aqui o que o "input" faria
     if (t.tagName === "SELECT" && !(t._inp && Date.now() - t._inp < 400)) { t.dispatchEvent(new Event("input", { bubbles: true })); return; }
+    if (t.dataset && t.dataset.x === "clinica") { const c = CLINICAS.find((x) => semAc(x.nome) === semAc(t.value).trim()); if (c) usarClinica(c.nome); return; }
     if (t.dataset && t.dataset.pa === "nome" && estado.receptor) { sugerirReceptor(t.value, true); return; }
     if (t.dataset && t.dataset.x === "amostra" && estado.receptor) { const num = String(t.value || "").trim(), ir = num ? RECEPTORES.findIndex((r) => r.cadastro && (r.amostras || []).includes(num)) : -1; if (ir >= 0 && estado.rcpSel !== String(ir)) { aplicarReceptor(ir); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Amostra " + num + ": cadastro de " + (RECEPTORES[ir].paciente || {}).nome + " carregado. Confira."; } } return; }
     if (t.id === "arq" && t.files.length) {
@@ -3659,6 +3674,7 @@ function ligar() {
     if (a === "lerCodigo") { const t = await lerQR(estado.tipo === "compat" ? "Leia a etiqueta da bolsa" : "Leia a etiqueta da amostra"); if (t) lidoLeitor(codigo(t)); return; }
     if (a === "etiqueta") { const i = $("#arqFoto"); i.dataset.alvo = "etiqueta"; i.click(); }
     if (a === "rcp-usar") { aplicarReceptor(b.dataset.v); return; }
+    if (a === "cli-usar") { usarClinica(b.dataset.v); return; }
     if (a === "rcp-cadastrar") {
       // cadastro de receptores do painel, já preenchido com o que está no laudo; ao salvar, vira o receptor escolhido aqui
       const P = estado.paciente, X = estado.exame, st = $("#stRcp");
