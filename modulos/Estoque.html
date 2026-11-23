@@ -125,6 +125,8 @@ const DOA = (CTX.doacoes || []).filter((d) => d.numero);
 const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
 const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;
 const animalDe = (id) => ANI[id] || {};
+// doador sem cadastro (carga inicial): nome, espécie e tipagem anotados na bolsa ou na bolsa de origem
+const doadorDe = (u) => { if (u && u.animal_id && ANI[u.animal_id]) return ANI[u.animal_id]; const d = (u && u.dados) || {}, m = u && u.mae_id ? ((S.uni || []).find((x) => x.id === u.mae_id) || {}).dados || {} : {}; return { nome: d.doador || m.doador || "", especie: d.especie || m.especie || "", tipoSanguineo: d.tipoSanguineo || m.tipoSanguineo || "", dal: d.dal || m.dal || "" }; };
 // etiqueta do tipo sanguíneo: DEA 1 negativo em vermelho, positivo em azul (no gato, o grupo A, B ou AB)
 const seloTipo = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/i) || [])[1]; return g ? '<span class="tps gat">Tipo ' + g.toUpperCase() + "</span>" : ""; } return /neg/i.test(t) ? '<span class="tps neg">DEA 1 −</span>' : /pos/i.test(t) ? '<span class="tps pos">DEA 1 +</span>' : ""; };
 const tipoResto = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return ""; const t = String(a.tipoSanguineo || ""); return (!/neg|pos/i.test(t) && t ? t : "") + (a.dal ? (t && !/neg|pos/i.test(t) ? " · " : "") + "DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
@@ -276,7 +278,7 @@ function textoAcomp(U) {
   return t.join("<br>");
 }
 function linhaUnidade(u, fr) {
-  const a = animalDe(u.animal_id), al = alertaValidade(u);
+  const a = doadorDe(u), al = alertaValidade(u);
   return '<button class="unid' + (fr ? " fr" : "") + '" data-a="uni" data-v="' + esc(u.id) + '"><span class="co ' + esc(u.componente) + '">' + esc(u.componente) + '</span><span class="t"><b>' + esc(u.id) + seloTipo(a) + "</b><small>" + esc([a.nome, tipoResto(a), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : ""].filter(Boolean).join(" · ")) + "</small>" +
     (al ? '<small><span class="chip ' + al.c + '">' + al.t + "</span></small>" : "") + (congPendente(u) ? '<small><span class="chip av">Verificar congelamento</span></small>' : "") + ((u.dados || {}).qcPendente ? '<small><span class="chip al">Qualidade: aguarda decisão</span></small>' : "") + ((u.dados || {}).desleucocitacao ? '<small><span class="chip">desleucocitada</span></small>' : "") + (u.situacao === "reservada" ? '<small><span class="chip">' + esc(resumoReserva(u)) + "</span></small>" : "") + '</span><span class="d"><span class="chip ' + (COR_SIT[u.situacao] || "") + '">' + esc(u.situacao === "reservada" ? "Reservada" : ROT_SIT[u.situacao] || u.situacao) + "</span><small>" + esc(u.local || "") + (u.validade ? " · até " + esc(br(String(u.validade).slice(0, 10))) : "") + "</small></span></button>";
 }
@@ -303,7 +305,7 @@ function kpis() {
 }
 function abrirUnidade(id) {
   const u = S.uni.find((x) => x.id === id); if (!u) return;
-  S.uniAberta = id; const D = u.dados || {}, a = u.animal_id ? animalDe(u.animal_id) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, al = alertaValidade(u), fim = ["utilizada", "descartada"].includes(u.situacao);
+  S.uniAberta = id; const D = u.dados || {}, a = u.animal_id ? doadorDe(u) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, al = alertaValidade(u), fim = ["utilizada", "descartada"].includes(u.situacao);
   const evs = S.ev.filter((e) => e.unidade_id === id || (e.coleta === u.coleta && !e.unidade_id)).slice(0, 25);
   const bt = (a2, t, cls) => '<button class="btn peq ' + (cls || "sec") + '" data-a="uAcao" data-v="' + a2 + '">' + t + "</button>";
   let acoes = "";
@@ -355,7 +357,7 @@ function blocoContato(u) {
     '<div class="bts" style="margin-top:8px"><button class="btn sec peq" data-a="ctSalvar" data-v="' + esc(u.id) + '">Salvar</button><button class="btn peq" data-a="ctCopiar" data-v="' + esc(u.id) + '">Copiar dados para a requisição</button></div></div>';
 }
 function textoRequisicao(u) {
-  const D = u.dados || {}, U = D.uso || {}, P = U.paciente || {}, V = U.vet || {}, a = animalDe(u.animal_id);
+  const D = u.dados || {}, U = D.uso || {}, P = U.paciente || {}, V = U.vet || {}, a = doadorDe(u);
   return ["Requisição de hemocomponente · emergência na Intensivet", "Paciente: " + (P.nome || ""), "Peso: " + (P.peso || "") + " kg", "Hematócrito: " + (P.ht || "") + "%", "Telefone do responsável: " + (U.telefone || ""), "Médico veterinário: " + (V.nome || "") + " · " + (V.crmv || ""),
     "Bolsa: " + u.id + " · " + (NOME_COMP[u.componente] || u.componente) + (u.volume_ml ? " · " + u.volume_ml + " mL" : "") + (tipoTxt(a) ? " · " + tipoTxt(a) : ""), "Retirada: " + hora(U.retiradaEm), "Transfusão registrada: " + hora(U.transfundidaEm), ((D.contatoCVH || {}).notas ? "Informações do contato:\n" + D.contatoCVH.notas : "")].filter(Boolean).join("\n");
 }
@@ -508,7 +510,7 @@ function telaHoje() {
 function telaFrac() {
   const ok = S.uni.filter((u) => (u.local || "CVH") === "CVH" && ["disponivel", "reservada", "quarentena"].includes(u.situacao));
   const feitos = S.uni.filter((u) => (u.dados || {}).fracionamentos && u.dados.fracionamentos.length).flatMap((u) => u.dados.fracionamentos.map((c) => ({ u, c }))).sort((a, b) => String(b.c.em).localeCompare(String(a.c.em))).slice(0, 30);
-  const lin = (u, fr) => '<div class="lin' + (fr ? '" style="margin-left:28px;background:#FBF3E8;border-left:3px solid var(--cara);padding-left:10px' : "") + '"><div class="t"><b>' + esc(u.id) + "</b><small>" + esc([(animalDe(u.animal_id) || {}).nome, tipoTxt(animalDe(u.animal_id)), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "", "validade " + br(String(u.validade || "").slice(0, 10)), ROT_SIT[u.situacao]].filter(Boolean).join(" · ")) + '</small></div><button class="btn peq" data-a="fracAbrir" data-v="' + esc(u.id) + '">Fracionar</button></div>';
+  const lin = (u, fr) => '<div class="lin' + (fr ? '" style="margin-left:28px;background:#FBF3E8;border-left:3px solid var(--cara);padding-left:10px' : "") + '"><div class="t"><b>' + esc(u.id) + "</b><small>" + esc([(doadorDe(u) || {}).nome, tipoTxt(doadorDe(u)), u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "", "validade " + br(String(u.validade || "").slice(0, 10)), ROT_SIT[u.situacao]].filter(Boolean).join(" · ")) + '</small></div><button class="btn peq" data-a="fracAbrir" data-v="' + esc(u.id) + '">Fracionar</button></div>';
   const grupos = ORDEM_COMP.map((c) => { const G = ok.filter((u) => u.componente === c).sort((a, b) => a.id.localeCompare(b.id, "pt", { numeric: true })); if (!G.length) return ""; const ids = new Set(G.map((u) => u.id)); return '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + "</div>" + G.filter((u) => !u.mae_id || !ids.has(u.mae_id)).map((u) => lin(u) + G.filter((f) => f.mae_id === u.id).map((f) => lin(f, true)).join("")).join(""); }).join("");
   return '<div class="cx"><h2>Fracionar uma bolsa</h2><p class="nota">Sistema fechado. Escolha a bolsa: o app pede a pesagem da mãe, mostra o peso-alvo da fração, confere a diferença e gera as etiquetas novas.</p>' + (grupos || '<p class="vazio">Nenhuma bolsa no CVH.</p>') + "</div>" +
     '<div class="cx"><h2>Últimos fracionamentos</h2>' + (feitos.length ? feitos.map(({ u, c }) => '<div class="lin"><div class="t"><b>' + esc(u.id) + " → " + esc(c.fracoes.map((f) => f.id).join(", ")) + "</b><small>" + esc(hora(c.em)) + " · " + esc(c.por) + " · inicial " + fmt(c.volumeInicial, 1) + " mL · restante " + fmt(c.volumeRestante, 1) + " mL · frações " + c.fracoes.map((f) => fmt(f.volume, 1) + " mL").join(", ") + '</small><small><span class="chip ' + (c.nivel === "ok" ? "ok" : c.nivel === "alerta" ? "av" : "al") + '">diferença ' + fmt(c.diferenca, 1) + " mL (" + fmt(c.diferencaPct, 1) + '%)</span></small></div><button class="btn sec peq" data-a="fracEtq" data-v="' + esc([u.id].concat(c.fracoes.map((f) => f.id)).join("|")) + '">Etiquetas</button></div>').join("") + '<div id="fracEtqBox"></div>' : '<p class="vazio">Nenhum fracionamento ainda.</p>') + "</div>";
@@ -528,7 +530,7 @@ function cadastroBolsas() {
     '<h2 style="margin-top:14px">Diferença no fracionamento</h2><div style="display:flex;gap:10px;flex-wrap:wrap"><label>Alerta acima de (mL)<input type="text" inputmode="decimal" id="limA" value="' + esc(L.fracionamentoMl) + '"></label><label>Crítico acima de (mL)<input type="text" inputmode="decimal" id="limC" value="' + esc(L.criticoMl) + '"></label><label>Ganho tolerado (mL)<input type="text" inputmode="decimal" id="limG" value="' + esc(L.ganhoMl) + '"></label></div><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="bolsasSalvar">Salvar</button></div></div>';
 }
 function telaEstoque() {
-  const f = S.f, tipoDe = (u) => tipoTxt(animalDe(u.animal_id));
+  const f = S.f, tipoDe = (u) => tipoTxt(doadorDe(u));
   let L = S.uni.filter((u) => f.sit === "todas" ? true : f.sit === "ativas" ? !["utilizada", "descartada"].includes(u.situacao) : u.situacao === f.sit);
   if (f.comp) L = L.filter((u) => u.componente === f.comp);
   if (f.tipo) L = L.filter((u) => { const t = tipoDe(u); return f.tipo === "DEA1-" ? /DEA 1 −/.test(t) : f.tipo === "DEA1+" ? /DEA 1 \+/.test(t) : f.tipo === "DAL-" ? /DAL −/.test(t) : f.tipo === "DAL+" ? /DAL \+/.test(t) : t.indexOf(f.tipo) >= 0; });
@@ -595,7 +597,7 @@ function abrirRemNova() {
   const L = S.uni.filter((u) => ["disponivel", "reservada"].includes(u.situacao) && (u.local || "CVH") === "CVH" && !S.rem.some((r) => ativaRem(r) && r.unidades.includes(u.id)));
   S.sel = {};
   abrirGaveta("Nova remessa", '<label>Destino</label><input type="text" id="rDest" value="Intensivet"><label>Finalidade</label><input type="text" id="rFin" value="Estoque de emergência"><h2 style="margin-top:14px">Bolsas</h2>' +
-    (L.length ? L.map((u) => '<label class="op" style="display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:6px 0"><input type="checkbox" data-sel="' + esc(u.id) + '"> <span>' + esc(u.id) + " · " + esc(tipoTxt(animalDe(u.animal_id))) + "<br><small>" + esc(NOME_COMP[u.componente] || u.componente) + " · validade " + esc(br(String(u.validade || "").slice(0, 10))) + (u.situacao === "reservada" ? " · reservada " + esc(u.reserva || "") : "") + "</small></span></label>").join("") : '<p class="vazio">Nenhuma bolsa disponível no CVH.</p>') +
+    (L.length ? L.map((u) => '<label class="op" style="display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:6px 0"><input type="checkbox" data-sel="' + esc(u.id) + '"> <span>' + esc(u.id) + " · " + esc(tipoTxt(doadorDe(u))) + "<br><small>" + esc(NOME_COMP[u.componente] || u.componente) + " · validade " + esc(br(String(u.validade || "").slice(0, 10))) + (u.situacao === "reservada" ? " · reservada " + esc(u.reserva || "") : "") + "</small></span></label>").join("") : '<p class="vazio">Nenhuma bolsa disponível no CVH.</p>') +
     '<div class="bts" style="margin-top:12px"><button class="btn" data-a="remCriar">Preparar a remessa</button><button class="btn sec" data-a="camera">Ler as bolsas com a câmera</button></div><p><small>Preparar não tira as bolsas do estoque. A saída só vale quando você confirmar a saída física da caixa.</small></p>');
 }
 async function qrHtml(t) { try { return await ponte("qr", t); } catch (e) { return ""; } }
@@ -757,7 +759,7 @@ const FORMATOS = {
 const fmtEtq = () => { try { const f = localStorage.getItem("cvh_etq3"); return FORMATOS[f] ? f : "zg"; } catch (e) { return "zg"; } };
 const CONSERVA = { CH: "Conservar entre 2 e 6 °C", PFC: "Conservar a −18 °C ou menos", CRIO: "Conservar a −18 °C ou menos", PPC: "Conservar a −18 °C ou menos", CP: "NÃO REFRIGERAR · 20 a 24 °C" };
 function etiquetaHtml(u, f, qr) {
-  const D = u.dados || {}, a = u.animal_id ? animalDe(u.animal_id) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a);
+  const D = u.dados || {}, a = u.animal_id ? doadorDe(u) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a);
   const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
   if (f === "z50") return '<div class="et p"><div class="l1"><b>CVH</b><span>' + esc(NOME_COMP[u.componente] || u.componente) + '</span></div><div class="id">' + esc(u.id) + '</div><div class="l2">' + esc(esp + (tipo ? " · " + tipo : "")) + '</div><div class="l2">' + esc([vol, col ? "col. " + col : ""].filter(Boolean).join(" · ")) + '</div><div class="l3">Validade ' + esc(val) + '</div><div class="cod">' + code128Svg(u.id, 6.2) + '<span class="q">' + qr + "</span></div></div>";
   if (f === "z104") return '<div class="et w"><div class="cab"><b>CVH</b><span>Centro Veterinário de Hemoterapia · Brasília, DF</span><i>' + esc(NOME_COMP[u.componente] || u.componente) + '</i></div><div class="meio"><div class="txt"><div class="id">' + esc(u.id) + '</div><div class="tp">' + esc(tipo || "tipo não informado") + '</div><div>' + esc([esp, vol].filter(Boolean).join(" · ")) + (u.componente === "CH" && D.htFinal != null ? " · Ht " + esc(fmt(D.htFinal, 1)) + "%" : "") + '</div><div><b>Coleta ' + esc(col) + " · Validade " + esc(val) + "</b></div>" + (u.mae_id ? "<div>Fração de " + esc(u.mae_id) + "</div>" : "") + '<div class="cons">' + esc(CONSERVA[u.componente] || "") + '</div></div><div class="q">' + qr + '<small>RT Plínio Rossi<br>CRMV-DF 2703</small></div></div><div class="cod">' + code128Svg(u.id, 9) + "</div></div>";
@@ -786,7 +788,7 @@ async function pdfEtiquetas(us, f) {
     const ret = (x, y, w, h) => pg.drawRectangle({ x: x * K, y: (H - y - h) * K, width: w * K, height: h * K, color: preto });
     const barras = (x, y, w, h) => { const lg = code128Larg(u.id), tot = lg.reduce((a, b) => a + b, 0) + 8, m = w / tot; let p = x + 4 * m; lg.forEach((l, i) => { if (i % 2 === 0) ret(p, y, l * m, h); p += l * m; }); };
     const qr = async (x, y, lado) => { const sv = await qrHtml(u.id), n = +((sv.match(/viewBox="-1 -1 (\d+)/) || [])[1] || 0) - 2; if (!n) return; const m = lado / (n + 2); for (const r of sv.matchAll(/M(\d+) (\d+)h(\d+)/g)) ret(x + (+r[1] + 1) * m, y + (+r[2] + 1) * m, +r[3] * m, m); };
-    const D = u.dados || {}, a = u.animal_id ? animalDe(u.animal_id) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoEtq(a), comp = NOME_COMP[u.componente] || u.componente;
+    const D = u.dados || {}, a = u.animal_id ? doadorDe(u) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoEtq(a), comp = NOME_COMP[u.componente] || u.componente;
     const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
     var mg = f === "z50" ? 2 : f === "z104" ? 3 : 5;
     if (f === "z104") {
@@ -997,7 +999,7 @@ function secoesRel(R) {
   S2.push(["Indicadores do período (responsável técnico)", indicadoresRel(d, U, noPer)]);
   S2.push(["Posição atual do estoque", conta(vivas, (u) => (NOME_COMP[u.componente] || u.componente) + " · " + (ROT_SIT[u.situacao] || u.situacao)).map(([k, n]) => [k, n])]);
   S2.push(["Por local e equipamento", conta(vivas, (u) => (u.local || "CVH") + (u.equipamento ? " · " + u.equipamento : "")).map(([k, n]) => [k, n])]);
-  S2.push(["Por tipo sanguíneo", conta(vivas, (u) => u.componente + " · " + (tipoTxt(animalDe(u.animal_id)) || "tipagem não informada")).map(([k, n]) => [k, n])]);
+  S2.push(["Por tipo sanguíneo", conta(vivas, (u) => u.componente + " · " + (tipoTxt(doadorDe(u)) || "tipagem não informada")).map(([k, n]) => [k, n])]);
   S2.push(["Por hemocomponente (volume total)", ["CH", "CP", "PFC", "CRIO", "PPC"].map((c) => { const L = vivas.filter((u) => u.componente === c); return [NOME_COMP[c], L.length + " bolsas · " + vol(L) + " mL"]; }).filter((x) => !/^0 /.test(x[1]))]);
   S2.push(["Vencem em até 10 dias", vivas.filter((u) => { const al = alertaValidade(u); return al && al.n <= 10; }).map((u) => [u.id, br(String(u.validade).slice(0, 10)) + " · " + (ROT_SIT[u.situacao] || "") + " · " + (u.local || "CVH")])]);
   S2.push(["Produção no período (bolsas criadas)", conta(U.filter((u) => noPer(u.criado)), (u) => NOME_COMP[u.componente] || u.componente).map(([k, n]) => [k, n]).concat([["Coletas processadas", d.producao.length]])]);
@@ -1018,7 +1020,7 @@ function secoesRel(R) {
   return S2;
 }
 function htmlRel(R) {
-  const q = R.q, d = R.d, trilha = q ? d.unidades.filter((u) => [u.id, u.coleta, (u.dados || {}).segmento, (u.dados || {}).identificacao, (animalDe(u.animal_id) || {}).nome].join(" ").toUpperCase().includes(q.toUpperCase())) : [];
+  const q = R.q, d = R.d, trilha = q ? d.unidades.filter((u) => [u.id, u.coleta, (u.dados || {}).segmento, (u.dados || {}).identificacao, (doadorDe(u) || {}).nome].join(" ").toUpperCase().includes(q.toUpperCase())) : [];
   return '<div class="cx"><h2>Rastreabilidade</h2><label>Buscar por coleta, bolsa, segmento ou doador</label><input type="text" id="rlBusca" value="' + esc(q) + '" placeholder="ex.: 573-8, manguito, nome do doador">' +
     (q ? (trilha.length ? trilha.map((u) => '<div class="lin"><div class="t"><b>' + esc(u.id) + "</b><small>" + esc([NOME_COMP[u.componente], ROT_SIT[u.situacao] || u.situacao, u.local, u.mae_id ? "fração de " + u.mae_id : ""].filter(Boolean).join(" · ")) + "</small><small>" + d.eventos.filter((e) => e.unidade_id === u.id).map((e) => esc(rotEvento(e.tipo)) + " " + esc(hora(e.quando))).join(" → ") + '</small></div><button class="btn sec peq" data-a="uni" data-v="' + esc(u.id) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada encontrado no período.</p>') : "") + "</div>" +
     secoesRel(R).map(([t, L]) => '<div class="cx"><h2>' + esc(t) + (L.length ? " · " + L.length : "") + "</h2>" + (L.length ? L.map(([k, v]) => '<div class="lin"><div class="t"><b>' + esc(k) + "</b><small>" + esc(v) + "</small></div></div>").join("") : '<p class="vazio">Nada no período.</p>') + "</div>").join("");
