@@ -74,7 +74,7 @@ html,body{overflow-x:hidden;max-width:100%}
 .tipo{border:1px solid var(--areia2);background:#FFFDFB;border-radius:12px;padding:12px;text-align:left;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:3px}
 .tipo b{color:var(--vinho);font-size:15px}.tipo small{color:var(--tinta2);font-size:12.5px;line-height:1.35}.tipo:hover{border-color:var(--bege);background:#FBF6F1}
 .topo-tipo{display:flex;align-items:center;gap:10px;margin:0 0 10px}.topo-tipo b{color:var(--vinho);font-size:14px}.topo-tipo .lnk{padding:0}
-.idade-cx{display:flex;gap:6px}.idade-cx input{flex:1 1 52px;min-width:52px}.idade-cx select{flex:0 0 auto;width:auto;max-width:96px;padding-left:8px;padding-right:6px}
+.idade-cx{display:flex;gap:6px}.idade-cx input{flex:1 1 52px;min-width:52px}.idade-cx select{flex:0 0 auto;width:auto;max-width:96px;padding-left:8px;padding-right:6px}.idade-cx input[hidden]+select{flex:1 1 auto;max-width:none}
 .segm{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.segm button{border:1px solid var(--areia2);background:#fff;color:var(--vinho);border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;min-width:52px}
 .segm button[aria-pressed=true]{background:var(--vinho);color:#fff;border-color:var(--vinho)}
 .item.pos{border-color:#E4B7B0;background:#FDF6F4}
@@ -3250,14 +3250,16 @@ function ligarCorte() {
 const campo = (rot, html, cls) => `<label class="${cls || ""}">${rot}${html}</label>`;
 const inp = (attr, v, extra) => `<input ${attr} value="${esc(v == null ? "" : v)}" ${extra || ""}>`;
 const sel = (attr, v, ops) => `<select ${attr}>${ops.map(([val, txt]) => `<option value="${esc(val)}"${String(v) === String(val) ? " selected" : ""}>${esc(txt)}</option>`).join("")}</select>`;
-// idade com número e unidade: ano ou anos, mês ou meses, conforme o número
-const idadeParte = (s) => { s = String(s || ""); const m = s.match(/\d+(?:[.,]\d+)?/); return { n: m ? m[0] : "", u: /m[eê]s|meses/i.test(s) ? "m" : "a" }; };
+// idade com número e unidade: ano ou anos, mês ou meses, conforme o número; sem a idade exata, "Adulto" ou "Filhote"
+const idadeParte = (s) => { s = String(s || ""); if (/^\s*adult/i.test(s)) return { n: "", u: "adulto" }; if (/^\s*filhot/i.test(s)) return { n: "", u: "filhote" }; const m = s.match(/\d+(?:[.,]\d+)?/); return { n: m ? m[0] : "", u: /m[eê]s|meses/i.test(s) ? "m" : "a" }; };
 const umIdade = (n) => parseFloat(String(n).replace(",", ".")) === 1;
-const idadeTxt = (n, u) => !String(n || "").trim() ? "" : String(n).trim() + " " + (u === "m" ? (umIdade(n) ? "mês" : "meses") : (umIdade(n) ? "ano" : "anos"));
-const campoIdade = (s) => { const p = idadeParte(s), um = umIdade(p.n); return `<span class="idade-cx"><input data-idn value="${esc(p.n)}" inputmode="decimal" placeholder="0" aria-label="Idade"><select data-idu aria-label="Unidade da idade"><option value="a"${p.u === "a" ? " selected" : ""}>${um ? "ano" : "anos"}</option><option value="m"${p.u === "m" ? " selected" : ""}>${um ? "mês" : "meses"}</option></select></span>`; };
+const idadeTxt = (n, u) => u === "adulto" ? "Adulto" : u === "filhote" ? "Filhote" : !String(n || "").trim() ? "" : String(n).trim() + " " + (u === "m" ? (umIdade(n) ? "mês" : "meses") : (umIdade(n) ? "ano" : "anos"));
+const campoIdade = (s) => { const p = idadeParte(s), um = umIdade(p.n), sem = p.u === "adulto" || p.u === "filhote"; return `<span class="idade-cx"><input data-idn value="${esc(p.n)}" inputmode="decimal" placeholder="${sem ? "-" : "0"}" aria-label="Idade"${sem ? " disabled hidden" : ""}><select data-idu aria-label="Unidade da idade"><option value="a"${p.u === "a" ? " selected" : ""}>${um ? "ano" : "anos"}</option><option value="m"${p.u === "m" ? " selected" : ""}>${um ? "mês" : "meses"}</option><option value="adulto"${p.u === "adulto" ? " selected" : ""}>adulto</option><option value="filhote"${p.u === "filhote" ? " selected" : ""}>filhote</option></select></span>`; };
 function lerIdade(t) {
   const cx = t.closest(".idade-cx"); if (!cx) return null;
-  const n = cx.querySelector("[data-idn]").value, sel = cx.querySelector("[data-idu]"), um = umIdade(n);
+  const ni = cx.querySelector("[data-idn]"), sel = cx.querySelector("[data-idu]"), sem = sel.value === "adulto" || sel.value === "filhote";
+  if (sem) ni.value = ""; ni.disabled = sem; ni.hidden = sem;
+  const n = ni.value, um = umIdade(n);
   sel.options[0].textContent = um ? "ano" : "anos"; sel.options[1].textContent = um ? "mês" : "meses";
   return idadeTxt(n, sel.value);
 }
