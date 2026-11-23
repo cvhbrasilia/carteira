@@ -3040,14 +3040,18 @@ function canvasDe(fonte, max) {
   const c = document.createElement("canvas"); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k); c.getContext("2d").drawImage(fonte, 0, 0, c.width, c.height); return c;
 }
 // acha o plasma (faixa colorida que ocupa a largura do tubo) no recorte do tubo
-function analisarTubo(fonte) {
+// plasma claro (lipêmico ou pouco amarelo) tem pouca cor: se não achar com o limite normal, tenta com limites menores
+function analisarTubo(fonte) { for (const lim of [42, 28, 18]) { const a = analisarTubo0(fonte, lim); if (a) return a; } return null; }
+function analisarTubo0(fonte, lim) {
   const c = balanco(canvasDe(fonte, 900), 246), W = c.width, H = c.height, p = c.getContext("2d").getImageData(0, 0, W, H).data;
-  const col = (i) => { const r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx - mn > 42 && mx > 90 && !(r > g + 60 && g < 120 && b < 120 && mx - mn > 120 && false); };
+  const col = (i) => { const r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx - mn > lim && mx > 90 && !(r > g + 60 && g < 120 && b < 120 && mx - mn > 120 && false); };
   const cnt = new Array(H).fill(0), xl = new Array(H).fill(-1), xr = new Array(H).fill(-1);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (col(y * W + x)) { cnt[y]++; if (xl[y] < 0) xl[y] = x; xr[y] = x; }
   const mx = Math.max(...cnt); if (mx < W * 0.08) return null;
   let fim = H - 1; while (fim > 0 && cnt[fim] < mx * 0.2) fim--;
-  let ini = fim, falha = 0; for (let y = fim; y >= 0; y--) { if (cnt[y] >= mx * 0.4) { ini = y; falha = 0; } else if (++falha > 5) break; }
+  // fundo redondo do tubo (plasma até o fim): a subida começa na última linha larga, não no estreitamento do fundo
+  let larga = fim; while (larga > 0 && cnt[larga] < mx * 0.4) larga--;
+  let ini = larga, falha = 0; for (let y = larga; y >= 0; y--) { if (cnt[y] >= mx * 0.4) { ini = y; falha = 0; } else if (++falha > 5) break; }
   if (fim - ini < 20) return null;
   // largura do tubo pelas linhas do meio do plasma
   const meio = []; for (let y = ini + Math.round((fim - ini) * 0.15); y < ini + (fim - ini) * 0.6; y++) if (xl[y] >= 0) meio.push([xl[y], xr[y]]);
