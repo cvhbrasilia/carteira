@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123053921';
+  var VERSAO = '20261123055625';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -358,11 +358,19 @@ const hmData = (ms) => { const d = new Date(ms); return p2(d.getHours()) + ":" +
 const seloCP = (u) => { const l = cpLim(u); if (l == null) return ""; const resta = l - agora(); return ' <span class="tag ' + (resta < 0 ? "al" : resta < 6 * 36e5 ? "al" : "av") + '">' + (resta < 0 ? "VENCIDA, não use" : "transfundir até " + hmData(l)) + "</span>"; };
 function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Math.abs(s), t = p2(Math.floor(a / 60)) + ":" + p2(a % 60); return '<span class="relogio' + (s < 0 ? " al" : "") + '" data-fim="' + fimMs + '">' + (s < 0 ? "atrasado " + t : t) + "</span>"; }
 
+/* ── login individual: cada médico veterinário entra com o próprio usuário (sai sozinho depois de 30 min parado) ── */
+let OP = (() => { try { const o = JSON.parse(localStorage.getItem("cvh_int_op") || "null"); return o && Date.now() - o.t < 30 * 6e4 ? o : null; } catch (e) { return null; } })();
+const opMexeu = () => { if (OP) { OP.t = Date.now(); try { localStorage.setItem("cvh_int_op", JSON.stringify(OP)); } catch (e) {} } };
+document.addEventListener("pointerdown", opMexeu, { passive: true });
+setInterval(() => { if (OP && Date.now() - OP.t > 30 * 6e4) { srv("intSair", OP.op).catch(() => {}); OP = null; try { localStorage.removeItem("cvh_int_op"); } catch (e) {} pintar(); toast("Saída automática do usuário depois de 30 minutos sem uso.", 5000); } }, 30000);
+function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><label>Usuário</label><input type="text" id="opU" autocomplete="username" autocapitalize="none"><label>Senha</label><input type="password" id="opS" autocomplete="current-password"><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); setTimeout(() => $("#opU").focus(), 100); }
+const vetDoOp = () => OP ? { nome: OP.nome, crmv: OP.crmv } : null;
 function pintar() {
   if (!D) return;
   const A = D.aparelho, interna = A.setor === "internacao", rem = D.remessas || [];
   if (window.CVH_ICONE_SETOR) CVH_ICONE_SETOR(A.setor);
   let h = '<div class="topo"><h1>Mini Estação CVH<small>'  + esc(A.nome) + "</small></h1><button class=\"btn sec peq\" data-a=\"atualizar\">Atualizar</button></div>";
+  if (interna) h += OP ? '<div class="cx" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px"><span>Usando: <b>' + esc(OP.nome) + "</b>" + (OP.crmv ? " · " + esc(OP.crmv) : "") + '</span><button class="btn sec peq" data-a="opSair">Sair</button></div>' : '<div class="cx" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px"><span>Ninguém entrou com o próprio usuário.</span><button class="btn peq" data-a="opEntrar">Entrar com o meu usuário</button></div>';
   // caixas a caminho
   const caminho = rem.filter((r) => r.situacao === "transito");
   if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
@@ -719,6 +727,7 @@ function formSolicitar() {
   $("#sResQ").addEventListener("input", () => { if ($("#sResQ").value) marcar("resDef", ""); });
   document.querySelectorAll(".sQ").forEach((x) => (x.oninput = () => { const c = document.querySelector('.sB[value="' + x.dataset.c + '"]'); if (c) c.checked = true; }));
   $("#sArq").onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 7e6) return toast("Arquivo grande demais.", 5000); const u8 = new Uint8Array(await f.arrayBuffer()); let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); ASS.anexo = { nome: f.name, mime: f.type || "application/pdf", b64: btoa(b) }; $("#sArqNome").innerHTML = "<small>Anexo: " + esc(f.name) + "</small>"; };
+  vetFixo();
 }
 function tipagemTxt() {
   if (ESC.esp === "Felina") return ESC.fel && ESC.fel !== "Não tipado" ? ESC.fel : ESC.fel ? "não tipado" : "";
@@ -735,7 +744,8 @@ async function solicitarOk(b) {
   if (o.urgencia === "reserva" && !o.reservaPara && !o.reservaAdefinir) return toast("Informe a data e a hora do procedimento ou marque A definir.", 5000);
   if (!o.paciente.nome || !o.paciente.peso) return toast("Informe o nome e o peso do paciente.", 5000);
   if (!o.vet.nome || !o.vet.crmv) return toast("Informe o médico veterinário e o número do CRMV.", 5000);
-  if (!checarVet(o.vet.nome)) return toast("No primeiro pedido, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (!OP && !checarVet(o.vet.nome)) return toast("No primeiro pedido, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (OP) o.op = OP.op;
   if (!o.responsavel.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 5000);
   if (ASS.tracos < 8 && !ASS.anexo) return toast("Assine a requisição no quadro ou anexe a requisição em PDF.", 6000);
   if (ASS.tracos >= 8) o.assinatura = $("#sAss").toDataURL("image/png").split(",")[1]; if (ASS.anexo) o.anexo = ASS.anexo;
@@ -751,12 +761,15 @@ function formTransfusao(uid) {
     "<label>Responsável</label>" + blocoOrienta() +
     '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">TRANSFUNDIDO</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
   ligarNumeros(); ligarVet(); $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
+  vetFixo();
 }
+// com alguém logado, nome e CRMV vêm do usuário e não podem ser trocados
+function vetFixo() { if (!OP) return; const n = $("#tVet"), c = $("#tCrmv"); if (n) { n.value = OP.nome; n.readOnly = true; } if (c && OP.crmv) { c.value = crmvNum(OP.crmv); c.readOnly = true; } }
 async function transfOk(uid, b) {
-  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc(), especie: ESC.espT || "" };
+  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc(), especie: ESC.espT || "", op: OP ? OP.op : "" };
   if (["animal", "peso", "ht", "telefone", "vet", "crmv"].some((k) => !o[k])) return toast("Preencha todos os dados do paciente e do médico veterinário.", 6000);
   if (!o.especie) return toast("Marque se o paciente é canino ou felino.", 5000);
-  if (!checarVet(o.vet)) return toast("Na primeira vez, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (!OP && !checarVet(o.vet)) return toast("Na primeira vez, escreva o nome e o sobrenome do médico veterinário.", 6000);
   if (!o.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 6000);
   // confirmação física: depois de TRANSFUNDIDO, a etiqueta da bolsa usada precisa ser lida; sem a leitura, nada é registrado
   const t = await lerQR("Leia a etiqueta da bolsa transfundida (" + uid + ")");
@@ -874,6 +887,9 @@ document.addEventListener("click", async (ev) => {
     if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
     if (a === "transfundir") return formTransfusao(v);
     if (a === "acomp") return formAcomp(v);
+    if (a === "opEntrar") return opEntrar();
+    if (a === "opOk") { b.disabled = true; try { const r = await srv("intEntrar", $("#opU").value, $("#opS").value); OP = { op: r.op, nome: r.nome, crmv: r.crmv, t: Date.now() }; try { localStorage.setItem("cvh_int_op", JSON.stringify(OP)); } catch (e) {} fechar(); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
+    if (a === "opSair") { srv("intSair", OP && OP.op).catch(() => {}); OP = null; try { localStorage.removeItem("cvh_int_op"); } catch (e) {} pintar(); return; }
     if (a === "monitEsc") { const L = (D.unidades || []).filter((u) => u.local === D.aparelho.local && (u.situacao === "retirada" || (u.situacao === "utilizada" && Date.now() - Date.parse(((u.dados || {}).uso || {}).transfundidaEm || 0) < 4 * 864e5)));
       if (!L.length) return modal('<h2>Ficha de monitoramento</h2><p>A ficha é aberta para a bolsa que foi retirada para uso. Toque em Retirar para uso na bolsa do estoque e depois abra a ficha por aqui.</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>');
       return modal('<h2>Ficha de monitoramento</h2><p>Escolha a bolsa da transfusão.</p>' + L.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((((u.dados || {}).uso || {}).paciente || {}).nome || "retirada " + hora(((u.dados || {}).uso || {}).retiradaEm)) + '</small><div class="bts"><button class="btn peq" data-a="monit" data-v="' + esc(u.id) + '">Abrir a ficha</button></div></div>').join("") + '<div class="bts"><button class="btn sec" data-a="fechar">Voltar</button></div>'); }

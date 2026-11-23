@@ -925,7 +925,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123053921';
+  var VERSAO = '20261123055625';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3833,7 +3833,7 @@ function modulosBusca(q0) {
   return modsVisiveis().filter(m => semAc(m.t + ' ' + m.d).includes(q) || semAc(m.t).split(' ').some(w => w.startsWith(q)));
 }
 
-const ROT_PERM = { admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil hematológico', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
+const ROT_PERM = { intensivet: 'Mini Estação da Intensivet (médico veterinário entra com o próprio usuário)', admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil hematológico', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
   certificados: 'Certificados', receitas: 'Receituário', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações' };
 
 /* ── calculadora de SAG ── */
@@ -7491,6 +7491,7 @@ function abrirFormUsuario(u) {
   const eu = u.id && u.id === E.u.id;
   abrirFolha(u.id ? 'Usuário' : 'Novo usuário', '<div class="grade">' + campo('uNome', 'Nome', inp('uNome', u.nome, 'autocomplete="off"'), 'larga') +
     campo('uUsuario', 'Usuário (para entrar)', inp('uUsuario', u.usuario, 'autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ex.: felipe"')) +
+    campo('uCrmv', 'CRMV (médico veterinário de fora do CVH)', inp('uCrmv', u.crmv || '', 'autocomplete="off" placeholder="CRMV-DF 00000"')) +
     campo('uEmail', 'E-mail pessoal (recebe o link de senha nova)', inp('uEmail', u.email || '', 'type="email" autocomplete="off" autocapitalize="none" placeholder="nome@exemplo.com"')) +
     campo('uSenha', u.temSenha ? 'Nova senha' : 'Senha', inp('uSenha', '', 'type="password" autocomplete="new-password" placeholder="' + (u.temSenha ? 'vazio mantém a atual' : 'mínimo 4, pode ser um PIN') + '"')) +
     campo('uVet', 'Assinatura (médico veterinário)', '<select id="uVet"><option value="">Não assina (não é médico veterinário)</option>' + (E.d.vets || []).map(x => '<option value="' + x.id + '"' + (x.id === u.vetId ? ' selected' : '') + '>' + esc(x.nome + ' · ' + x.crmv) + '</option>').join('') + '<option value="__novo">+ Cadastrar o CRMV agora</option></select>', 'larga') +
@@ -7514,7 +7515,7 @@ function abrirFormUsuario(u) {
           const vet = await api('salvarVet', E.sessao, { nome: vl('uVetNome'), crmv: crmv, rubrica: '', padrao: false });
           E.d.vets.push(vet); vetId = vet.id;
         }
-        const salvo = await api('salvarUsuario', E.sessao, { id: u.id || '', nome: vl('uNome'), usuario: vl('uUsuario'), email: vl('uEmail'), senha: $('#uSenha').value, vetId: vetId, permissoes: $$('.uPerm').filter(x => x.checked).map(x => x.value), ativo: !$('#uAtivo') || $('#uAtivo').checked });
+        const salvo = await api('salvarUsuario', E.sessao, { id: u.id || '', nome: vl('uNome'), usuario: vl('uUsuario'), email: vl('uEmail'), crmv: vl('uCrmv'), senha: $('#uSenha').value, vetId: vetId, permissoes: $$('.uPerm').filter(x => x.checked).map(x => x.value), ativo: !$('#uAtivo') || $('#uAtivo').checked });
         const i = E.d.usuarios.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.usuarios[i] = salvo; else E.d.usuarios.push(salvo);
         if (salvo.id === E.u.id) E.u = E.d.usuario = salvo;
         toast('Usuário salvo.'); telaAjustes();
