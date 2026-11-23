@@ -945,7 +945,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123191546';
+  var VERSAO = '20261123194520';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6765,6 +6765,7 @@ const PONTE = {
   receptorGuardar: o => { try { const k = 'cvh_receptores', L = JSON.parse(localStorage.getItem(k) || '[]'), ch = x => semAc(String(x.paciente && x.paciente.nome || '') + '|' + String(x.resp && x.resp.nome || '')).toLowerCase(); const out = [Object.assign({}, o, { em: new Date().toISOString() })].concat(L.filter(x => ch(x) !== ch(o))).slice(0, 40); localStorage.setItem(k, JSON.stringify(out)); return true; } catch (_) { return false; } },
   lerPdf: id => api('lerArquivoDrive', E.sessao, id),
   autoHistorico: r => { fimHistoricoSozinho(r || {}); return true; },
+  revisaoAlerta: () => E.animal ? api('revisaoAlerta', E.sessao, E.animal).catch(() => null) : null,
   salvarHistorico: async (o, aidFixo) => {
     const an = animalDe(aidFixo || o.autoAid || E.animal);
     const a4 = await api('salvarArquivo', E.sessao, an.id, o.a4.nome, 'application/pdf', o.a4.b64);
@@ -7532,9 +7533,11 @@ const REV_NOME = Object.fromEntries(REV_SIT);
 const revSit = aid => ((E.rev || {})[aid] || {}).situacao || '';
 function abrirRevisao(aid) {
   const an = animalDe(aid), r = (E.rev || {})[aid] || {}; E.revSel = r.situacao || '';
-  abrirFolha(an.nome + ' · revisão', '<p class="nota">Só você vê esta marca e a nota. A cor aparece no nome do animal nas listas.</p><div class="rev-ops">' +
+  abrirFolha(an.nome + ' · revisão', '<p class="nota">Só você vê esta marca. A cor aparece no nome do animal nas listas.</p><div class="rev-ops">' +
     [['', 'Sem marca']].concat(REV_SIT).map(([k, t]) => '<button class="rev-op' + (k ? ' rev-' + k : '') + (E.revSel === k ? ' on' : '') + '" data-acao="rev-sit" data-v="' + k + '">' + t + '</button>').join('') + '</div>' +
     '<label class="rot" for="revNota">Nota para você</label><textarea id="revNota" rows="5" placeholder="Ex.: falta a vacina de 2026, conferir o peso, pedir o hemograma">' + esc(r.nota || '') + '</textarea>' +
+    (/^Nova coleta/.test(r.por || '') ? '<p class="nota"><b>' + esc(r.por) + ':</b> marcado como incompleto até você revisar de novo.</p>' : '') +
+    '<p class="nota">A nota aparece como alerta na ficha da próxima coleta.</p>' +
     (r.atualizado ? '<p class="nota">Última alteração: ' + esc(new Date(r.atualizado).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })) + '</p>' : '') +
     '<button class="btn" data-acao="rev-salvar" data-id="' + aid + '">Salvar</button>');
 }

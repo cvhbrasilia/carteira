@@ -2927,6 +2927,7 @@ init();
     const ja = (ctx.fichas || []).find((f) => f.numero && f.numero === S.numero);
     const chk = checarDoacao(iso), graves = chk.graves;
     avisos.push(...chk.avisos);
+    if (ctx.revisaoNota) avisos.push("Alerta da revisão do cadastro: " + ctx.revisaoNota);
     const precisaAnalise = graves.length && !ctx.admin;
     const div = document.createElement("div"); div.className = "cvh-conf";
     div.innerHTML = `<div class="cx" role="dialog" aria-modal="true"><h3>Salvar na carteira de ${esc(a.nome || S.animal)}</h3>
@@ -2995,6 +2996,8 @@ init();
     else if (pend && await confirmar(`Há uma ficha de ${esc(a.nome)} em andamento neste aparelho${pend.numero ? " (doação " + esc(pend.numero) + ")" : ""}. Continuar nela?`, [["Começar outra", false], ["Continuar", true, "pri"]])) {
       S = Object.assign(blank(), pend); lsSet(LS_ATUAL, pend.id);
     }
+    // nota da revisão do cadastro: alerta para quem faz a coleta
+    try { const rv = await ponte("revisaoAlerta"); if (rv && rv.nota) { ctx.revisaoNota = rv.nota; await confirmar(`<b>Alerta da revisão do cadastro de ${esc(a.nome)}</b><br><br>${esc(rv.nota).replace(/\n/g, "<br>")}`, [["Entendi", true, "pri"]]); } } catch (e) {}
     // salvar antes de terminar: grava a ficha em andamento no painel
     salvar = async function (silencioso) {
       if (!temConteudo(S)) { toast("Preencha pelo menos o número da doação ou o nome do animal antes de salvar."); return false; }
