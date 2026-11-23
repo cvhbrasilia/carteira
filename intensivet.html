@@ -40,7 +40,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123060251';
+  var VERSAO = '20261123103728';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -192,6 +192,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .cx.cp-pisca{animation:cpBorda 1.2s ease-in-out infinite;border:3px solid #A83D3D}
 @keyframes cpBorda{0%,100%{box-shadow:0 0 0 0 rgba(168,61,61,.0)}50%{box-shadow:0 0 0 6px rgba(168,61,61,.35)}}
 #alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
+.mascara{-webkit-text-security:disc;text-security:disc}
 </style></head>
 <body>
 <div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
@@ -214,7 +215,7 @@ function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remo
 /* ── aparelho: o link do CVH (?k=…) ativa este celular; depois o endereço fica limpo ── */
 let K = "";
 try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_int_k", q.get("k")); } K = localStorage.getItem("cvh_int_k") || ""; } catch (e) {}
-const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]);
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]).catch((e) => { if (/^OPFIM: /.test(e && e.message || "")) { e.message = e.message.slice(7); if (typeof opFim === "function") opFim(""); } throw e; });
 const nomeSalvo = () => { try { return localStorage.getItem("cvh_int_nome") || ""; } catch (e) { return ""; } };
 const salvarNome = (n) => { try { localStorage.setItem("cvh_int_nome", n); } catch (e) {} };
 
@@ -361,11 +362,15 @@ const seloCP = (u) => { const l = cpLim(u); if (l == null) return ""; const rest
 function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Math.abs(s), t = p2(Math.floor(a / 60)) + ":" + p2(a % 60); return '<span class="relogio' + (s < 0 ? " al" : "") + '" data-fim="' + fimMs + '">' + (s < 0 ? "atrasado " + t : t) + "</span>"; }
 
 /* ── login individual: cada médico veterinário entra com o próprio usuário (sai sozinho depois de 30 min parado) ── */
-let OP = (() => { try { const o = JSON.parse(localStorage.getItem("cvh_int_op") || "null"); return o && Date.now() - o.t < 30 * 6e4 ? o : null; } catch (e) { return null; } })();
-const opMexeu = () => { if (OP) { OP.t = Date.now(); try { localStorage.setItem("cvh_int_op", JSON.stringify(OP)); } catch (e) {} } };
-document.addEventListener("pointerdown", opMexeu, { passive: true });
-setInterval(() => { if (OP && Date.now() - OP.t > 30 * 6e4) { srv("intSair", OP.op).catch(() => {}); OP = null; try { localStorage.removeItem("cvh_int_op"); } catch (e) {} pintar(); toast("Saída automática do usuário depois de 30 minutos sem uso.", 5000); } }, 30000);
-function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><label>Usuário</label><input type="text" id="opU" autocomplete="username" autocapitalize="none"><label>Senha</label><input type="password" id="opS" autocomplete="current-password"><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); setTimeout(() => $("#opU").focus(), 100); }
+// celular público: a entrada do médico veterinário fica só na memória da página (fechar ou recarregar encerra) e termina depois de 10 minutos sem uso
+let OP = null;
+try { localStorage.removeItem("cvh_int_op"); } catch (e) {}
+const opMexeu = () => { if (OP) OP.t = Date.now(); };
+const opFim = (msg) => { if (OP) srv("intSair", OP.op).catch(() => {}); OP = null; pintar(); if (msg) toast(msg, 6000); };
+["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, opMexeu, { passive: true }));
+setInterval(() => { if (OP && Date.now() - OP.t > 10 * 6e4) opFim("Saída automática do usuário depois de 10 minutos sem uso."); }, 20000);
+window.addEventListener("pagehide", () => { if (OP) { srv("intSair", OP.op).catch(() => {}); OP = null; } });
+function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><p><small>Este celular é de uso comum. A senha não fica salva e a entrada termina ao sair, ao fechar o app ou depois de 10 minutos sem uso.</small></p><label>Usuário</label><input type="text" id="opU" name="u' + Date.now() + '" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Senha</label><input type="text" id="opS" name="x' + Date.now() + '" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); const cs = $("#opS"); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) { cs.type = "password"; cs.autocomplete = "new-password"; } setTimeout(() => $("#opU").focus(), 100); }
 const vetDoOp = () => OP ? { nome: OP.nome, crmv: OP.crmv } : null;
 function pintar() {
   if (!D) return;
@@ -890,8 +895,8 @@ document.addEventListener("click", async (ev) => {
     if (a === "transfundir") return formTransfusao(v);
     if (a === "acomp") return formAcomp(v);
     if (a === "opEntrar") return opEntrar();
-    if (a === "opOk") { b.disabled = true; try { const r = await srv("intEntrar", $("#opU").value, $("#opS").value); OP = { op: r.op, nome: r.nome, crmv: r.crmv, t: Date.now() }; try { localStorage.setItem("cvh_int_op", JSON.stringify(OP)); } catch (e) {} fechar(); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
-    if (a === "opSair") { srv("intSair", OP && OP.op).catch(() => {}); OP = null; try { localStorage.removeItem("cvh_int_op"); } catch (e) {} pintar(); return; }
+    if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value; try { const r = await srv("intEntrar", u0, s0); cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, t: Date.now() }; fechar(); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
+    if (a === "opSair") { opFim(""); return; }
     if (a === "monitEsc") { const L = (D.unidades || []).filter((u) => u.local === D.aparelho.local && (u.situacao === "retirada" || (u.situacao === "utilizada" && Date.now() - Date.parse(((u.dados || {}).uso || {}).transfundidaEm || 0) < 4 * 864e5)));
       if (!L.length) return modal('<h2>Ficha de monitoramento</h2><p>A ficha é aberta para a bolsa que foi retirada para uso. Toque em Retirar para uso na bolsa do estoque e depois abra a ficha por aqui.</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>');
       return modal('<h2>Ficha de monitoramento</h2><p>Escolha a bolsa da transfusão.</p>' + L.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((((u.dados || {}).uso || {}).paciente || {}).nome || "retirada " + hora(((u.dados || {}).uso || {}).retiradaEm)) + '</small><div class="bts"><button class="btn peq" data-a="monit" data-v="' + esc(u.id) + '">Abrir a ficha</button></div></div>').join("") + '<div class="bts"><button class="btn sec" data-a="fechar">Voltar</button></div>'); }

@@ -903,7 +903,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
   function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
-  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  // link de arquivo leva só a chave de arquivos (12 h), nunca a sessão do painel; sem a chave, cai na sessão (versões antigas)
+  function chaveArq() { try { return localStorage.getItem('cvh_fs') || ''; } catch (e) { return ''; } }
+  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : ''); }
   function reescrever(x) {
     if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
     if (Array.isArray(x)) return x.map(reescrever);
@@ -925,7 +927,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123055625';
+  var VERSAO = '20261123060251';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -977,7 +979,7 @@ function apiBruto(fn, ...args) {
     if (window.DEMO) { DEMO.chamar(fn, args).then(ok, erro); return; }
     CVH_SERVIDOR.chamar(fn, args).then(ok, e => {
       const m = String((e && e.message) || e).replace(/^(Exception|Error):\s*/, '');
-      if (m.indexOf('SESSAO') >= 0) { E.sessao = null; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); } catch (_) {} fecharFolha(); telaLogin(); erro(new Error('Sua sessão expirou. Entre de novo.')); return; }
+      if (m.indexOf('SESSAO') >= 0) { E.sessao = null; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); } catch (_) {} fecharFolha(); telaLogin(); erro(new Error('Sua sessão expirou. Entre de novo.')); return; }
       erro(new Error(m));
     });
   });
@@ -3285,8 +3287,12 @@ async function telaLogin() {
     } catch (e) { if ($('#erro')) { $('#erro').textContent = e.message; bt.disabled = false; } }
   };
 }
+// chave só de arquivos (12 h) para os links de PDF: pedida antes dos dados, porque os links são montados ao receber
+async function renovarChaveArquivos() { try { const f = await api('chaveArquivos', E.sessao); localStorage.setItem('cvh_fs', f); } catch (_) {} }
+setInterval(() => { if (E.sessao) renovarChaveArquivos(); }, 6 * 36e5);
 async function carregarPainel() {
   carregando('Carregando dados');
+  await renovarChaveArquivos();
   E.d = await api('painelDados', E.sessao);
   E.u = E.d.usuario;
   telaHome();
@@ -7927,7 +7933,7 @@ const ACOES = {
   'imp-fim': () => { fecharFolha(); reabrir(); },
   'teste-email': async b => { try { b.disabled = true; const para = await api('testarEmail', E.sessao); toast('E-mail de teste enviado para ' + para + '.', 4000); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; } },
   'rodar-lembretes': async b => { try { b.disabled = true; const n = await api('verificarLembretes', E.sessao); toast(n ? n + ' e-mail(s) enviados.' : 'Nenhum lembrete pendente hoje.', 4000); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; } },
-  sair: () => { E.u = null; E.d = null; E.modHtml = {}; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); } catch (_) {} if (E.sessao) api('painelSair', E.sessao).catch(() => {}); E.sessao = null; fecharFolha(); telaLogin(); },
+  sair: () => { E.u = null; E.d = null; E.modHtml = {}; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); } catch (_) {} if (E.sessao) api('painelSair', E.sessao).catch(() => {}); E.sessao = null; fecharFolha(); telaLogin(); },
   'demo-resp': () => { E.modo = 'responsavel'; E.token = 'demo'; iniciarResponsavel(); },
   'demo-painel': () => { E.modo = 'painel'; iniciarPainel(); }
 };
