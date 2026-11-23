@@ -2109,6 +2109,13 @@ const nomeParecido = (a, b) => { const x = normNome(a).split(" ")[0] || "", y = 
 const respConfere = (pdf, cad) => !!String(pdf || "").trim() && !!String(cad || "").trim() && (mesmoNome(normNome(pdf).split(" ")[0], normNome(cad).split(" ")[0]) || nomeParecido(pdf, cad));
 function avisoNome(c, an, av) {
   if (!c.nome || !an.nome || mesmoNome(c.nome, an.nome)) return;
+  // IDEXX do CVH: o nome do paciente no PDF é o número da doação (577-0). Vale se a doação é deste animal.
+  if (/^\d{2,7}-?\d$/.test(String(c.nome).trim())) {
+    const d = acharDoacao(c.nome), aid = estado.animalId || CTX.animalId || an.id;
+    if (d && (!d.animalId || !aid || d.animalId === aid)) return;
+    av.push(d ? `O número no PDF (${c.nome}) é de uma doação de outro animal. Confira se o PDF é mesmo de ${an.nome}.` : `O número no PDF (${c.nome}) não é de nenhuma doação de ${an.nome} no cadastro. Confira se o PDF é mesmo deste animal.`);
+    return;
+  }
   const rp = c.responsavel || c.tutor || "", cad = (estado.resp || {}).nome || "";
   if (nomeParecido(c.nome, an.nome) && respConfere(rp, cad)) av.push(`O nome no PDF (${c.nome}) está escrito diferente do cadastro (${an.nome}), mas o responsável confere (${rp}).`);
   else av.push(`O nome no PDF (${c.nome}) é diferente do cadastro (${an.nome})` + (rp && cad && !respConfere(rp, cad) ? ` e o responsável também (${rp} no PDF, ${cad} no cadastro). Confira se é o mesmo animal.` : "."));
