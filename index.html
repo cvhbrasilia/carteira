@@ -920,7 +920,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123024237';
+  var VERSAO = '20261123024411';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5894,6 +5894,7 @@ function pintarPainelLaudos() {
   const nomeMes = m => { const [a, b] = m.split('-'); return ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][+b - 1] + '/' + a; };
   // alertas no topo: resultados com detecção ou fora da referência ainda sem laudo, e laudos assinados com alerta que não foram para a carteira
   const alertas = V.filter(o => o.al.length && (o.k === 'lab' ? o.et !== 'arquivado' : o.k === 'reg' && o.x.animalId !== 'receptor' && !envioDe(o.x).carteira));
+  const prontos = itens.filter(o => o.k === 'reg' && o.x.animalId !== 'receptor' && !envioDe(o.x).carteira && !(envioDe(o.x).carteiraEm) && Date.parse(o.x.data) >= Date.now() - 45 * 864e5 && !alertas.includes(o));
   const nome = o => { if (o.k === 'reg') return o.x.animalId === 'receptor' ? (((o.x.dados || {}).paciente || {}).nome || 'Receptor') + ' (receptor)' : (animalDe(o.x.animalId) || {}).nome || ''; if (o.k === 'rasc') return o.x.paciente || 'Sem nome'; const an = animalDoLab(o.x), nI = o.x.origem === 'idexx' ? idexxNome(o.x.nomeArquivo) : null; return an ? an.nome : (nI ? nI.animal : String(o.x.animal || '').replace(/\s*\(\d+\)\s*/, ' ').trim()) || 'animal não identificado'; };
   const card = o => {
     const x = o.x, al = o.al.length ? '<small class="lab-pos">' + esc(o.al.slice(0, 6).join(' · ')) + '</small>' : '';
@@ -5905,6 +5906,7 @@ function pintarPainelLaudos() {
     return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al +
       '<small>' + (ev.carteira ? '<span class="chip ok">na carteira</span>' : '<span class="chip neutro">fora da carteira</span>') + ' ' + (temHist ? (ev.historico ? '<span class="chip ok">no histórico</span>' : '<span class="chip neutro">fora do histórico</span>') : '') + '</small></div>' +
       '<div class="mini-bts">' + (d.cel && d.cel.url ? '<a class="mini" href="' + esc(d.cel.url) + '" target="_blank" rel="noopener">PDF</a>' : '') +
+      (!ev.carteira && !ev.carteiraEm ? '<button class="mini" data-acao="pl-envio-tudo" data-id="' + x.id + '">Enviar para a carteira' + (temHist ? ' e o histórico' : '') + '</button>' : '') +
       '<button class="mini" data-acao="pl-envio" data-id="' + x.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' +
       (temHist ? '<button class="mini" data-acao="pl-envio" data-id="' + x.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : '') +
       (((d.edicao && d.edicao.id) || edicaoDeAntigo(d)) && pode('laudos') ? '<button class="mini" data-acao="laudo-corrigir" data-id="' + x.id + '">Corrigir</button>' : '') + '</div></div>';
@@ -5913,6 +5915,7 @@ function pintarPainelLaudos() {
   const T = V.filter(o => o.t === PL.tipo), etapa = (k, tit, nota) => { const L = T.filter(o => o.et === k); return '<section class="cartao"><h3>' + tit + ' · ' + L.length + '</h3>' + (nota ? '<p class="nota">' + nota + '</p>' : '') + (L.length ? L.map(card).join('') : '<p class="vazio-p">Nada aqui.</p>') + '</section>'; };
   document.querySelector('.tela-pl .tela-c').innerHTML = '<div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Laudos</button></div><header class="topo"><div class="t"><span>Laudos de exames</span><b>Painel de laudos</b></div></header>' + '<section class="cartao" id="ldAfazer" hidden></section>' +
     '<div class="pl-filtro"><label>Período <select id="plMes"><option value="recentes"' + (PL.mes === 'recentes' ? ' selected' : '') + '>Últimos 30 dias e pendentes</option>' + meses.map(m => '<option value="' + m + '"' + (PL.mes === m ? ' selected' : '') + '>' + nomeMes(m) + '</option>').join('') + '<option value="todos"' + (PL.mes === 'todos' ? ' selected' : '') + '>Todos</option></select></label><button class="btn sec2 peq" data-acao="pl-atualizar">Atualizar</button></div>' +
+    (prontos.length && pode('laudos') ? '<section class="cartao pl-alertas"><h3>Prontos para enviar <span class="chip critico">' + prontos.length + '</span></h3><p class="nota">Laudos assinados que ainda não foram para a carteira do responsável. Confira o PDF e envie com um toque.</p>' + prontos.map(card).join('') + '</section>' : '') +
     '<section class="cartao pl-alertas"><h3>Alertas' + (alertas.length ? ' <span class="chip critico">' + alertas.length + '</span>' : '') + '</h3>' + (alertas.length ? alertas.sort((a, b) => (b.x.positivo ? 1 : 0) - (a.x.positivo ? 1 : 0)).map(card).join('') : '<p class="vazio-p">Nenhum alerta no período.</p>') + '</section>' +
     '<div class="pl-tipos">' + TIPOS_PL.map(([k, t]) => '<button class="' + (PL.tipo === k ? 'on' : '') + '" data-acao="pl-tipo" data-v="' + k + '">' + t + (cont(k) ? ' <b>' + cont(k) + '</b>' : '') + '</button>').join('') + '</div>' +
     '<div class="pl-etapas">' + etapa('alerta', 'Alerta', 'Detectado, positivo ou fora da referência, ainda sem o laudo do CVH.') + etapa('aguardando', 'Aguardando revisão e assinatura', 'Recebidos dos laboratórios e laudos em edição.') + etapa('assinado', 'Revisados e assinados', 'Envie para a carteira do responsável e para o histórico laboratorial.') + '</div>' +
@@ -6486,6 +6489,7 @@ const PONTE = {
     const salvo = await api('salvarRegistro', E.sessao, { id: antigo ? antigo.id : '', animalId: an.id, tipo: 'laudo', grupo: 'laudo', data: o.data, proxima: '', vetId: o.vetId || '', dados: Object.assign({}, o.dados, { a4, cel, envio }, edicao ? { edicao } : {}) });
     guardarRegistro(salvo);
     if (o.rascunhoId) { try { await api('laudoRascunhoApagar', E.sessao, o.rascunhoId); E.rascunhos = null; } catch (_) {} }
+    if (!antigo && salvo && salvo.id) api('laudoAvisarPronto', E.sessao, salvo.id).catch(() => {});
     // carteira e histórico: pelos botões Enviar (painel de laudos e lista de laudos do animal); correção de laudo já no histórico atualiza sozinha
     if (origens.length && pode('historico') && envio.historico) setTimeout(() => atualizarHistoricoSozinho(an.id), 300);
     if (E.ponte && E.ponte.pdfLab && E.ponte.pdfLab.labId) { for (const lid of (o.labIds && o.labIds.length ? o.labIds : [E.ponte.pdfLab.labId])) { try { await api('laboratorioMarcar', E.sessao, lid, { situacao: 'feito', registroId: salvo.id, animalId: an.id }); } catch (_) {} } }
@@ -7472,6 +7476,13 @@ const ACOES = {
   'pl-atualizar': () => telaPainelLaudos(true),
   'pl-tipo': b => { PL.tipo = b.dataset.v; pintarPainelLaudos(); },
   'pl-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); const x = (PL.labs || []).find(y => y.id === b.dataset.id); if (x) x.situacao = b.dataset.v; pintarPainelLaudos(); } catch (e) { toast(e.message, 4000); } },
+  'pl-envio-tudo': async b => {
+    const r = regPorId(b.dataset.id); if (!r) return; b.disabled = true;
+    try { const hist = !!((r.dados || {}).origens) && pode('historico'); let salvo = await api('laudoEnvio', E.sessao, r.id, Object.assign({ carteira: true }, hist ? { historico: true } : {})); guardarRegistro(salvo);
+      if (hist) atualizarHistoricoSozinho(r.animalId); toast('Laudo enviado para a carteira' + (hist ? ' e o histórico sendo atualizado (leva alguns minutos).' : '.'), 5000);
+      if (document.querySelector('.tela-pl')) pintarPainelLaudos(); else if (document.querySelector('#listaLd')) telaLaudos(E.animal);
+    } catch (e) { toast(e.message, 6000); b.disabled = false; }
+  },
   'pl-envio': async b => {
     const r = regPorId(b.dataset.id); if (!r) return; b.disabled = true;
     try {
