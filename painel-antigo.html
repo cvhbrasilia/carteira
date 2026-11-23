@@ -921,7 +921,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123031732';
+  var VERSAO = '20261123032422';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4806,7 +4806,8 @@ function telaHome() {
   if (pode('estoque') || pode('producao') || pode('admin')) setTimeout(pedidosHome, 40);
   if (pode('laudos')) setTimeout(novosResultadosHome, 60);
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
-  const meus = MODS.filter(m => m.livre || pode(m.perm || m.k));
+  const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
+  const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte'));
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
@@ -4982,9 +4983,18 @@ function formReceptor(rc, pre) {
   abrirFolha(rc ? d.nome : 'Novo receptor', '<div class="grade">' +
     campo('rcNome', 'Nome do paciente', inp('rcNome', d.nome)) + campo('rcEsp', 'Espécie', sel('rcEsp', d.especie, ['Canina', 'Felina'])) + campo('rcRaca', 'Raça', inp('rcRaca', d.raca)) + campo('rcSexo', 'Sexo', sel('rcSexo', d.sexo, ['Macho', 'Fêmea'])) +
     campo('rcIdade', 'Idade', inp('rcIdade', d.idade)) + campo('rcPeso', 'Peso (kg)', inp('rcPeso', d.peso, 'inputmode="decimal"')) + campo('rcTipo', 'Tipo sanguíneo', inp('rcTipo', d.tipo, 'placeholder="ex.: DEA 1 negativo · DAL positivo"')) + campo('rcTransf', 'Já transfundido', sel('rcTransf', d.transfundido, ['Sim', 'Não'])) +
-    campo('rcChip', 'Microchip', inp('rcChip', d.microchip)) + campo('rcResp', 'Responsável', inp('rcResp', d.responsavel)) + campo('rcTel', 'Telefone do responsável', inp('rcTel', d.telefone, 'inputmode="tel"')) + campo('rcClin', 'Clínica', inp('rcClin', d.clinica)) +
+    campo('rcChip', 'Microchip', inp('rcChip', d.microchip)) + campo('rcResp', 'Responsável', inp('rcResp', d.responsavel)) + campo('rcTel', 'Telefone do responsável', inp('rcTel', d.telefone, 'inputmode="tel"')) + campo('rcClin', 'Clínica', inp('rcClin', d.clinica, 'list="lCliRc" autocomplete="off"') + '<datalist id="lCliRc"></datalist><small id="rcCliAv"></small>') +
     campo('rcVet', 'Médico veterinário', inp('rcVet', d.veterinario)) + campo('rcCrmv', 'CRMV', inp('rcCrmv', d.crmv)) + campo('rcObs', 'Observações', '<textarea id="rcObs" rows="3">' + esc(d.obs || '') + '</textarea>', 'larga') +
     '</div><button class="btn" id="rcSalvar">' + (rc ? 'Salvar' : 'Cadastrar') + '</button>' + (rc && pode('admin') ? ' <button class="btn sec2" id="rcApagar">Apagar o cadastro</button>' : '') + hist, () => {
+      // clínica do cadastro único; se não existir, cadastro completo por cima da tela
+      const rcCli = $('#rcClin'), nzc = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      const avCli = () => { const L = E.cliCache || [], v = rcCli.value, c = L.find(x => nzc(x.nome) === nzc(v)); const el = $('#rcCliAv'); if (!el) return;
+        el.innerHTML = !c && v.trim().length > 2 && E.cliCache ? '<button type="button" class="btn sec2" id="rcCliNova" style="margin-top:6px">Cadastrar esta clínica completa</button>' : '';
+        const b = $('#rcCliNova'); if (b) b.onclick = async () => { try { const n = await novaClinica(rcCli.value); if (n && n.id) { E.cliCache = (E.cliCache || []).concat([n]); rcCli.value = n.nome; const v0 = (n.vets || [])[0]; if (v0 && !$('#rcVet').value) { $('#rcVet').value = v0.nome; $('#rcCrmv').value = v0.crmv || ''; } avCli(); toast('Clínica cadastrada.'); } } catch (e) { toast(e.message); } };
+        if (c && (c.vets || []).length && !$('#rcVet').value) { $('#rcVet').value = c.vets[0].nome; if (!$('#rcCrmv').value) $('#rcCrmv').value = c.vets[0].crmv || ''; } };
+      const encherCli = () => { $('#lCliRc').innerHTML = (E.cliCache || []).filter(x => x.ativo !== false).map(x => '<option value="' + esc(x.nome) + '">').join(''); avCli(); };
+      rcCli.addEventListener('input', avCli); rcCli.addEventListener('change', avCli);
+      if (E.cliCache) encherCli(); else api('cliDados', E.sessao).then(r => { E.cliCache = r.clinicas || []; encherCli(); }).catch(() => {});
       $('#rcSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
         const o = { id: rc ? rc.id : '', nome: vl('rcNome'), especie: vl('rcEsp'), raca: vl('rcRaca'), sexo: vl('rcSexo'), idade: vl('rcIdade'), peso: vl('rcPeso'), tipo: vl('rcTipo'), transfundido: vl('rcTransf'), microchip: vl('rcChip'), responsavel: vl('rcResp'), telefone: vl('rcTel'), clinica: vl('rcClin'), veterinario: vl('rcVet'), crmv: vl('rcCrmv'), obs: vl('rcObs'), fontes: lig.map(f => f.k) };
         const r = await api('estReceptorSalvar', E.sessao, o); E.rec = [r].concat((E.rec || []).filter(x => x.id !== r.id)); fecharFolha(); toast(rc ? 'Receptor atualizado.' : 'Receptor cadastrado.');
@@ -6538,6 +6548,8 @@ const PONTE = {
     }
     return { docs, codigo: salvo.codigo };
   },
+  novaClinica: o => novaClinica((o || {}).nome || ''),
+  clinicaFim: c => { if (NOVA_CLI.fim) NOVA_CLI.fim(c); return true; },
   pedirAnaliseFicha: o => api('fichaPedirAnalise', E.sessao, { animalId: E.animal, numero: (o || {}).numero || '', motivos: (o || {}).motivos || [] }),
   salvarFicha: async o => {
     const an = animalDe(E.animal);
@@ -6558,7 +6570,22 @@ const PONTE = {
 };
 // o módulo chama o painel direto por esta função; as mensagens abaixo ficam de reserva
 window.CVH_PONTE = (metodo, args) => { if (AUTO_HIST.aid && ['lerPdf', 'ia', 'salvarHistorico', 'autoHistorico'].includes(metodo) && (metodo === 'autoHistorico' || !E.ponte || ((args || [])[0] && (args[0].autoAid || metodo !== 'salvarHistorico')))) return Promise.resolve().then(() => PONTE[metodo](...(args || [])));
-  if (!E.ponte || !PONTE[metodo]) return Promise.reject(new Error('O módulo foi fechado.')); return Promise.resolve().then(() => PONTE[metodo](...(args || []))); };
+  if ((!E.ponte && !(NOVA_CLI.fim && ['trp', 'clinicaFim'].includes(metodo))) || !PONTE[metodo]) return Promise.reject(new Error('O módulo foi fechado.')); return Promise.resolve().then(() => PONTE[metodo](...(args || []))); };
+// cadastro completo de clínica por cima de qualquer tela (câmaras, motoboy, receptores): o formulário do módulo Clínicas numa moldura
+const NOVA_CLI = { fim: null };
+async function novaClinica(nome) {
+  if (NOVA_CLI.fim) NOVA_CLI.fim(null);
+  if (!E.modHtml.clinicas) E.modHtml.clinicas = await api('moduloHtml', E.sessao, 'clinicas');
+  const h = E.modHtml.clinicas; if (h.indexOf(MODULO_CFG.clinicas.marca) < 0) throw new Error('Arquivo das clínicas incompleto.');
+  return await new Promise((ok) => {
+    const cx = document.createElement('div'); cx.id = 'novaCli'; cx.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(40,20,15,.45);display:flex;justify-content:center;align-items:stretch';
+    const fr = document.createElement('iframe'); fr.title = 'Cadastrar clínica'; fr.style.cssText = 'border:0;width:100%;max-width:640px;height:100%;background:#FAF7F2';
+    cx.appendChild(fr); document.body.appendChild(cx);
+    NOVA_CLI.fim = (c) => { NOVA_CLI.fim = null; cx.remove(); ok(c || null); };
+    const ctx = '<script>window.CVH_CTX = ' + JSON.stringify({ novaClinica: { nome: String(nome || '').slice(0, 120) } }).replace(/</g, '\\u003c') + ';<\/script>', i = h.indexOf('<head>');
+    fr.srcdoc = i >= 0 ? h.slice(0, i + 6) + ctx + h.slice(i + 6) : ctx + h;
+  });
+}
 // Histórico Laboratorial refeito em segundo plano (moldura escondida) depois de salvar um laudo da IDEXX ou da TECSA: a carteira se atualiza sozinha
 const AUTO_HIST = { aid: null, fila: [] };
 async function atualizarHistoricoSozinho(aid) {
