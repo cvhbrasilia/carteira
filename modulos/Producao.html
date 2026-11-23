@@ -386,7 +386,10 @@ async function acaoUnidade(acao, o) {
   if (acao === "devApta" || acao === "devBloq") { a = "receberDevolucao"; o.apta = acao === "devApta"; }
   if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
   try { const r = await est("estUnidadeAcao", u.id, a, o); Object.assign(u, r); S.ev.unshift({ quando: new Date().toISOString(), coleta: u.coleta, unidade_id: u.id, tipo: "unidade:" + a, usuario: CTX.usuario || "", dados: o }); toast("Feito."); pintar(); abrirUnidade(u.id); }
-  catch (e) { toast(e.message, 6000); }
+  catch (e) {
+    // bolsa vencida: bloqueio; só o administrador analisa e libera com justificativa registrada
+    if (/vencida/i.test(e.message) && S.admin && !o.forcarVencida) { $("#uForm").innerHTML = '<div class="cx" style="background:#FBE9E7;border:1px solid #e3b9b4;margin-top:8px"><h2 style="color:#8A1D14">Bolsa vencida</h2><p>' + esc(e.message) + '</p><label>Justificativa para continuar mesmo assim</label><input type="text" id="vcJus" placeholder="Ex.: validade estendida após análise"><div class="bts" style="margin-top:8px"><button class="btn peq perigo" data-a="vcForcar" data-v="' + esc(a) + '">Continuar mesmo vencida</button></div></div>'; S.vcPend = { u, a, o }; return; }
+    toast(e.message, 7000); }
 }
 
 /* ── desleucocitação (5.2): filtros Fresenius; o estoque fica com o volume depois do filtro ── */
@@ -1073,6 +1076,7 @@ document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
   if (a === "fechar" || ev.target.id === "veu") return fecharGaveta();
   if (a === "aba") { S.aba = v; pintar(); window.scrollTo(0, 0); return; }
+  if (a === "vcForcar") { const P = S.vcPend, j = ($("#vcJus") || {}).value || ""; if (!P) return; if (j.trim().length < 5) return toast("Escreva a justificativa."); b.disabled = true; try { const r = await est("estUnidadeAcao", P.u.id, P.a, Object.assign({}, P.o, { forcarVencida: true, justificativa: j })); Object.assign(P.u, r); S.vcPend = null; toast("Feito, com a justificativa registrada."); pintar(); abrirUnidade(P.u.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } return; }
   if (a === "monLink") { b.disabled = true; const w = window.open("", "_blank"); try { const t = await est("estMonLink", { unidade: v }), url = (ORIGEM || (await ponte("origem")) || "") + "monitoramento.html?m=" + t; if (w) w.location = url; } catch (e) { if (w) w.close(); toast(e.message); } finally { b.disabled = false; } return; }
   if (a === "filtro") { S.aba = "estoque"; if (["CH", "CP", "PFC", "CRIO"].includes(v)) { S.f.comp = v; S.f.sit = "disponivel"; } else { S.f.comp = ""; S.f.sit = v; } pintar(); return; }
   if (a === "f") { S.f[b.dataset.c] = v; pintar(); return; }
