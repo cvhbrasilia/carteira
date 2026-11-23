@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head>
-<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Mini Estação CVH"><meta property="og:description" content="Estoque emergencial e pedidos ao CVH. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/painel-512.png"><meta property="og:image:width" content="512"><meta property="og:image:height" content="512"><meta name="twitter:card" content="summary"><meta name="description" content="Estoque emergencial e pedidos ao CVH. Abra neste celular e adicione à tela de início.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Mini Estação CVH"><meta property="og:description" content="Estoque emergencial e pedidos ao CVH. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/painel-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Estoque emergencial e pedidos ao CVH. Abra neste celular e adicione à tela de início.">
 <script>
 // Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
 (function () {
@@ -43,7 +43,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123135045';
+  var VERSAO = '20261123142122';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
