@@ -4007,9 +4007,11 @@ async function lerHistorico(doc, nome) {
         st.textContent = "Enviando para o Drive e para a carteira...";
         const dest = div.querySelector("#cf-dest").value.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 4);
         const res = await ponte("salvarHistorico", { data: r.data, dados: { periodo: r.periodo, exames: r.exames, laboratorios: r.laboratorios, destaques: dest },
-          a4: { nome: nomeArq("digital", "pdf"), b64: b64De(a4) }, cel: { nome: nomeArq("smartphone", "pdf"), b64: b64De(cel) }, anexo });
+          a4: { nome: nomeArq("digital", "pdf"), b64: b64De(a4) }, cel: { nome: nomeArq("smartphone", "pdf"), b64: b64De(cel) }, anexo,
+          // sexo corrigido à mão no cabeçalho também corrige o cadastro do animal
+          sexo: estado.editado.sexo ? estado.animal.sexo || "" : "" });
         fechar();
-        $("#status-dl").textContent = res && res.atualizado ? `Histórico atualizado na carteira de ${nome} e no Drive.` : `Histórico salvo na carteira de ${nome} e no Drive.`;
+        $("#status-dl").textContent = (res && res.atualizado ? `Histórico atualizado na carteira de ${nome} e no Drive.` : `Histórico salvo na carteira de ${nome} e no Drive.`) + (res && res.sexo ? ` Sexo corrigido no cadastro: ${res.sexo}.` : "");
         sujo = false;
       } catch (e) { st.textContent = "Não foi possível salvar. " + (e && e.message ? e.message : ""); bt.disabled = nao.disabled = false; }
     };
