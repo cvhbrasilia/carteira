@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261122165207';
+  var VERSAO = '20261123013709';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -104,6 +104,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .tps{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.02em;line-height:1.5;color:#fff;white-space:nowrap}.tps.neg{background:#A83D3D}.tps.pos{background:#3F6890}.tps.gat{background:#C49A6C}
 .tipos{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
+.esc.sinais .op,.esc[data-g=mom] .op{flex:1 1 44%}.acht{display:flex;gap:8px;align-items:flex-end;margin-top:8px}.acht>*{flex:1}.acht .btn{flex:none}input[type=time]{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:11px;background:#fff}
 .esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
 .tipag{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tipag .esc{flex-direction:column}.tipag .esc .op{flex:none}.tipag h4{margin:6px 0 0;font-size:13px;color:var(--tinta2)}
 .ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}.colar{margin-top:8px;border:1px dashed #C6B098;border-radius:12px;padding:10px;text-align:center;font-size:16px;color:#f3e6dc;height:46px;overflow:hidden;outline:none;-webkit-user-select:text;user-select:text;caret-color:transparent}.colar:empty::before{content:attr(data-ph);color:#e9d9cc;font-size:14px}.colar *{display:none!important}
@@ -315,7 +316,10 @@ function pintar() {
     '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
     (interna && u.situacao !== "bloqueada" ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button><button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
   const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
-  if (feitas.length) h += '<div class="cx"><h2>Transfundidas nas últimas 24 horas</h2>' + feitas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(((u.dados.uso || {}).paciente || {}).nome || "") + " · " + esc(hora((u.dados.uso || {}).transfundidaEm)) + "</small></div>").join("") + "</div>";
+  if (feitas.length) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
+    feitas.sort((a, b) => String(b.dados.uso.transfundidaEm).localeCompare(String(a.dados.uso.transfundidaEm))).map((u) => { const U = u.dados.uso || {}, ac = U.acomp || {}, hts = ac.hts || [];
+      const st = !U.acomp ? '<span class="tag al">acompanhamento pendente</span>' : (ac.reacao === "sim" ? '<span class="tag al">reação registrada</span> ' : ac.reacao === "nao" ? '<span class="tag ok">sem reação</span> ' : "") + (hts.length ? '<span class="tag ok">Ht ' + esc(hts.map((x) => x.valor + "%").join(" · ")) + "</span>" : '<span class="tag">falta o Ht de controle</span>');
+      return '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · " + esc(hora(U.transfundidaEm)) + "</small><div>" + st + '</div><div class="bts">' + (Date.now() - Date.parse(U.transfundidaEm) < 4 * 864e5 ? '<button class="btn peq' + (U.acomp ? " sec" : "") + '" data-a="acomp" data-v="' + esc(u.id) + '">' + (U.acomp ? "Completar ou corrigir" : "Acompanhamento") + "</button>" : "") + "</div></div>"; }).join("") + "</div>";
   h += '<p class="vazio"><small>Dúvidas sobre as bolsas, fale com o CVH.</small></p>';
   $("#app").innerHTML = h;
 }
@@ -661,6 +665,54 @@ async function transfOk(uid, b) {
     fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar();
   } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
 }
+/* ── acompanhamento da transfusão (hemovigilância) ── */
+const SINAIS = { febre: "Febre", tremores: "Tremores", urticaria: "Urticária ou prurido", edema: "Edema facial", vomito: "Vômito ou salivação", taquicardia: "Taquicardia", dispneia: "Taquipneia ou dispneia", hipotensao: "Hipotensão ou colapso", hemolise: "Hemoglobinúria ou plasma hemolisado" };
+const MOMENTOS = { logo: "Logo após", "6h": "Após 6 h", "12h": "Após 12 h", "24h": "Após 24 h" };
+let AC = null;
+const hhmm = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+function formAcomp(uid) {
+  const u = uniDe(uid); if (!u) return; const U = (u.dados || {}).uso || {}, ant = U.acomp || {};
+  AC = { uid, volume: ant.volume || "", reacao: ant.reacao || "", sinais: (ant.sinais || []).slice(), interrompida: !!ant.interrompida, hts: (ant.hts || []).map((x) => Object.assign({}, x)), mom: "" };
+  const chip = (grupo, v, rot, on) => '<button type="button" class="op' + (on ? " on" : "") + '" data-a="acChip" data-k="' + grupo + '" data-v="' + esc(v) + '">' + esc(rot) + "</button>";
+  modal("<h2>Acompanhamento · " + esc(uid) + "</h2><p style=\"margin:0 0 6px;color:#6b5b4e\">" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · transfundida " + esc(hora(U.transfundidaEm)) + "</p>" +
+    '<label>Teve reação?</label><div class="esc" data-g="reacao">' + chip("reacao", "nao", "Não", AC.reacao === "nao") + chip("reacao", "sim", "Sim", AC.reacao === "sim") + "</div>" +
+    '<div id="acReac"' + (AC.reacao === "sim" ? "" : " hidden") + '><label>O que aconteceu (marque todos)</label><div class="esc sinais" data-g="sinais">' + Object.keys(SINAIS).map((k) => chip("sinais", k, SINAIS[k], AC.sinais.includes(k))).join("") + "</div>" +
+    '<input type="text" id="acOutro" placeholder="Outro sinal (opcional)" value="' + esc(ant.outro || "") + '" style="margin-top:8px"><label>A transfusão foi interrompida?</label><div class="esc" data-g="interrompida">' + chip("interrompida", "nao", "Não", !AC.interrompida) + chip("interrompida", "sim", "Sim", AC.interrompida) + "</div></div>" +
+    '<label>Hematócrito de controle</label><div class="esc" data-g="mom">' + Object.keys(MOMENTOS).map((k) => chip("mom", k, MOMENTOS[k], false)).join("") + '</div><div class="acht"><input type="text" inputmode="decimal" id="acHt" placeholder="Ht em %"><button type="button" class="btn sec peq" data-a="acHtAdd">Acrescentar</button></div><div id="acHts"></div>' +
+    '<label>Volume transfundido</label><div class="esc" data-g="volume">' + chip("volume", "toda", "Bolsa inteira", AC.volume === "toda") + chip("volume", "parte", "Parte da bolsa", AC.volume === "parte") + '</div><input type="text" inputmode="numeric" id="acMl" placeholder="Quantos mL" value="' + esc(ant.volumeMl || "") + '"' + (AC.volume === "parte" ? "" : " hidden") + ' style="margin-top:8px">' +
+    '<div class="acht"><div><label>Início</label><input type="time" id="acIni" value="' + esc(ant.inicio || hhmm(U.retiradaEm)) + '"></div><div><label>Término</label><input type="time" id="acFim" value="' + esc(ant.fim || "") + '"></div></div>' +
+    '<label>Observação (opcional)</label><textarea id="acObs" rows="2">' + esc(ant.obs || "") + "</textarea>" +
+    '<label>Seu primeiro nome</label><input type="text" id="acPor" value="' + esc(nomeSalvo()) + '">' +
+    '<div class="bts"><button class="btn" data-a="acOk">Salvar</button><button class="btn sec" data-a="fechar">Voltar</button></div><p class="vazio"><small>Pode salvar só o que já tem. O resto fica para depois, por até 4 dias.</small></p>');
+  pintarHts();
+}
+function pintarHts() { const el = $("#acHts"); if (!el) return; el.innerHTML = AC.hts.map((x, i) => '<span class="tag ok" style="margin:6px 6px 0 0;display:inline-block">' + esc(MOMENTOS[x.momento]) + " · " + esc(x.valor) + '% <a href="#" data-a="acHtDel" data-v="' + i + '" style="color:inherit;margin-left:4px">×</a></span>').join(""); }
+function acChip(g, v) {
+  if (g === "sinais") { AC.sinais = AC.sinais.includes(v) ? AC.sinais.filter((x) => x !== v) : AC.sinais.concat([v]); }
+  else if (g === "interrompida") AC.interrompida = v === "sim";
+  else AC[g] = AC[g] === v && g === "mom" ? "" : v;
+  document.querySelectorAll('.esc[data-g="' + g + '"] .op').forEach((x) => x.classList.toggle("on", g === "sinais" ? AC.sinais.includes(x.dataset.v) : g === "interrompida" ? (x.dataset.v === "sim") === AC.interrompida : AC[g] === x.dataset.v));
+  if (g === "reacao") $("#acReac").hidden = v !== "sim";
+  if (g === "volume") $("#acMl").hidden = v !== "parte";
+  if (g === "mom" && AC.mom) $("#acHt").focus();
+}
+function acHtAdd() {
+  const v = String($("#acHt").value || "").replace(".", ",").replace(/[^\d,]/g, "");
+  if (!AC.mom) return toast("Toque em quando o hematócrito foi feito: logo após, 6 h, 12 h ou 24 h.");
+  if (!v || !(parseFloat(v.replace(",", ".")) > 0 && parseFloat(v.replace(",", ".")) < 90)) return toast("Escreva o hematócrito em %.");
+  AC.hts = AC.hts.filter((x) => x.momento !== AC.mom).concat([{ momento: AC.mom, valor: v }]).sort((a, b) => Object.keys(MOMENTOS).indexOf(a.momento) - Object.keys(MOMENTOS).indexOf(b.momento));
+  $("#acHt").value = ""; acChip("mom", AC.mom); pintarHts();
+}
+async function acOk(b) {
+  const por = $("#acPor").value.trim(); if (!por) return toast("Informe seu primeiro nome.");
+  if ($("#acHt").value.trim() && AC.mom) acHtAdd();
+  else if ($("#acHt").value.trim()) return toast("Toque em quando o hematócrito foi feito e depois em Acrescentar.");
+  const o = { reacao: AC.reacao, sinais: AC.sinais, outro: $("#acOutro").value.trim(), interrompida: AC.interrompida, hts: AC.hts, volume: AC.volume, volumeMl: $("#acMl").value.trim(), inicio: $("#acIni").value, fim: $("#acFim").value, obs: $("#acObs").value.trim(), por };
+  if (o.volume === "parte" && !o.volumeMl) return toast("Escreva quantos mL foram transfundidos.");
+  salvarNome(por); b.disabled = true;
+  try { await srv("intAcompanhar", AC.uid, o); somOk(); fechar(); toast(o.reacao === "sim" ? "Registrado. O CVH foi avisado da reação." : "Acompanhamento salvo. Obrigado.", 5000); await carregar(); }
+  catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+}
 function cancelarUso(uid) {
   const u = uniDe(uid), feita = u && u.situacao === "utilizada";
   modal("<h2>Cancelar e devolver ao estoque</h2><p>" + esc(uid) + "</p>" + (feita ? '<label class="op"><input type="checkbox" id="cSem"> Confirmo que a bolsa não foi usada e que as condições de retorno estão atendidas (Transfundido tocado por engano).</label>' : "<p>Use só se a transfusão não começou e a bolsa está íntegra.</p>") + '<p><small>Depois de cancelar, leia o QR do equipamento e tire a foto da bolsa guardada.</small></p><div class="bts"><button class="btn perigo" data-a="cancelarOk" data-v="' + esc(uid) + '">Cancelar e devolver</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
@@ -709,6 +761,11 @@ document.addEventListener("click", async (ev) => {
     if (a === "retirarQR") return retirarQR();
     if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
     if (a === "transfundir") return formTransfusao(v);
+    if (a === "acomp") return formAcomp(v);
+    if (a === "acChip") return acChip(b.dataset.k, v);
+    if (a === "acHtAdd") return acHtAdd();
+    if (a === "acHtDel") { ev.preventDefault(); AC.hts.splice(+v, 1); return pintarHts(); }
+    if (a === "acOk") return acOk(b);
     if (a === "transfOk") return transfOk(v, b);
     if (a === "cancelar") return cancelarUso(v);
     if (a === "cancelarOk") { const c = $("#cSem"); if (c && !c.checked) return toast("Marque a confirmação."); b.disabled = true; await srv("intCancelarRetirada", v, { semUso: !!c }); fechar(); await carregar(); toast("Retirada cancelada. Agora leia o QR do equipamento.", 6000); return lerEquip(v); }
