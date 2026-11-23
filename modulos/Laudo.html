@@ -2278,10 +2278,10 @@ function blocoTexto(rot, txt, x, w, tam) {
   const B = [], fundo = (y, h) => E.ret(x, y, w, h, { f: COR.FAIXA });
   linhas.forEach((l, i) => {
     const h = l ? lh : 4;
-    if (i === 0) B.push({ h: 27 + h, el: (y) => [E.selo(x, y + 6, w, 27 + h, { f: COR.FAIXA, r: 6 }), fundo(y + 18, h + 10), T(x + 12, y + 20, rot, 7.5, { b: true, c: COR.OURO }), T(x + 12, y + 27 + tam + 0.5, l, tam, { c: COR.TEXTO })] });
-    else B.push({ h, el: (y) => [fundo(y - 1, h + 2), ...(l ? [T(x + 12, y + tam + 0.5, l, tam, { c: COR.TEXTO })] : [])] });
+    if (i === 0) B.push({ h: 27 + h, txt: true, el: (y) => [E.selo(x, y + 6, w, 27 + h, { f: COR.FAIXA, r: 6 }), fundo(y + 18, h + 10), T(x + 12, y + 20, rot, 7.5, { b: true, c: COR.OURO }), T(x + 12, y + 27 + tam + 0.5, l, tam, { c: COR.TEXTO })] });
+    else B.push({ h, txt: true, el: (y) => [fundo(y - 1, h + 2), ...(l ? [T(x + 12, y + tam + 0.5, l, tam, { c: COR.TEXTO })] : [])] });
   });
-  B.push({ h: 12, cola: true, el: (y) => [E.selo(x, y - 1, w, 8, { f: COR.FAIXA, r: 4 })] });
+  B.push({ h: 12, cola: true, txt: true, el: (y) => [E.selo(x, y - 1, w, 8, { f: COR.FAIXA, r: 4 })] });
   return B;
 }
 // texto corrido miúdo (notas técnicas), uma linha por bloco para poder passar de página
@@ -2719,7 +2719,8 @@ function paginasLaudo() {
   const metodo = quebrar(notaMetodo(), 7.5, false, W), rodapeH = 96 + metodo.length * 10;
   // o fim do laudo (pelo menos umas quatro linhas) vai junto com a assinatura, para ela nunca ficar sozinha numa folha
   let tail = blocos.length, soma = 0; while (tail > 0 && soma < 50) { tail--; soma += blocos[tail].h; }
-  { const nObs = blocoTexto("OBSERVAÇÕES", estado.obs, X, W, 9.6).length; if (nObs) tail = Math.min(tail, blocos.length - nObs); }
+  // observações e notas no fim do laudo ficam na folha onde couberem (logo abaixo dos resultados); a assinatura segue na próxima, se precisar
+  if (tail < blocos.length && blocos.slice(tail).every((b) => b.txt)) tail = blocos.length;
   const resto = blocos.map((_, i) => blocos.slice(i).reduce((a, b) => a + b.h, 0));
   blocos.forEach((b, i) => {
     if (b.quebra) { if (pag.length && y + resto[i] > PG.YMAX - rodapeH) novaPag(); return; }
