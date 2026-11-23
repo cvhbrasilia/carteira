@@ -924,7 +924,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123032731';
+  var VERSAO = '20261123033152';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3718,24 +3718,24 @@ async function relPdf(b) {
 }
 
 const MODS = [
-  { k: 'carteiras', t: 'Carteiras', d: 'Vacinas, vermífugos, doações e lembretes', ic: svgIc('<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18M10 8h5M10 12h5"/>') },
+  { k: 'carteiras', t: 'Carteiras', d: 'Vacinas, vermífugos, doações e lembretes', ic: svgIc('<path d="M7.2 3.5h10.3A1.5 1.5 0 0 1 19 5v14a1.5 1.5 0 0 1-1.5 1.5H7.2A2.7 2.7 0 0 1 4.5 17.8V6.2A2.7 2.7 0 0 1 7.2 3.5z"/><path d="M8.2 3.6v16.8"/><ellipse cx="13.6" cy="12.4" rx="2.1" ry="1.7" fill="currentColor" stroke="none"/><circle cx="11.3" cy="9.9" r=".85" fill="currentColor" stroke="none"/><circle cx="12.8" cy="8.6" r=".85" fill="currentColor" stroke="none"/><circle cx="14.5" cy="8.6" r=".85" fill="currentColor" stroke="none"/><circle cx="15.9" cy="9.9" r=".85" fill="currentColor" stroke="none"/><path d="M10.8 16.6h5.6"/>') },
   { k: 'transfusao', perm: 'calculadora', t: 'HemoCalculadora', d: 'CH, CP, PFC e crio, com leitura do hemograma por IA e mensagem pronta', ic: svgIc('<path d="M7.200 8.800H12.800C15.200 8.800 16.300 10.300 16 12.200C15.800 13.400 15.300 14 15.600 15.300C15.900 16.500 16.500 17.200 16.300 18.700C16 20.600 14.700 21.500 12.600 21.500H7.400C5.300 21.500 4 20.600 3.700 18.700C3.500 17.200 4.100 16.500 4.400 15.300C4.700 14 4.200 13.400 4 12.200C3.700 10.300 4.800 8.800 7.200 8.800z"/><path d="M7.500 8.800V6.300M10 8.800V5.400C10 3.900 9 3 7.700 3M12.500 8.800V6.300"/><path d="M19.300 2.800v4.400M17.100 5h4.400"/>') },
   { k: 'fichas', t: 'Fichas de doação', d: 'Ficha de coleta com assinatura eletrônica', ic: svgIc('<rect x="5" y="4.500" width="14" height="16.500" rx="2"/><path d="M9 4.500V3.500h6v1M9 9.500h6M9 13h6"/><path d="M8.500 17.500c1-1.600 1.700-1.600 2.200-.4.400 1 1 1 1.700-.2.400-.7 1-.7 2.100.6"/>') },
   { k: 'estoque', perm: 'estoque', t: 'Estoque', d: 'Bolsas prontas, liberação, validades, remessas e Intensivet', ic: svgIc('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 4v16"/>') },
-  { k: 'producao', perm: ['producao', 'estoque'], t: 'Produção', d: 'Bancada: coletas para produzir, fracionamento, CRIO, congelamento e etiquetas', ic: svgIc('<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 14h9"/>') },
+  { k: 'producao', perm: ['producao', 'estoque'], t: 'Produção', d: 'Bancada: coletas para produzir, fracionamento, CRIO, congelamento e etiquetas', ic: svgIc('<rect x="2.8" y="6" width="8.4" height="12" rx="2.6"/><path d="M5.6 6V3.8M8.4 6V3.8M2.8 12h8.4"/><rect x="15.2" y="3.2" width="6" height="7.4" rx="1.9"/><rect x="15.2" y="13.4" width="6" height="7.4" rx="1.9"/><path d="M11.2 9.4c2.2 0 2-2.5 4-2.5M11.2 14.6c2.2 0 2 2.5 4 2.5M15.2 7.6h6M15.2 17.6h6"/>') },
   { k: 'laudos', perm: 'laudos', t: 'Laudos de exames', d: 'IDEXX, TECSA, tipagem, FIV e FeLV, Coombs e compatibilidade, assinados e enviados ao responsável', ic: svgIc('<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.500 17l1.700-3 1.600 2 1.500-4 1.200 2"/>') },
-  { k: 'cadastro', t: 'Cadastro de doadores', d: 'Responsáveis e animais doadores, usado por todos os módulos', ic: svgIc('<circle cx="9" cy="8" r="3.200"/><path d="M3.500 19c.6-3.200 2.800-5 5.500-5s4.900 1.800 5.500 5"/><path d="M17 8.500v5M14.500 11h5"/>') },
-  { k: 'receptores', perm: ['receptores', 'laudos', 'estoque'], t: 'Cadastro de receptores', d: 'Pacientes que recebem hemocomponentes, com laudos, pedidos e bolsas', ic: svgIc('<circle cx="9" cy="8" r="3.200"/><path d="M3.500 19c.6-3.200 2.800-5 5.500-5s4.900 1.800 5.500 5"/><path d="M18 15.500l-2.700-2.600a1.700 1.700 0 0 1 2.700-2 1.700 1.700 0 0 1 2.700 2z"/>') },
-  { k: 'receitas', t: 'Receituário', d: 'Receitas simples e controladas, com assinatura digital', ic: svgIc('<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M9 8h2.5a2 2 0 0 1 0 4H9V8zM9 12v4M11 12l3 4M14 13l-2 3"/>') },
+  { k: 'cadastro', t: 'Cadastro de doadores', d: 'Responsáveis e animais doadores, usado por todos os módulos', ic: svgIc('<ellipse cx="8.8" cy="14.6" rx="5.4" ry="4.9"/><path d="M5.2 11C3.3 9.6 1.5 11.2 2.1 13.8c.3 1.2 1 1.8 1.9 1.7"/><path d="M11.3 10.2l2.2-4 .9 5.6"/><circle cx="7" cy="14.2" r=".8" fill="currentColor" stroke="none"/><circle cx="10.6" cy="14.2" r=".8" fill="currentColor" stroke="none"/><path d="M8.1 16.7h1.4"/><path d="M19.4 2.6v4.8M17 5h4.8"/><path d="M16.4 16.8v3.7h6.1v-3.7M19.45 10v7M17.6 15.2l1.85 1.9 1.85-1.9"/>') },
+  { k: 'receptores', perm: ['receptores', 'laudos', 'estoque'], t: 'Cadastro de receptores', d: 'Pacientes que recebem hemocomponentes, com laudos, pedidos e bolsas', ic: svgIc('<ellipse cx="8.8" cy="14.6" rx="5.4" ry="4.9"/><path d="M5.2 11C3.3 9.6 1.5 11.2 2.1 13.8c.3 1.2 1 1.8 1.9 1.7"/><path d="M11.3 10.2l2.2-4 .9 5.6"/><circle cx="7" cy="14.2" r=".8" fill="currentColor" stroke="none"/><circle cx="10.6" cy="14.2" r=".8" fill="currentColor" stroke="none"/><path d="M8.1 16.7h1.4"/><path d="M19.4 2.6v4.8M17 5h4.8"/><path d="M16.4 16.8v3.7h6.1v-3.7M19.45 17V10M17.6 11.9l1.85-1.9 1.85 1.9"/>') },
+  { k: 'receitas', t: 'Receituário', d: 'Receitas simples e controladas, com assinatura digital', ic: svgIc('<path d="M8.5 3h9.5A2 2 0 0 1 20 5v12.5"/><rect x="4" y="6" width="12.6" height="15" rx="2"/><path d="M6.6 9.2h7.4"/><path d="M7.6 18.6v-6.4h2.3a1.75 1.75 0 0 1 0 3.5H7.6M9.7 15.7l3.4 3.6M10.9 19.3l2.4-2.4"/>') },
   { k: 'agenda', t: 'Agenda', d: 'Doações, coletas, vacinas e consultas, com pré-triagem', ic: svgIc('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M8 13h2M12 13h2M16 13h1M8 16.5h2M12 16.5h2"/>') },
   { k: 'sag', t: 'Calculadora de SAG', d: 'SAG do concentrado de hemácias e estudo de ajuste', ic: svgIc('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h1M11.5 11h1M14.5 11h1M8.5 14.5h1M11.5 14.5h1M14.5 14.5h1M8.5 18h1M11.5 18h4"/>') },
   { k: 'qualidade', perm: 'qualidade', t: 'Controle de qualidade', d: 'Hemocomponentes conferidos com a Tabela 4 da ABVHMT, em gráficos interativos', ic: svgIc('<path d="M12 3l7 3v5.500c0 4.300-3 7.800-7 9.500-4-1.700-7-5.200-7-9.500V6z"/><path d="M8.500 12.200l2.300 2.300 4.700-4.800"/>') },
   { k: 'historico', t: 'Histórico laboratorial', d: 'Exames dos doadores ao longo das coletas', ic: svgIc('<path d="M4 4v16h16"/><path d="M7 15l3.500-4 3 2.500L19 7"/><circle cx="10.500" cy="11" r=".9"/><circle cx="13.500" cy="13.500" r=".9"/>') },
-  { k: 'perfil', perm: 'perfil', t: 'Perfil laboratorial', d: 'Perfil individual de cada doador, com evolução, faixa própria e RCV', ic: svgIc('<path d="M9.500 3h5M10.500 3v6.200L5.300 18.300A1.800 1.800 0 0 0 6.900 21h10.200a1.800 1.800 0 0 0 1.600-2.700L13.500 9.200V3"/><path d="M7.800 15h8.400"/><circle cx="10.500" cy="17.700" r=".8"/><circle cx="13.800" cy="18.200" r=".6"/>') },
+  { k: 'perfil', perm: 'perfil', t: 'Perfil hematológico', d: 'Perfil individual de cada doador, com evolução, faixa própria e RCV', ic: svgIc('<path d="M3.5 3.5v17h17"/><path d="M7 16l3.2-3.6 3 2.2 2.6-3"/><ellipse cx="17.6" cy="8.2" rx="3.6" ry="2.6"/><ellipse cx="17.6" cy="8.2" rx="1.4" ry=".8"/>') },
   { k: 'tcle', t: 'Termos', d: 'TCLE do Clube de Doadores, entrega de hemocomponentes e responsabilidade', ic: svgIc('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 16.5c1.2-2.2 2-2.2 2.6-.6.5 1.3 1.200 1.300 2-.2.5-.9 1.200-.9 2.400.800"/>') },
   { k: 'certificados', perm: 'certificados', t: 'Certificados', d: 'Certificado de cada doação, para imprimir e postar', ic: svgIc('<circle cx="12" cy="9" r="5.5"/><path d="M12 6.300l.9 1.800 2 .3-1.450 1.400.35 2-1.800-.95-1.800.95.35-2L9.100 8.400l2-.3z"/><path d="M8.700 13.600 7.500 21l4.500-2.400L16.500 21l-1.200-7.400"/>') },
   { k: 'camaras', perm: ['transporte', 'estoque'], t: 'Câmaras portáteis', d: 'Agenda das câmaras 1 e 2 com bolsa de CH, transporte, texto e termo assinado', ic: svgIc('<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M8 7V5h8v2M4 11h16M10 15h4"/>') },
-  { k: 'clinicas', perm: ['transporte', 'estoque', 'receptores', 'laudos'], t: 'Clínicas', d: 'Cadastro único das clínicas: endereço, contatos e médicos veterinários', ic: svgIc('<path d="M4 20V9l8-5 8 5v11M9 20v-6h6v6M12 8v4M10 10h4"/>') },
+  { k: 'clinicas', perm: ['transporte', 'estoque', 'receptores', 'laudos'], t: 'Clínicas', d: 'Cadastro único das clínicas: endereço, contatos e médicos veterinários', ic: svgIc('<path d="M4.5 20.5V7.5h15v13M3 20.5h18M3 7.5h18"/><circle cx="12" cy="11.8" r="2.7"/><path d="M12 10.4v2.8M10.6 11.8h2.8M10.2 20.5v-3.6h3.6v3.6M6.8 11.2h1.4M15.8 11.2h1.4M6.8 15.2h1.4M15.8 15.2h1.4"/><path d="M7 7.5V4.5h10v3"/>') },
   { k: 'transporte', perm: 'transporte', t: 'Motoboy', d: 'Rotas do dia, pedidos, clínicas e destinos, quilometragem e combustível', ic: svgIc('<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-7h4l2 4M12 10H9"/>') },
   { k: 'inteligencia', perm: 'inteligencia', t: 'Central de inteligência', d: 'Aptos, pendências, tipos sanguíneos e evolução do clube', ic: svgIc('<path d="M4 20V10M9.500 20V4M15 20v-7M20.500 20v-4"/><path d="M3 20.500h18"/>') },
   { k: 'pendencias', perm: 'pendencias', t: 'Pendências', d: 'Tarefas da equipe, com responsável e prazo', ic: svgIc('<path d="M9 5h10M9 12h10M9 19h10"/><path d="M3.500 5l1.300 1.300L7 4M3.500 12l1.300 1.300L7 11M3.500 19l1.300 1.300L7 18"/>') },
@@ -3762,7 +3762,7 @@ function modulosBusca(q0) {
   return modsVisiveis().filter(m => semAc(m.t + ' ' + m.d).includes(q) || semAc(m.t).split(' ').some(w => w.startsWith(q)));
 }
 
-const ROT_PERM = { admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil laboratorial', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
+const ROT_PERM = { admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil hematológico', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
   certificados: 'Certificados', receitas: 'Receituário', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações' };
 
 /* ── calculadora de SAG ── */
@@ -4134,7 +4134,7 @@ async function telaAlertas(filtro) {
     // busca por animal ou responsável (o responsável traz todos os animais dele); no computador, busca e filtros ficam na lateral
     '<div class="al-grid"><aside class="al-lado"><div class="busca"><input id="buscaAl" type="search" placeholder="Buscar animal ou responsável" value="' + esc(E.buscaAl || '') + '" aria-label="Buscar alertas"></div>' +
     '<div class="filtros">' + chipF('ativos', 'Todos', ativos(l).length) + chipF('super', 'Super', cont('super')) + chipF('urgente', 'Urgentes', cont('urgente')) + chipF('normal', 'Normais', cont('normal')) + chipF('impedimento', 'Impedimentos', l.filter(a => a.situacao === 'impedimento').length) + chipF('arquivados', 'Arquivados') + '</div>' +
-    (comRes.length ? '<section class="cartao"><h3>Perfil laboratorial individual</h3><div class="chips" id="chipsAl">' + comRes.map(a => '<button class="chip-an" data-acao="alerta-perfil" data-id="' + a.id + '" data-busca="' + esc(semAc(a.nome + ' ' + ((respDe(a) || {}).nome || ''))) + '">' + esc(a.nome) + '</button>').join('') + '</div></section>' : '') + '</aside><div class="al-main">' +
+    (comRes.length ? '<section class="cartao"><h3>Perfil hematológico do doador</h3><div class="chips" id="chipsAl">' + comRes.map(a => '<button class="chip-an" data-acao="alerta-perfil" data-id="' + a.id + '" data-busca="' + esc(semAc(a.nome + ' ' + ((respDe(a) || {}).nome || ''))) + '">' + esc(a.nome) + '</button>').join('') + '</div></section>' : '') + '</aside><div class="al-main">' +
     '<section id="listaAl">' + (vis.length ? vis.map(cartaoAlerta).join('') : '<p class="vazio-p">' + (E.resultados && E.resultados.length ? 'Nenhum alerta aqui.' : 'A base de resultados ainda está vazia. Ela é preenchida sempre que um histórico é salvo. Para os históricos que já estão na carteira, use o botão abaixo.') + '</p>') + '</section>' +
     '<section class="cartao"><h3>Base de resultados</h3><p class="nota">' + (E.resultados ? E.resultados.length : 0) + ' resultados de ' + comRes.length + ' animais.</p>' +
       '<div class="acoes"><button class="btn sec2 peq" data-acao="alertas-carregar">Carregar os históricos que já estão na carteira</button><button class="btn sec2 peq" data-acao="coef-abrir">Coeficientes e regras</button></div></section>' +
@@ -4181,7 +4181,7 @@ function graficoSerie(l, pf) {
   s += '<text x="' + PL + '" y="' + (H - 4) + '" font-size="9" fill="#7a6a62">' + br(pts[0].data) + '</text><text x="' + (W - PR) + '" y="' + (H - 4) + '" text-anchor="end" font-size="9" fill="#7a6a62">' + br(u.data) + '</text>';
   return s + '</svg>';
 }
-/* ── Perfil laboratorial: seção própria, com a lista dos doadores e a tela completa de cada um ── */
+/* ── Perfil hematológico: seção própria, com a lista dos doadores e a tela completa de cada um ── */
 // séries de um animal (um analito num método), na ordem dos exames
 function seriesDe(aid) {
   const esp = espDe(aid), ser = {}, ordem = Object.keys(PARAM_LAB);
@@ -4209,7 +4209,7 @@ async function telaPerfis(busca) {
     return { a, n: sr.length, coletas: datas.length, ult: datas[datas.length - 1] || '', conf: sr.filter(x => x.pf.situacao === 'confirmado').length, fora: sr.filter(x => x.fora).length, rcv: sr.filter(x => x.pf.acimaRcv).length, al: al.filter(x => x.animalId === a.id).length };
   });
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
-    '<header class="topo"><div class="t"><span>Só para o administrador</span><b>Perfil laboratorial</b></div></header>' +
+    '<header class="topo"><div class="t"><span>Só para o administrador</span><b>Perfil hematológico</b></div></header>' +
     '<p class="nota">O perfil individual de cada doador, montado com os exames salvos nos históricos. Mostra a evolução de cada analito, a média e a faixa do próprio animal, as mudanças acima do RCV e o que está fora da referência. Nada aqui aparece para o responsável.</p>' +
     '<div class="busca"><input id="buscaPf" type="search" placeholder="Buscar doador ou responsável" value="' + esc(busca || '') + '" aria-label="Buscar perfis"></div>' +
     '<section class="cartao" id="listaPf"></section></div></main>';
@@ -4252,7 +4252,7 @@ function blocoSerie(x, aid, metodosPor, cfg) {
       ((cfg.equiv[u.chave] || []).some(g => g.indexOf(pf.metodo) >= 0) ? '<button class="btn sec2 peq" data-acao="equiv-desfazer" data-aid="' + aid + '" data-k="' + esc(u.chave) + '" data-a="' + esc(pf.metodo) + '">Desfazer equivalência</button>' : '') +
     '</details>';
 }
-// Perfil laboratorial individual de um animal (tela inteira)
+// Perfil hematológico do doador de um animal (tela inteira)
 async function perfilAnimal(aid) {
   fecharFolha();
   if (!E.alertas) { carregando('Calculando o perfil'); try { await carregarAlertas(true); } catch (e) { toast(e.message, 9000); return telaHome(); } }
@@ -4281,7 +4281,7 @@ async function perfilAnimal(aid) {
   const valU = x => x.pf.ultimo ? fmtA(+x.pf.ultimo.valor, x.u.unidade) : '';
   raiz.innerHTML = '<main class="tela tela-larga" id="pfTela"><div class="tela-c">' +
     '<div class="barra" style="padding:0">' + (E.pfDeAlertas ? '<button class="pill" data-acao="alertas">‹ Alertas</button>' : '') + '<button class="pill" data-acao="pf-lista">‹ Perfis</button></div>' +
-    '<header class="topo"><div class="t"><span>Perfil laboratorial individual</span><b>' + esc(an.nome || '') + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') + '</b></div></header>' +
+    '<header class="topo"><div class="t"><span>Perfil hematológico do doador</span><b>' + esc(an.nome || '') + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') + '</b></div></header>' +
     '<p class="nota">' + esc([rp.nome ? 'Responsável ' + rp.nome : '', datas.length ? 'exames de ' + br(datas[0]) + ' a ' + br(datas[datas.length - 1]) : '', labs.length ? labs.length + (labs.length === 1 ? ' método' : ' métodos') : ''].filter(Boolean).join(' · ')) + '</p>' +
     '<div class="acoes pf-acoes"><button class="btn sec2 peq" data-acao="hist-ver" data-id="' + aid + '">Histórico laboratorial</button><button class="btn sec2 peq" data-acao="perfil-pdf" data-id="' + aid + '" data-v="a4">PDF digital</button><button class="btn sec2 peq" data-acao="perfil-pdf" data-id="' + aid + '" data-v="cel">PDF smartphone</button></div>' +
     (sr.length || quali.length ? '' : '<p class="vazio-p">Sem resultados na base para este animal. Eles entram sozinhos quando o histórico laboratorial é salvo.</p>') +
@@ -4353,7 +4353,7 @@ async function telaHistorico(aid, manterFiltro) {
     '<div class="barra" style="padding:0"><button class="pill" data-acao="hist-lista">‹ Histórico</button></div>' +
     '<header class="topo"><div class="t"><span>Histórico laboratorial</span><b>' + esc(an.nome) + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') + '</b></div></header>' +
     (rp.nome ? '<p class="nota">Responsável ' + esc(rp.nome) + '</p>' : '') +
-    '<div class="acoes pf-acoes">' + (pode('historico') ? '<button class="btn peq" data-acao="hist-editar" data-id="' + aid + '">Adicionar exames</button>' : '') + (pode('perfil') ? '<button class="btn sec2 peq" data-acao="alerta-perfil" data-id="' + aid + '">Perfil laboratorial</button>' : '') + '</div>' +
+    '<div class="acoes pf-acoes">' + (pode('historico') ? '<button class="btn peq" data-acao="hist-editar" data-id="' + aid + '">Adicionar exames</button>' : '') + (pode('perfil') ? '<button class="btn sec2 peq" data-acao="alerta-perfil" data-id="' + aid + '">Perfil hematológico</button>' : '') + '</div>' +
     (rs.length ? '<div class="pf-ks">' +
       '<div class="ci-k" style="--c:#5F130F"><b>' + datas.length + '</b><span>' + (datas.length === 1 ? 'Coleta com exame' : 'Coletas com exame') + '</span><small>' + (datas.length > 1 ? br(datas[0]) + ' a ' + br(ultData) : br(ultData)) + '</small></div>' +
       '<div class="ci-k" style="--c:#C49A6C"><b>' + (Object.keys(linhas).length + Object.keys(qL).length) + '</b><span>Exames acompanhados</span><small>' + esc(gTodos.join(', ')) + '</small></div>' +
@@ -4507,15 +4507,15 @@ async function pdfPerfil(aid, tipo, b) {
       let y = hCab, lim = H - 2 * M - 24;
       blocos.forEach((bl, i) => { if (y + hs[i] > lim && paginas[paginas.length - 1].length) { paginas.push([]); y = 60; } paginas[paginas.length - 1].push(bl); y += hs[i]; });
       for (let k = 0; k < paginas.length; k++) {
-        box.innerHTML = '<div class="pp-pg" style="padding:' + M + 'px;width:' + W + 'px;height:' + H + 'px">' + (k ? '<div class="pp-mini"><b>' + esc(an.nome || '') + '</b> · Perfil laboratorial individual</div>' : cab + intro) + paginas[k].join('') +
+        box.innerHTML = '<div class="pp-pg" style="padding:' + M + 'px;width:' + W + 'px;height:' + H + 'px">' + (k ? '<div class="pp-mini"><b>' + esc(an.nome || '') + '</b> · Perfil hematológico do doador</div>' : cab + intro) + paginas[k].join('') +
           '<p class="pp-rod abs">CVH - Centro Veterinário de Hemoterapia · Folha ' + (k + 1) + ' de ' + paginas.length + '</p></div>';
         const img = await pdf.embedJpg(bytesDe(await foto(box.firstElementChild, W, H)));
         pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 });
       }
     }
-    pdf.setTitle('Perfil laboratorial individual · ' + (an.nome || ''));
+    pdf.setTitle('Perfil hematológico do doador · ' + (an.nome || ''));
     const out = await pdf.save(), l = document.createElement('a');
-    l.href = URL.createObjectURL(new Blob([out], { type: 'application/pdf' })); l.download = 'Perfil laboratorial ' + (an.nome || '') + ' ' + hoje() + (cel ? ' (smartphone)' : ' (digital)') + '.pdf';
+    l.href = URL.createObjectURL(new Blob([out], { type: 'application/pdf' })); l.download = 'Perfil hematológico ' + (an.nome || '') + ' ' + hoje() + (cel ? ' (smartphone)' : ' (digital)') + '.pdf';
     document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 30000);
   } catch (e) { toast(e.message, 6000); }
   finally { box.remove(); if (b) { b.disabled = false; b.textContent = t0; } }

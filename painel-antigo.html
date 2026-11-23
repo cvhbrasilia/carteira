@@ -846,6 +846,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
 .mod i svg{width:24px;height:24px}
 .mod b{font-size:16.5px;color:var(--vinho);line-height:1.2}
 .mod small{font-size:12.5px;color:var(--tinta2);line-height:1.35}
+.mod-n{position:absolute;top:10px;right:12px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:var(--papel);color:var(--bege);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+.mod .conta + .mod-n{right:46px}
+.mod-n-in{display:inline-flex;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--areia);color:var(--vinho);font-size:12px;font-weight:800;align-items:center;justify-content:center;margin-right:4px}
+.bg-h{margin:2px 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--bege)}
 .mod.breve{background:var(--papel);box-shadow:none}
 .mod.breve i{background:var(--papel2);color:var(--bege)}
 .mod.breve b{color:var(--tinta2)}
@@ -921,7 +925,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123032422';
+  var VERSAO = '20261123032731';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3596,6 +3600,12 @@ async function telaInteligencia() {
 
 /* ═════════════ busca global ═════════════ */
 function buscaGlobal(q) {
+  const ms = modulosBusca(q), htmlMods = ms.length ? '<h3 class="bg-h">Módulos</h3>' + ms.map(m => '<button class="item bg-it" data-acao="modulo" data-k="' + m.k + '"><div class="t"><b><span class="mod-n-in">' + m.n + '</span> ' + esc(m.t) + '</b><small>' + esc(m.d) + '</small></div></button>').join('') : '';
+  if (/^\d{1,2}$/.test(q.trim())) return htmlMods || '<p class="vazio-p">Nenhum módulo com o número ' + esc(q.trim()) + '.</p>';
+  const resto = buscaGlobalDados(q);
+  return htmlMods + (htmlMods && resto === '<p class="vazio-p">Nada encontrado.</p>' ? '' : resto);
+}
+function buscaGlobalDados(q) {
   q = semAc(q.trim()); if (q.length < 2) return '';
   const tem = t => semAc(t).includes(q), out = [];
   E.d.animais.forEach(a => { const rp = respDe(a) || {}; if (tem([a.nome, a.microchip, a.raca, tipoTxt(a)].join(' '))) out.push({ g: 'Animal', t: a.nome + (tipoTxt(a) ? ' · ' + tipoTxt(a) : ''), d: rp.nome || '', acao: 'bg-animal', id: a.id }); });
@@ -3733,6 +3743,26 @@ const MODS = [
   { k: 'auditoria', perm: 'auditoria', t: 'Histórico de alterações', d: 'Quem criou, alterou ou apagou cada coisa, e quando', ic: svgIc('<circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/><path d="M3.500 4.500v3.500H7"/>') },
   { k: 'relatorios', perm: 'relatorios', t: 'Relatórios', d: 'Doações, doadores ativos e tipos sanguíneos, em planilha ou PDF', ic: svgIc('<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 17v-3M12 17v-6M15 17v-4"/>') }
 ];
+// número fixo de cada módulo (para abrir rápido pelo número); módulo novo entra no fim da lista com o próximo número
+MODS.forEach((m, i) => { m.n = i + 1; });
+const modsVisiveis = () => (E.meusMods || []);
+function abrirModPorK(k) { if (ACOES.modulo) ACOES.modulo({ dataset: { k } }); }
+// no computador, na tela inicial: digitar o número do módulo abre direto (ex.: 1 e 7 abre o módulo 17)
+const ATALHO_N = { buf: '', t: null };
+document.addEventListener('keydown', ev => {
+  if (!/^\d$/.test(ev.key) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  const ae = document.activeElement; if (ae && (/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable)) return;
+  if (!document.querySelector('.tela-home') || !(E.meusMods || []).length) return;
+  ATALHO_N.buf = (ATALHO_N.buf + ev.key).slice(-2); clearTimeout(ATALHO_N.t);
+  const m = (E.meusMods || []).find(x => x.n === +ATALHO_N.buf); toast(m ? 'Módulo ' + m.n + ' · ' + m.t : 'Módulo ' + ATALHO_N.buf, 900);
+  ATALHO_N.t = setTimeout(() => { const n = +ATALHO_N.buf; ATALHO_N.buf = ''; const mm = (E.meusMods || []).find(x => x.n === n); if (mm && document.querySelector('.tela-home')) abrirModPorK(mm.k); }, 700);
+});
+function modulosBusca(q0) {
+  const q = semAc(String(q0 || '').trim()); if (!q) return [];
+  if (/^\d{1,2}$/.test(q)) return modsVisiveis().filter(m => m.n === +q);
+  return modsVisiveis().filter(m => semAc(m.t + ' ' + m.d).includes(q) || semAc(m.t).split(' ').some(w => w.startsWith(q)));
+}
+
 const ROT_PERM = { admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil laboratorial', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
   certificados: 'Certificados', receitas: 'Receituário', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações' };
 
@@ -4808,18 +4838,20 @@ function telaHome() {
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
   const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte'));
+  E.meusMods = meus;
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
     ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +
     (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span class="al-dir"><span id="labNovos"></span><span id="alCont">calculando…</span></span></button>' : pode('laudos') ? '<button class="al-home" data-acao="laudos-painel" id="labHome" hidden><b>Laudos dos laboratórios</b><span id="labNovos"></span></button>' : '') +
-    (E.d.externo ? '' : '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Buscar animal, responsável, bolsa, exame ou medicamento" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>') +
-    (meus.length ? '<div class="mods">' + meus.map(m => '<button class="mod' + (m.breve ? ' breve' : '') + '" data-acao="modulo" data-k="' + m.k + '">' + (m.breve ? '<span class="tag">' + m.breve + '</span>' : '') + (m.k === 'pendencias' && E.d.pendencias ? '<span class="conta">' + E.d.pendencias + '</span>' : '') + '<i>' + m.ic + '</i><b>' + m.t + '</b><small>' + m.d + '</small></button>').join('') + '</div>'
+    (E.d.externo ? '' : '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Módulo (nome ou nº), animal, bolsa, exame…" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>') +
+    (meus.length ? '<div class="mods">' + meus.map(m => '<button class="mod' + (m.breve ? ' breve' : '') + '" data-acao="modulo" data-k="' + m.k + '">' + (m.breve ? '<span class="tag">' + m.breve + '</span>' : '') + (m.k === 'pendencias' && E.d.pendencias ? '<span class="conta">' + E.d.pendencias + '</span>' : '') + '<span class="mod-n" aria-label="módulo ' + m.n + '">' + m.n + '</span><i>' + m.ic + '</i><b>' + m.t + '</b><small>' + m.d + '</small></button>').join('') + '</div>'
       : '<section class="cartao"><p class="vazio-p">Seu usuário ainda não tem módulos liberados. Fale com o administrador do painel.</p></section>') +
     '<div class="rodape-home"><button class="btn sec2 peq" data-acao="conta">Minha conta</button>' + (pode('admin') ? '<button class="btn sec2 peq" data-acao="compartilhar-painel">Compartilhar o painel com a equipe</button>' : '') + (pode('admin') ? '<button class="btn sec2 peq" data-acao="ajustes">Ajustes e usuários</button>' : '') + '<button class="btn sec2 peq" data-acao="sair">Sair</button></div>' +
     '</div></main>';
   const bg = $('#buscaG'); if (bg) bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
+  if (bg) bg.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; const ms = modulosBusca(bg.value); if (ms.length === 1) { ev.preventDefault(); abrirModPorK(ms[0].k); } });
 }
 /* ── Pedidos da Intensivet que esperam o CVH (acima dos alertas laboratoriais) ──
    Fora do horário o pedido aparece aqui na hora, em silêncio; o alerta com som toca na abertura do CVH. */
