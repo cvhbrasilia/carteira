@@ -766,6 +766,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .chip-an.rev-positivo,.rev-op.rev-positivo.on,.rev-f.rev-positivo.on,.rev-pill.rev-positivo{background:#A83D3D;border-color:#A83D3D;color:#fff}.chip-an.rev-positivo span{color:#f3dcd6}
 .rev-f.rev-atualizado:before,.rev-op.rev-atualizado:before{background:#A9C294}.rev-f.rev-incompleto:before,.rev-op.rev-incompleto:before{background:#C49A6C}.rev-f.rev-positivo:before,.rev-op.rev-positivo:before{background:#A83D3D}
 .rev-f[class*=' rev-']:before,.rev-op[class*=' rev-']:before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.rev-tag{display:inline-block;font-size:12px;font-weight:700;border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:2px;letter-spacing:0}.rev-tag.rev-atualizado{background:#D3E2C4;border-color:#A9C294;color:#2F4F2A}.rev-tag.rev-incompleto{background:#C49A6C;border-color:#C49A6C;color:#3a1a0c}.rev-tag.rev-positivo{background:#A83D3D;border-color:#A83D3D;color:#fff}
 .rev-n{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;margin-right:6px;vertical-align:2px;opacity:.85}
 .rev-filtro{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.rev-f,.rev-op{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);border-radius:999px;padding:6px 12px;cursor:pointer}.rev-f b{font-weight:800;margin-left:2px}
 .rev-f.rev-atualizado{border-color:#A9C294}.rev-f.rev-incompleto{border-color:#C49A6C}.rev-f.rev-positivo{border-color:#A83D3D}.rev-f.on:not([class*=rev-a]):not([class*=rev-i]):not([class*=rev-p]){background:var(--vinho);color:#fff}
@@ -941,7 +942,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123151452';
+  var VERSAO = '20261123154542';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6380,7 +6381,7 @@ function telaResp(id) {
     '<div class="link-box"><input id="link" readonly value="' + esc(link) + '" aria-label="Link da carteira"><button class="btn peq" data-acao="copiar-link">Copiar</button></div>' +
     '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button><button class="btn sec2 peq" data-acao="trocar-link">Trocar o link</button></div>' +
     '<p class="nota">Use Trocar o link se o link foi parar com quem não deve. O link antigo para de abrir na hora, e o responsável precisa receber o link novo.</p></section>' : '') +
-    '<section class="cartao" id="respAnimais"><h3>Animais</h3>' + (ans.length ? ans.map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + (a.ativo === '0' ? ' <small style="display:inline">(arquivado)</small>' : '') + '</b><small>' + esc([a.especie, a.raca, tipoTxt(a), a.doador === '1' ? (a.aposentadoEm ? 'Doador aposentado' + (a.aposentadoMotivo ? ' (' + a.aposentadoMotivo.toLowerCase() + ')' : '') : 'Clube do Doador') : ''].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum animal ainda.</p>') +
+    '<section class="cartao" id="respAnimais"><h3>Animais</h3>' + (ans.length ? ans.map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + (a.ativo === '0' ? ' <small style="display:inline">(arquivado)</small>' : '') + (pode('admin') && revSit(a.id) ? ' <span class="rev-tag rev-' + revSit(a.id) + '">' + ((E.rev[a.id] || {}).nota ? '<i class="rev-n"></i>' : '') + REV_NOME[revSit(a.id)] + '</span>' : pode('admin') && (E.rev && E.rev[a.id] || {}).nota ? ' <span class="rev-tag"><i class="rev-n"></i>nota</span>' : '') + '</b><small>' + esc([a.especie, a.raca, tipoTxt(a), a.doador === '1' ? (a.aposentadoEm ? 'Doador aposentado' + (a.aposentadoMotivo ? ' (' + a.aposentadoMotivo.toLowerCase() + ')' : '') : 'Clube do Doador') : ''].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum animal ainda.</p>') +
     (cad ? '<button class="btn sec2" data-acao="novo-animal">+ Novo animal</button>' : '') + '</section>' +
     (pode('admin') ? '<button class="btn perigo peq" data-acao="excluir-resp">Excluir responsável</button>' : '') +
     '</div></main>' + '';
