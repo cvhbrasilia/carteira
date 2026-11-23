@@ -2215,6 +2215,17 @@ const rotuloData = () => estado.tipo === "idexx" && !estado.exame.labNome ? "An�
 // tipo sanguíneo do cadastro do doador (DEA 1, DAL ou grupo felino)
 // tipo sanguíneo só por opção (nada digitado): cão DEA 1 e DAL; gato grupo A, B ou AB
 const partesTipo = (s) => { s = String(s || ""); return { dea: /dea\s*1\s*(\+|pos)/i.test(s) ? "positivo" : /dea\s*1\s*(-|–|−|neg)/i.test(s) ? "negativo" : "", dal: /dal\s*(\+|pos)/i.test(s) ? "positivo" : /dal\s*(-|–|−|neg)/i.test(s) ? "negativo" : "", gato: ((s.match(/\b(AB|A|B)\b/) || [])[1] || "") }; };
+// receptor do cadastro (ou de um laudo recente) carregado no laudo: paciente, responsável, clínica e solicitante
+function aplicarReceptor(i) { estado.rcpSel = String(i); const r = RECEPTORES[+i]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante", "solicitanteCrmv"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
+// nome digitado de um receptor já cadastrado: sugere o cadastro e, com o nome completo igual, carrega sozinho
+function sugerirReceptor(nome, final) {
+  const box = $("#rcpSug"); if (!estado.receptor) return; const n = semAc(nome).trim();
+  const L = n.length < 2 ? [] : RECEPTORES.map((r, i) => [r, i]).filter(([r]) => r.cadastro && r.paciente && semAc(r.paciente.nome).startsWith(n));
+  const iguais = L.filter(([r]) => semAc(r.paciente.nome).trim() === n);
+  if ((final || L.length === 1) && iguais.length === 1 && estado.rcpSel !== String(iguais[0][1])) return aplicarReceptor(iguais[0][1]);
+  if (!box) return;
+  box.innerHTML = L.length && !(iguais.length === 1 && estado.rcpSel === String(iguais[0][1])) ? '<span class="nota">Já cadastrado: </span>' + L.slice(0, 4).map(([r, i]) => `<button type="button" class="btn sec mini" data-a="rcp-usar" data-v="${i}">${esc([r.paciente.nome, r.resp && r.resp.nome, r.exame && r.exame.clinica].filter(Boolean).join(" · "))}</button>`).join(" ") : "";
+}
 function campoTipo() {
   const p = partesTipo(tipoSanguineoTxt()), op = (v, txt, cur) => `<option value="${v}"${v === cur ? " selected" : ""}>${txt}</option>`;
   if (felino()) return `<span class="tipo-cx"><select data-tp="gato" aria-label="Grupo sanguíneo">${op("", "não tipado", p.gato)}${op("A", "Grupo A", p.gato)}${op("B", "Grupo B", p.gato)}${op("AB", "Grupo AB", p.gato)}</select></span>`;
@@ -3304,7 +3315,7 @@ function caixaPaciente() {
     (estado.receptor && !(RECEPTORES[+estado.rcpSel] || {}).cadastro ? `<div class="larga"><button type="button" class="btn sec mini" data-a="rcp-cadastrar">Cadastrar este receptor</button><span class="nota" id="stRcp"> Abre o cadastro de receptores com os dados deste laudo, para usar nos próximos.</span></div>` : "");
   const escolher = !CTX.animalId && !estado.receptor ? `<label class="larga">Animal do cadastro<select data-animal="1"><option value="">Escolha o animal</option>${ANIMAIS.map((a) => `<option value="${esc(a.id)}"${a.id === estado.animalId ? " selected" : ""}>${esc(a.nome + (a.resp ? " · " + a.resp : "") + (a.especie ? " · " + a.especie : ""))}</option>`).join("")}</select></label>` : "";
   const esp = ["Canina", "Felina"].includes(P.especie) || !P.especie ? sel('data-pa="especie"', P.especie, [["", "escolha"], ["Canina", "Canina"], ["Felina", "Felina"]]) : inp('data-pa="especie"', P.especie);
-  return `<div class="cx"><h3>Paciente</h3><div class="grade g4">${modoRec}${recentes}${escolher}${campo("Nome", inp('data-pa="nome"', P.nome), "larga")}${campo("Espécie", esp)}${campo("Raça", inp('data-pa="raca"', P.raca, 'autocomplete="off" placeholder="comece a digitar"'))}<label>Sexo${segm('data-a="sexo"', /^m/i.test(P.sexo) ? "M" : /^f/i.test(P.sexo) ? "F" : "", ["M", "F"])}</label>${campo("Idade", campoIdade(P.idade))}${estado.tipo === "idexx" || estado.receptor ? campo("Peso (kg)", inp('data-pa="peso" inputmode="decimal"', P.peso)) : ""}${campo("Microchip", inp('data-pa="microchip" inputmode="numeric"', P.microchip))}${estado.tipo === "tipagem" ? "" : campo("Tipo sanguíneo", campoTipo())}${campo("Responsável", inp('data-r="nome"', estado.resp.nome), "larga")}</div></div>`;
+  return `<div class="cx"><h3>Paciente</h3><div class="grade g4">${modoRec}${recentes}${escolher}${campo("Nome", inp('data-pa="nome"', P.nome, estado.receptor ? 'list="lRcpNomes" autocomplete="off"' : ""), "larga")}${estado.receptor ? `<datalist id="lRcpNomes">${[...new Set(RECEPTORES.filter((r) => r.cadastro && r.paciente && r.paciente.nome).map((r) => r.paciente.nome))].map((n) => `<option value="${esc(n)}">`).join("")}</datalist><div class="larga" id="rcpSug"></div>` : ""}${campo("Espécie", esp)}${campo("Raça", inp('data-pa="raca"', P.raca, 'autocomplete="off" placeholder="comece a digitar"'))}<label>Sexo${segm('data-a="sexo"', /^m/i.test(P.sexo) ? "M" : /^f/i.test(P.sexo) ? "F" : "", ["M", "F"])}</label>${campo("Idade", campoIdade(P.idade))}${estado.tipo === "idexx" || estado.receptor ? campo("Peso (kg)", inp('data-pa="peso" inputmode="decimal"', P.peso)) : ""}${campo("Microchip", inp('data-pa="microchip" inputmode="numeric"', P.microchip))}${estado.tipo === "tipagem" ? "" : campo("Tipo sanguíneo", campoTipo())}${campo("Responsável", inp('data-r="nome"', estado.resp.nome), "larga")}</div></div>`;
 }
 function caixaExame() {
   const X = estado.exame, lab = estado.tipo === "idexx" && !!X.labNome, idx = estado.tipo === "idexx" && !lab, ds = doacoesDoAnimal();
@@ -3564,7 +3575,7 @@ function ligar() {
     if (t.dataset.x) { estado.exame[t.dataset.x] = t.dataset.x === "clinica" && /^\s*cvh\s*$/i.test(t.value) ? CLINICA_CVH : t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
     else if (t.dataset.rq != null && estado.tipo === "requisicao") { estado.t.linhas[+t.dataset.rq][1] = t.value; mudou(false); }
     else if (t.dataset.tp) { estado.paciente.tipo = lerTipo(t); mudou(false); return; }
-    else if (t.dataset.pa) { estado.paciente[t.dataset.pa] = t.value; if (t.dataset.pa === "especie" && estado.tipo) { const x = estado.t; if (estado.tipo === "tipagem" && !felino() && x.dea1 && !x.dea1.on && !x.dal.on) { x.dea1.on = true; x.dal.on = true; } kitsNoLaudo(); ajustarNota(); return mudou(true); } }
+    else if (t.dataset.pa) { estado.paciente[t.dataset.pa] = t.value; if (t.dataset.pa === "nome" && estado.receptor) sugerirReceptor(t.value, false); if (t.dataset.pa === "especie" && estado.tipo) { const x = estado.t; if (estado.tipo === "tipagem" && !felino() && x.dea1 && !x.dea1.on && !x.dal.on) { x.dea1.on = true; x.dal.on = true; } kitsNoLaudo(); ajustarNota(); return mudou(true); } }
     else if (t.dataset.r) estado.resp[t.dataset.r] = t.value;
     else if (t.dataset.p) estado[t.dataset.p] = t.value;
     else if (t.dataset.g) estado.graficos = t.checked;
@@ -3575,7 +3586,7 @@ function ligar() {
     else if (t.dataset.pvC) { estado.t.provas[+t.dataset.i][t.dataset.pvC] = t.value; if (t.dataset.pvC === "doador" && /^\d{1,6}-\d$/.test(t.value.trim())) preencherSegmentos(); }
     else if (t.dataset.exC) { const e = estado.t.exames.find((x) => x.id === +t.closest("[data-ex]").dataset.ex); if (!e) return; e[t.dataset.exC] = t.type === "checkbox" ? t.checked : t.value; if (t.type === "checkbox") { estado.exame.titulo = tituloPadrao(); return mudou(true); } }
     else if (t.dataset.vet) { const v = VETS.find((x) => x.id === t.value); if (v) estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || "" }; }
-    else if (t.dataset.rcp) { estado.rcpSel = t.value; const r = RECEPTORES[+t.value]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante", "solicitanteCrmv"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
+    else if (t.dataset.rcp) { return aplicarReceptor(t.value); }
     else if (t.dataset.rec) { estado.receptor = t.checked; if (t.checked) { estado.animalId = ""; estado.exame.doacao = ""; if (estado.vet && estado.exame.solicitante === estado.vet.nome) estado.exame.solicitante = ""; if (estado.exame.clinica === CLINICA_CVH) estado.exame.clinica = ""; } $("#salvo").hidden = true; return mudou(true); }
     else if (t.dataset.animal) { usarAnimal(t.value); ajustarNota(); return mudou(true); }
     else if (t.dataset.idn !== undefined || t.dataset.idu !== undefined) { const v = lerIdade(t); if (v == null) return; estado.paciente.idade = v; }
@@ -3590,6 +3601,7 @@ function ligar() {
     const t = ev.target;
     // no iPhone a lista de opções pode mudar sem o evento "input": repete aqui o que o "input" faria
     if (t.tagName === "SELECT" && !(t._inp && Date.now() - t._inp < 400)) { t.dispatchEvent(new Event("input", { bubbles: true })); return; }
+    if (t.dataset && t.dataset.pa === "nome" && estado.receptor) { sugerirReceptor(t.value, true); return; }
     if (t.id === "arq" && t.files.length) {
       const st = $("#stLer"); st.className = "st"; st.textContent = "Lendo o PDF…";
       try { const fs = [...t.files], somar = t.dataset.somar === "1" && estado.lido && LIDOS.length; t.dataset.somar = "";
@@ -3631,6 +3643,7 @@ function ligar() {
     if (a === "trocarProva") { b.disabled = true; const st = $("#st"); try { const r = await ponte("trocarProva", { id: estado.pedidoId, doacoes: estado.t.provas.map((p) => p.doador) }); PROVAS_RES = null; const bx = $("#provasRes"); if (bx) bx.remove(); pintarProvasRes(); if (st) { st.className = "st"; st.textContent = ["Reserva trocada: " + (r.novas.join(", ") || "nenhuma bolsa do estoque"), r.liberadas.length ? "liberada " + r.liberadas.join(", ") : "", r.faltam.length ? "não achei no estoque " + r.faltam.join(", ") : ""].filter(Boolean).join(" · ") + "."; } } catch (e) { b.disabled = false; if (st) { st.className = "st erro"; st.textContent = e.message; } } return; }
     if (a === "lerCodigo") { const t = await lerQR(estado.tipo === "compat" ? "Leia a etiqueta da bolsa" : "Leia a etiqueta da amostra"); if (t) lidoLeitor(codigo(t)); return; }
     if (a === "etiqueta") { const i = $("#arqFoto"); i.dataset.alvo = "etiqueta"; i.click(); }
+    if (a === "rcp-usar") { aplicarReceptor(b.dataset.v); return; }
     if (a === "rcp-cadastrar") {
       // cadastro de receptores do painel, já preenchido com o que está no laudo; ao salvar, vira o receptor escolhido aqui
       const P = estado.paciente, X = estado.exame, st = $("#stRcp");
