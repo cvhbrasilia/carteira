@@ -925,7 +925,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123035018';
+  var VERSAO = '20261123035231';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5511,7 +5511,10 @@ async function preparoTx(b, modo) {
   if (!testada) { if (!confirm((P.exigeProva ? 'A bolsa ' + uid + ' não passou pela prova de compatibilidade deste paciente, e a prova é obrigatória (felino ou paciente já transfundido).' : 'A bolsa ' + uid + ' é diferente da testada.') + ' Confirma que a compatibilidade com esta bolsa foi verificada?')) return; conf = true; }
   b.disabled = true;
   try {
-    await api('estAtendimentoPreparo', E.sessao, P.id, { unidade: uid, modo, provaConfirmada: conf }); E.txEst = null;
+    try { await api('estAtendimentoPreparo', E.sessao, P.id, { unidade: uid, modo, provaConfirmada: conf }); }
+    catch (e0) { if (!/^DEA1:/.test(e0.message) || !confirm(e0.message.replace(/^DEA1: /, '') + ' A primeira transfusão é tolerada, mas sensibiliza o paciente. Seguir com esta bolsa?')) throw e0;
+      await api('estAtendimentoPreparo', E.sessao, P.id, { unidade: uid, modo, provaConfirmada: conf, dea1Confirmado: true }); }
+    E.txEst = null;
     if (modo === 'fracionar') { E.fracAbrir = { unidade: uid, volume: P.alvo, atendimento: P.id, paciente: P.paciente }; const k = pode('estoque') || pode('admin') ? 'estoque' : 'producao'; E.modulo = k; toast('Atendimento em fracionamento. O motoboy foi avisado.', 5000); return abrirModulo(k); }
     toast('Bolsa ' + uid + ' reservada para o atendimento. Siga a embalagem e a saída na ficha.', 5000); E.pedAbrir = P.id; E.modulo = 'transporte'; return abrirModulo('transporte');
   } catch (e) { b.disabled = false; toast(e.message, 7000); }

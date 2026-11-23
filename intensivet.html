@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123035231';
+  var VERSAO = '20261123035422';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -183,6 +183,12 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:12px 16px;border-radius:14px;z-index:40;max-width:92vw;font-weight:600}
 #alarme{position:fixed;inset:0;background:var(--verm);color:#fff;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
 #alarme h2{font-size:24px;margin:8px 0}
+#cpAlerta{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;animation:cpPisca 1s steps(1) infinite}
+#cpAlerta h2{font-size:26px;line-height:1.15;margin:10px 0}#cpAlerta p{font-size:18px;line-height:1.4}#cpAlerta b.t{font-size:15px;letter-spacing:.12em}
+#cpAlerta .btn{background:#fff;color:#8A1D14;margin-top:18px;padding:16px 22px;font-size:17px}
+@keyframes cpPisca{0%{background:#A83D3D}50%{background:#5F130F}}
+.cx.cp-pisca{animation:cpBorda 1.2s ease-in-out infinite;border:3px solid #A83D3D}
+@keyframes cpBorda{0%,100%{box-shadow:0 0 0 0 rgba(168,61,61,.0)}50%{box-shadow:0 0 0 6px rgba(168,61,61,.35)}}
 #alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
 </style></head>
 <body>
@@ -227,6 +233,22 @@ function alarme(chave, titulo, corpo) {
   $("#alOk").onclick = () => { clearInterval(ALARME); ALARME = null; ov.remove(); if (navigator.vibrate) navigator.vibrate(0); SILENCIO[chave] = Date.now(); ALARME_ON = ""; };
 }
 const SILENCIO = {};
+// plaqueta: aviso crítico piscando (na caixa a caminho, na chegada e a cada 2 h enquanto estiver aqui)
+function cpAlerta(u) {
+  if (document.getElementById("cpAlerta") || ALARME_ON) return;
+  const l = cpLim(u), ov = document.createElement("div"); ov.id = "cpAlerta";
+  ov.innerHTML = '<div><b class="t">ATENÇÃO · PLAQUETA</b><h2>NÃO REFRIGERAR<br>NÃO CONGELAR</h2><p>Manter em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C). Nunca dentro do refrigerador de CH nem do freezer: o frio inativa as plaquetas.</p><p>' + esc(u.id) + (l ? " · transfundir até <b>" + esc(hmData(l)) + "</b>" : " · transfundir em até 24 h") + '</p><button class="btn" id="cpOk">Entendi. A plaqueta está fora do refrigerador</button></div>';
+  document.body.appendChild(ov); somLiberar();
+  const ciclo = () => { for (let i = 0; i < 3; i++) { tom(988, i * 0.45, 0.2, 0.32, "square"); tom(740, i * 0.45 + 0.22, 0.2, 0.32, "square"); } if (navigator.vibrate) navigator.vibrate([500, 200, 500]); };
+  ciclo(); const t = setInterval(ciclo, 3000);
+  $("#cpOk").onclick = () => { clearInterval(t); ov.remove(); if (navigator.vibrate) navigator.vibrate(0); try { localStorage.setItem("cvh_cp_" + u.id, String(Date.now())); } catch (e) {} };
+}
+function conferirCP() {
+  if (!D || !D.aparelho) return; const A = D.aparelho;
+  const L = (D.unidades || []).filter((u) => u.componente === "CP" && !vencidaU(u) && ((u.local === A.local && ["disponivel", "reservada"].includes(u.situacao)) || (u.situacao === "transito" && (D.remessas || []).some((r) => (r.unidades || []).includes(u.id) && r.destino === A.local))));
+  for (const u of L) { let t0 = 0; try { t0 = +localStorage.getItem("cvh_cp_" + u.id) || 0; } catch (e) {} if (Date.now() - t0 > 2 * 36e5) return cpAlerta(u); }
+}
+setInterval(conferirCP, 20000);
 
 /* ── notificações com o app fechado (caixa a caminho, alertas) ── */
 async function ativarNotif() {
@@ -338,7 +360,7 @@ function pintar() {
   const vencidas = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao) && vencidaU(u));
   if (vencidas.length) h += '<div class="cx al"><h2>BOLSA VENCIDA · NÃO USE</h2><p>Não use. Bolsa vencida não volta ao CVH: descarte no lixo infectante e toque em Descartar para registrar. O CVH já foi avisado.</p>' + vencidas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + '</small><div class="bts"><button class="btn peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") + "</div>";
   const cps = (D.unidades || []).filter((u) => u.local === A.local && u.componente === "CP" && ["disponivel", "reservada"].includes(u.situacao) && !vencidaU(u));
-  if (cps.length) h += '<div class="cx av"><h2>Plaqueta aqui</h2><p><b>Temperatura ambiente (20 a 24 °C), nunca no refrigerador.</b> Transfundir em até 24 h depois que saiu do CVH. Agite suavemente antes de usar.</p>' + cps.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "</div>").join("") + "</div>";
+  if (cps.length) h += '<div class="cx av cp-pisca"><h2>Plaqueta aqui · NÃO REFRIGERAR, NÃO CONGELAR</h2><p><b>Manter em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C). Nunca no refrigerador nem no freezer.</b> Transfundir em até 24 h depois que saiu do CVH. Agite suavemente antes de usar.</p>' + cps.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "</div>").join("") + "</div>";
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
   // pedidos ao CVH: bolsa, tipagem, prova de compatibilidade e Coombs (internação)
   if (interna) {
@@ -359,7 +381,7 @@ function pintar() {
         else if (g && !g.foto) { st = '<span class="tag av">No equipamento · foto pendente</span>'; bt = '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
         else st = '<span class="tag ok">guardada</span>';
         const eq = (D.equipamentos || []).find((e) => (e.aceita || []).includes(u.componente));
-        return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && u.componente === "CP" ? '<small><b>Temperatura ambiente, NUNCA no refrigerador</b></small>' : u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
+        return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && u.componente === "CP" ? '<small><b>Ar-condicionado a 21 °C, NUNCA no refrigerador nem no freezer</b></small>' : u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
       (r.recebida_em ? '<div class="bts"><button class="btn sec peq" data-a="ocorrencia" data-v="Caixa ' + esc(r.id) + '">Informar ocorrência ao CVH</button></div>' : "") + "</div>";
   }
   // bolsas que voltaram ao estoque por cancelamento e ainda esperam o QR do equipamento e a foto
@@ -418,6 +440,7 @@ async function carregar(silencio) {
       const ch = (D.pedidos || []).filter((x) => { const am = x.amostra || {}; return am.chamadoEm && !am.enviadaEm && !am.saiuEm && !am.chegouEm && visto[x.id] !== am.chamadoEm; });
       if (ch.length) { somAviso(); setTimeout(somAviso, 1300); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); toast((((ch[0].amostra || {}).via === "motoboy") ? "Motoboy" : "Uber") + " chegou para buscar a amostra de " + (ch[0].paciente || "paciente") + ".", 9000); ch.forEach((x) => { visto[x.id] = x.amostra.chamadoEm; }); try { localStorage.setItem("cvh_int_busca", JSON.stringify(visto)); } catch (_) {} } }
     if (!$("#modal").classList.contains("on") && !$("#cam").classList.contains("on")) pintar();
+    setTimeout(conferirCP, 600);
   } catch (e) {
     if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_int_k"); } catch (_) {} K = ""; return carregar(); }
     if (!silencio) toast(e.message || String(e), 6000);
@@ -469,7 +492,7 @@ async function guardar(uidSugerido) {
   const t = await lerQR(uidSugerido ? "Leia a etiqueta da bolsa " + uidSugerido : "Leia a etiqueta da bolsa"); if (!t) return;
   const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
   if (!u || !pendenteGuarda(u)) { bip(false); return toast(u ? "Esta bolsa não está esperando guarda." : "Bolsa não encontrada nesta caixa. Confira a etiqueta.", 7000); }
-  if (u.componente === "CP") { const l = cpLim(u); modal('<h2>Plaqueta · ' + esc(u.id) + '</h2><p style="font-size:17px;color:#8A1D14"><b>NÃO coloque no refrigerador nem no freezer.</b> O frio inativa as plaquetas.</p><p>Deixe a bolsa em temperatura ambiente (20 a 24 °C), deitada, longe do sol, do ar-condicionado direto e do refrigerador.' + (l ? ' Transfundir até <b>' + esc(hmData(l)) + '</b>.' : ' Transfundir em até 24 h.') + ' Agite suavemente antes de usar.</p><div class="bts"><button class="btn" data-a="cpAmb" data-v="' + esc(u.id) + '">Plaqueta em temperatura ambiente</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
+  if (u.componente === "CP") { const l = cpLim(u); modal('<h2>Plaqueta · ' + esc(u.id) + '</h2><p style="font-size:17px;color:#8A1D14"><b>NÃO coloque no refrigerador nem no freezer.</b> O frio inativa as plaquetas.</p><p>Deixe a bolsa em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C), deitada, longe do sol e do refrigerador.' + (l ? ' Transfundir até <b>' + esc(hmData(l)) + '</b>.' : ' Transfundir em até 24 h.') + ' Agite suavemente antes de usar.</p><div class="bts"><button class="btn" data-a="cpAmb" data-v="' + esc(u.id) + '">Plaqueta no ar-condicionado a 21 °C</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
   if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
   await lerEquip(u.id);
 }
