@@ -2939,11 +2939,15 @@ function revisarExames() {
   const ult = [...base].filter((e) => e.cab.idade).sort((a, b) => ordData(b.data).localeCompare(ordData(a.data)))[0];
   if (ult) auto.idade = ult.cab.idade;
   for (const [c, v] of Object.entries(auto)) if (!estado.editado[c] && v) estado.animal[c] = v;
+  // laudo pedido com o número da doação no lugar do nome (TECSA "493.6", IDEXX "577-0"): é deste animal se a doação é dele
+  const numsDoacao = new Set([...((window.CVH_CTX || {}).fichas || []).map((f) => f && f.numero), ...estado.exames.filter((e) => /^FD/.test(e.chave || "")).map((e) => e.chave.slice(2))]
+    .map((x) => String(x || "").replace(/\D/g, "")).filter((x) => x.length >= 3));
+  const doacaoPropria = (nome) => { const m = String(nome || "").match(/^\s*(\d{2,5})\s*[-.]\s*(\d{1,2})(?!\d)/); return !!m && numsDoacao.has(m[1] + m[2]); };
   const nomeRef = norm(estado.animal.nome), espRef = norm(especieTxt(estado.animal.especie)), sexoRef = norm(estado.animal.sexo);
   for (const e of estado.exames) {
     e.alertas = [];
     const n = norm(e.cab.nome);
-    if (nomeRef && n && n !== nomeRef && !n.includes(nomeRef) && !nomeRef.includes(n)) e.alertas.push(`O laudo é de ${titulo(e.cab.nome)}, não de ${estado.animal.nome}.`);
+    if (nomeRef && n && n !== nomeRef && !n.includes(nomeRef) && !nomeRef.includes(n) && !doacaoPropria(e.cab.nome)) e.alertas.push(`O laudo é de ${titulo(e.cab.nome)}, não de ${estado.animal.nome}.`);
     if (espRef && e.cab.especie && norm(especieTxt(e.cab.especie)) !== espRef) e.alertas.push(`Espécie no laudo ${e.cab.especie}.`);
     if (sexoRef && e.cab.sexo && norm(e.cab.sexo) !== sexoRef) e.alertas.push(`Sexo no laudo ${e.cab.sexo}.`);
     if (e.alertas.length && e.incluir && e.alertas[0].startsWith("O laudo é de") && !e.decidido) e.incluir = false;
