@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Clínicas CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 14px 90px}
+@media (min-width:700px){.wrap{padding:16px 30px 90px 18px}}html{scrollbar-gutter:stable}
+.topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.topo h1{margin:0;font-size:22px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12px;font-weight:500;color:var(--tinta2)}
+.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:7px 11px;font-size:13.5px;border-radius:10px}
+.btn.grande{width:100%;padding:16px;font-size:17px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px}
+.abas{display:flex;flex-wrap:wrap;gap:2px 4px;overflow-x:auto;border-bottom:1px solid var(--areia2);margin-bottom:14px;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas button{border:0;background:none;padding:10px 12px;font-weight:700;color:var(--tinta2);border-bottom:3px solid transparent;white-space:nowrap}
+.abas button.on{color:var(--vinho);border-color:var(--vinho)}
+.abas b{background:var(--verm);color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;margin-left:4px}
+.cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
+.cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
+.nota{font-size:13px;color:var(--tinta2);margin:4px 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
+.kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--tinta2)}
+.lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
+.lin:first-of-type{border-top:0}
+.lin .t{min-width:0}
+.lin .t b{display:block;color:var(--vinho)}
+.lin .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--areia);color:var(--vinho);white-space:nowrap}
+.chip.ok{background:#E3EFE6;color:var(--ok)}.chip.al{background:#F6DADA;color:#8A1D14}.chip.av{background:#FBF0DC;color:#7A4E0B}.chip.ne{background:#f1ece6;color:#7a6a62}
+.unid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:10px 4px;border-top:1px solid #f0e8df}
+.unid .co{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--vinho)}
+.unid .co.CP{background:#C49A6C}.unid .co.PFC,.unid .co.CRIO,.unid .co.PPC{background:#A83D3D}
+.unid .t b{color:var(--vinho)}.unid .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.unid .d{text-align:right}.unid .d small{display:block;color:var(--tinta2);font-size:12px}
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.filtros button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--tinta2)}
+.filtros button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.passos{display:flex;gap:4px;margin:8px 0 14px;flex-wrap:wrap}
+.passos span{flex:1;min-width:70px;font-size:11px;text-align:center;padding:6px 4px;border-radius:8px;background:#f3ede6;color:#9a8a80;font-weight:700}
+.passos span.feito{background:#E3EFE6;color:var(--ok)}.passos span.agora{background:var(--vinho);color:#fff}
+label{display:block;font-size:13px;color:var(--tinta2);margin:8px 0 4px}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:12px;border:1px solid var(--areia2);border-radius:10px;background:#fff;color:var(--tinta);font-size:17px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.grade{grid-template-columns:1fr}}
+.peso{display:flex;gap:8px;align-items:stretch}.peso input{flex:1;min-width:0}.peso .btn{flex:none;padding:0 14px}
+.calc{background:#FFFBF5;border:1px dashed var(--bege);border-radius:12px;padding:12px;margin:10px 0}
+.calc b.big{font-size:26px;color:var(--vinho)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:6px 0 12px}
+.dl dt{color:var(--tinta2)}.dl dd{margin:0;font-weight:600}
+.ev{font-size:13px;border-left:3px solid var(--areia2);padding:3px 0 3px 10px;margin:6px 0}
+.ev small{color:var(--tinta2)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#veu.on{opacity:1;pointer-events:auto}
+#gaveta{position:fixed;left:0;right:0;bottom:0;max-height:88vh;background:var(--papel);border-radius:18px 18px 0 0;transform:translateY(105%);transition:transform .25s;z-index:21;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.18)}
+#gaveta.on{transform:none}
+@media (min-width:900px){#gaveta{left:auto;top:0;bottom:0;width:520px;max-height:none;border-radius:18px 0 0 18px;transform:translateX(105%)}#gaveta.on{transform:none}}
+.rel-it{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--areia2)}.rel-h{flex:none;width:46px;font-weight:700;color:var(--vinho)}.rel-c{flex:1;min-width:0}.rel-c small{display:block;color:var(--tinta2)}.rel-fotos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.rel-fotos img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--areia2)}
+#gaveta:not(.on){visibility:hidden;transition:transform .25s,visibility 0s .25s}#gaveta.on{visibility:visible;transition:transform .25s}html,body{max-width:100%;overflow-x:clip}
+.sug{display:flex;flex-direction:column;gap:4px;margin-top:4px}.sug button{text-align:left;border:1px solid var(--linha,#e4dad0);background:#fff;border-radius:10px;padding:9px 11px}.sug button small{display:block;color:#7a6a62}
+.gv-t{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
+.gv-t h3{margin:0;color:var(--vinho);font-size:18px}
+.gv-t button{border:0;background:#fff;border-radius:999px;width:40px;height:40px;font-size:22px;color:var(--vinho);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+#gvC{overflow:auto;padding:0 16px 30px}
+#gvC input,#gvC textarea,#gvC select{scroll-margin-top:64px}
+@media (pointer:coarse) and (max-width:899px){#gaveta.kb{max-height:94vh}#gaveta.kb #gvC{padding-bottom:55vh}}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
+.vazio{color:var(--tinta2);font-size:14px;padding:6px 0}
+@media (min-width:1000px){.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}}
+#camE{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}
+#camE.on{display:flex}
+#camE video{flex:1;width:100%;object-fit:cover;min-height:0}
+#camE .mira{position:absolute;left:50%;top:38%;width:70vmin;height:42vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:16px;pointer-events:none}
+#camE .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
+#camE .flash.on{opacity:1;transition:none}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+#cam .linha{display:flex;gap:8px;margin:8px 0}#cam .linha input{flex:1;border:1px solid #C6B098;border-radius:10px;padding:10px;font-size:16px}#cam #camT{margin:0 0 4px;font-weight:700;color:#5F130F}#cam .bts .btn{width:100%}
+
+.sem{display:grid;grid-template-columns:96px repeat(7,minmax(0,1fr));gap:4px;font-size:12.5px}
+.sem .c{background:#fff;border-radius:10px;min-height:66px;padding:5px;box-shadow:0 1px 4px rgba(95,19,15,.06)}
+.sem .h{font-weight:700;color:var(--tinta2);text-align:center;padding:4px 0}.sem .h.hoje{color:var(--vinho)}
+.sem .n{font-weight:800;color:var(--vinho);display:flex;align-items:center}
+.res{display:block;width:100%;text-align:left;border:0;border-radius:8px;padding:4px 6px;margin-bottom:4px;background:#F3E6D6;color:var(--vinho);font-size:12px;line-height:1.25}
+.res.entregue{background:#5F130F;color:#fff}.res.devolvida{background:#E3EFE6;color:var(--ok)}.res b{display:block;font-size:12px}
+@media (max-width:760px){.sem{grid-template-columns:70px repeat(7,minmax(74px,1fr));overflow-x:auto}}
+.termo{white-space:pre-wrap;background:#fff;border:1px solid var(--areia2);border-radius:12px;padding:12px;font-size:13.5px;max-height:260px;overflow:auto}
+.sit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.sit div{background:#fff;border-radius:12px;padding:9px 10px;border:1px solid var(--areia2)}.sit small{display:block;color:var(--tinta2);font-size:12px}
+.camop{display:flex;gap:8px;flex-wrap:wrap}.camop button{flex:1 1 140px;border:1px solid var(--areia2);background:#fff;border-radius:12px;padding:10px;font-weight:700;color:var(--vinho);text-align:left}.camop button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}.camop button small{display:block;font-weight:500;font-size:12px}.camop button.ocup{opacity:.55}
+.lt{list-style:none;padding:0;margin:6px 0}.lt li{font-size:13px;padding:4px 0 4px 14px;border-left:2px solid var(--areia2);margin-left:4px}.lt li small{color:var(--tinta2)}
+</style></head><body>
+<div class="wrap" id="app"><div class="cx vazio">Abrindo as clínicas…</div></div>
+<div id="veu"></div>
+<aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
+<script>
+/* Cadastro único das clínicas: o mesmo cadastro aparece no motoboy (destinos), nas câmaras, nos receptores e nos atendimentos */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const semAc = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const p2 = (n) => String(n).padStart(2, "0");
+const dataBr = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear(); };
+const ponte = (metodo, ...args) => {
+  let f = null; try { f = window.parent.CVH_PONTE; } catch (e) { f = null; }
+  if (typeof f !== "function") return Promise.reject(new Error("Abra o módulo pelo Painel CVH."));
+  return new Promise((ok, erro) => { try { Promise.resolve(f(metodo, JSON.parse(JSON.stringify(args)))).then((r) => ok(r == null ? r : JSON.parse(JSON.stringify(r))), (e) => erro(new Error((e && e.message) || String(e)))); } catch (e) { erro(e); } });
+};
+const trp = (fn, ...a) => ponte("trp", fn, ...a);
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 3500); }
+function abrirGaveta(t, h) { $("#gvT").textContent = t; $("#gvC").innerHTML = h; $("#gvC").scrollTop = 0; $("#gaveta").classList.add("on"); $("#veu").classList.add("on"); }
+function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); }
+const S = { D: null, q: "", vets: [], ed: null, inativas: false };
+const TIPOS = ["Clínica veterinária", "Hospital veterinário", "Laboratório", "Outro"];
+async function carregar() { try { S.D = await trp("cliDados"); pintar(); } catch (e) { $("#app").innerHTML = '<div class="cx">' + esc(e.message) + "</div>"; } }
+function usoDe(c) { const n = semAc(c.nome).trim(), U = (S.D.uso || []).filter((u) => semAc(u.n || "").trim() === n || (u.n && semAc(u.n).includes(n) && n.length > 5)); const q = (k) => U.filter((u) => u.k === k).reduce((t, u) => t + u.q, 0); const ult = U.map((u) => u.ult).filter(Boolean).sort().pop(); return { at: q("atendimentos"), cam: q("camaras"), rec: q("receptores"), ult }; }
+function pintar() {
+  const q = semAc(S.q), L = (S.D.clinicas || []).filter((c) => (S.inativas || c.ativo) && (!q || semAc([c.nome, c.bairro, c.endereco, c.contato, (c.vets || []).map((v) => v.nome).join(" ")].join(" ")).includes(q)));
+  $("#app").innerHTML = '<div class="topo"><h1>Clínicas<small>Cadastro único: motoboy, câmaras, receptores, laudos e atendimentos</small></h1>' + (S.D.pode ? '<button class="btn" data-a="nova">Nova clínica</button>' : "") + "</div>" +
+    '<div class="cx"><input type="search" id="busca" placeholder="Buscar por nome, bairro ou médico veterinário" value="' + esc(S.q) + '" style="width:100%"><label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-weight:600"><input type="checkbox" id="inat"' + (S.inativas ? " checked" : "") + "> Mostrar desativadas</label></div>" +
+    '<div class="cx"><h2>' + L.length + (L.length === 1 ? " clínica" : " clínicas") + "</h2>" + (L.length ? L.map((c) => { const u = usoDe(c);
+      return '<div class="lin" data-a="abrir" data-v="' + esc(c.id) + '" role="button" style="cursor:pointer"><div class="t"><b>' + esc(c.nome) + (c.ativo ? "" : ' <span class="chip ne">desativada</span>') + "</b><small>" + esc([c.tipo, [c.endereco, c.bairro].filter(Boolean).join(", "), c.telefone].filter(Boolean).join(" · ")) + "</small><small>" + ((c.vets || []).length ? (c.vets || []).length + ((c.vets || []).length === 1 ? " médico veterinário" : " médicos veterinários") + " · " : "") + [u.at ? u.at + " atendimentos" : "", u.cam ? u.cam + " câmaras" : "", u.rec ? u.rec + " receptores" : ""].filter(Boolean).join(" · ") + (u.ult ? " · último em " + dataBr(u.ult) : "") + "</small></div>" + (c.lat ? '<span class="chip ok">no mapa</span>' : '<span class="chip">sem mapa</span>') + "</div>"; }).join("") : '<p class="vazio">Nenhuma clínica encontrada.</p>') +
+    '<p class="nota">O ponto no mapa (para a rota do motoboy) é marcado em Motoboy, na aba de destinos.</p></div>';
+  const b = $("#busca"); b.oninput = () => { S.q = b.value; const pos = b.selectionStart; pintar(); const n = $("#busca"); n.focus(); n.setSelectionRange(pos, pos); };
+  $("#inat").onchange = (e) => { S.inativas = e.target.checked; pintar(); };
+}
+function form(c) {
+  c = c || { ativo: true, tipo: TIPOS[0] }; S.ed = c.id || null; S.vets = (c.vets || []).map((v) => Object.assign({}, v));
+  const campo = (id, rot, val, tipo) => '<label>' + rot + '</label><input type="' + (tipo || "text") + '" id="' + id + '" value="' + esc(val || "") + '">';
+  abrirGaveta(c.id ? c.nome : "Nova clínica", (S.D.pode ? "" : '<p class="nota">Seu usuário só consulta o cadastro.</p>') + campo("cNome", "Nome", c.nome) + '<label>Tipo</label><select id="cTipo">' + TIPOS.map((t) => "<option" + (t === c.tipo ? " selected" : "") + ">" + t + "</option>").join("") + "</select>" +
+    campo("cEnd", "Endereço", c.endereco) + campo("cBairro", "Bairro ou cidade", c.bairro) + campo("cCep", "CEP", c.cep) + campo("cTel", "Telefone", c.telefone, "tel") + campo("cEmail", "E-mail", c.email, "email") + campo("cContato", "Pessoa de contato", c.contato) + campo("cCnpj", "CNPJ", c.cnpj) +
+    '<label>Médicos veterinários</label><div id="cVets"></div>' + (S.D.pode ? '<button class="btn sec peq" data-a="vetMais" style="margin-top:6px">Acrescentar médico veterinário</button>' : "") +
+    '<label>Observação</label><textarea id="cObs" rows="3" style="width:100%">' + esc(c.obs || "") + "</textarea>" +
+    '<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="cAtivo"' + (c.ativo !== false ? " checked" : "") + "> Clínica ativa</label>" +
+    (S.D.pode ? '<div class="bts" style="margin-top:12px"><button class="btn" data-a="salvar">Salvar</button></div>' : ""));
+  pintarVets();
+}
+function pintarVets() { const el = $("#cVets"); if (!el) return; el.innerHTML = S.vets.length ? S.vets.map((v, i) => '<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 34px;gap:6px;margin-bottom:6px"><input data-v="nome" data-i="' + i + '" placeholder="Nome" value="' + esc(v.nome) + '"><input data-v="crmv" data-i="' + i + '" placeholder="CRMV" value="' + esc(v.crmv) + '"><input data-v="telefone" data-i="' + i + '" placeholder="Telefone" value="' + esc(v.telefone || "") + '"><button class="btn sec peq" data-a="vetTirar" data-i="' + i + '">×</button></div>').join("") : '<p class="nota">Nenhum cadastrado.</p>';
+  el.querySelectorAll("input[data-v]").forEach((x) => x.oninput = () => { S.vets[+x.dataset.i][x.dataset.v] = x.value; }); }
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  if (a === "fechar") return fecharGaveta();
+  if (a === "nova") return form(null);
+  if (a === "abrir") return form((S.D.clinicas || []).find((c) => c.id === v));
+  if (a === "vetMais") { S.vets.push({ nome: "", crmv: "", telefone: "" }); return pintarVets(); }
+  if (a === "vetTirar") { S.vets.splice(+b.dataset.i, 1); return pintarVets(); }
+  if (a === "salvar") { b.disabled = true; try { await trp("cliSalvar", { id: S.ed || undefined, nome: $("#cNome").value, tipo: $("#cTipo").value, endereco: $("#cEnd").value, bairro: $("#cBairro").value, cep: $("#cCep").value, telefone: $("#cTel").value, email: $("#cEmail").value, contato: $("#cContato").value, cnpj: $("#cCnpj").value, vets: S.vets, obs: $("#cObs").value, ativo: $("#cAtivo").checked }); fecharGaveta(); toast("Clínica salva."); await carregar(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } }
+});
+$("#veu").addEventListener("click", fecharGaveta);
+carregar();
+</script>
+</body></html>
+<!--CVH-CLINICAS-COMPLETO-->

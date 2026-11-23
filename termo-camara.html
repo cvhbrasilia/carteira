@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Termo da câmara portátil · CVH"><meta property="og:description" content="Termo de responsabilidade e ciência para assinar."><meta property="og:image" content="https://carteira.cvh.vet.br/painel-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Termo de responsabilidade e ciência para assinar.">
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  function reescrever(x) {
+    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261123023102';
+  function conferirVersao() {
+    if (document.hidden) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+      v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
+      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.onclick = function () { location.reload(); }; document.body.appendChild(d);
+    }).catch(function () {});
+  }
+  setInterval(conferirVersao, 180000);
+  document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  if (q.get('v')) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Termo da câmara · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png"><link rel="icon" type="image/png" href="painel-192.png"><link rel="manifest" href="painel.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Termo da câmara · CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:680px;margin:0 auto;padding:20px 14px 60px}
+h1{margin:0;font-size:21px;color:var(--vinho)}.sub{color:var(--tinta2);font-size:13.5px;margin:2px 0 12px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin:12px 0}
+.cx h2{margin:0 0 8px;font-size:16px;color:var(--vinho)}
+.termo{white-space:pre-wrap;font-size:14.5px}
+label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
+input{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;font:inherit;background:#fff}
+.btn{border:0;border-radius:14px;padding:14px 16px;background:var(--vinho);color:#fff;font:inherit;font-weight:700;width:100%;margin-top:12px}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2);width:auto;padding:8px 12px;font-size:14px;margin-top:6px}
+.ok{color:var(--ok);font-weight:700}.erro{color:var(--verm);font-weight:700}
+canvas{width:100%;height:160px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff;display:block}
+.esc{display:flex;gap:8px}.esc button{flex:1;border:1px solid var(--areia2);background:#fff;border-radius:12px;padding:12px;font:inherit;font-weight:700;color:var(--vinho)}.esc button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}
+small{color:var(--tinta2)}
+</style></head><body>
+<div class="wrap" id="app"><p>Abrindo o termo…</p></div>
+<script>
+// termo de responsabilidade e ciência do aluguel da câmara portátil: o médico veterinário e o responsável assinam no mesmo link
+const $ = (q) => document.querySelector(q), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const p2 = (n) => String(n).padStart(2, "0");
+const hora = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const T = new URLSearchParams(location.search).get("tc") || "";
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, a);
+let quem = "", tracos = 0;
+async function abrir() {
+  let r; try { r = await srv("camTermoDados", T); } catch (e) { $("#app").innerHTML = '<h1>Termo CVH</h1><div class="cx"><p class="erro">' + esc(e.message || e) + "</p></div>"; return; }
+  const A = r.assinaturas || {}, linha = (x, rot) => x ? '<p class="ok">' + rot + ": assinado por " + esc(x.nome) + " em " + esc(hora(x.em)) + "</p>" : "<p><small>" + rot + ": aguardando assinatura</small></p>";
+  const falta = [!A.vet && "vet", !A.responsavel && "responsavel"].filter(Boolean); if (!falta.includes(quem)) quem = falta[0] || "";
+  let h = '<h1>Termo da câmara portátil</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia · reserva ' + esc(r.id) + " · " + esc(r.camara) + "</div>";
+  if (r.situacao === "cancelada") h += '<div class="cx"><p class="erro">Esta reserva foi cancelada.</p></div>';
+  h += '<div class="cx"><div class="termo">' + esc(r.termo) + "</div></div>";
+  h += '<div class="cx"><h2>Assinaturas</h2>' + linha(A.vet, "Médico veterinário") + linha(A.responsavel, "Responsável") + "</div>";
+  if (falta.length && r.situacao !== "cancelada") {
+    h += '<div class="cx"><h2>Assinar agora</h2>' + (falta.length > 1 ? '<div class="esc"><button data-q="vet" class="' + (quem === "vet" ? "on" : "") + '">Sou o médico veterinário</button><button data-q="responsavel" class="' + (quem === "responsavel" ? "on" : "") + '">Sou o responsável</button></div>' : "<p><small>Falta a assinatura do " + (quem === "vet" ? "médico veterinário" : "responsável") + ".</small></p>") +
+      '<label>Nome completo</label><input id="aNome" value="' + esc(quem === "vet" ? r.vet.nome || "" : r.responsavel || "") + '"><label>' + (quem === "vet" ? "CRMV" : "CPF") + '</label><input id="aDoc" ' + (quem === "vet" ? 'value="' + esc(r.vet.crmv || "") + '"' : 'inputmode="numeric"') + '>' +
+      '<label>Assinatura com o dedo</label><canvas id="aCv" width="900" height="300"></canvas><button class="btn sec" id="aLimpar">Limpar</button>' +
+      '<button class="btn" id="aOk">Li e concordo · assinar</button><p id="aSt"></p></div>';
+  } else if (!falta.length) h += '<div class="cx"><p class="ok">Termo assinado pelo médico veterinário e pelo responsável. Obrigado.</p></div>';
+  $("#app").innerHTML = h;
+  document.querySelectorAll("[data-q]").forEach((b) => b.onclick = () => { quem = b.dataset.q; abrir(); });
+  const cv = $("#aCv"); if (!cv) return; tracos = 0;
+  const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.lineWidth = 4; cx.lineCap = "round"; cx.lineJoin = "round"; cx.strokeStyle = "#2b2320"; let des = false;
+  const pos = (e) => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * cv.width / b.width, (e.clientY - b.top) * cv.height / b.height]; };
+  cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
+  cv.onpointermove = (e) => { if (!des) return; const [x, y] = pos(e); cx.lineTo(x, y); cx.stroke(); tracos++; };
+  cv.onpointerup = cv.onpointercancel = () => { des = false; };
+  $("#aLimpar").onclick = () => { cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); tracos = 0; };
+  $("#aOk").onclick = async () => {
+    const st = $("#aSt"); if (tracos < 8) { st.className = "erro"; st.textContent = "Assine no quadro."; return; }
+    $("#aOk").disabled = true; st.className = ""; st.textContent = "Enviando…";
+    try { await srv("camTermoAssinar", T, quem, { nome: $("#aNome").value.trim(), doc: $("#aDoc").value.trim(), assinatura: cv.toDataURL("image/png").split(",")[1] }); quem = ""; abrir(); window.scrollTo(0, 0); }
+    catch (e) { $("#aOk").disabled = false; st.className = "erro"; st.textContent = e.message || String(e); }
+  };
+}
+abrir();
+</script></body></html>

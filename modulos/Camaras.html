@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Câmaras portáteis CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 14px 90px}
+@media (min-width:700px){.wrap{padding:16px 30px 90px 18px}}html{scrollbar-gutter:stable}
+.topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.topo h1{margin:0;font-size:22px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12px;font-weight:500;color:var(--tinta2)}
+.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:7px 11px;font-size:13.5px;border-radius:10px}
+.btn.grande{width:100%;padding:16px;font-size:17px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px}
+.abas{display:flex;flex-wrap:wrap;gap:2px 4px;overflow-x:auto;border-bottom:1px solid var(--areia2);margin-bottom:14px;scrollbar-width:none}
+.abas::-webkit-scrollbar{display:none}
+.abas button{border:0;background:none;padding:10px 12px;font-weight:700;color:var(--tinta2);border-bottom:3px solid transparent;white-space:nowrap}
+.abas button.on{color:var(--vinho);border-color:var(--vinho)}
+.abas b{background:var(--verm);color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;margin-left:4px}
+.cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
+.cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
+.nota{font-size:13px;color:var(--tinta2);margin:4px 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
+.kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--tinta2)}
+.lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
+.lin:first-of-type{border-top:0}
+.lin .t{min-width:0}
+.lin .t b{display:block;color:var(--vinho)}
+.lin .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--areia);color:var(--vinho);white-space:nowrap}
+.chip.ok{background:#E3EFE6;color:var(--ok)}.chip.al{background:#F6DADA;color:#8A1D14}.chip.av{background:#FBF0DC;color:#7A4E0B}.chip.ne{background:#f1ece6;color:#7a6a62}
+.unid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:10px 4px;border-top:1px solid #f0e8df}
+.unid .co{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:var(--vinho)}
+.unid .co.CP{background:#C49A6C}.unid .co.PFC,.unid .co.CRIO,.unid .co.PPC{background:#A83D3D}
+.unid .t b{color:var(--vinho)}.unid .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.unid .d{text-align:right}.unid .d small{display:block;color:var(--tinta2);font-size:12px}
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.filtros button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--tinta2)}
+.filtros button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.passos{display:flex;gap:4px;margin:8px 0 14px;flex-wrap:wrap}
+.passos span{flex:1;min-width:70px;font-size:11px;text-align:center;padding:6px 4px;border-radius:8px;background:#f3ede6;color:#9a8a80;font-weight:700}
+.passos span.feito{background:#E3EFE6;color:var(--ok)}.passos span.agora{background:var(--vinho);color:#fff}
+label{display:block;font-size:13px;color:var(--tinta2);margin:8px 0 4px}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:12px;border:1px solid var(--areia2);border-radius:10px;background:#fff;color:var(--tinta);font-size:17px}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.grade{grid-template-columns:1fr}}
+.peso{display:flex;gap:8px;align-items:stretch}.peso input{flex:1;min-width:0}.peso .btn{flex:none;padding:0 14px}
+.calc{background:#FFFBF5;border:1px dashed var(--bege);border-radius:12px;padding:12px;margin:10px 0}
+.calc b.big{font-size:26px;color:var(--vinho)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;margin:6px 0 12px}
+.dl dt{color:var(--tinta2)}.dl dd{margin:0;font-weight:600}
+.ev{font-size:13px;border-left:3px solid var(--areia2);padding:3px 0 3px 10px;margin:6px 0}
+.ev small{color:var(--tinta2)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#veu.on{opacity:1;pointer-events:auto}
+#gaveta{position:fixed;left:0;right:0;bottom:0;max-height:88vh;background:var(--papel);border-radius:18px 18px 0 0;transform:translateY(105%);transition:transform .25s;z-index:21;display:flex;flex-direction:column;box-shadow:0 -6px 30px rgba(0,0,0,.18)}
+#gaveta.on{transform:none}
+@media (min-width:900px){#gaveta{left:auto;top:0;bottom:0;width:520px;max-height:none;border-radius:18px 0 0 18px;transform:translateX(105%)}#gaveta.on{transform:none}}
+.rel-it{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--areia2)}.rel-h{flex:none;width:46px;font-weight:700;color:var(--vinho)}.rel-c{flex:1;min-width:0}.rel-c small{display:block;color:var(--tinta2)}.rel-fotos{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.rel-fotos img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--areia2)}
+#gaveta:not(.on){visibility:hidden;transition:transform .25s,visibility 0s .25s}#gaveta.on{visibility:visible;transition:transform .25s}html,body{max-width:100%;overflow-x:clip}
+.sug{display:flex;flex-direction:column;gap:4px;margin-top:4px}.sug button{text-align:left;border:1px solid var(--linha,#e4dad0);background:#fff;border-radius:10px;padding:9px 11px}.sug button small{display:block;color:#7a6a62}
+.gv-t{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
+.gv-t h3{margin:0;color:var(--vinho);font-size:18px}
+.gv-t button{border:0;background:#fff;border-radius:999px;width:40px;height:40px;font-size:22px;color:var(--vinho);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+#gvC{overflow:auto;padding:0 16px 30px}
+#gvC input,#gvC textarea,#gvC select{scroll-margin-top:64px}
+@media (pointer:coarse) and (max-width:899px){#gaveta.kb{max-height:94vh}#gaveta.kb #gvC{padding-bottom:55vh}}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
+.vazio{color:var(--tinta2);font-size:14px;padding:6px 0}
+@media (min-width:1000px){.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}}
+#camE{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}
+#camE.on{display:flex}
+#camE video{flex:1;width:100%;object-fit:cover;min-height:0}
+#camE .mira{position:absolute;left:50%;top:38%;width:70vmin;height:42vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:16px;pointer-events:none}
+#camE .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
+#camE .flash.on{opacity:1;transition:none}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+#cam .linha{display:flex;gap:8px;margin:8px 0}#cam .linha input{flex:1;border:1px solid #C6B098;border-radius:10px;padding:10px;font-size:16px}#cam #camT{margin:0 0 4px;font-weight:700;color:#5F130F}#cam .bts .btn{width:100%}
+
+.sem{display:grid;grid-template-columns:96px repeat(7,minmax(0,1fr));gap:4px;font-size:12.5px}
+.sem .c{background:#fff;border-radius:10px;min-height:66px;padding:5px;box-shadow:0 1px 4px rgba(95,19,15,.06)}
+.sem .h{font-weight:700;color:var(--tinta2);text-align:center;padding:4px 0}.sem .h.hoje{color:var(--vinho)}
+.sem .n{font-weight:800;color:var(--vinho);display:flex;align-items:center}
+.res{display:block;width:100%;text-align:left;border:0;border-radius:8px;padding:4px 6px;margin-bottom:4px;background:#F3E6D6;color:var(--vinho);font-size:12px;line-height:1.25}
+.res.entregue{background:#5F130F;color:#fff}.res.devolvida{background:#E3EFE6;color:var(--ok)}.res b{display:block;font-size:12px}
+@media (max-width:760px){.sem{grid-template-columns:70px repeat(7,minmax(74px,1fr));overflow-x:auto}}
+.termo{white-space:pre-wrap;background:#fff;border:1px solid var(--areia2);border-radius:12px;padding:12px;font-size:13.5px;max-height:260px;overflow:auto}
+.sit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.sit div{background:#fff;border-radius:12px;padding:9px 10px;border:1px solid var(--areia2)}.sit small{display:block;color:var(--tinta2);font-size:12px}
+.camop{display:flex;gap:8px;flex-wrap:wrap}.camop button{flex:1 1 140px;border:1px solid var(--areia2);background:#fff;border-radius:12px;padding:10px;font-weight:700;color:var(--vinho);text-align:left}.camop button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}.camop button small{display:block;font-weight:500;font-size:12px}.camop button.ocup{opacity:.55}
+.lt{list-style:none;padding:0;margin:6px 0}.lt li{font-size:13px;padding:4px 0 4px 14px;border-left:2px solid var(--areia2);margin-left:4px}.lt li small{color:var(--tinta2)}
+</style></head><body>
+<div class="wrap" id="app"><div class="cx vazio">Abrindo as câmaras…</div></div>
+<div id="veu"></div>
+<aside id="gaveta" aria-hidden="true"><div class="gv-t"><h3 id="gvT"></h3><button type="button" data-a="fechar" aria-label="Fechar">×</button></div><div id="gvC"></div></aside>
+<script>
+/* Câmaras portáteis do CVH: aluguel com bolsa de CH para cirurgias e procedimentos, transporte de ida e volta e termo assinado */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const p2 = (n) => String(n).padStart(2, "0");
+const isoDia = (d) => d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate());
+const hojeISO = () => isoDia(new Date());
+const somaDias = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return isoDia(d); };
+const hm = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const dataHora = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + " às " + hm(t); };
+const dtLocal = (t) => { const d = t ? new Date(t) : new Date(); return isNaN(d) ? "" : isoDia(d) + "T" + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const SEM = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const ponte = (metodo, ...args) => {
+  let f = null; try { f = window.parent.CVH_PONTE; } catch (e) { f = null; }
+  if (typeof f !== "function") return Promise.reject(new Error("Abra o módulo pelo Painel CVH."));
+  const copia = (r) => { try { return r == null ? r : JSON.parse(JSON.stringify(r)); } catch (e) { return r; } };
+  return new Promise((ok, erro) => { try { Promise.resolve(f(metodo, JSON.parse(JSON.stringify(args)))).then((r) => ok(copia(r)), (e) => erro(new Error((e && e.message) || String(e)))); } catch (e) { erro(e); } });
+};
+const trp = (fn, ...a) => ponte("trp", fn, ...a);
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 3500); }
+function abrirGaveta(t, h) { $("#gvT").textContent = t; $("#gvC").innerHTML = h; $("#gvC").scrollTop = 0; $("#gaveta").classList.add("on"); $("#veu").classList.add("on"); $("#gaveta").setAttribute("aria-hidden", "false"); }
+function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); $("#gaveta").setAttribute("aria-hidden", "true"); S.aberta = null; }
+
+const S = { D: null, aba: "agenda", semana: hojeISO(), aberta: null, motivo: "", camara: "" };
+const SIT = { agendada: ["Agendada", "av"], entregue: ["Na clínica", ""], devolvida: ["Devolvida", "ok"], cancelada: ["Cancelada", "ne"] };
+const MOTIVOS = ["Cirurgia", "Procedimento", "Paciente crítico", "Outro"];
+const camNome = (id) => ((S.D.camaras || []).find((c) => c.id === id) || {}).nome || id;
+const resDe = (id) => (S.D.reservas || []).find((r) => r.id === id);
+const paradaDe = (id) => (S.D.paradas || []).find((p) => p.id === id);
+const motoristaNome = (tk) => { const m = (S.D.motoristas || []).find((x) => x.token === tk); return m ? m.nome + (m.veiculo === "utilitario" ? " (Utilitário CVH)" : " (moto)") : ""; };
+const ativas = () => (S.D.reservas || []).filter((r) => !["cancelada"].includes(r.situacao));
+
+async function carregar() {
+  try { S.D = await trp("camDados", somaDias(hojeISO(), -60), somaDias(hojeISO(), 180)); pintar(); if (S.aberta) abrirReserva(S.aberta); }
+  catch (e) { $("#app").innerHTML = '<div class="cx">' + esc(e.message) + "</div>"; }
+}
+function pintar() {
+  const R = ativas(), agora = Date.now(), emUso = R.filter((r) => r.situacao === "entregue").length;
+  const prox = R.filter((r) => r.situacao === "agendada" && Date.parse(r.inicio) > agora - 864e5).length;
+  const semTermo = R.filter((r) => ["agendada", "entregue"].includes(r.situacao) && !((r.termo || {}).vet && (r.termo || {}).responsavel)).length;
+  const semTr = R.filter((r) => r.situacao === "agendada" && !((r.transporte || {}).ida || {}).paradaId).length;
+  const aba = (k, t, n) => '<button class="' + (S.aba === k ? "on" : "") + '" data-a="aba" data-v="' + k + '">' + t + (n ? "<b>" + n + "</b>" : "") + "</button>";
+  $("#app").innerHTML = '<div class="topo"><h1>Câmaras portáteis<small>Aluguel com bolsa de CH: agenda, transporte, texto e termo</small></h1><button class="btn" data-a="nova">Nova reserva</button></div>' +
+    '<div class="kpis"><div class="kpi"><b>' + emUso + '</b><span>câmaras na clínica agora</span></div><div class="kpi"><b>' + prox + '</b><span>reservas agendadas</span></div><div class="kpi"><b>' + semTermo + '</b><span>termos sem as duas assinaturas</span></div><div class="kpi"><b>' + semTr + '</b><span>entregas sem transporte agendado</span></div></div>' +
+    '<div class="abas">' + aba("agenda", "Agenda") + aba("lista", "Reservas") + (S.D.admin ? aba("cfg", "Texto e termo") : "") + "</div>" +
+    ({ agenda: telaAgenda, lista: telaLista, cfg: telaCfg }[S.aba] || telaAgenda)();
+}
+function telaAgenda() {
+  const dias = [...Array(7).keys()].map((i) => somaDias(S.semana, i)), hoje = hojeISO();
+  const cel = (c, d) => { const ini = new Date(d + "T00:00:00").getTime(), fim = ini + 864e5;
+    const L = ativas().filter((r) => r.camara_id === c.id && Date.parse(r.inicio) < fim && Date.parse(r.fim) > ini);
+    return '<div class="c">' + L.map((r) => '<button class="res ' + esc(r.situacao) + '" style="' + (travada(r) ? "outline:2px solid var(--verm)" : "") + '" data-a="abrir" data-v="' + esc(r.id) + '"><b>' + esc((r.paciente || {}).nome || "") + "</b>" + esc(r.clinica) + "<br>" + (isoDia(new Date(r.inicio)) === d ? "entrega " + hm(r.inicio) : "") + (isoDia(new Date(r.fim)) === d ? (isoDia(new Date(r.inicio)) === d ? " · " : "") + "busca " + hm(r.fim) : "") + "</button>").join("") + "</div>"; };
+  return '<div class="cx"><div class="bts" style="justify-content:space-between;align-items:center;margin-bottom:10px"><div class="bts"><button class="btn sec peq" data-a="sem" data-v="-7">‹ Semana anterior</button><button class="btn sec peq" data-a="sem" data-v="0">Hoje</button><button class="btn sec peq" data-a="sem" data-v="7">Próxima ›</button></div><small>' + esc(dias[0].split("-").reverse().join("/")) + " a " + esc(dias[6].split("-").reverse().join("/")) + "</small></div>" +
+    '<div class="sem"><div></div>' + dias.map((d) => '<div class="h' + (d === hoje ? " hoje" : "") + '">' + SEM[new Date(d + "T12:00").getDay()] + " " + d.slice(8) + "/" + d.slice(5, 7) + "</div>").join("") +
+    (S.D.camaras || []).filter((c) => c.ativo).map((c) => '<div class="n">' + esc(c.nome) + "</div>" + dias.map((d) => cel(c, d)).join("")).join("") + "</div>" +
+    '<p class="nota">Bege: agendada. Vinho: na clínica. Verde: devolvida. Toque na reserva para ver o transporte, o texto e o termo.</p></div>';
+}
+function telaLista() {
+  const R = (S.D.reservas || []).slice().sort((a, b) => String(b.inicio).localeCompare(String(a.inicio)));
+  return '<div class="cx"><h2>Reservas</h2>' + (R.length ? R.map((r) => { const t = r.termo || {}, tr = r.transporte || {};
+    return '<div class="lin" data-a="abrir" data-v="' + esc(r.id) + '" role="button" style="cursor:pointer"><div class="t"><b>' + esc((r.paciente || {}).nome || "") + " · " + esc(camNome(r.camara_id)) + "</b><small>" + esc(r.clinica) + " · " + esc((r.vet || {}).nome || "") + " · " + esc(dataHora(r.inicio)) + " até " + esc(dataHora(r.fim)) + (r.unidade_id ? " · bolsa " + esc(r.unidade_id) : "") + "</small></div>" +
+      '<div style="text-align:right">' + (travada(r) ? '<span class="chip al">bloqueada</span> ' : "") + '<span class="chip ' + SIT[r.situacao][1] + '">' + SIT[r.situacao][0] + "</span><br><small>" + (t.vet && t.responsavel ? "termo assinado" : "termo pendente") + (r.situacao === "agendada" && !(tr.ida || {}).paradaId ? " · sem transporte" : "") + "</small></div></div>"; }).join("") : '<p class="vazio">Nenhuma reserva ainda.</p>') + "</div>";
+}
+function telaCfg() {
+  const c = S.D.cfg || {};
+  return '<div class="cx"><h2>Texto que vai para o médico veterinário</h2><p class="nota">Explica como funciona o aluguel. Use {paciente}, {entrega}, {busca}, {camara}, {clinica}, {veterinario} e {bolsa}: o sistema troca pelos dados da reserva.</p><textarea id="cfgTexto" rows="12" style="width:100%">' + esc(c.texto) + "</textarea>" +
+    '<h2 style="margin-top:16px">Termo de responsabilidade e ciência</h2><p class="nota">Assinado pelo médico veterinário e pelo responsável pelo link. Os mesmos campos entre chaves funcionam aqui, mais {crmv}, {responsavel} e {reserva}. Este texto é um modelo inicial: revise antes de usar.</p><textarea id="cfgTermo" rows="18" style="width:100%">' + esc(c.termo) + "</textarea>" +
+    '<div class="bts" style="margin-top:10px"><button class="btn" data-a="cfgSalvar">Salvar</button></div></div>';
+}
+
+/* ── formulário da reserva ── */
+function livre(camId, ini, fim, exceto) { return !ativas().some((r) => r.camara_id === camId && r.id !== exceto && ["agendada", "entregue"].includes(r.situacao) && Date.parse(r.inicio) < fim && Date.parse(r.fim) > ini); }
+function formReserva(r) {
+  r = r || {}; const v = r.vet || {}, pa = r.paciente || {}, rp = r.responsavel || {};
+  S.motivo = r.motivo || ""; S.camara = r.camara_id || ""; S.editando = r.id || null;
+  const ini = r.inicio ? dtLocal(r.inicio) : hojeISO() + "T07:30", fim = r.fim ? dtLocal(r.fim) : somaDias(hojeISO(), 1) + "T08:00";
+  const bolsas = (S.D.bolsas || []).filter((b) => b.situacao === "disponivel" || b.id === r.unidade_id);
+  abrirGaveta(r.id ? "Alterar reserva " + r.id : "Nova reserva",
+    '<label>Entrega na clínica</label><input type="datetime-local" id="fIni" value="' + esc(ini) + '"><label>Busca na clínica</label><input type="datetime-local" id="fFim" value="' + esc(fim) + '">' +
+    '<label>Câmara</label><div class="camop" id="fCam"></div>' +
+    '<label>Clínica</label><select id="fCli"><option value="">Escolha a clínica</option>' + (S.D.destinos || []).map((d) => '<option value="' + esc(d.id) + '"' + (d.id === r.clinica_id ? " selected" : "") + ">" + esc(d.nome) + "</option>").join("") + '<option value="_outra"' + (r.clinica && !r.clinica_id ? " selected" : "") + '>Outra (escrever)</option></select><input type="text" id="fCliTxt" placeholder="Nome da clínica" value="' + esc(r.clinica_id ? "" : r.clinica || "") + '"' + (r.clinica && !r.clinica_id ? "" : " hidden") + ' style="margin-top:6px">' +
+    '<label>Paciente (receptor)</label><input type="text" id="fPac" list="lRec" value="' + esc(pa.nome || "") + '" placeholder="Nome do paciente"><datalist id="lRec">' + (S.D.receptores || []).map((x) => '<option value="' + esc(x.nome) + '">' + esc([x.especie, x.clinica].filter(Boolean).join(" · ")) + "</option>").join("") + "</datalist>" +
+    '<div class="sit" style="margin-top:0"><div style="border:0;padding:0;background:none"><label>Espécie</label><select id="fEsp"><option>Canina</option><option' + (/fel/i.test(pa.especie || "") ? " selected" : "") + '>Felina</option></select></div><div style="border:0;padding:0;background:none"><label>Peso (kg)</label><input type="text" inputmode="decimal" id="fPeso" value="' + esc(pa.peso || "") + '"></div></div>' +
+    '<label>Médico veterinário</label><input type="text" id="fVet" list="lVet" value="' + esc(v.nome || "") + '"><datalist id="lVet"></datalist><div class="sit" style="margin-top:0"><div style="border:0;padding:0;background:none"><label>CRMV</label><input type="text" id="fCrmv" value="' + esc(v.crmv || "") + '" placeholder="CRMV-DF 0000"></div><div style="border:0;padding:0;background:none"><label>Telefone do médico veterinário</label><input type="tel" id="fVetTel" value="' + esc(v.telefone || "") + '"></div></div>' +
+    '<label>Responsável</label><input type="text" id="fResp" value="' + esc(rp.nome || "") + '"><div class="sit" style="margin-top:0"><div style="border:0;padding:0;background:none"><label>Telefone</label><input type="tel" id="fRespTel" value="' + esc(rp.telefone || "") + '"></div><div style="border:0;padding:0;background:none"><label>CPF</label><input type="text" inputmode="numeric" id="fCpf" value="' + esc(rp.cpf || "") + '"></div></div>' +
+    '<label>Bolsa de CH</label><select id="fBolsa"><option value="">Definir depois</option>' + bolsas.map((b) => '<option value="' + esc(b.id) + '"' + (b.id === r.unidade_id ? " selected" : "") + ">" + esc(b.id + " · " + (b.tipo || "sem tipagem") + (b.volume_ml ? " · " + b.volume_ml + " mL" : "") + (b.validade ? " · vence " + b.validade.split("-").reverse().join("/") : "")) + "</option>").join("") + "</select><small class=\"nota\">A bolsa escolhida fica reservada no Estoque para esta reserva.</small>" +
+    '<label>Motivo</label><div class="filtros" style="margin:0" id="fMot">' + MOTIVOS.map((m) => '<button class="' + (S.motivo === m ? "on" : "") + '" data-a="mot" data-v="' + esc(m) + '">' + esc(m) + "</button>").join("") + "</div>" +
+    '<label>Observação</label><textarea id="fObs" rows="2" style="width:100%">' + esc((r.dados || {}).obs || "") + "</textarea>" +
+    '<div class="bts" style="margin-top:12px"><button class="btn" data-a="salvar">Salvar reserva</button></div>');
+  pintarCamOp(); ligarForm();
+}
+function pintarCamOp() {
+  const el = $("#fCam"); if (!el) return; const ini = Date.parse($("#fIni").value), fim = Date.parse($("#fFim").value);
+  const cams = (S.D.camaras || []).filter((c) => c.ativo);
+  if (!S.camara) { const c = cams.find((x) => livre(x.id, ini, fim, S.editando)); S.camara = c ? c.id : ""; }
+  el.innerHTML = cams.map((c) => { const ok = isFinite(ini) && isFinite(fim) && livre(c.id, ini, fim, S.editando); return '<button type="button" class="' + (S.camara === c.id ? "on " : "") + (ok ? "" : "ocup") + '" data-a="cam" data-v="' + esc(c.id) + '">' + esc(c.nome) + "<small>" + (ok ? "livre no período" : "ocupada no período") + "</small></button>"; }).join("");
+}
+function ligarForm() {
+  ["fIni", "fFim"].forEach((k) => $("#" + k).addEventListener("change", pintarCamOp));
+  const cli = $("#fCli"); const vetsCli = () => { const d = (S.D.destinos || []).find((x) => x.id === cli.value); $("#lVet").innerHTML = ((d || {}).vets || []).map((v) => '<option value="' + esc(v.nome) + '">' + esc(v.crmv || "") + "</option>").join(""); };
+  cli.addEventListener("change", () => { $("#fCliTxt").hidden = cli.value !== "_outra"; vetsCli(); }); vetsCli();
+  $("#fVet").addEventListener("change", () => { const d = (S.D.destinos || []).find((x) => x.id === cli.value), v = ((d || {}).vets || []).find((x) => x.nome === $("#fVet").value); if (v && !$("#fCrmv").value) $("#fCrmv").value = v.crmv || ""; });
+  $("#fPac").addEventListener("change", () => { const x = (S.D.receptores || []).find((y) => y.nome === $("#fPac").value); if (!x) return;
+    if (x.peso && !$("#fPeso").value) $("#fPeso").value = x.peso; if (/fel/i.test(x.especie)) $("#fEsp").value = "Felina";
+    if (x.responsavel && !$("#fResp").value) $("#fResp").value = x.responsavel; if (x.telefone && !$("#fRespTel").value) $("#fRespTel").value = x.telefone;
+    if (x.veterinario && !$("#fVet").value) $("#fVet").value = x.veterinario; if (x.crmv && !$("#fCrmv").value) $("#fCrmv").value = x.crmv; S.receptorId = x.id; });
+}
+async function salvar(b) {
+  const cli = $("#fCli").value, rec = (S.D.receptores || []).find((y) => y.nome === $("#fPac").value);
+  const o = { id: S.editando || undefined, camara: S.camara, inicio: new Date($("#fIni").value).toISOString(), fim: new Date($("#fFim").value).toISOString(),
+    clinicaId: cli && cli !== "_outra" ? cli : "", clinica: cli === "_outra" ? $("#fCliTxt").value : "",
+    vet: { nome: $("#fVet").value, crmv: $("#fCrmv").value, telefone: $("#fVetTel").value }, paciente: { nome: $("#fPac").value, especie: $("#fEsp").value, peso: $("#fPeso").value, receptorId: rec ? rec.id : "" },
+    responsavel: { nome: $("#fResp").value, telefone: $("#fRespTel").value, cpf: $("#fCpf").value }, unidade: $("#fBolsa").value, motivo: S.motivo, obs: $("#fObs").value };
+  if (!o.camara) return toast("Escolha a câmara.");
+  b.disabled = true;
+  try { const r = await trp("camSalvar", o), C = ((r.dados || {}).checagem) || [], nb = C.filter((c) => c.nivel === "bloqueio").length;
+    toast(nb ? "Reserva salva, mas BLOQUEADA para análise: veja o aviso em vermelho." : C.length ? "Reserva salva. Confira os avisos." : "Reserva salva.", nb ? 7000 : 4000); S.aberta = r.id; await carregar(); }
+  catch (e) { toast(e.message, 6000); } finally { b.disabled = false; }
+}
+
+/* ── reserva aberta: situação, transporte, texto e termo ── */
+function preencher(txt, r) { const v = { "{camara}": camNome(r.camara_id), "{clinica}": r.clinica, "{veterinario}": (r.vet || {}).nome || "", "{crmv}": (r.vet || {}).crmv || "", "{paciente}": (r.paciente || {}).nome || "", "{responsavel}": (r.responsavel || {}).nome || "", "{bolsa}": r.unidade_id || "a definir", "{entrega}": dataHora(r.inicio), "{busca}": dataHora(r.fim), "{reserva}": r.id }; return String(txt || "").replace(/\{[a-z]+\}/g, (k) => (v[k] != null ? v[k] : k)); }
+const zap = (tel, msg) => { let d = String(tel || "").replace(/\D/g, ""); if (d && d.length <= 11) d = "55" + d; return "https://wa.me/" + d + "?text=" + encodeURIComponent(msg); };
+function abrirReserva(id) {
+  const r = resDe(id); if (!r) return; S.aberta = id; const t = r.termo || {}, tr = r.transporte || {}, fim = ["devolvida", "cancelada"].includes(r.situacao);
+  const perna = (k, rot) => { const x = tr[k] || {}, p = x.paradaId ? paradaDe(x.paradaId) : null;
+    return '<div><b>' + rot + "</b><small>" + (p ? esc(motoristaNome(x.motoboy) || "") + " · " + esc({ pendente: "agendada", em_rota: "a caminho", no_local: "no local", concluido: "feita", cancelado: "cancelada" }[p.status] || p.status) : "não agendado") + "</small></div>"; };
+  const mot = (S.D.motoristas || []).map((m) => '<option value="' + esc(m.token) + '">' + esc(m.nome + (m.veiculo === "utilitario" ? " · Utilitário CVH" : " · moto")) + "</option>").join("");
+  abrirGaveta(camNome(r.camara_id) + " · " + ((r.paciente || {}).nome || ""),
+    '<p><span class="chip ' + SIT[r.situacao][1] + '">' + SIT[r.situacao][0] + "</span> <small>reserva " + esc(r.id) + "</small></p>" + blocoChecagem(r, fim) +
+    '<p><b>' + esc(r.clinica) + "</b><br>" + esc((r.vet || {}).nome || "") + (r.vet && r.vet.crmv ? " · " + esc(r.vet.crmv) : "") + (r.vet && r.vet.telefone ? " · " + esc(r.vet.telefone) : "") + "<br>Entrega " + esc(dataHora(r.inicio)) + " · busca " + esc(dataHora(r.fim)) +
+      "<br>Paciente " + esc((r.paciente || {}).nome || "") + ((r.paciente || {}).peso ? " · " + esc(r.paciente.peso) + " kg" : "") + " · responsável " + esc((r.responsavel || {}).nome || "não informado") + "<br>Bolsa " + esc(r.unidade_id || "a definir") + (r.motivo ? " · " + esc(r.motivo) : "") + "</p>" +
+    '<div class="sit"><div><b>Termo · médico veterinário</b><small>' + (t.vet ? "assinado por " + esc(t.vet.nome) + " em " + esc(dataHora(t.vet.em)) : "pendente") + "</small></div><div><b>Termo · responsável</b><small>" + (t.responsavel ? "assinado por " + esc(t.responsavel.nome) + " em " + esc(dataHora(t.responsavel.em)) : "pendente") + "</small></div>" + perna("ida", "Entrega (ida)") + perna("volta", "Busca (volta)") + "</div>" +
+    (fim ? "" : '<div class="cx" style="margin:10px 0"><h2>Mensagens</h2><div class="bts"><button class="btn peq" data-a="texto">Texto de como funciona</button><button class="btn peq" data-a="termoLink">Link do termo</button>' + (t.vet || t.responsavel ? '<button class="btn sec peq" data-a="termoPdf">Termo em PDF (A4)</button><button class="btn sec peq" data-a="termoPdfCel">PDF para celular</button>' : "") + '</div><div id="msgBox"></div></div>') +
+    (fim ? "" : '<div class="cx" style="margin:10px 0"><h2>Transporte</h2><label>Motoboy ou Utilitário CVH</label><select id="trMoto">' + mot + '</select><div class="bts" style="margin-top:8px"><button class="btn peq' + ((tr.ida || {}).paradaId ? " sec" : "") + '" data-a="trIda">' + ((tr.ida || {}).paradaId ? "Refazer a entrega" : "Agendar a entrega") + '</button><button class="btn peq' + ((tr.volta || {}).paradaId ? " sec" : "") + '" data-a="trVolta">' + ((tr.volta || {}).paradaId ? "Refazer a busca" : "Agendar a busca") + '</button></div><p class="nota">Cria a parada na rota do dia, no horário da entrega ou da busca, com a câmara e a bolsa no detalhe.</p></div>') +
+    '<div class="bts" style="margin:10px 0">' + (r.situacao === "agendada" ? '<button class="btn peq" data-a="sit" data-v="entregue">Câmara entregue na clínica</button>' : "") + (r.situacao === "entregue" ? '<button class="btn peq" data-a="devolver">Câmara devolvida ao CVH</button>' : "") + (!fim ? '<button class="btn sec peq" data-a="editar">Alterar</button><button class="btn perigo peq" data-a="sit" data-v="cancelada">Cancelar reserva</button>' : '<button class="btn sec peq" data-a="sit" data-v="agendada">Reabrir</button>') + '</div><div id="devBox"></div>' +
+    "<h3>Linha do tempo</h3><ul class=\"lt\">" + (((r.dados || {}).linha) || []).slice().reverse().map((x) => "<li>" + esc(x.acao) + (x.det ? " · " + esc(x.det) : "") + "<br><small>" + esc(dataHora(x.em)) + " · " + esc(x.por || "") + "</small></li>").join("") + "</ul>");
+}
+// à prova de erros: bloqueio (vermelho, só o administrador libera) e alertas (amarelo)
+const bloqueios = (r) => (((r.dados || {}).checagem) || []).filter((c) => c.nivel === "bloqueio");
+const travada = (r) => bloqueios(r).length && !(r.dados || {}).liberacao;
+function blocoChecagem(r, fim) {
+  const C = ((r.dados || {}).checagem) || [], B = C.filter((c) => c.nivel === "bloqueio"), A = C.filter((c) => c.nivel === "alerta"), lib = (r.dados || {}).liberacao;
+  let h = "";
+  if (B.length) h += '<div class="cx" style="margin:8px 0;background:' + (lib ? "#F1F6EE" : "#FBE9E7") + ';border:1px solid ' + (lib ? "#cfe3d4" : "#e3b9b4") + '"><h2 style="color:' + (lib ? "var(--ok)" : "var(--verm)") + '">' + (lib ? "Bloqueio liberado" : "Bloqueada para análise") + "</h2>" + B.map((c) => "<p style=\"margin:4px 0\">" + esc(c.msg) + "</p>").join("") +
+    (lib ? "<p class=\"nota\">Liberado por " + esc(lib.por) + " em " + esc(dataHora(lib.em)) + ": " + esc(lib.motivo) + "</p>" : (S.D.admin && !fim ? '<label>Motivo da liberação</label><input type="text" id="libMot" placeholder="Ex.: validade conferida, bolsa trocada na entrega"><div class="bts" style="margin-top:8px"><button class="btn peq" data-a="liberar">Liberar a reserva</button></div>' : '<p class="nota">A entrega e o transporte ficam bloqueados até o administrador analisar. Corrija a reserva em Alterar ou peça a liberação.</p>')) + "</div>";
+  if (A.length && !fim) h += '<div class="cx" style="margin:8px 0;background:#FBF0DC"><h2 style="color:#7A4E0B">Conferir</h2>' + A.map((c) => "<p style=\"margin:4px 0\">• " + esc(c.msg) + "</p>").join("") + "</div>";
+  return h;
+}
+async function termoUrl(r) { const tk = await trp("camTermoLink", r.id), base = (await ponte("origem")) || ""; return base + "termo-camara.html?tc=" + tk; }
+function termoHtml(r, celular) {
+  const t = r.termo || {}, W = celular ? 430 : 794, ass = (x, rot, doc) => '<div style="flex:1;min-width:180px;border-top:1px solid #5F130F;padding-top:6px;margin-top:10px">' + (x && x.assinaturaUrl ? '<img src="' + esc(x.assinaturaUrl) + '" crossorigin="anonymous" style="height:70px;max-width:100%;object-fit:contain;display:block">' : '<div style="height:70px"></div>') + "<b>" + esc(x ? x.nome : "") + "</b><br><small>" + rot + (x ? " · " + doc + " " + esc(x.crmv || x.cpf || "") + " · assinado em " + esc(dataHora(x.em)) : " · pendente") + "</small></div>";
+  return '<div style="width:' + W + 'px;padding:' + (celular ? 22 : 48) + 'px;background:#fff;color:#2b2320;font:' + (celular ? 13 : 12.5) + 'px/1.5 Helvetica,Arial,sans-serif"><div style="color:#5F130F;font-weight:800;font-size:' + (celular ? 17 : 19) + 'px">CVH - Centro Veterinário de Hemoterapia</div><div style="color:#6b5a52;font-size:12px;margin-bottom:14px">Câmaras portáteis de conservação</div>' +
+    '<div style="white-space:pre-wrap">' + esc(preencher((S.D.cfg || {}).termo, r)) + '</div><div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:18px">' + ass(t.vet, "Médico veterinário", "") + ass(t.responsavel, "Responsável", "CPF") + "</div></div>";
+}
+function painelMsg(titulo, texto, botoes) { $("#msgBox").innerHTML = '<div style="margin-top:10px"><b>' + esc(titulo) + '</b><div class="termo" style="margin-top:6px">' + esc(texto) + '</div><div class="bts" style="margin-top:8px">' + botoes + "</div></div>"; }
+
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  if (a === "fechar") return fecharGaveta();
+  if (a === "aba") { S.aba = v; return pintar(); }
+  if (a === "sem") { S.semana = +v === 0 ? hojeISO() : somaDias(S.semana, +v); return pintar(); }
+  if (a === "nova") return formReserva({});
+  if (a === "abrir") return abrirReserva(v);
+  if (a === "editar") return formReserva(resDe(S.aberta));
+  if (a === "cam") { S.camara = v; return pintarCamOp(); }
+  if (a === "mot") { S.motivo = S.motivo === v ? "" : v; b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.v === S.motivo)); return; }
+  if (a === "salvar") return salvar(b);
+  if (a === "copiar") { try { await navigator.clipboard.writeText(decodeURIComponent(v)); toast("Copiado."); } catch (e) { toast("Selecione o texto e copie."); } return; }
+  const r = resDe(S.aberta);
+  try {
+    if (a === "texto") { const tx = preencher((S.D.cfg || {}).texto, r); return painelMsg("Texto para o médico veterinário", tx, '<button class="btn peq" data-a="copiar" data-v="' + esc(encodeURIComponent(tx)) + '">Copiar</button><a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(zap((r.vet || {}).telefone, tx)) + '">WhatsApp do médico veterinário</a>'); }
+    if (a === "termoLink") { b.disabled = true; const u = await termoUrl(r), msgV = "Termo do aluguel da câmara portátil do CVH para o paciente " + ((r.paciente || {}).nome || "") + ". Leia e assine pelo link (o médico veterinário e o responsável assinam no mesmo link):\n" + u, msgR = "Olá! Este é o termo do CVH sobre a bolsa de sangue reservada para " + ((r.paciente || {}).nome || "seu animal") + ". Leia e assine pelo link:\n" + u;
+      b.disabled = false; return painelMsg("Link do termo", u, '<button class="btn peq" data-a="copiar" data-v="' + esc(encodeURIComponent(u)) + '">Copiar o link</button><a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(zap((r.vet || {}).telefone, msgV)) + '">WhatsApp do médico veterinário</a>' + ((r.responsavel || {}).telefone ? '<a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(zap(r.responsavel.telefone, msgR)) + '">WhatsApp do responsável</a>' : "") + '<a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(u) + '">Abrir</a>'); }
+    if (a === "termoPdf" || a === "termoPdfCel") { b.disabled = true; const cel = a === "termoPdfCel"; await ponte("pdfDoc", { html: termoHtml(r, cel), celular: cel, nome: "Termo camara " + r.id + " " + ((r.paciente || {}).nome || "") + (cel ? " celular" : "") }); b.disabled = false; return; }
+    if (a === "trIda" || a === "trVolta") { const m = $("#trMoto").value; if (!m) return toast("Cadastre um motoboy ou o Utilitário CVH no módulo Motoboy."); b.disabled = true; await trp("camTransporte", r.id, a === "trIda" ? "ida" : "volta", m); toast(a === "trIda" ? "Entrega agendada na rota." : "Busca agendada na rota."); return carregar(); }
+    if (a === "devolver") { $("#devBox").innerHTML = '<div class="cx" style="margin:8px 0"><h2>A bolsa foi usada?</h2><div class="bts"><button class="btn peq" data-a="devOk" data-v="sim">Sim, foi transfundida</button><button class="btn sec peq" data-a="devOk" data-v="nao">Não, voltou na câmara fechada</button></div><p class="nota">Se não foi usada, a bolsa volta a ficar disponível no Estoque. Confira a temperatura antes de liberar.</p></div>'; return; }
+    if (a === "devOk") { b.disabled = true; await trp("camSituacao", r.id, "devolvida", { bolsaUsada: v === "sim" }); toast("Devolução registrada."); return carregar(); }
+    if (a === "liberar") { const m = ($("#libMot") || {}).value || ""; if (m.trim().length < 5) return toast("Escreva o motivo da liberação."); b.disabled = true; await trp("camLiberar", r.id, m); toast("Reserva liberada."); return carregar(); }
+    if (a === "sit" && v === "entregue") { const T = r.termo || {}; if (!(T.vet && T.responsavel)) { if (!S.D.admin) return toast("O termo ainda não tem as duas assinaturas. Envie o link do termo antes de entregar.", 6000); if (!b.dataset.ok) { b.dataset.ok = "1"; b.textContent = "Entregar sem o termo completo?"; return; } } b.disabled = true; await trp("camSituacao", r.id, "entregue", { semTermo: !(T.vet && T.responsavel) }); toast("Entrega registrada."); return carregar(); }
+    if (a === "sit") { if (v === "cancelada" && !b.dataset.ok) { b.dataset.ok = "1"; b.textContent = "Cancelar mesmo?"; return; } b.disabled = true; await trp("camSituacao", r.id, v, {}); toast("Atualizado."); return carregar(); }
+    if (a === "cfgSalvar") { b.disabled = true; S.D.cfg = await trp("camConfigSalvar", { texto: $("#cfgTexto").value, termo: $("#cfgTermo").value }); b.disabled = false; return toast("Texto e termo salvos."); }
+  } catch (e) { b.disabled = false; toast(e.message, 6000); }
+});
+$("#veu").addEventListener("click", fecharGaveta);
+carregar();
+setInterval(() => { if (!$("#gaveta").classList.contains("on") && !document.hidden) carregar(); }, 120000);
+</script>
+</body></html>
+<!--CVH-CAMARAS-COMPLETO-->

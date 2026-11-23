@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123014537';
+  var VERSAO = '20261123023102';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1595,7 +1595,7 @@ function proximas() {
 function feitas() { const L = concluidasHoje(); if (!L.length) return ""; return '<div class="cx"><h2>Concluídas hoje</h2>' + L.map((p) => '<div class="prox"><div class="num ok">✓</div><div style="flex:1"><b>' + esc(p.nome) + "</b><br><small>" + hhmm(p.chegada_em) + (p.km_ini != null && p.km_fim != null ? " · " + fKm(p.km_fim - p.km_ini) + " km" : "") + "</small></div></div>").join("") + "</div>"; }
 function pintar() {
   if (!D) return; const F = fase();
-  $("#app").innerHTML = '<div class="topo"><h1>Motoboy ' + esc(D.empresa || "CVH") + '<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
+  $("#app").innerHTML = '<div class="topo"><h1>' + (D.aparelho.veiculo === "utilitario" ? "Utilitário " : "Motoboy ") + esc(D.empresa || "CVH") + '<small>' + esc(D.aparelho.nome) + " · " + new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }) + '</small></h1><button class="btn sec peq" data-a="atualizar">Atualizar</button></div>' +
     (notifOk() ? "" : '<div class="cx av"><p>Ative as notificações para receber os avisos com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>') +
     bannerRota() + pedidos() + principal() + proximas() + feitas() + '<p class="vazio"><small>Dúvidas, fale com a administração.</small></p>';
   $("#dock").innerHTML = F.f === "sem" ? "" : (F.f === "pausa" ? "" : '<button data-a="pausa">Pausa pessoal</button>') + '<button data-a="abastecer">Abastecer</button><button data-a="meuDia">Meu dia</button>' + (F.f === "livre" || F.f === "pausa" ? '<button data-a="finalizar">Finalizar</button>' : "");
