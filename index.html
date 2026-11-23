@@ -924,7 +924,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123044833';
+  var VERSAO = '20261123045919';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3222,7 +3222,7 @@ async function telaLogin() {
   $(criar ? '#nom' : '#usu').focus();
   const be = $('#bEsqueci'); if (be) be.onclick = async () => {
     const usu = $('#usu').value.trim(); if (!usu) { $('#erro').textContent = 'Digite o seu usuário e toque de novo em Esqueci minha senha.'; $('#usu').focus(); return; }
-    be.disabled = true; try { const r = await api('senhaEsqueci', usu); $('#erro').style.color = 'var(--tinta2)'; $('#erro').textContent = r && r.email ? 'Pronto. O link para criar a senha nova foi para o e-mail do CVH.' : 'Pronto. O administrador foi avisado e vai mandar um link para você criar a senha nova.'; } catch (e) { $('#erro').textContent = e.message; } finally { be.disabled = false; } };
+    be.disabled = true; try { await api('senhaEsqueci', usu); $('#erro').style.color = 'var(--tinta2)'; $('#erro').textContent = 'Pronto. Se o usuário estiver cadastrado, o link para criar a senha nova vai para o e-mail da pessoa. Sem e-mail cadastrado, o administrador é avisado e manda o link.'; } catch (e) { $('#erro').textContent = e.message; } finally { be.disabled = false; } };
   $('#fLogin').onsubmit = async ev => {
     ev.preventDefault();
     const bt = $('#fLogin button'), usu = $('#usu').value.trim(), sen = $('#sen').value;
@@ -6084,6 +6084,7 @@ function telaConta() {
     '<p class="nota">Acesso: ' + esc(E.u.usuario) + ' · ' + esc(listaPt(E.u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + '</p>' +
     '<p class="nota">' + (v ? 'Assina como ' + esc(v.nome + ' · ' + v.crmv) + (v.rubrica ? '' : ' (sem rubrica desenhada)') + '.' : 'Sem assinatura de médico veterinário.') + '</p>' +
     (v ? '<button class="btn sec2 peq" data-acao="minha-rubrica">Minha rubrica</button>' : '') + '</section>' +
+    '<section class="cartao"><h3>E-mail pessoal</h3><p class="nota">Se você esquecer a senha, o link para criar a senha nova vai para este e-mail.</p><div class="grade">' + campo('cEmail', 'E-mail', inp('cEmail', E.u.email || '', 'type="email" autocomplete="email" autocapitalize="none"'), 'larga') + '</div><button class="btn sec2 peq" data-acao="conta-email">Salvar e-mail</button></section>' +
     '<section class="cartao"><h3>Trocar senha</h3><div class="grade">' + campo('sAtual', 'Senha atual', inp('sAtual', '', 'type="password" autocomplete="current-password"'), 'larga') +
     campo('sNova', 'Nova senha', inp('sNova', '', 'type="password" autocomplete="new-password"')) + campo('sNova2', 'Repita', inp('sNova2', '', 'type="password" autocomplete="new-password"')) + '</div>' +
     '<p class="nota" id="sForca"></p><div id="sGerada"></div>' +
@@ -7439,6 +7440,7 @@ function abrirFormUsuario(u) {
   const eu = u.id && u.id === E.u.id;
   abrirFolha(u.id ? 'Usuário' : 'Novo usuário', '<div class="grade">' + campo('uNome', 'Nome', inp('uNome', u.nome, 'autocomplete="off"'), 'larga') +
     campo('uUsuario', 'Usuário (para entrar)', inp('uUsuario', u.usuario, 'autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ex.: felipe"')) +
+    campo('uEmail', 'E-mail pessoal (recebe o link de senha nova)', inp('uEmail', u.email || '', 'type="email" autocomplete="off" autocapitalize="none" placeholder="nome@exemplo.com"')) +
     campo('uSenha', u.temSenha ? 'Nova senha' : 'Senha', inp('uSenha', '', 'type="password" autocomplete="new-password" placeholder="' + (u.temSenha ? 'vazio mantém a atual' : 'mínimo 4, pode ser um PIN') + '"')) +
     campo('uVet', 'Assinatura (médico veterinário)', '<select id="uVet"><option value="">Não assina (não é médico veterinário)</option>' + (E.d.vets || []).map(x => '<option value="' + x.id + '"' + (x.id === u.vetId ? ' selected' : '') + '>' + esc(x.nome + ' · ' + x.crmv) + '</option>').join('') + '<option value="__novo">+ Cadastrar o CRMV agora</option></select>', 'larga') +
     '<div class="campo larga" id="uNovoVet" hidden><div class="grade">' + campo('uVetNome', 'Nome na assinatura', inp('uVetNome', u.nome || '', 'autocomplete="off"'), 'larga') + campo('uVetCrmv', 'CRMV', inp('uVetCrmv', '', 'placeholder="CRMV-DF 0000" autocomplete="off"'), 'larga') + '</div></div></div>' +
@@ -7461,7 +7463,7 @@ function abrirFormUsuario(u) {
           const vet = await api('salvarVet', E.sessao, { nome: vl('uVetNome'), crmv: crmv, rubrica: '', padrao: false });
           E.d.vets.push(vet); vetId = vet.id;
         }
-        const salvo = await api('salvarUsuario', E.sessao, { id: u.id || '', nome: vl('uNome'), usuario: vl('uUsuario'), senha: $('#uSenha').value, vetId: vetId, permissoes: $$('.uPerm').filter(x => x.checked).map(x => x.value), ativo: !$('#uAtivo') || $('#uAtivo').checked });
+        const salvo = await api('salvarUsuario', E.sessao, { id: u.id || '', nome: vl('uNome'), usuario: vl('uUsuario'), email: vl('uEmail'), senha: $('#uSenha').value, vetId: vetId, permissoes: $$('.uPerm').filter(x => x.checked).map(x => x.value), ativo: !$('#uAtivo') || $('#uAtivo').checked });
         const i = E.d.usuarios.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.usuarios[i] = salvo; else E.d.usuarios.push(salvo);
         if (salvo.id === E.u.id) E.u = E.d.usuario = salvo;
         toast('Usuário salvo.'); telaAjustes();
@@ -7753,6 +7755,7 @@ const ACOES = {
   'notif-fechado': async b => { b.disabled = true; try { await api('pushTeste', E.sessao, 'normal', 20); toast('Feche o app agora (vá para a tela de início do celular). Em 20 segundos chega o aviso, e o ícone fica com o número vermelho.', 9000); } catch (e) { toast(e.message, 6000); } setTimeout(() => { b.disabled = false; }, 20000); },
   'notif-teste': async b => { try { somDesbloquear(); const r = await api('pushTeste', E.sessao, b.dataset.v); toast(r && r.enviadas ? 'Enviado para ' + r.enviadas + (r.enviadas === 1 ? ' aparelho.' : ' aparelhos.') : 'Nenhum aparelho com notificação ligada. Toque em Ativar primeiro.', 5000); setTimeout(checarAvisos, 1500); } catch (e) { toast(e.message, 5000); } },
   'som-ouvir': b => { somDesbloquear(); b.dataset.v === 'critico' ? alertaCritico({ titulo: 'Teste do alarme crítico', corpo: 'É assim que toca um alerta urgente.' }) : somAviso(); },
+  'conta-email': async b => { b.disabled = true; try { E.u = E.d.usuario = await api('minhaContaEmail', E.sessao, vl('cEmail')); toast('E-mail salvo.'); } catch (e) { toast(e.message, 5000); } finally { b.disabled = false; } },
   'gerar-senha': () => { const w = gerarSenhaForte(); ['sNova', 'sNova2'].forEach(k => { const el = $('#' + k); el.value = w; el.type = 'text'; }); forcaSenha(); $('#sGerada').innerHTML = '<div class="link-box"><input readonly value="' + esc(w) + '" aria-label="Senha gerada"><button class="btn peq" id="sCopiar">Copiar</button></div><p class="nota">Guarde esta senha no Gerenciador de Senhas antes de trocar. Ela não aparece de novo.</p>'; $('#sCopiar').onclick = async () => toast(await copiar(w) ? 'Senha copiada.' : 'Selecione e copie.'); },
   'trocar-senha': async b => {
     if (vl('sNova') !== vl('sNova2')) return toast('As duas senhas novas não são iguais.', 4000);
