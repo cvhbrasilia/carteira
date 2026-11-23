@@ -106,6 +106,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 .sit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.sit div{background:#fff;border-radius:12px;padding:9px 10px;border:1px solid var(--areia2)}.sit small{display:block;color:var(--tinta2);font-size:12px}
 .camop{display:flex;gap:8px;flex-wrap:wrap}.camop button{flex:1 1 140px;border:1px solid var(--areia2);background:#fff;border-radius:12px;padding:10px;font-weight:700;color:var(--vinho);text-align:left}.camop button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}.camop button small{display:block;font-weight:500;font-size:12px}.camop button.ocup{opacity:.55}
 .lt{list-style:none;padding:0;margin:6px 0}.lt li{font-size:13px;padding:4px 0 4px 14px;border-left:2px solid var(--areia2);margin-left:4px}.lt li small{color:var(--tinta2)}
+html.so-form #gaveta{width:100%;max-width:none}html.so-form #veu{display:none}
 </style></head><body>
 <div class="wrap" id="app"><div class="cx vazio">Abrindo as clínicas…</div></div>
 <div id="veu"></div>
@@ -126,7 +127,7 @@ const trp = (fn, ...a) => ponte("trp", fn, ...a);
 let tT = null;
 function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 3500); }
 function abrirGaveta(t, h) { $("#gvT").textContent = t; $("#gvC").innerHTML = h; $("#gvC").scrollTop = 0; $("#gaveta").classList.add("on"); $("#veu").classList.add("on"); }
-function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); }
+var fecharGaveta = function () { $("#gaveta").classList.remove("on"); $("#veu").classList.remove("on"); }
 const S = { D: null, q: "", vets: [], ed: null, inativas: false };
 const TIPOS = ["Clínica veterinária", "Hospital veterinário", "Laboratório", "Outro"];
 async function carregar() { try { S.D = await trp("cliDados"); pintar(); } catch (e) { $("#app").innerHTML = '<div class="cx">' + esc(e.message) + "</div>"; } }
@@ -137,7 +138,7 @@ function pintar() {
     '<div class="cx"><input type="search" id="busca" placeholder="Buscar por nome, bairro ou médico veterinário" value="' + esc(S.q) + '" style="width:100%"><label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-weight:600"><input type="checkbox" id="inat"' + (S.inativas ? " checked" : "") + "> Mostrar desativadas</label></div>" +
     '<div class="cx"><h2>' + L.length + (L.length === 1 ? " clínica" : " clínicas") + "</h2>" + (L.length ? L.map((c) => { const u = usoDe(c);
       return '<div class="lin" data-a="abrir" data-v="' + esc(c.id) + '" role="button" style="cursor:pointer"><div class="t"><b>' + esc(c.nome) + (c.ativo ? "" : ' <span class="chip ne">desativada</span>') + "</b><small>" + esc([c.tipo, [c.endereco, c.bairro].filter(Boolean).join(", "), c.telefone].filter(Boolean).join(" · ")) + "</small><small>" + ((c.vets || []).length ? (c.vets || []).length + ((c.vets || []).length === 1 ? " médico veterinário" : " médicos veterinários") + " · " : "") + [u.at ? u.at + " atendimentos" : "", u.cam ? u.cam + " câmaras" : "", u.rec ? u.rec + " receptores" : ""].filter(Boolean).join(" · ") + (u.ult ? " · último em " + dataBr(u.ult) : "") + "</small></div>" + (c.lat ? '<span class="chip ok">no mapa</span>' : '<span class="chip">sem mapa</span>') + "</div>"; }).join("") : '<p class="vazio">Nenhuma clínica encontrada.</p>') +
-    '<p class="nota">O ponto no mapa (para a rota do motoboy) é marcado em Motoboy, na aba de destinos.</p></div>';
+    '<p class="nota">Cole o link do Google Maps no cadastro da clínica. O ponto da rota do motoboy sai dele.</p></div>';
   const b = $("#busca"); b.oninput = () => { S.q = b.value; const pos = b.selectionStart; pintar(); const n = $("#busca"); n.focus(); n.setSelectionRange(pos, pos); };
   $("#inat").onchange = (e) => { S.inativas = e.target.checked; pintar(); };
 }
@@ -145,14 +146,14 @@ function form(c) {
   c = c || { ativo: true, tipo: TIPOS[0] }; S.ed = c.id || null; S.vets = (c.vets || []).map((v) => Object.assign({}, v));
   const campo = (id, rot, val, tipo) => '<label>' + rot + '</label><input type="' + (tipo || "text") + '" id="' + id + '" value="' + esc(val || "") + '">';
   abrirGaveta(c.id ? c.nome : "Nova clínica", (S.D.pode ? "" : '<p class="nota">Seu usuário só consulta o cadastro.</p>') + campo("cNome", "Nome", c.nome) + '<label>Tipo</label><select id="cTipo">' + TIPOS.map((t) => "<option" + (t === c.tipo ? " selected" : "") + ">" + t + "</option>").join("") + "</select>" +
-    campo("cEnd", "Endereço", c.endereco) + campo("cBairro", "Bairro ou cidade", c.bairro) + campo("cCep", "CEP", c.cep) + campo("cTel", "Telefone", c.telefone, "tel") + campo("cEmail", "E-mail", c.email, "email") + campo("cContato", "Pessoa de contato", c.contato) + campo("cCnpj", "CNPJ", c.cnpj) +
+    campo("cEnd", "Endereço", c.endereco) + campo("cBairro", "Bairro ou cidade", c.bairro) + campo("cCep", "CEP", c.cep) + '<label>Link do Google Maps</label><input type="url" id="cMaps" placeholder="https://maps.app.goo.gl/..." value="' + esc(c.maps || "") + '"><p class="nota" style="margin:4px 0 0">No Google Maps, abra o local, toque em Compartilhar e copie o link.' + (c.lat != null ? ' <b>Ponto da rota marcado.</b> <a href="https://www.google.com/maps?q=' + c.lat + "," + c.lng + '" target="_blank" rel="noopener">Ver no mapa</a>' : "") + "</p>" + campo("cTel", "Telefone", c.telefone, "tel") + campo("cEmail", "E-mail", c.email, "email") + campo("cContato", "Pessoa de contato", c.contato) + campo("cCnpj", "CNPJ", c.cnpj) +
     '<label>Médicos veterinários</label><div id="cVets"></div>' + (S.D.pode ? '<button class="btn sec peq" data-a="vetMais" style="margin-top:6px">Acrescentar médico veterinário</button>' : "") +
     '<label>Observação</label><textarea id="cObs" rows="3" style="width:100%">' + esc(c.obs || "") + "</textarea>" +
     '<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="cAtivo"' + (c.ativo !== false ? " checked" : "") + "> Clínica ativa</label>" +
     (S.D.pode ? '<div class="bts" style="margin-top:12px"><button class="btn" data-a="salvar">Salvar</button></div>' : ""));
   pintarVets();
 }
-function pintarVets() { const el = $("#cVets"); if (!el) return; el.innerHTML = S.vets.length ? S.vets.map((v, i) => '<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 34px;gap:6px;margin-bottom:6px"><input data-v="nome" data-i="' + i + '" placeholder="Nome" value="' + esc(v.nome) + '"><input data-v="crmv" data-i="' + i + '" placeholder="CRMV" value="' + esc(v.crmv) + '"><input data-v="telefone" data-i="' + i + '" placeholder="Telefone" value="' + esc(v.telefone || "") + '"><button class="btn sec peq" data-a="vetTirar" data-i="' + i + '">×</button></div>').join("") : '<p class="nota">Nenhum cadastrado.</p>';
+function pintarVets() { const el = $("#cVets"); if (!el) return; el.innerHTML = S.vets.length ? S.vets.map((v, i) => '<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 34px;gap:6px;margin-bottom:6px"><input data-v="nome" data-i="' + i + '" placeholder="Nome e sobrenome" value="' + esc(v.nome) + '"><input data-v="crmv" data-i="' + i + '" placeholder="CRMV" value="' + esc(v.crmv) + '"><input data-v="telefone" data-i="' + i + '" placeholder="Telefone" value="' + esc(v.telefone || "") + '"><button class="btn sec peq" data-a="vetTirar" data-i="' + i + '">×</button></div>').join("") : '<p class="nota">Nenhum cadastrado.</p>';
   el.querySelectorAll("input[data-v]").forEach((x) => x.oninput = () => { S.vets[+x.dataset.i][x.dataset.v] = x.value; }); }
 document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
@@ -161,10 +162,20 @@ document.addEventListener("click", async (ev) => {
   if (a === "abrir") return form((S.D.clinicas || []).find((c) => c.id === v));
   if (a === "vetMais") { S.vets.push({ nome: "", crmv: "", telefone: "" }); return pintarVets(); }
   if (a === "vetTirar") { S.vets.splice(+b.dataset.i, 1); return pintarVets(); }
-  if (a === "salvar") { b.disabled = true; try { await trp("cliSalvar", { id: S.ed || undefined, nome: $("#cNome").value, tipo: $("#cTipo").value, endereco: $("#cEnd").value, bairro: $("#cBairro").value, cep: $("#cCep").value, telefone: $("#cTel").value, email: $("#cEmail").value, contato: $("#cContato").value, cnpj: $("#cCnpj").value, vets: S.vets, obs: $("#cObs").value, ativo: $("#cAtivo").checked }); fecharGaveta(); toast("Clínica salva."); await carregar(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } }
+  if (a === "salvar") { b.disabled = true; try { const r = await trp("cliSalvar", { id: S.ed || undefined, nome: $("#cNome").value, tipo: $("#cTipo").value, endereco: $("#cEnd").value, bairro: $("#cBairro").value, cep: $("#cCep").value, telefone: $("#cTel").value, email: $("#cEmail").value, contato: $("#cContato").value, cnpj: $("#cCnpj").value, maps: $("#cMaps").value, vets: S.vets, obs: $("#cObs").value, ativo: $("#cAtivo").checked, exigirVet: !!NOVA });
+      if (NOVA) { if (r.avisoMapa) toast(r.avisoMapa, 5000); return ponte("clinicaFim", r); }
+      fecharGaveta(); toast(r.avisoMapa || "Clínica salva.", r.avisoMapa ? 8000 : 3500); await carregar(); } catch (e) { toast(e.message, 6000); } finally { b.disabled = false; } }
 });
-$("#veu").addEventListener("click", fecharGaveta);
-carregar();
+// cadastro completo aberto por outro módulo (câmaras, motoboy, receptores): só o formulário; ao salvar, a clínica volta para quem pediu
+const NOVA = (window.CVH_CTX || {}).novaClinica || null;
+if (NOVA) {
+  document.documentElement.classList.add("so-form");
+  const fg = fecharGaveta; fecharGaveta = function () { fg(); ponte("clinicaFim", null); };
+  trp("cliDados").then((d) => { S.D = d; $("#app").innerHTML = ""; form({ ativo: true, tipo: TIPOS[0], nome: NOVA.nome || "" }); if (!S.vets.length) { S.vets.push({ nome: "", crmv: "", telefone: "" }); pintarVets(); } $("#gvT").textContent = "Cadastrar clínica"; }).catch((e) => { $("#app").innerHTML = '<div class="cx">' + esc(e.message) + "</div>"; });
+} else {
+  $("#veu").addEventListener("click", fecharGaveta);
+  carregar();
+}
 </script>
 <script>
 // Painel CVH · campo de digitação sempre visível acima do teclado do celular (vale para todas as telas e módulos).

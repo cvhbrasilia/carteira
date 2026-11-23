@@ -921,7 +921,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123030909';
+  var VERSAO = '20261123031732';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6327,7 +6327,7 @@ async function abrirModulo(nome, aid, rid) {
   }
   E.modSujo = false;
   const quem = an ? an.nome : rp.nome;
-  const barra = '<div class="mod-barra"><button type="button" data-acao="sair-modulo">‹ Painel</button><b>' + (quem ? cfg.titulo + ' de ' + esc(quem) : nome === 'laudos' ? (E.ponte.receptor ? 'Laudo de receptor' : 'Novo laudo') : nome === 'qualidade' ? 'Controle de qualidade dos hemocomponentes' : nome === 'estoque' ? 'Estoque de hemocomponentes' : nome === 'producao' ? 'Produção de hemocomponentes' : nome === 'transporte' ? 'Motoboy' : 'Termos') + '</b>' + (nome === 'historico' && an && pode('perfil') ? '<button type="button" data-acao="perfil-mod" data-id="' + an.id + '">Perfil individual</button>' : '<span>' + esc(v ? v.nome : E.u.nome) + '</span>') + '</div>';
+  const barra = '<div class="mod-barra"><button type="button" data-acao="sair-modulo">‹ Painel</button><b>' + (quem ? cfg.titulo + ' de ' + esc(quem) : nome === 'laudos' ? (E.ponte.receptor ? 'Laudo de receptor' : 'Novo laudo') : nome === 'qualidade' ? 'Controle de qualidade dos hemocomponentes' : nome === 'estoque' ? 'Estoque de hemocomponentes' : nome === 'producao' ? 'Produção de hemocomponentes' : nome === 'transporte' ? 'Motoboy' : nome === 'tcle' ? 'Termos' : cfg.titulo) + '</b>' + (nome === 'historico' && an && pode('perfil') ? '<button type="button" data-acao="perfil-mod" data-id="' + an.id + '">Perfil individual</button>' : '<span>' + esc(v ? v.nome : E.u.nome) + '</span>') + '</div>';
   const h = E.modHtml[nome];
   // confere se o arquivo do módulo no Apps Script está completo (colagem cortada é a causa mais comum de falha)
   if (h.indexOf(cfg.marca) < 0) {
@@ -6353,7 +6353,7 @@ window.CVH_ERRO_MODULO = m => erroModulo(String(m));
 function sairModulo(b) {
   if (E.modSujo && b && !b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Sair sem salvar?'; setTimeout(() => { if (b.isConnected) { delete b.dataset.ok; b.textContent = '‹ Painel'; } }, 4000); return; }
   // o controle de qualidade não tem lista de animais: volta direto para a tela inicial
-  if (E.modAberto === 'qualidade' || E.modAberto === 'estoque' || E.modAberto === 'producao' || E.modAberto === 'transporte') { try { const w = $('#modulo').contentWindow; if (w && w.CVH_VOLTAR && w.CVH_VOLTAR()) return; } catch (_) {}
+  if (['qualidade', 'estoque', 'producao', 'transporte', 'camaras', 'clinicas'].includes(E.modAberto)) { try { const w = $('#modulo').contentWindow; if (w && w.CVH_VOLTAR && w.CVH_VOLTAR()) return; } catch (_) {}
     E.ponte = null; E.modSujo = false; E.modAberto = null; E.modulo = null; return telaHome(); }
   const eraTcle = E.modAberto === 'tcle', eraLaudo = E.modAberto === 'laudos', doador = E.modAberto === 'fichas' ? E.animal : null, receita = E.modAberto === 'receitas' ? E.animal : null, hist = E.modAberto === 'historico' ? E.animal : null, laudo = E.modAberto === 'laudos' ? E.animal : null;
   E.ponte = null; E.modSujo = false; E.modAberto = null;
