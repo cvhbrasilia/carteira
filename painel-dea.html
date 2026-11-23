@@ -940,7 +940,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123145302';
+  var VERSAO = '20261123151402';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1118,7 +1118,7 @@ function pendencias(regs, comColeta) {
   regs.forEach(r => {
     if (!u.has(r.id)) return;
     const d = r.dados || {};
-    if (r.proxima) out.push({ r, tipo: r.tipo, data: r.proxima, rot: { vacina: 'Vacina', vermifugo: 'Vermífugo', ecto: 'Antiparasitário' }[r.tipo], det: r.tipo === 'vacina' ? produtos(r).join(' + ') : (d.produto || '') });
+    if (r.proxima) out.push({ r, tipo: r.tipo, data: r.proxima, rot: { vacina: 'Vacina', vermifugo: 'Vermífugo', ecto: 'Ectoparasitas' }[r.tipo], det: r.tipo === 'vacina' ? produtos(r).join(' + ') : (d.produto || '') });
     if (r.tipo === 'vermifugo' && d.reforco && d.reforco >= h && !regs.some(o => o.tipo === 'vermifugo' && o.data >= d.reforco)) out.push({ r, tipo: 'reforco', data: d.reforco, rot: 'Reforço do vermífugo', det: d.produto || '' });
   });
   return out.sort((a, b) => a.data < b.data ? -1 : 1);
@@ -2413,7 +2413,7 @@ const rubSvg = (d, cls) => d ? '<svg class="' + (cls || 'rub') + '" viewBox="0 0
 function previaAssinaturaVet(v) {
   v = v || {}; return '<div class="asd" style="font-size:1em;width:100%"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(v.crmv || '') + '</span><span>data e hora da assinatura</span></div></div>';
 }
-// carimbo azul com a rubrica, usado nas vacinas, vermífugos e antiparasitários
+// carimbo azul com a rubrica, usado nas vacinas, vermífugos e ectoparasitas
 function carimbo(v, rot) {
   v = v || {};
   const nome = esc(v.nome || ''), crmv = esc(v.crmv || '');
@@ -2432,7 +2432,7 @@ function assinatura(r) {
     (r.codigo ? qrSvg(urlVerifCarteira(r.codigo)) : '') + '</div>' +
     (r.codigo || lib ? '<p class="asd-c">' + (r.codigo ? 'Código ' + esc(r.codigo) : '') + (lib ? (r.codigo ? ' · ' : '') + 'Liberado por ' + esc(lib) : '') + '</p>' : '');
 }
-// vacinas, vermífugos e antiparasitários: o carimbo com a rubrica e, embaixo, a linha discreta da assinatura eletrônica
+// vacinas, vermífugos e ectoparasitas: o carimbo com a rubrica e, embaixo, a linha discreta da assinatura eletrônica
 function assinaturaLinha(r) {
   const v = vetDe(r), lib = r.dados && r.dados.liberadoPor && r.dados.liberadoPor.nome;
   return '<div class="asl"><i></i><p><b>Assinado eletronicamente por ' + esc(r.vetNome || v.nome || '') + '</b>' + esc(r.vetCrmv || v.crmv || '') + ' · ' + quando(r.assinadoEm) + (r.codigo ? ' · Código ' + esc(r.codigo) : '') + (lib ? ' · Liberado por ' + esc(lib) : '') + '</p></div>';
@@ -2671,7 +2671,7 @@ function cartaoFisicoHtml(an) {
   return '<div class="cf-fis">' + (txt ? '<p>' + txt + '</p>' : '<p>Cartão de vacina em papel: não informado.</p>') +
     (vet ? '<div class="mini-bts"><button class="mini' + (cf === 'responsavel' ? ' on' : '') + '" data-acao="cartao-fisico" data-id="' + an.id + '" data-v="responsavel">Com o responsável</button><button class="mini' + (cf === 'cvh' ? ' on' : '') + '" data-acao="cartao-fisico" data-id="' + an.id + '" data-v="cvh">No CVH</button></div>' : '') + '</div>';
 }
-const ADD_RESP = { vermifugo: 'Registrar vermífugo que você deu', ecto: 'Registrar antiparasitário que você aplicou', obs: 'Escrever uma observação' };
+const ADD_RESP = { vermifugo: 'Registrar vermífugo que você deu', ecto: 'Registrar produto para pulgas e carrapatos que você aplicou', obs: 'Escrever uma observação' };
 function pgSecao(an, s, cartoes, add, addResp) {
   let corpo = '<div class="sec"><h2>' + s.titulo + '</h2></div>' + cartoes.join('');
   if (add) corpo += '<button class="add' + (cartoes.length ? '' : ' cheia') + '" data-add="' + s.t + '">+ ' + s.add + '</button>';
@@ -2693,7 +2693,7 @@ function pgDoacao(an, r, n, ed) {
 const SECOES = [
   { t: 'vacina', titulo: 'Controle de vacinação', por: 2, add: 'Adicionar vacina' },
   { t: 'vermifugo', titulo: 'Controle de vermifugação', por: 3, add: 'Adicionar vermifugação' },
-  { t: 'ecto', titulo: 'Controle de ectoparasitas', por: 3, add: 'Adicionar antiparasitário' },
+  { t: 'ecto', titulo: 'Controle de ectoparasitas', por: 3, add: 'Adicionar controle de ectoparasitas' },
   { t: 'doacao', titulo: 'Doação de sangue', por: 1, add: 'Adicionar doação' },
   { t: 'historico', titulo: 'Histórico laboratorial', por: 2, add: 'Adicionar histórico laboratorial' },
   { t: 'obs', titulo: 'Observações gerais', por: 4, add: 'Adicionar observação' },
@@ -3587,7 +3587,7 @@ function eventosLinha(an, regs) {
     if (r.tipo === 'doacao') ev.push({ data: r.data, t: 'doacao', tit: d.naoColetado ? 'Avaliação para doação, sem coleta' : 'Doação de sangue', det: [d.peso ? d.peso + ' kg' : '', d.ht ? 'Ht ' + d.ht + '%' : '', d.hb ? 'Hb ' + d.hb + ' g/dL' : ''].filter(Boolean).join(' · '), id: r.id });
     else if (r.tipo === 'vacina') ev.push({ data: r.data, t: 'vacina', tit: 'Vacina', det: produtos(r).join(' + ') + (r.proxima ? ' · próxima em ' + br(r.proxima) : ''), id: r.id });
     else if (r.tipo === 'vermifugo') ev.push({ data: r.data, t: 'vermifugo', tit: 'Vermífugo', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
-    else if (r.tipo === 'ecto') ev.push({ data: r.data, t: 'ecto', tit: 'Antiparasitário', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
+    else if (r.tipo === 'ecto') ev.push({ data: r.data, t: 'ecto', tit: 'Ectoparasitas (pulgas e carrapatos)', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
     else if (r.tipo === 'historico') { if (r === histUlt) ev.push({ data: r.data, t: 'historico', tit: 'Histórico laboratorial', det: [d.exames, d.periodo].filter(Boolean).join(' · '), id: r.id }); }
     else if (r.tipo === 'obs') ev.push({ data: r.data, t: 'obs', tit: 'Observação da equipe', det: String(d.texto || d.obs || Object.values(d).find(v => typeof v === 'string') || '').slice(0, 140), id: r.id });
     else if (r.tipo === 'tcle') ev.push({ data: r.data, t: 'tcle', tit: 'Termo de consentimento assinado', det: d.numero ? 'Termo nº ' + d.numero : '', id: r.id });
@@ -3632,7 +3632,7 @@ function avisosDe(aid) {
   const primeiro = !visto;
   if (primeiro) { visto = agoraLocal(); try { localStorage.setItem(chaveAvisos(aid), visto); } catch (_) { } }
   const desde = visto, novos = [];
-  const ROT = { doacao: ['Nova doação registrada', 'O exame da doação já está na carteira.'], vacina: ['Vacina registrada', ''], vermifugo: ['Vermífugo registrado', ''], ecto: ['Antiparasitário registrado', ''], historico: ['Novo resultado no histórico laboratorial', 'Os exames foram atualizados.'], obs: ['Informação da equipe do CVH', ''], tcle: ['Termo de consentimento registrado', ''], receita: ['Nova receita', 'A receita está na aba Receitas.'] };
+  const ROT = { doacao: ['Nova doação registrada', 'O exame da doação já está na carteira.'], vacina: ['Vacina registrada', ''], vermifugo: ['Vermífugo registrado', ''], ecto: ['Controle de ectoparasitas registrado', ''], historico: ['Novo resultado no histórico laboratorial', 'Os exames foram atualizados.'], obs: ['Informação da equipe do CVH', ''], tcle: ['Termo de consentimento registrado', ''], receita: ['Nova receita', 'A receita está na aba Receitas.'] };
   regs.filter(r => (r.assinadoEm || r.data) > desde && ROT[r.tipo]).sort((a, b) => String(b.assinadoEm || b.data).localeCompare(String(a.assinadoEm || a.data))).forEach(r => {
     const d = r.dados || {}, det = r.tipo === 'vacina' ? produtos(r).join(' + ') : r.tipo === 'obs' ? String(d.texto || d.obs || '').slice(0, 120) : r.tipo === 'vermifugo' || r.tipo === 'ecto' ? d.produto || '' : ROT[r.tipo][1];
     novos.push({ tit: ROT[r.tipo][0], det, data: r.data, t: r.tipo, id: r.id });
@@ -3802,7 +3802,7 @@ function buscaGlobalDados(q) {
     else if (r.tipo === 'historico' && tem([d.exames, d.laboratorios, (d.destaques || []).join(' ')].join(' '))) out.push({ g: 'Exame', t: d.exames || 'Histórico laboratorial', d: a.nome + ' · ' + br(r.data), acao: 'bg-registro', id: r.id });
     else if (r.tipo === 'laudo' && tem([d.titulo, (d.linhas || []).map(x => x.nome).join(' ')].join(' '))) out.push({ g: 'Laudo', t: d.titulo || 'Laudo de exame', d: a.nome + ' · ' + br(r.data), acao: 'bg-laudo', id: r.animalId });
     else if (r.tipo === 'receita' && tem((d.itens || []).map(i => i.med + ' ' + (i.conc || '')).join(' '))) out.push({ g: 'Receita', t: (d.itens || []).map(i => i.med).filter(Boolean).join(', '), d: a.nome + ' · ' + br(r.data), acao: 'bg-receita', id: r.animalId });
-    else if ((r.tipo === 'vacina' || r.tipo === 'vermifugo' || r.tipo === 'ecto') && tem((r.tipo === 'vacina' ? produtos(r).join(' ') : d.produto || ''))) out.push({ g: r.tipo === 'vacina' ? 'Vacina' : 'Antiparasitário', t: r.tipo === 'vacina' ? produtos(r).join(' + ') : d.produto, d: a.nome + ' · ' + br(r.data), acao: 'bg-registro', id: r.id });
+    else if ((r.tipo === 'vacina' || r.tipo === 'vermifugo' || r.tipo === 'ecto') && tem((r.tipo === 'vacina' ? produtos(r).join(' ') : d.produto || ''))) out.push({ g: r.tipo === 'vacina' ? 'Vacina' : r.tipo === 'vermifugo' ? 'Vermífugo' : 'Ectoparasitas', t: r.tipo === 'vacina' ? produtos(r).join(' + ') : d.produto, d: a.nome + ' · ' + br(r.data), acao: 'bg-registro', id: r.id });
   });
   (E.d.fichasAndamento || []).forEach(f => { const a = animalDe(f.animalId); if (a && tem([f.numero, a.nome, (f.ficha || {}).lote].join(' '))) out.unshift({ g: 'Ficha em andamento', t: 'Doação ' + (f.numero ? 'nº ' + f.numero : 'sem número'), d: a.nome + ' · ' + br(f.data) + (String((f.ficha || {}).ppt || '').trim() ? '' : ' · aguardando a PPT'), acao: 'abrir-andamento', id: f.id }); });
   (E.resultados || []).forEach(r => { const a = animalDe(r.animalId); if (a && tem(r.exame + ' ' + r.lab)) out.push({ g: 'Resultado', t: r.exame + ' ' + (r.valor || r.texto || '') + ' ' + (r.unidade || ''), d: a.nome + ' · ' + r.lab + ' · ' + br(r.data), acao: 'alerta-perfil', id: r.animalId }); });
@@ -6389,7 +6389,7 @@ function linkWhats(r, ans, link) {
   let tel = String(r.telefone || '').replace(/\D/g, '');
   if (tel.length <= 11) tel = '55' + tel;
   const nomes = listaPt(ans.filter(a => a.ativo !== '0').map(a => a.nome));
-  const msg = 'Olá, ' + (r.nome || '').split(' ')[0] + '! Esta é a carteira de saúde digital ' + (nomes ? 'de ' + nomes + ' ' : '') + 'no CVH. Pelo link você acompanha vacinas, vermífugos, antiparasitários e as próximas datas:\n' + link +
+  const msg = 'Olá, ' + (r.nome || '').split(' ')[0] + '! Esta é a carteira de saúde digital ' + (nomes ? 'de ' + nomes + ' ' : '') + 'no CVH. Pelo link você acompanha vacinas, vermífugos, controle de pulgas e carrapatos e as próximas datas:\n' + link +
     '\n\nPara deixar o ícone no celular: no iPhone, abra o link no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". No Android, abra no Chrome, toque nos três pontinhos e em "Adicionar à tela inicial".';
   return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(msg);
 }
@@ -6958,7 +6958,7 @@ function cartaoVerm() {
 }
 const VERMIFUGOS = ['Vermicanis', 'Vermicanis Plus', 'Drontal Plus', 'Milbemax C', 'Endogard', 'Canex Plus 3', 'Basken Plus', 'Drontal Gatos', 'Milbemax G'];
 const ECTOS = { 'Bravecto': [84, 'Comprimido'], 'NexGard': [30, 'Comprimido'], 'NexGard Spectra': [30, 'Comprimido'], 'Simparic': [35, 'Comprimido'], 'Credeli': [30, 'Comprimido'], 'Seresto': [240, 'Coleira'], 'Revolution': [30, 'Pipeta'], 'Advocate': [30, 'Pipeta'], 'Frontline Plus': [30, 'Pipeta'] };
-const TITULOS = { vacina: 'vacina', vermifugo: 'vermifugação', ecto: 'antiparasitário', doacao: 'doação de sangue', obs: 'observação', historico: 'histórico laboratorial', tcle: 'termo de consentimento' };
+const TITULOS = { vacina: 'vacina', vermifugo: 'vermifugação', ecto: 'controle de ectoparasitas', doacao: 'doação de sangue', obs: 'observação', historico: 'histórico laboratorial', tcle: 'termo de consentimento' };
 function ultimoPeso(aid) { const r = regsDe(aid).filter(x => x.dados && num(x.dados.peso)).sort((a, b) => a.data < b.data ? 1 : -1)[0]; return r ? r.dados.peso : ''; }
 function catalogo(an) { const esp = (an.especie || '').toLowerCase(); return (E.d.vacinas || []).filter(v => !esp || (v.especie || '').toLowerCase().includes(esp.slice(0, 5)) || !v.especie); }
 function acharProduto(nome, an) {
@@ -7505,7 +7505,7 @@ function formResp(tipo) {
   else if (tipo === 'ecto') h += c('rProd', 'Produto', inp('rProd', '', 'list="dlEctoR"')) + c('rApr', 'Apresentação', '<select id="rApr">' + ['Comprimido', 'Pipeta', 'Coleira', 'Spray', 'Outra'].map(x => '<option>' + x + '</option>').join('') + '</select>') + c('rDose', 'Dose', inp('rDose', '', 'placeholder="ex.: 1 comprimido"')) + c('rPeso', 'Peso (kg)', inp('rPeso', '', 'inputmode="decimal"')) + c('rProx', 'Próxima dose (opcional)', inp('rProx', '', 'type="date"'), 'larga') + '<datalist id="dlEctoR">' + Object.keys(ECTOS).map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>';
   else h += c('rTexto', 'Observação', '<textarea id="rTexto" rows="5" placeholder="Ex.: apresentou vômito depois da vacina, trocou de ração, está tomando remédio para a pele"></textarea>', 'larga');
   h += '</div><button class="btn" id="rSalvar">Salvar na carteira</button>';
-  abrirFolha({ vermifugo: 'Vermífugo dado por você', ecto: 'Antiparasitário aplicado por você', obs: 'Observação' }[tipo] + ' · ' + an.nome, h, () => {
+  abrirFolha({ vermifugo: 'Vermífugo dado por você', ecto: 'Pulgas e carrapatos · aplicado por você', obs: 'Observação' }[tipo] + ' · ' + an.nome, h, () => {
     $('#rSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
       const o = { tipo, data: vl('rData'), produto: vl('rProd'), dose: vl('rDose'), peso: vl('rPeso'), apresentacao: vl('rApr'), proxima: vl('rProx'), texto: vl('rTexto') };
       await api('carteiraRegistrar', E.token, an.id, o); fecharFolha(); toast('Registrado na carteira.', 3000);
@@ -7531,7 +7531,7 @@ function menuAnimal() {
 /* ── importação do cartão antigo ── */
 function telaImportacao() {
   const im = E.imp;
-  const rot = x => ({ vacina: 'Vacina', vermifugo: 'Vermífugo', ecto: 'Antiparasitário' }[x.tipo] || 'Registro');
+  const rot = x => ({ vacina: 'Vacina', vermifugo: 'Vermífugo', ecto: 'Ectoparasitas' }[x.tipo] || 'Registro');
   const det = x => x.tipo === 'vacina' ? (x.etiquetas || []).map(e => e.produto).join(' + ') : (x.produto || '');
   abrirFolha('Registros encontrados', (im.itens.length ? '<p class="nota">Revise cada item. Ele abre preenchido, você confere e salva.</p>' + im.itens.map((x, i) =>
     '<div class="imp' + (im.feitos.has(i) ? ' feito' : '') + '"><div class="t"><b>' + rot(x) + ' · ' + (br(x.data) || 'sem data') + '</b>' + esc(det(x)) + '</div>' +
@@ -7598,7 +7598,7 @@ function telaAjustes() {
     '<section class="cartao"><h3>Usuários</h3><p class="nota">Cada pessoa entra com o próprio usuário e vê só os módulos liberados. Quem tem assinatura vinculada assina sozinho o que salvar.</p>' +
     (E.d.usuarios || []).map(u => { const v = (E.d.vets || []).find(x => x.id === u.vetId); return '<button class="item" data-acao="editar-usuario" data-id="' + u.id + '"><div class="t"><b>' + esc(u.nome) + (u.ativo === '0' ? ' <small style="display:inline">(desativado)</small>' : '') + '</b><small>' + esc(u.usuario + ' · ' + (listaPt(u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + (v ? ' · ' + v.crmv : '') + (u.temSenha ? (u.trocarSenha ? ' · ainda não trocou a senha provisória' : '') : ' · sem senha, ainda não entra')) + '</small></div><span class="seta">›</span></button>'; }).join('') +
     '<button class="btn sec2 peq" data-acao="editar-usuario">+ Adicionar usuário</button></section>' +
-    '<section class="cartao"><h3>Lembretes por e-mail</h3><p class="nota">Todo dia às 8h o app avisa o responsável e o CVH 30, 15 e 7 dias antes de cada revacinação, vermífugo, reforço e antiparasitário.</p>' +
+    '<section class="cartao"><h3>Lembretes por e-mail</h3><p class="nota">Todo dia às 8h o app avisa o responsável e o CVH 30, 15 e 7 dias antes de cada revacinação, vermífugo, reforço e controle de ectoparasitas.</p>' +
     campo('cEmail', 'E-mail do CVH', inp('cEmail', c.emailCvh, 'type="email"')) +
     '<div class="acoes"><button class="btn sec2 peq" data-acao="teste-email">Enviar e-mail de teste</button><button class="btn sec2 peq" data-acao="rodar-lembretes">Verificar lembretes agora</button></div></section>' +
     '<section class="cartao"><h3>Endereço do app</h3><p class="nota">É a base dos links enviados aos responsáveis. Depois de publicar o ícone no GitHub Pages, cole aqui o endereço dele.</p>' +
