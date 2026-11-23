@@ -925,7 +925,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123042711';
+  var VERSAO = '20261123044833';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3190,7 +3190,24 @@ async function iniciarPainel() {
   if (E.sessao) { try { return await carregarPainel(); } catch (_) {} }
   telaLogin();
 }
+// link de senha nova (?rs=): a pessoa cria a senha e entra
+async function telaNovaSenha(token) {
+  carregando('Abrindo');
+  let d; try { d = await api('senhaRedefinirDados', token); } catch (e) { return telaMsg('Link de senha nova', e.message); }
+  raiz.innerHTML = '<main class="tela"><form class="tela-c login" id="fNova"><i class="lg-vert"></i><h1>Senha nova</h1><p>' + esc(d.nome) + ', crie a sua senha nova para o usuário <b>' + esc(d.usuario) + '</b>.</p>' +
+    '<input class="cred" id="usu" autocomplete="username" value="' + esc(d.usuario) + '" readonly aria-label="Usuário">' +
+    '<input class="cred" id="sNova" type="password" autocomplete="new-password" placeholder="senha nova" aria-label="Senha nova">' +
+    '<input class="cred" id="sNova2" type="password" autocomplete="new-password" placeholder="repita a senha nova" aria-label="Repita a senha nova">' +
+    '<p class="nota" id="sForca"></p><button type="button" class="btn sec2 peq" id="bGerar">Gerar senha forte</button><div id="sGerada" style="margin-top:8px"></div>' +
+    '<button class="btn" style="min-width:200px;margin-top:10px">Salvar e entrar</button><p class="erro" id="erro"></p></form></main>';
+  $('#bGerar').onclick = () => ACOES['gerar-senha']();
+  $('#fNova').onsubmit = async ev => { ev.preventDefault(); const a = $('#sNova').value, b = $('#sNova2').value, bt = $('#fNova button.btn:not(.sec2)');
+    if (!a) { $('#erro').textContent = 'Digite a senha nova.'; return; } if (a !== b) { $('#erro').textContent = 'As duas senhas não são iguais.'; return; }
+    bt.disabled = true; try { await api('senhaRedefinir', token, a); const r = await api('painelEntrar', d.usuario, a); E.sessao = r.sessao; try { localStorage.setItem('cvh_s', E.sessao); } catch (_) {}
+      try { history.replaceState(null, '', location.pathname); } catch (_) {} toast('Senha nova salva.', 4000); await carregarPainel(); } catch (e) { $('#erro').textContent = e.message; bt.disabled = false; } };
+}
 async function telaLogin() {
+  { const rs = new URLSearchParams(location.search).get('rs'); if (rs) return telaNovaSenha(rs); }
   carregando('Abrindo o painel');
   let st; try { st = await api('painelStatus'); } catch (e) { return telaMsg('Erro', e.message); }
   const criar = !!st.primeiroAcesso;
@@ -3201,8 +3218,12 @@ async function telaLogin() {
     '<input class="cred" id="sen" type="password" autocomplete="' + (criar ? 'new-password' : 'current-password') + '" placeholder="senha" aria-label="Senha">' +
     (criar ? '<input class="cred" id="sen2" type="password" autocomplete="new-password" placeholder="repita a senha" aria-label="Repita a senha">' : '') +
     '<label class="manter"><input type="checkbox" id="manter" checked> Manter conectado neste aparelho</label>' +
-    '<button class="btn" style="min-width:200px">' + (criar ? 'Criar e entrar' : 'Entrar') + '</button><p class="erro" id="erro"></p></form></main>';
+    '<button class="btn" style="min-width:200px">' + (criar ? 'Criar e entrar' : 'Entrar') + '</button><p class="erro" id="erro"></p>' +
+    (criar ? '' : '<button type="button" class="lk-esq" id="bEsqueci" style="background:none;border:0;color:var(--vinho);text-decoration:underline;font-size:14px;margin-top:6px;cursor:pointer">Esqueci minha senha</button>') + '</form></main>';
   $(criar ? '#nom' : '#usu').focus();
+  const be = $('#bEsqueci'); if (be) be.onclick = async () => {
+    const usu = $('#usu').value.trim(); if (!usu) { $('#erro').textContent = 'Digite o seu usuário e toque de novo em Esqueci minha senha.'; $('#usu').focus(); return; }
+    be.disabled = true; try { const r = await api('senhaEsqueci', usu); $('#erro').style.color = 'var(--tinta2)'; $('#erro').textContent = r && r.email ? 'Pronto. O link para criar a senha nova foi para o e-mail do CVH.' : 'Pronto. O administrador foi avisado e vai mandar um link para você criar a senha nova.'; } catch (e) { $('#erro').textContent = e.message; } finally { be.disabled = false; } };
   $('#fLogin').onsubmit = async ev => {
     ev.preventDefault();
     const bt = $('#fLogin button'), usu = $('#usu').value.trim(), sen = $('#sen').value;
@@ -7425,7 +7446,12 @@ function abrirFormUsuario(u) {
     '<p class="nota">Quem tem CRMV assina sozinho o que salvar. A rubrica é opcional. Ela aparece no carimbo das vacinas e na assinatura dos laudos.</p>' +
     '<div class="leg">Permissões</div><div class="perms">' + Object.keys(ROT_PERM).map(p => '<label class="check"><input type="checkbox" class="uPerm" value="' + p + '"' + (u.permissoes.includes(p) ? ' checked' : '') + (eu && p === 'admin' ? ' disabled' : '') + '> ' + ROT_PERM[p] + (p === 'admin' ? ' (acessa tudo, inclusive Ajustes e usuários)' : '') + '</label>').join('') + '</div>' +
     (u.id && !eu ? '<label class="check"><input type="checkbox" id="uAtivo"' + (u.ativo === '0' ? '' : ' checked') + '> Usuário ativo (desmarque para bloquear o acesso)</label>' : '') +
-    '<button class="btn" id="bSalvar">Salvar</button>', () => {
+    '<button class="btn" id="bSalvar">Salvar</button>' + (u.id && !eu ? ' <button class="btn sec2" id="bLinkSenha">Mandar link de nova senha</button>' : ''), () => {
+      const bl = $('#bLinkSenha'); if (bl) bl.onclick = ev => salvando(ev.currentTarget, async () => { const r = await api('usuarioLinkSenha', E.sessao, u.id);
+        const msg = 'Olá, ' + r.nome.split(' ')[0] + '. Este é o link para você criar a sua senha nova do Painel CVH (usuário: ' + r.usuario + '). Ele vale por 24 horas e só funciona uma vez:\n\n' + r.url;
+        abrirFolha('Link de nova senha', '<p class="nota">Mande para ' + esc(r.nome) + '. O link vale por 24 horas e só funciona uma vez. Quando a pessoa criar a senha nova, os aparelhos conectados com esse usuário saem e você recebe o aviso.</p><div class="link-box"><input readonly value="' + esc(r.url) + '" aria-label="Link"><button class="btn peq" id="lsCopiar">Copiar</button></div>' +
+          '<div class="acoes"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(msg) + '">Mandar pelo WhatsApp</a><button class="btn sec2" id="lsMsg">Copiar a mensagem</button></div>');
+        $('#lsCopiar').onclick = async () => toast(await copiar(r.url) ? 'Link copiado.' : 'Selecione e copie.'); $('#lsMsg').onclick = async () => toast(await copiar(msg) ? 'Mensagem copiada.' : 'Não consegui copiar.'); });
       const novoVet = () => { $('#uNovoVet').hidden = vl('uVet') !== '__novo'; if (!$('#uNovoVet').hidden && !vl('uVetNome')) $('#uVetNome').value = vl('uNome'); };
       $('#uVet').onchange = novoVet;
       $('#bSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
