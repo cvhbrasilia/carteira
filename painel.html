@@ -921,7 +921,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123025745';
+  var VERSAO = '20261123025911';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5473,6 +5473,22 @@ async function preparoTx(b, modo) {
     toast('Bolsa ' + uid + ' reservada para o atendimento. Siga a embalagem e a saída na ficha.', 5000); E.pedAbrir = P.id; E.modulo = 'transporte'; return abrirModulo('transporte');
   } catch (e) { b.disabled = false; toast(e.message, 7000); }
 }
+// à prova de erros na HemoCalculadora: valores que parecem digitados errado, meta impossível, dose alta e fator da espécie trocado
+function alertasTx(T, r) {
+  const L = [], peso = numTx(T.peso), gato = /gat/i.test(T.esp || '');
+  if (peso != null && (peso < 0.3 || peso > 100)) L.push(['Confira o peso', n1h(peso) + ' kg parece digitado errado.']);
+  if (T.comp === 'CH') {
+    const rec = numTx(htUsado(T)), des = numTx(T.des), doa = numTx(T.doa), fat = numTx(T.fator);
+    if (rec != null && (rec < 3 || rec > 75)) L.push(['Confira o hematócrito do receptor', n1h(rec) + '% parece digitado errado.']);
+    if (!r.reserva && des != null && doa != null && des >= doa) L.push(['Meta impossível', 'O Ht desejado (' + n1h(des) + '%) não pode ser igual ou maior que o Ht do CH (' + n1h(doa) + '%).']);
+    if (!r.reserva && des != null && des > (gato ? 30 : 35)) L.push(['Ht desejado alto', n1h(des) + '% está acima do usual para ' + (gato ? 'gato' : 'cão') + '. Confira a meta.']);
+    if (!r.reserva && rec != null && rec >= (gato ? 25 : 30)) L.push(['Confira a indicação', 'O receptor já está com Ht de ' + n1h(rec) + '%.']);
+    if (fat != null && ((gato && fat > 80) || (!gato && fat < 80))) L.push(['Fator da espécie trocado?', 'Fator ' + n0h(fat) + ' mL/kg para ' + (gato ? 'gato (o usual é 70)' : 'cão (o usual é 90)') + '.']);
+    if (peso && r.vol && r.vol / peso > (gato ? 15 : 20)) L.push(['Dose alta', n0h(r.vol) + ' mL para ' + n1h(peso) + ' kg (' + n0h(r.vol / peso) + ' mL/kg). Risco de sobrecarga de volume. Considere fracionar e monitorar.']);
+  }
+  if (T.comp === 'PFC' && r.dose && r.dose > 30) L.push(['Dose alta', n0h(r.dose) + ' mL/kg de plasma. Risco de sobrecarga de volume.']);
+  return L.map(([t, d]) => '<div class="av-i obrig"><b>' + esc(t) + '</b><small>' + esc(d) + '</small></div>').join('');
+}
 function telaTransfusao() {
   E.livro = null; fecharFolha();
   const T = E.tx = Object.assign({ margem: (() => { try { return localStorage.getItem('cvh_tx_margem') || '15'; } catch (_) { return '15'; } })(), tipPac: '', esp: 'Cão', peso: '', des: '26', rec: '', hb: '', usarHb: false, doa: '65', fator: '90', bolsa: '250', tipo: 'auto', comp: 'CH', sit: 'grave', cpKg: '10', cpVol: '50', pfcDose: '10', pfcBolsa: '200', crioKg: '10', plq: '', tp: '', ttpa: '', fib: '' }, E.tx || {});
@@ -5507,11 +5523,11 @@ function telaTransfusao() {
     if (!r) { box.innerHTML = (T.comp === 'CH' ? caixaHb(T) : '') + '<p class="vazio-p">' + (T.comp === 'CH' && T.chModo !== 'cirurgia' && numTx(T.des) != null && numTx(htUsado(T)) != null && numTx(T.des) <= numTx(htUsado(T)) ? 'O hematócrito desejado precisa ser maior que o do receptor. Para reservar bolsa para uma cirurgia, use Reserva para cirurgia.' : T.comp === 'CH' ? 'Preencha o peso e o hematócrito do receptor.' : 'Preencha o peso.') + '</p>'; ligarHb(); return; }
     let topo;
     if (T.comp === 'CH') { const sug = r.bolsa && r.vol > r.bolsa * 1.15 ? 'varias' : 'uma', tipo = T.tipo === 'auto' ? sug : T.tipo;
-      topo = caixaHb(T) + (r.reserva ? '<div class="av-i novo"><b>Reserva para cirurgia · ' + String(r.mlkg).replace('.', ',') + ' mL/kg</b><small>' + (numTx(T.resMlkg) ? 'Dose escolhida à mão (sugestão pelo Ht: ' + String(r.sugerido).replace('.', ',') + ' mL/kg).' : r.rec != null ? 'Sugestão pelo Ht de ' + n1h(r.rec) + '%.' : 'Sem o Ht do receptor, usa 20 mL/kg.') + (r.rec != null ? ' Se usar a bolsa toda, o Ht iria para uns ' + n1h(r.htCom(r.vol)) + '%.' : '') + '</small></div>' : '') + '<div class="tx-vol"><small>' + (r.reserva ? 'Volume da reserva' : 'Volume calculado') + '' + (T.usarHb && numTx(T.hb) ? ' (Ht pela Hb, ' + n1h(numTx(T.hb) * 3) + '%)' : '') + '</small><b>' + String(r.vol.toFixed(1)).replace('.', ',') + ' <i>mL</i></b><span>' + String((r.vol / numTx(T.peso)).toFixed(1)).replace('.', ',') + ' mL/kg' + (r.n ? ' · ' + String(r.n.toFixed(1)).replace('.', ',') + ' CH de ' + Math.round(r.bolsa) + ' mL' : '') + '</span></div>' +
+      topo = caixaHb(T) + alertasTx(T, r) + (r.reserva ? '<div class="av-i novo"><b>Reserva para cirurgia · ' + String(r.mlkg).replace('.', ',') + ' mL/kg</b><small>' + (numTx(T.resMlkg) ? 'Dose escolhida à mão (sugestão pelo Ht: ' + String(r.sugerido).replace('.', ',') + ' mL/kg).' : r.rec != null ? 'Sugestão pelo Ht de ' + n1h(r.rec) + '%.' : 'Sem o Ht do receptor, usa 20 mL/kg.') + (r.rec != null ? ' Se usar a bolsa toda, o Ht iria para uns ' + n1h(r.htCom(r.vol)) + '%.' : '') + '</small></div>' : '') + '<div class="tx-vol"><small>' + (r.reserva ? 'Volume da reserva' : 'Volume calculado') + '' + (T.usarHb && numTx(T.hb) ? ' (Ht pela Hb, ' + n1h(numTx(T.hb) * 3) + '%)' : '') + '</small><b>' + String(r.vol.toFixed(1)).replace('.', ',') + ' <i>mL</i></b><span>' + String((r.vol / numTx(T.peso)).toFixed(1)).replace('.', ',') + ' mL/kg' + (r.n ? ' · ' + String(r.n.toFixed(1)).replace('.', ',') + ' CH de ' + Math.round(r.bolsa) + ' mL' : '') + '</span></div>' +
         (txSouEu() && !r.reserva ? notaInternaTx(Object.assign({}, T, { rec: htUsado(T) }), r) : '') + (pode(['estoque', 'producao']) ? '<div id="txEst"></div>' : '') + '<h3>Mensagem</h3>' + (r.reserva ? '' : '<div class="filtros"><button class="filtro' + (tipo === 'uma' ? ' on' : '') + '" data-tx="uma">1 CH</button><button class="filtro' + (tipo === 'varias' ? ' on' : '') + '" data-tx="varias">Mais de 1 CH</button></div>'); }
     else { const big = T.comp === 'PFC' ? n0h(r.vol) + ' <i>mL</i>' : r.n + ' <i>' + (T.comp === 'CP' ? 'CP' : r.n === 1 ? 'unidade' : 'unidades') + '</i>', sub = T.comp === 'PFC' ? n0h(r.dose) + ' mL/kg · ' + r.nb + (r.nb === 1 ? ' bolsa' : ' bolsas') + ' de ' + n0h(r.b) + ' mL' : T.comp === 'CP' ? '±' + n0h(r.vu) + ' mL cada' + (r.n > 1 ? ', ±' + n0h(r.vol) + ' mL no total' : '') + ' · 1 a cada ' + n0h(r.kg) + ' kg' : '1 a cada ' + n0h(r.kg) + ' kg';
       const av = T.sit === 'grave' ? '' : '<div class="av-i ' + (T.sit === 'sem' ? 'obrig' : 'novo') + '"><b>' + (T.sit === 'sem' ? 'Sem sangramento não há indicação' : 'Cirurgia programada') + '</b><small>' + (T.sit === 'sem' ? (T.comp === 'CP' ? 'Contagem baixa de plaquetas sem sangramento não justifica a transfusão, inclusive na TIM - trombocitopenia imunomediada.' : T.comp === 'PFC' ? 'Tempos de coagulação prolongados sem sangramento não justificam o plasma.' : 'Fibrinogênio baixo sem sangramento não justifica o crioprecipitado.') : 'Deixar reservado e usar só se houver sangramento. Se não sangrar, descartar.') + '</small></div>';
-      topo = av + '<div class="tx-vol"><small>' + (T.comp === 'CP' ? 'Concentrado de plaquetas' : T.comp === 'PFC' ? 'Plasma fresco congelado' : 'Crioprecipitado') + '</small><b>' + big + '</b><span>' + sub + '</span></div><h3>Mensagem</h3>'; }
+      topo = av + alertasTx(T, r) + '<div class="tx-vol"><small>' + (T.comp === 'CP' ? 'Concentrado de plaquetas' : T.comp === 'PFC' ? 'Plasma fresco congelado' : 'Crioprecipitado') + '</small><b>' + big + '</b><span>' + sub + '</span></div><h3>Mensagem</h3>'; }
     box.innerHTML = topo + '<textarea id="txMsg" rows="9" aria-label="Mensagem">' + esc(manterTexto && $('#txMsg') ? $('#txMsg').value : msgComp(T, r)) + '</textarea>' +
       '<p class="nota">Os volumes são arredondados. Dá para ajustar o texto antes de copiar.</p>' +
       '<div class="acoes"><button class="btn" id="txCopiar">Copiar mensagem</button><a class="btn sec2" id="txZap" target="_blank" rel="noopener">Enviar por WhatsApp</a></div>';
