@@ -1892,6 +1892,14 @@ const agora = () => { const d = new Date(); return { data: br(hojeISO()), hora: 
 const urlVerif = (cod) => (CTX.urlVerificacao || "") + ((CTX.urlVerificacao || "").indexOf("?") >= 0 ? "&" : "?") + "v=" + encodeURIComponent(cod);
 const felino = () => /fel|gat/.test(semAc(estado.paciente.especie));
 const doacoesDoAnimal = () => DOACOES.filter((d) => d.animalId && d.animalId === estado.animalId && d.numero).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+// registro da TECSA: o número da doação; se o PDF não traz, a doação deste animal mais próxima (até 45 dias antes) do cadastro na TECSA
+function registroTecsa() {
+  if (estado.exame.doacao) return estado.exame.doacao;
+  const ref = (estado.t && (estado.t.cadastro || estado.t.liberado)) || ""; if (!ref || !estado.animalId) return "";
+  const dia = (s) => Date.parse(String(s).slice(0, 10) + "T12:00:00"), r = dia(ref);
+  const d = doacoesDoAnimal().filter((x) => /^\d{4}-\d{2}-\d{2}/.test(x.data || "") && dia(x.data) <= r && r - dia(x.data) <= 45 * 864e5)[0];
+  return d ? d.numero : "";
+}
 const acharDoacao = (cod) => { const c = codNorm(cod); return c ? DOACOES.find((d) => codNorm(d.numero) === c) || null : null; };
 const sexoTxt = (s) => /^m/i.test(s || "") ? "Macho" : /^f/i.test(s || "") ? "Fêmea" : s || "";
 function usarAnimal(id) {
@@ -2163,7 +2171,7 @@ function aplicarLeitura(lidos) {
 }
 function aplicarTecsa(r, nomeArq) {
   const t = estado.t, c = r.cab, av = [];
-  t.lido = true; t.arquivo = nomeArq || ""; t.protocolo = c.numero || ""; t.liberado = r.exames.map((e) => isoDe(e.liberado)).filter(Boolean).sort().pop() || "";
+  t.lido = true; t.arquivo = nomeArq || ""; t.protocolo = c.numero || ""; t.cadastro = isoDe(c.cadastro) || ""; t.liberado = r.exames.map((e) => isoDe(e.liberado)).filter(Boolean).sort().pop() || "";
   t.exames = r.exames.map((e, i) => ({ id: i + 1, on: true, tipo: e.tipo, agente: e.agente, resultado: frase(e.resultado), ct: e.ct, od: e.od, cutoff: e.cutoff, titulacao: e.titulacao, metodo: e.metodo, material: frase(e.material), kit: e.kit,
     comNotas: false, notas: [e.interp ? frase(e.resultado) + ". " + e.interp.charAt(0).toUpperCase() + e.interp.slice(1) : "", ...e.comentarios].filter(Boolean).join("\n") }));
   // o "Nome" do pedido da TECSA é o número da doação (ex.: 446-4); por ele achamos o doador e a coleta
@@ -2738,7 +2746,7 @@ function notaMetodo() {
   if (t === "idexx" && estado.misto) { const X = estado.exame; return "Resultados do analisador " + (String(X.equip || "IDEXX").replace(/\s*e Citopet$/, "")) + ", no CVH, e do laboratório Citopet" + (X.labNumero ? " sob o número " + X.labNumero : "") + (X.data ? ", com coleta em " + br(X.data) : "") + (X.labLiberado ? ", liberado em " + br(X.labLiberado) + (X.labHora ? " às " + X.labHora : "") : "") + ". Cada resultado traz a referência do seu método. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico."; }
   if (t === "idexx" && estado.exame.labNome) { const X = estado.exame; return "Exame realizado pelo laboratório " + X.labNome + (X.labNumero ? " sob o número " + X.labNumero : "") + (X.data ? ", com coleta em " + br(X.data) : "") + (X.labLiberado ? ", liberado em " + br(X.labLiberado) + (X.labHora ? " às " + X.labHora : "") : "") + (X.labRt ? " por " + X.labRt : "") + ". Intervalos de referência do laboratório. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico."; }
   if (t === "idexx") return "Exame realizado no CVH, no analisador " + (estado.exame.equip || "IDEXX") + ". Intervalos de referência do fabricante para a espécie. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
-  if (t === "tecsa") return "Exames realizados pelo laboratório TECSA" + (estado.exame.doacao ? " sob o registro " + estado.exame.doacao : "") + (x.protocolo ? " (protocolo " + x.protocolo + ")" : "") + (x.liberado ? ", liberados em " + br(x.liberado) : "") + "." + (x.rt ? " Responsável técnica do laboratório " + x.rt + "." : "") + " O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
+  if (t === "tecsa") { const rg = registroTecsa(); return "Exames realizados pelo laboratório TECSA" + (rg ? " sob o registro " + rg : x.protocolo ? " (protocolo " + x.protocolo + ")" : "") + (x.liberado ? ", liberados em " + br(x.liberado) : "") + "." + (x.rt ? " Responsável técnica do laboratório " + x.rt + "." : "") + " O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico."; }
   return "Exame realizado no CVH. O resultado deve ser interpretado pelo médico veterinário junto com o quadro clínico.";
 }
 // rubrica do médico veterinário (traço SVG em 300 × 120) desenhada no bloco da assinatura
