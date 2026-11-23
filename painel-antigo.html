@@ -654,6 +654,8 @@ a.btn{text-decoration:none}
 .lab-it{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #eee3d8;padding:.6em 0}
 .lab-it.novo .t b{color:var(--vinho)}
 .lab-it .t small{display:block}
+/* celular: nome e dados do laudo na largura toda, botões embaixo (sem cortar o nome) */
+@media (max-width:760px){.item.lab-it{flex-direction:column;align-items:stretch!important;gap:8px}.lab-it .t{width:100%}.lab-it .t small{white-space:normal}.lab-it .mini-bts{justify-content:flex-start!important;flex-wrap:wrap;margin-left:0!important}}
 .lab-pos{color:#A83D3D;font-weight:800}
 a.mini{text-decoration:none;display:inline-block}
 .mini{font:inherit;font-size:12.5px;font-weight:700;color:var(--vinho);background:#fff;border:1px solid var(--dourado);border-radius:7px;padding:.38em .7em;cursor:pointer}
@@ -946,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123210538';
+  var VERSAO = '20261123210821';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {

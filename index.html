@@ -536,6 +536,7 @@ a.btn{text-decoration:none}
 .al-imp{margin:.2em 0;color:#A83D3D;font-weight:700;font-size:.85em}.alerta-c.imped{border-color:#A83D3D}
 @media (min-width:1000px){.tela-al .tela-c{max-width:1180px}.al-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.al-lado{position:sticky;top:10px}.al-lado .filtros{flex-wrap:wrap}}
 .cf-fis{margin:.5em 0 .2em;padding:.5em .7em;border:1px dashed var(--areia,#EEE5DB);border-radius:.6em;font-size:.82em;color:var(--vinho)}.cf-fis p{margin:0 0 .3em}.cf-fis .mini.on{background:var(--vinho);color:#fff}
+.tipo-cx{display:flex;gap:6px;flex-wrap:wrap}.tipo-cx select{flex:1 1 120px;min-width:0}.tipo-cx select[hidden]{display:none}
 .cf-fis small{display:block;opacity:.8;margin-top:.2em}.cf-conf{margin-top:.5em;padding:.7em;border-radius:.6em;background:#F7EFE6;border:1px solid #C49A6C}.cf-conf p{margin:0 0 .5em}.cf-conf input{width:100%;box-sizing:border-box;margin:0 0 .5em;padding:.6em;border:1px solid #C6B098;border-radius:.5em;font:inherit}
 .ct-cart{display:flex;gap:.8em;align-items:center;background:#fff;border:1px solid var(--areia,#EEE5DB);border-radius:.8em;padding:.55em .8em;margin:.4em 0;cursor:pointer}.ct-cart .ct-ano{width:3.6em;height:3.6em;filter:none}
 .ct-cart small{display:block;font-size:.62em;letter-spacing:.14em;text-transform:uppercase;color:#9C7447;font-weight:700}.ct-cart b{display:block;font-size:.9em;color:var(--vinho)}
@@ -947,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123210821';
+  var VERSAO = '20261123211612';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5249,6 +5250,18 @@ function pintarReceptores(busca) {
       : '<p class="vazio-p">' + (q ? 'Nenhum receptor encontrado.' : 'Nenhum receptor cadastrado ainda.') + '</p>') + '</section></div></main>';
   const bi = $('#buscaRec'); if (bi) bi.oninput = () => { clearTimeout(E.tRec); E.tRec = setTimeout(() => { pintarReceptores(bi.value); const b2 = $('#buscaRec'); if (b2) { b2.focus(); b2.setSelectionRange(b2.value.length, b2.value.length); } }, 250); };
 }
+// tipo sanguíneo só por opção (nada digitado): cão DEA 1 e DAL; gato grupo A, B ou AB (aparece conforme a espécie)
+function tipoMarcar(s) {
+  s = String(s || ''); const dea = /dea\s*1\s*(\+|pos)/i.test(s) ? 'positivo' : /dea\s*1\s*(-|–|−|neg)/i.test(s) ? 'negativo' : '', dal = /dal\s*(\+|pos)/i.test(s) ? 'positivo' : /dal\s*(-|–|−|neg)/i.test(s) ? 'negativo' : '', gato = (s.match(/\b(AB|A|B)\b/) || [])[1] || '';
+  const op = (v, tx, cur) => '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + tx + '</option>';
+  return '<span class="tipo-cx"><select id="rcDea" data-cao="1">' + op('', 'DEA 1 não tipado', dea) + op('negativo', 'DEA 1 negativo', dea) + op('positivo', 'DEA 1 positivo', dea) + '</select><select id="rcDal" data-cao="1">' + op('', 'DAL não tipado', dal) + op('negativo', 'DAL negativo', dal) + op('positivo', 'DAL positivo', dal) + '</select>' +
+    '<select id="rcGato" data-gato="1">' + op('', 'Grupo não tipado', gato) + op('A', 'Grupo A', gato) + op('B', 'Grupo B', gato) + op('AB', 'Grupo AB', gato) + '</select></span>';
+}
+function tipoMarcado() {
+  if (/fel/i.test(vl('rcEsp'))) return vl('rcGato') ? 'Grupo ' + vl('rcGato') : '';
+  return [vl('rcDea') ? 'DEA 1 ' + vl('rcDea') : '', vl('rcDal') ? 'DAL ' + vl('rcDal') : ''].filter(Boolean).join(' · ');
+}
+function tipoPorEspecie() { const g = /fel/i.test(vl('rcEsp')); document.querySelectorAll('#rcDea,#rcDal').forEach(x => x.hidden = g); const gt = $('#rcGato'); if (gt) gt.hidden = !g; }
 function formReceptor(rc, pre) {
   const F = fontesReceptor(), lig = rc ? ligacoesRec(rc, F) : (pre && pre.fontes ? F.filter(f => pre.fontes.includes(f.k)) : []), d = Object.assign({}, pre || {}, rc ? rc.dados : {});
   // campos vazios do cadastro são completados com o que os laudos e pedidos ligados trazem
@@ -5257,10 +5270,11 @@ function formReceptor(rc, pre) {
   const hist = lig.length ? '<h3 style="margin-top:16px">Histórico · laudos e pedidos</h3>' + lig.map(f => f.fonte === 'laudo' ? itemLaudo(f.reg, false) : '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(f.titulo) + '</b><small>' + esc([br(f.data), f.clinica, f.bolsa ? 'bolsa ' + f.bolsa : '', f.ht ? 'Ht ' + f.ht + '%' : '', f.peso ? f.peso + ' kg' : ''].filter(Boolean).join(' · ')) + '</small></div></div>').join('') : '';
   abrirFolha(rc ? d.nome : 'Novo receptor', '<div class="grade">' +
     campo('rcNome', 'Nome do paciente', inp('rcNome', d.nome)) + campo('rcEsp', 'Espécie', sel('rcEsp', d.especie, ['Canina', 'Felina'])) + campo('rcRaca', 'Raça', inp('rcRaca', d.raca)) + campo('rcSexo', 'Sexo', sel('rcSexo', d.sexo, ['Macho', 'Fêmea'])) +
-    campo('rcIdade', 'Idade', inp('rcIdade', d.idade)) + campo('rcPeso', 'Peso (kg)', inp('rcPeso', d.peso, 'inputmode="decimal"')) + campo('rcTipo', 'Tipo sanguíneo', inp('rcTipo', d.tipo, 'placeholder="ex.: DEA 1 negativo · DAL positivo"')) + campo('rcTransf', 'Já transfundido', sel('rcTransf', d.transfundido, ['Sim', 'Não'])) +
+    campo('rcIdade', 'Idade', inp('rcIdade', d.idade)) + campo('rcPeso', 'Peso (kg)', inp('rcPeso', d.peso, 'inputmode="decimal"')) + campo('rcDea', 'Tipo sanguíneo', tipoMarcar(d.tipo)) + campo('rcTransf', 'Já transfundido', sel('rcTransf', d.transfundido, ['Sim', 'Não'])) +
     campo('rcChip', 'Microchip', inp('rcChip', d.microchip)) + campo('rcResp', 'Responsável', inp('rcResp', d.responsavel)) + campo('rcTel', 'Telefone do responsável', inp('rcTel', d.telefone, 'inputmode="tel"')) + campo('rcClin', 'Clínica', inp('rcClin', d.clinica, 'list="lCliRc" autocomplete="off"') + '<datalist id="lCliRc"></datalist><small id="rcCliAv"></small>') +
     campo('rcVet', 'Médico veterinário', inp('rcVet', d.veterinario)) + campo('rcCrmv', 'CRMV', inp('rcCrmv', d.crmv)) + campo('rcObs', 'Observações', '<textarea id="rcObs" rows="3">' + esc(d.obs || '') + '</textarea>', 'larga') +
     '</div><button class="btn" id="rcSalvar">' + (rc ? 'Salvar' : 'Cadastrar') + '</button>' + (rc && pode('admin') ? ' <button class="btn sec2" id="rcApagar">Apagar o cadastro</button>' : '') + hist, () => {
+      tipoPorEspecie(); $('#rcEsp').addEventListener('change', tipoPorEspecie);
       // clínica do cadastro único; se não existir, cadastro completo por cima da tela
       const rcCli = $('#rcClin'), nzc = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
       const avCli = () => { const L = E.cliCache || [], v = rcCli.value, c = L.find(x => nzc(x.nome) === nzc(v)); const el = $('#rcCliAv'); if (!el) return;
@@ -5271,7 +5285,7 @@ function formReceptor(rc, pre) {
       rcCli.addEventListener('input', avCli); rcCli.addEventListener('change', avCli);
       if (E.cliCache) encherCli(); else api('cliDados', E.sessao).then(r => { E.cliCache = r.clinicas || []; encherCli(); }).catch(() => {});
       $('#rcSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
-        const o = { id: rc ? rc.id : '', nome: vl('rcNome'), especie: vl('rcEsp'), raca: vl('rcRaca'), sexo: vl('rcSexo'), idade: vl('rcIdade'), peso: vl('rcPeso'), tipo: vl('rcTipo'), transfundido: vl('rcTransf'), microchip: vl('rcChip'), responsavel: vl('rcResp'), telefone: vl('rcTel'), clinica: vl('rcClin'), veterinario: vl('rcVet'), crmv: vl('rcCrmv'), obs: vl('rcObs'), fontes: lig.map(f => f.k) };
+        const o = { id: rc ? rc.id : '', nome: vl('rcNome'), especie: vl('rcEsp'), raca: vl('rcRaca'), sexo: vl('rcSexo'), idade: vl('rcIdade'), peso: vl('rcPeso'), tipo: tipoMarcado(), transfundido: vl('rcTransf'), microchip: vl('rcChip'), responsavel: vl('rcResp'), telefone: vl('rcTel'), clinica: vl('rcClin'), veterinario: vl('rcVet'), crmv: vl('rcCrmv'), obs: vl('rcObs'), fontes: lig.map(f => f.k) };
         const r = await api('estReceptorSalvar', E.sessao, o); E.rec = [r].concat((E.rec || []).filter(x => x.id !== r.id)); fecharFolha(); toast(rc ? 'Receptor atualizado.' : 'Receptor cadastrado.');
         if (E.recNovoCb) { const cb = E.recNovoCb; E.recNovoCb = null; cb(r); }
         if (E.modulo === 'receptores') pintarReceptores($('#buscaRec') ? $('#buscaRec').value : '');

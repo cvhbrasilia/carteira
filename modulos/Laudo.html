@@ -74,7 +74,7 @@ html,body{overflow-x:hidden;max-width:100%}
 .tipo{border:1px solid var(--areia2);background:#FFFDFB;border-radius:12px;padding:12px;text-align:left;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:3px}
 .tipo b{color:var(--vinho);font-size:15px}.tipo small{color:var(--tinta2);font-size:12.5px;line-height:1.35}.tipo:hover{border-color:var(--bege);background:#FBF6F1}
 .topo-tipo{display:flex;align-items:center;gap:10px;margin:0 0 10px}.topo-tipo b{color:var(--vinho);font-size:14px}.topo-tipo .lnk{padding:0}
-.idade-cx{display:flex;gap:6px}.idade-cx input{flex:1 1 52px;min-width:52px}.idade-cx select{flex:0 0 auto;width:auto;max-width:96px;padding-left:8px;padding-right:6px}.idade-cx input[hidden]+select{flex:1 1 auto;max-width:none}
+.idade-cx{display:flex;gap:6px}.tipo-cx{display:flex;gap:6px;flex-wrap:wrap}.tipo-cx select{flex:1 1 120px;min-width:0}.idade-cx input{flex:1 1 52px;min-width:52px}.idade-cx select{flex:0 0 auto;width:auto;max-width:96px;padding-left:8px;padding-right:6px}.idade-cx input[hidden]+select{flex:1 1 auto;max-width:none}
 .segm{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.segm button{border:1px solid var(--areia2);background:#fff;color:var(--vinho);border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;min-width:52px}
 .segm button[aria-pressed=true]{background:var(--vinho);color:#fff;border-color:var(--vinho)}
 .item.pos{border-color:#E4B7B0;background:#FDF6F4}
@@ -2213,8 +2213,20 @@ function tuboTitulo(tx, y, xFim, tam, yMin) {
 }
 const rotuloData = () => estado.tipo === "idexx" && !estado.exame.labNome ? "Análise  " : "Coleta  ";
 // tipo sanguíneo do cadastro do doador (DEA 1, DAL ou grupo felino)
+// tipo sanguíneo só por opção (nada digitado): cão DEA 1 e DAL; gato grupo A, B ou AB
+const partesTipo = (s) => { s = String(s || ""); return { dea: /dea\s*1\s*(\+|pos)/i.test(s) ? "positivo" : /dea\s*1\s*(-|–|−|neg)/i.test(s) ? "negativo" : "", dal: /dal\s*(\+|pos)/i.test(s) ? "positivo" : /dal\s*(-|–|−|neg)/i.test(s) ? "negativo" : "", gato: ((s.match(/\b(AB|A|B)\b/) || [])[1] || "") }; };
+function campoTipo() {
+  const p = partesTipo(tipoSanguineoTxt()), op = (v, txt, cur) => `<option value="${v}"${v === cur ? " selected" : ""}>${txt}</option>`;
+  if (felino()) return `<span class="tipo-cx"><select data-tp="gato" aria-label="Grupo sanguíneo">${op("", "não tipado", p.gato)}${op("A", "Grupo A", p.gato)}${op("B", "Grupo B", p.gato)}${op("AB", "Grupo AB", p.gato)}</select></span>`;
+  return `<span class="tipo-cx"><select data-tp="dea" aria-label="DEA 1">${op("", "DEA 1 não tipado", p.dea)}${op("negativo", "DEA 1 negativo", p.dea)}${op("positivo", "DEA 1 positivo", p.dea)}</select><select data-tp="dal" aria-label="DAL">${op("", "DAL não tipado", p.dal)}${op("negativo", "DAL negativo", p.dal)}${op("positivo", "DAL positivo", p.dal)}</select></span>`;
+}
+function lerTipo(t) {
+  const cx = t.closest(".tipo-cx"), v = (k) => ((cx.querySelector(`[data-tp="${k}"]`) || {}).value || "");
+  if (cx.querySelector('[data-tp="gato"]')) return v("gato") ? "Grupo " + v("gato") : " ";
+  return [v("dea") ? "DEA 1 " + v("dea") : "", v("dal") ? "DAL " + v("dal") : ""].filter(Boolean).join("  ·  ") || " ";
+}
 function tipoSanguineoTxt() {
-  if (estado.paciente.tipo != null && estado.paciente.tipo !== "") return estado.paciente.tipo;
+  if (estado.paciente.tipo != null && estado.paciente.tipo !== "") return estado.paciente.tipo.trim();
   const ts = String(an.tipoSanguineo || "").trim(), dal = String(an.dal || "").trim(), L = [];
   const res = (v) => /^\+|pos/i.test(v) ? "positivo" : /^-|^–|neg/i.test(v) ? "negativo" : v;
   if (ts) { if (/dea/i.test(ts)) L.push("DEA 1 " + res(ts.replace(/dea\s*1/i, "").trim())); else L.push(/^(a|b|ab)$/i.test(ts) ? "Grupo " + ts.toUpperCase() : ts); }
@@ -3280,7 +3292,7 @@ function caixaPaciente() {
     (estado.receptor && !(RECEPTORES[+estado.rcpSel] || {}).cadastro ? `<div class="larga"><button type="button" class="btn sec mini" data-a="rcp-cadastrar">Cadastrar este receptor</button><span class="nota" id="stRcp"> Abre o cadastro de receptores com os dados deste laudo, para usar nos próximos.</span></div>` : "");
   const escolher = !CTX.animalId && !estado.receptor ? `<label class="larga">Animal do cadastro<select data-animal="1"><option value="">Escolha o animal</option>${ANIMAIS.map((a) => `<option value="${esc(a.id)}"${a.id === estado.animalId ? " selected" : ""}>${esc(a.nome + (a.resp ? " · " + a.resp : "") + (a.especie ? " · " + a.especie : ""))}</option>`).join("")}</select></label>` : "";
   const esp = ["Canina", "Felina"].includes(P.especie) || !P.especie ? sel('data-pa="especie"', P.especie, [["", "escolha"], ["Canina", "Canina"], ["Felina", "Felina"]]) : inp('data-pa="especie"', P.especie);
-  return `<div class="cx"><h3>Paciente</h3><div class="grade g4">${modoRec}${recentes}${escolher}${campo("Nome", inp('data-pa="nome"', P.nome), "larga")}${campo("Espécie", esp)}${campo("Raça", inp('data-pa="raca"', P.raca, 'autocomplete="off" placeholder="comece a digitar"'))}<label>Sexo${segm('data-a="sexo"', /^m/i.test(P.sexo) ? "M" : /^f/i.test(P.sexo) ? "F" : "", ["M", "F"])}</label>${campo("Idade", campoIdade(P.idade))}${estado.tipo === "idexx" || estado.receptor ? campo("Peso (kg)", inp('data-pa="peso" inputmode="decimal"', P.peso)) : ""}${campo("Microchip", inp('data-pa="microchip" inputmode="numeric"', P.microchip))}${estado.tipo === "tipagem" ? "" : campo("Tipo sanguíneo", inp('data-pa="tipo"', tipoSanguineoTxt(), 'placeholder="ex.: DEA 1 negativo · DAL positivo"'))}${campo("Responsável", inp('data-r="nome"', estado.resp.nome), "larga")}</div></div>`;
+  return `<div class="cx"><h3>Paciente</h3><div class="grade g4">${modoRec}${recentes}${escolher}${campo("Nome", inp('data-pa="nome"', P.nome), "larga")}${campo("Espécie", esp)}${campo("Raça", inp('data-pa="raca"', P.raca, 'autocomplete="off" placeholder="comece a digitar"'))}<label>Sexo${segm('data-a="sexo"', /^m/i.test(P.sexo) ? "M" : /^f/i.test(P.sexo) ? "F" : "", ["M", "F"])}</label>${campo("Idade", campoIdade(P.idade))}${estado.tipo === "idexx" || estado.receptor ? campo("Peso (kg)", inp('data-pa="peso" inputmode="decimal"', P.peso)) : ""}${campo("Microchip", inp('data-pa="microchip" inputmode="numeric"', P.microchip))}${estado.tipo === "tipagem" ? "" : campo("Tipo sanguíneo", campoTipo())}${campo("Responsável", inp('data-r="nome"', estado.resp.nome), "larga")}</div></div>`;
 }
 function caixaExame() {
   const X = estado.exame, lab = estado.tipo === "idexx" && !!X.labNome, idx = estado.tipo === "idexx" && !lab, ds = doacoesDoAnimal();
@@ -3533,12 +3545,13 @@ const setCaminho = (o, c, v) => { const p = c.split("."); let a = o; for (let i 
 function mudou(refazerForm) { sairSub(); if (salvo) { salvo = null; $("#salvo").hidden = true; const st = $("#st"); st.className = "st erro"; st.textContent = "O laudo mudou depois de assinado. Para valer, salve e assine de novo."; } marcarSujo(true); if (refazerForm) montarForm(); agendarPrevia(); }
 function ligar() {
   document.addEventListener("input", (ev) => {
-    const t = ev.target;
+    const t = ev.target; t._inp = Date.now();
     if (t.dataset.comtip) { const antes = tituloPadrao(); estado.tip = t.checked ? comTip0() : null; kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.dataset.comxm) { if (estado.tipo !== "tipagem") return; const antes = tituloPadrao(); estado.tip = estado.t; estado.tipo = "compat"; estado.t = novaCompat(); kitsNoLaudo(); if (estado.exame.titulo === antes) estado.exame.titulo = tituloPadrao(); return mudou(true); }
     if (t.closest && t.closest('[data-sub="tip"]')) entrarSub();
     if (t.dataset.x) { estado.exame[t.dataset.x] = t.dataset.x === "clinica" && /^\s*cvh\s*$/i.test(t.value) ? CLINICA_CVH : t.value; if (t.dataset.x === "doacao") { const d = acharDoacao(t.value); if (d && d.data && estado.tipo !== "idexx") { estado.exame.data = d.data; const i = $('[data-x="data"]'); if (i) i.value = d.data; } } }
     else if (t.dataset.rq != null && estado.tipo === "requisicao") { estado.t.linhas[+t.dataset.rq][1] = t.value; mudou(false); }
+    else if (t.dataset.tp) { estado.paciente.tipo = lerTipo(t); mudou(false); return; }
     else if (t.dataset.pa) { estado.paciente[t.dataset.pa] = t.value; if (t.dataset.pa === "especie" && estado.tipo) { const x = estado.t; if (estado.tipo === "tipagem" && !felino() && x.dea1 && !x.dea1.on && !x.dal.on) { x.dea1.on = true; x.dal.on = true; } kitsNoLaudo(); ajustarNota(); return mudou(true); } }
     else if (t.dataset.r) estado.resp[t.dataset.r] = t.value;
     else if (t.dataset.p) estado[t.dataset.p] = t.value;
@@ -3550,7 +3563,7 @@ function ligar() {
     else if (t.dataset.pvC) { estado.t.provas[+t.dataset.i][t.dataset.pvC] = t.value; if (t.dataset.pvC === "doador" && /^\d{1,6}-\d$/.test(t.value.trim())) preencherSegmentos(); }
     else if (t.dataset.exC) { const e = estado.t.exames.find((x) => x.id === +t.closest("[data-ex]").dataset.ex); if (!e) return; e[t.dataset.exC] = t.type === "checkbox" ? t.checked : t.value; if (t.type === "checkbox") { estado.exame.titulo = tituloPadrao(); return mudou(true); } }
     else if (t.dataset.vet) { const v = VETS.find((x) => x.id === t.value); if (v) estado.vet = { id: v.id, nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || "" }; }
-    else if (t.dataset.rcp) { estado.rcpSel = t.value; const r = RECEPTORES[+t.value]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
+    else if (t.dataset.rcp) { estado.rcpSel = t.value; const r = RECEPTORES[+t.value]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante", "solicitanteCrmv"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
     else if (t.dataset.rec) { estado.receptor = t.checked; if (t.checked) { estado.animalId = ""; estado.exame.doacao = ""; if (estado.vet && estado.exame.solicitante === estado.vet.nome) estado.exame.solicitante = ""; if (estado.exame.clinica === CLINICA_CVH) estado.exame.clinica = ""; } $("#salvo").hidden = true; return mudou(true); }
     else if (t.dataset.animal) { usarAnimal(t.value); ajustarNota(); return mudou(true); }
     else if (t.dataset.idn !== undefined || t.dataset.idu !== undefined) { const v = lerIdade(t); if (v == null) return; estado.paciente.idade = v; }
@@ -3563,6 +3576,8 @@ function ligar() {
   });
   document.addEventListener("change", async (ev) => {
     const t = ev.target;
+    // no iPhone a lista de opções pode mudar sem o evento "input": repete aqui o que o "input" faria
+    if (t.tagName === "SELECT" && !(t._inp && Date.now() - t._inp < 400)) { t.dispatchEvent(new Event("input", { bubbles: true })); return; }
     if (t.id === "arq" && t.files.length) {
       const st = $("#stLer"); st.className = "st"; st.textContent = "Lendo o PDF…";
       try { const fs = [...t.files], somar = t.dataset.somar === "1" && estado.lido && LIDOS.length; t.dataset.somar = "";
@@ -3704,15 +3719,29 @@ document.addEventListener("keydown", (e) => {
 let JSQR = null, CAM_FIM = null;
 const toast = (m) => { const st = $("#st"); if (st) { st.className = "st"; st.textContent = m; } };
 function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+// câmera aberta uma vez e reaproveitada por 2 minutos: leituras seguidas não pedem autorização de novo nem esperam o foco outra vez
+const CAMV = { fluxo: null, timer: null };
+async function camPegar() {
+  clearTimeout(CAMV.timer);
+  if (CAMV.fluxo && CAMV.fluxo.getVideoTracks().some((x) => x.readyState === "live")) return CAMV.fluxo;
+  const f = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+  const tr = f.getVideoTracks()[0]; let cap = {}; try { cap = tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) {}
+  const adv = {}; if (cap.focusMode && cap.focusMode.includes("continuous")) adv.focusMode = "continuous"; if (cap.zoom && cap.zoom.max > 1) adv.zoom = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, 1.5));
+  try { if (Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); } catch (e) {}
+  CAMV.fluxo = f; return f;
+}
+function camSoltar(agora) { clearTimeout(CAMV.timer); const parar = () => { if (CAMV.fluxo) CAMV.fluxo.getTracks().forEach((x) => x.stop()); CAMV.fluxo = null; }; if (agora) parar(); else CAMV.timer = setTimeout(parar, 120000); }
+document.addEventListener("visibilitychange", () => { if (document.hidden) camSoltar(true); });
+window.addEventListener("pagehide", () => camSoltar(true));
 function lerQR(titulo) {
   return new Promise(async (resolve) => {
     const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
     let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
-    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (fluxo) camSoltar(); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
     CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
     $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
     $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
-    try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
+    try { fluxo = await camPegar(); if (!vivo) { camSoltar(); return; } v.srcObject = fluxo; await v.play(); }
     catch (e) { if (!vivo) return; toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
     try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
     let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }

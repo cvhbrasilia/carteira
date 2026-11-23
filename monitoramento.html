@@ -45,7 +45,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123210821';
+  var VERSAO = '20261123211612';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -166,6 +166,9 @@ async function abrir() {
   pintar();
 }
 const v = (k, o) => esc(((o || D)[k]) == null ? "" : (o || D)[k]);
+// tipo sanguíneo da bolsa só por opção (nada digitado)
+const TIPOS_BOLSA = ["", "DEA 1 negativo", "DEA 1 positivo", "DEA 1 negativo · DAL negativo", "DEA 1 negativo · DAL positivo", "DEA 1 positivo · DAL negativo", "DEA 1 positivo · DAL positivo", "Grupo A", "Grupo B", "Grupo AB"];
+const campoTipoBolsa = () => { const v = String(pega("bolsa.tipo") || ""), L = TIPOS_BOLSA.includes(v) ? TIPOS_BOLSA : TIPOS_BOLSA.concat([v]); return '<div><label>Tipo sanguíneo da bolsa</label><select data-p="bolsa.tipo">' + L.map((o) => '<option value="' + esc(o) + '"' + (o === v ? " selected" : "") + ">" + esc(o || "não informado") + "</option>").join("") + "</select></div>"; };
 const campo = (rot, path, extra) => '<div><label>' + rot + '</label><input data-p="' + path + '" value="' + esc(pega(path)) + '" ' + (extra || "") + "></div>";
 function pega(path) { return path.split(".").reduce((o, k) => (o == null ? "" : o[k]), D) ?? ""; }
 function poe(path, val) { const ks = path.split("."), last = ks.pop(); const o = ks.reduce((x, k) => (x[k] = x[k] || {}), D); o[last] = val; }
@@ -175,7 +178,7 @@ function pintar() {
   $("#app").innerHTML = '<h1>Ficha de monitoramento da transfusão</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + (F.unidade ? " · bolsa " + esc(F.unidade) : "") + "</div>" +
     '<div class="' + (lock ? "lock" : "") + '">' +
     '<div class="cx"><h2>Paciente</h2><div class="g2">' + campo("Nome", "paciente.nome") + campo("Espécie", "paciente.especie") + campo("Peso (kg)", "paciente.peso", 'inputmode="decimal"') + campo("Idade", "paciente.idade") + "</div>" + campo("Responsável", "responsavel") + campo("Indicação da transfusão", "indicacao") + "</div>" +
-    '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Componente", "bolsa.componente") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + campo("Tipo sanguíneo da bolsa", "bolsa.tipo") + "</div>" +
+    '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Componente", "bolsa.componente") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + campoTipoBolsa() + "</div>" +
       '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Não feita", "Incompatível"]) + '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" +
       '<label>Acesso</label>' + chips("acesso", ACESSOS) + '<div class="g3">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') + "</div>" +
       '<div class="g2">' + campo("Início", "inicio", 'type="time"') + campo("Término", "fim", 'type="time"') + "</div></div>" +
@@ -191,7 +194,7 @@ function pintar() {
 }
 function salvarDepois() { clearTimeout(tSalvar); tSalvar = setTimeout(async () => { try { await srv("monSalvar", T, D); st("Salvo"); } catch (e) { st(e.message, 4000); } }, 700); }
 function ligar() {
-  document.querySelectorAll("input[data-p]").forEach((el) => el.oninput = () => { const p = el.dataset.p; if (/^htPos\./.test(p)) { D.htPos[+p.split(".")[1]] = el.value; } else poe(p, el.value); salvarDepois(); });
+  document.querySelectorAll("input[data-p],select[data-p]").forEach((el) => el.oninput = el.onchange = () => { const p = el.dataset.p; if (/^htPos\./.test(p)) { D.htPos[+p.split(".")[1]] = el.value; } else poe(p, el.value); salvarDepois(); });
   document.querySelectorAll("input[data-s]").forEach((el) => el.oninput = () => { D.sinais[+el.dataset.s][el.dataset.k] = el.value; salvarDepois(); });
   document.querySelectorAll(".esc[data-c] button").forEach((b) => b.onclick = () => { const box = b.parentNode, p = box.dataset.c;
     if (box.dataset.multi) { const L = pega(p) || []; poe(p, L.includes(b.dataset.v) ? L.filter((x) => x !== b.dataset.v) : L.concat([b.dataset.v])); } else poe(p, pega(p) === b.dataset.v ? "" : b.dataset.v);
