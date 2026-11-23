@@ -21,9 +21,11 @@
   // fora do painel, o PDF leva a chave de PDFs da carteira (ou o código do termo): sem um link que ainda vale, o exame não abre
   var CHAVE_R = '';
   function linkResp() { try { var tt = new URLSearchParams(location.search).get('t') || ''; return (CHAVE_R ? '&fr=' + encodeURIComponent(CHAVE_R) : '') + (tt ? '&t=' + encodeURIComponent(tt) : ''); } catch (e) { return ''; } }
-  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : '') + (window.CVH_PAINEL ? '' : linkResp()); }
+  function arquivo(id) { if (!window.CVH_PAINEL) return API + '?arquivo=' + encodeURIComponent(id) + linkResp(); var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : ''); }
+  // links de arquivo do servidor chegam sem chave: cada tela põe a dela (painel: chave de arquivos; carteira: chave de PDFs)
+  var ARQ = new RegExp(API.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '\\?arquivo=([A-Za-z0-9_-]+)(?:&(?:s|fs|fr|t)=[^"&\\s#<]*)*', 'g');
   function reescrever(x) {
-    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (typeof x === 'string') { if (x.indexOf('drive.google.com') >= 0) x = x.replace(DRIVE, function (_, id) { return arquivo(id); }); return x.indexOf('?arquivo=') >= 0 ? x.replace(ARQ, function (_, id) { return arquivo(id); }) : x; }
     if (Array.isArray(x)) return x.map(reescrever);
     if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
     return x;
@@ -43,7 +45,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123154542';
+  var VERSAO = '20261123160930';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
