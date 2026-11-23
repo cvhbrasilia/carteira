@@ -529,18 +529,22 @@ function carregarZX(){if(window.ZXing)return Promise.resolve(window.ZXing);if(ZX
 function lerCodigoBarras(titulo){
   return new Promise(async resolve=>{
     const ov=document.createElement('div');ov.id='leitorCB';ov.innerHTML='<div class="lt"></div><video playsinline muted autoplay></video><div class="mira"></div><div class="lb"><input id="cbTxt" placeholder="ou digite o código" autocapitalize="characters"><button id="cbOk">Usar</button><button class="sec" id="cbSair">Voltar</button></div>';
-    ov.querySelector('.lt').textContent=titulo||'Aponte a câmera para o código de barras';document.body.appendChild(ov);
+    ov.querySelector('.lt').innerHTML=esc(titulo||'Aponte a câmera para o código de barras')+'<br><small style="font-weight:400;opacity:.8">Deixe o celular a uns 20 cm da etiqueta, com o código dentro do quadro. A imagem já vem aproximada.</small>';document.body.appendChild(ov);
     const v=ov.querySelector('video');let fluxo=null,vivo=true,det=null,zx=null;
     const fim=txt=>{if(!vivo)return;vivo=false;if(fluxo)fluxo.getTracks().forEach(x=>x.stop());ov.remove();if(txt&&navigator.vibrate)navigator.vibrate(60);resolve(txt?String(txt).trim():null);};
     ov.querySelector('#cbSair').onclick=()=>fim(null);ov.querySelector('#cbOk').onclick=()=>{const x=ov.querySelector('#cbTxt').value.trim();if(x)fim(x);};
     ov.querySelector('#cbTxt').onkeydown=e=>{if(e.key==='Enter')ov.querySelector('#cbOk').click();};
-    try{fluxo=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});v.srcObject=fluxo;await v.play();}
+    try{fluxo=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false});v.srcObject=fluxo;await v.play();
+      const tr=fluxo.getVideoTracks()[0];let cap={};try{cap=tr.getCapabilities?tr.getCapabilities():{};}catch(e){}
+      const adv={};if(cap.focusMode&&cap.focusMode.includes('continuous'))adv.focusMode='continuous';if(cap.zoom&&cap.zoom.max>1)adv.zoom=Math.min(cap.zoom.max,Math.max(cap.zoom.min||1,2));
+      try{if(Object.keys(adv).length)await tr.applyConstraints({advanced:[adv]});}catch(e){}
+      if(cap.torch){const lb=ov.querySelector('.lb'),bt=document.createElement('button');bt.className='sec';bt.textContent='Lanterna';let on=false;bt.onclick=async()=>{on=!on;try{await tr.applyConstraints({advanced:[{torch:on}]});}catch(e){}};lb.insertBefore(bt,lb.firstChild);}}
     catch(e){toast('Não consegui abrir a câmera. Digite o código.',5000);ov.querySelector('#cbTxt').focus();return;}
     const FMT=['code_128','code_39','ean_13','ean_8','itf','upc_a','qr_code','data_matrix'];
     try{if('BarcodeDetector' in window){const f=await BarcodeDetector.getSupportedFormats();const ok=FMT.filter(x=>f.includes(x));if(ok.length)det=new BarcodeDetector({formats:ok});}}catch(e){det=null;}
     if(!det){try{const Z=await carregarZX();const h=new Map();h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[Z.BarcodeFormat.CODE_128,Z.BarcodeFormat.CODE_39,Z.BarcodeFormat.EAN_13,Z.BarcodeFormat.EAN_8,Z.BarcodeFormat.ITF,Z.BarcodeFormat.QR_CODE,Z.BarcodeFormat.DATA_MATRIX]);h.set(Z.DecodeHintType.TRY_HARDER,true);const r=new Z.MultiFormatReader();r.setHints(h);const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
-      zx=()=>{const vw=v.videoWidth,vh=v.videoHeight;if(!vw)return null;const w=Math.min(1100,vw),k=w/vw,y0=Math.round(vh*.3),fh=Math.round(vh*.4);cv.width=w;cv.height=Math.round(fh*k);cx.drawImage(v,0,y0,vw,fh,0,0,cv.width,cv.height);try{return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText();}catch(e){return null;}};}catch(e){toast('Leitor indisponível. Digite o código.',5000);}}
-    const passo=async()=>{if(!vivo)return;try{if(v.readyState>=2){if(det){const r=await det.detect(v);if(r&&r[0]&&r[0].rawValue)return fim(r[0].rawValue);}else if(zx){const x=zx();if(x)return fim(x);}}}catch(e){}setTimeout(passo,det?120:180);};
+      let vez=0;zx=()=>{const vw=v.videoWidth,vh=v.videoHeight;if(!vw)return null;const todo=(vez++)%3===2,w=Math.min(todo?960:1280,vw),k=w/vw,y0=todo?0:Math.round(vh*.32),fh=todo?vh:Math.round(vh*.36);cv.width=w;cv.height=Math.round(fh*k);cx.drawImage(v,0,y0,vw,fh,0,0,cv.width,cv.height);try{return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText();}catch(e){try{return r.decodeWithState(new Z.BinaryBitmap(new Z.GlobalHistogramBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText();}catch(e2){return null;}}};}catch(e){toast('Leitor indisponível. Digite o código.',5000);}}
+    const passo=async()=>{if(!vivo)return;try{if(v.readyState>=2){if(det){const r=await det.detect(v);if(r&&r[0]&&r[0].rawValue)return fim(r[0].rawValue);}else if(zx){const x=zx();if(x)return fim(x);}}}catch(e){}setTimeout(passo,det?80:60);};
     passo();
   });
 }
@@ -549,9 +553,15 @@ function gs1(s){s=String(s||'').replace(/^\]C1|^\]d2|^\]Q3/,'');const o={};const
   while(i<s.length-2){const ai=s.slice(i,i+2);i+=2;if(fixo[ai]){const v=s.slice(i,i+fixo[ai]);i+=fixo[ai];if(ai==='17'&&/^\d{6}$/.test(v))o.validade=v.slice(2,4)+'/'+v.slice(0,2);if(s[i]===GS)i++;}
     else{let j=s.indexOf(GS,i);if(j<0)j=s.length;const v=s.slice(i,j);i=j+1;if(ai==='10')o.lote=v;}}
   return o;}
+// leitor de mão (USB ou Bluetooth) ou digitado com o identificador ISBT 128 na frente: tira sozinho
+document.addEventListener('change',e=>{const i=e.target;if(!i||!i.dataset||!i.dataset.scan)return;const v=i.value.trim();let n=v;if(/^[=&][^A-Za-z0-9]/.test(v))n=v.slice(2);else if(/^=[A-Za-z0-9]{5,}/.test(v))n=v.slice(1);if(n!==v){i.value=n;i.dispatchEvent(new Event('input',{bubbles:true}));}},true);
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-scanbt]');if(!b)return;e.preventDefault();const k=b.dataset.scanbt,i=document.getElementById('i_'+k);if(!i)return;
   const lb=(b.closest('.f,.campo,label,div')||{}).querySelector?((b.closest('.f')||b.parentNode.parentNode).querySelector('label,.lbl')||{}).textContent:'';
   let x=await lerCodigoBarras('Leia o código de barras'+(lb?' · '+String(lb).trim():''));if(!x)return;
+  // etiqueta da bolsa no padrão ISBT 128: o código começa com um identificador de 2 caracteres (&) lote da bolsa, =) fabricante e catálogo)
+  { const id2=x.slice(0,2);
+    if(k==='lote'&&id2==='=)'){toast('Este é o código do fabricante e catálogo da bolsa. Leia o código do lote, o que começa com &).',6000);return;}
+    if(/^[=&][^A-Za-z0-9]/.test(x))x=x.slice(2);else if(/^=[A-Za-z0-9]{5,}/.test(x))x=x.slice(1); }
   // etiqueta da bolsa no padrão GS1: (17) validade AAMMDD e (10) lote; preenche os dois
   if(k==='lote'){const g=gs1(x);if(g.lote||g.validade){if(g.validade){const iv=document.getElementById('i_validade');if(iv){iv.value=g.validade;iv.dispatchEvent(new Event('input',{bubbles:true}));iv.dispatchEvent(new Event('change',{bubbles:true}));}}if(g.lote)x=g.lote;}}
   i.value=x;i.dispatchEvent(new Event('input',{bubbles:true}));i.dispatchEvent(new Event('change',{bubbles:true}));toast('Código lido: '+x,2500);});
