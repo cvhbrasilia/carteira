@@ -504,6 +504,7 @@ a.btn{text-decoration:none}
 /* central de inteligência */
 .ci-ks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 14px}@media (max-width:700px){.ci-ks{grid-template-columns:1fr 1fr}}
 .ci-k{background:#fff;border:1px solid rgba(110,30,30,.12);border-top:4px solid var(--c);border-radius:14px;padding:12px}.ci-k b{display:block;font-size:30px;color:var(--c);line-height:1}.ci-k span{display:block;font-size:13.5px;font-weight:700;margin-top:6px}.ci-k small{display:block;font-size:12px;color:#7A6A62;margin-top:2px}
+.ci-min{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid #EADFD3}.ci-min:first-of-type{border-top:0}.ci-min>div{flex:1 1 220px}.ci-min small{display:block;color:#7A6A62;font-size:13px}.ci-min.baixo b{color:#A83D3D}.min-l{display:grid;grid-template-columns:1fr 1fr 1.3fr 64px 34px;gap:6px;margin-bottom:6px;align-items:center}.min-l select,.min-l input{padding:8px;border:1px solid #DCCDBE;border-radius:10px;background:#fff;font:inherit;min-width:0}
 .ci-g{display:grid;grid-template-columns:minmax(120px,190px) 1fr 70px;gap:10px;align-items:center;margin:8px 0;font-size:13.5px}.ci-g em{font-style:normal;font-weight:700;text-align:right;color:var(--vinho)}
 .ci-bar{position:relative;height:12px;background:#F5EFE7;border-radius:99px;overflow:hidden}.ci-bar i{position:absolute;left:0;top:0;bottom:0;background:#E9C9C2;border-radius:99px}.ci-bar i.ok{background:#2F7D4F}.ci-bar i.m{background:#A83D3D}
 .ci-graf{width:100%;height:auto;display:block}.ci-lg{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:4px;vertical-align:middle}.ci-lg.l{background:#5F130F;height:3px}.ci-lg.b{background:#E9C9C2}
@@ -869,7 +870,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123013709';
+  var VERSAO = '20261123014049';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3444,6 +3445,55 @@ function statusDoador(an) {
   return { an, sit, imp, pend, mot: [...new Set(mot)], ult: ult ? ult.data : '', libera, nDoa: doa.length, ult12, vacVenc: pv.some(p => p.tipo === 'vacina') };
 }
 const SIT_INT = { apto: ['Aptos para doar', '#2F7D4F'], intervalo: ['Aguardando intervalo', '#C49A6C'], pend: ['Com pendências', '#D08A2E'], imp: ['Possível impedimento', '#A83D3D'] };
+/* ── estoque mínimo e convocação de doadores aptos ── */
+const grupoTipo = (especie, tipo) => { const t = String(tipo || ''); if (/fel|gat/i.test(especie || '')) { const g = (t.match(/\b(AB|A|B)\b/) || [])[1]; return g ? 'Grupo ' + g : 'sem tipagem'; } return /neg/i.test(t) ? 'DEA 1 negativo' : /pos/i.test(t) ? 'DEA 1 positivo' : 'sem tipagem'; };
+const TIPOS_MIN = { cao: ['', 'DEA 1 negativo', 'DEA 1 positivo'], gato: ['', 'Grupo A', 'Grupo B', 'Grupo AB'] };
+const rotMin = m => m.componente + ' · ' + (m.especie === 'gato' ? 'gatos' : 'cães') + (m.tipo ? ' ' + m.tipo : '');
+function contaMin(m, linhas) {
+  const L = (linhas || []).filter(l => l.componente === m.componente && (/fel|gat/i.test(l.especie || '') ? 'gato' : 'cao') === m.especie && (!m.tipo || grupoTipo(l.especie, l.tipo) === m.tipo));
+  const n = k => L.filter(l => l.situacao === k).reduce((t, l) => t + l.n, 0);
+  return { disp: n('disponivel'), qua: n('quarentena'), res: n('reservada') };
+}
+function doadoresPara(m) {
+  const st = E.ciSt || [], h = hoje(), ok = x => (ehGato(x.an) ? 'gato' : 'cao') === m.especie && (!m.tipo || grupoTipo(x.an.especie, x.an.tipoSanguineo) === m.tipo);
+  return { aptos: st.filter(x => ok(x) && x.sit === 'apto'), logo: st.filter(x => ok(x) && x.sit === 'intervalo' && x.libera <= somaDiasIso(h, 14)).sort((a, b) => a.libera.localeCompare(b.libera)) };
+}
+async function pintarEstMinimo(recarregar) {
+  const el = $('#ciEst'); if (!el) return;
+  if (!E.estSaldo || recarregar) { try { E.estSaldo = await api('estSaldo', E.sessao); } catch (e) { el.innerHTML = '<h3>Estoque mínimo e convocação</h3><p class="nota">' + esc(/permiss/i.test(e.message) ? 'Precisa da permissão do Estoque para ver.' : e.message) + '</p>'; return; } }
+  const S = E.estSaldo, M = S.minimo || [];
+  const linha = (m, i) => { const c = contaMin(m, S.linhas), falta = Math.max(0, m.min - c.disp), D = doadoresPara(m);
+    return '<div class="ci-min' + (falta ? ' baixo' : '') + '"><div><b>' + esc(rotMin(m)) + '</b><small>' + c.disp + ' disponíve' + (c.disp === 1 ? 'l' : 'is') + ' de ' + m.min + ' no mínimo' + (c.qua ? ' · mais ' + c.qua + ' aguardando liberação' : '') + (c.res ? ' · ' + c.res + ' reservada' + (c.res === 1 ? '' : 's') : '') + '</small></div>' +
+      (falta ? '<span class="ci-st" style="--c:#A83D3D">faltam ' + falta + '</span><button class="btn peq" data-acao="ci-convocar" data-i="' + i + '">Convocar · ' + D.aptos.length + (D.aptos.length === 1 ? ' apto' : ' aptos') + '</button>' : '<span class="ci-st" style="--c:#2F7D4F">ok</span><button class="btn sec2 peq" data-acao="ci-convocar" data-i="' + i + '">Doadores · ' + D.aptos.length + '</button>') + '</div>'; };
+  const baixos = M.filter(m => contaMin(m, S.linhas).disp < m.min).length;
+  el.innerHTML = '<h3>Estoque mínimo e convocação</h3><p class="nota">' + (M.length ? (baixos ? baixos + (baixos === 1 ? ' item abaixo do mínimo.' : ' itens abaixo do mínimo.') : 'Tudo acima do mínimo.') + ' Conta só as bolsas disponíveis no CVH.' : 'Defina o estoque mínimo de cada hemocomponente e tipo. Quando cair abaixo, aparece aqui quem está apto para doar, com a mensagem pronta.') + '</p>' +
+    M.map(linha).join('') + (pode('admin') ? '<div class="acoes-form" style="margin-top:10px"><button class="btn sec2 peq" data-acao="ci-min-ed">' + (M.length ? 'Alterar o estoque mínimo' : 'Definir o estoque mínimo') + '</button></div>' : '');
+}
+function msgConvite(x, m) {
+  const rp = respDe(x.an) || {}, f = /f/i.test(String(x.an.sexo || '').slice(0, 1)), nome = x.an.nome;
+  const pn = (rp.nome || '').split(' ')[0];
+  return 'Olá' + (pn ? ', ' + pn : '') + '! Aqui é do CVH, banco de sangue veterinário. ' + (f ? 'A ' : 'O ') + nome + ' já pode doar de novo e estamos precisando de sangue ' + (m.tipo ? m.tipo : (m.especie === 'gato' ? 'felino' : 'canino')) + '. Podemos agendar a doação ' + (f ? 'dela' : 'dele') + ' para esta semana? Cada doação ajuda outros animais que precisam de transfusão. Obrigado!';
+}
+function folhaConvocar(i) {
+  const m = ((E.estSaldo || {}).minimo || [])[+i]; if (!m) return; const D = doadoresPara(m);
+  const item = (x, convite) => { const rp = respDe(x.an) || {}, w = zapTel(rp.telefone);
+    return '<div class="item"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc(rp.nome || 'sem responsável') + (rp.telefone ? ' · ' + esc(rp.telefone) : ' · sem telefone') + (x.ult ? ' · última doação ' + br(x.ult) : ' · sem doação registrada') + (!convite ? ' · liberado em ' + br(x.libera) : '') + '</small></div>' +
+      (convite && w ? '<a class="btn peq" target="_blank" rel="noopener" href="' + esc(w + '?text=' + encodeURIComponent(msgConvite(x, m))) + '">WhatsApp</a>' : '') + '</div>'; };
+  abrirFolha('Convocar · ' + rotMin(m), '<p class="nota">Aptos agora: intervalo cumprido, sem pendência e sem alerta. O WhatsApp abre com o convite pronto para o responsável. A liberação final continua sendo do médico veterinário na triagem.</p>' +
+    (D.aptos.length ? D.aptos.map(x => item(x, true)).join('') : '<p class="vazio-p">Nenhum doador apto agora para este tipo.</p>') +
+    (D.logo.length ? '<h4 style="margin:16px 0 4px">Liberados nos próximos 14 dias</h4>' + D.logo.map(x => item(x, false)).join('') : ''));
+}
+function folhaMinimo() {
+  const M = ((E.estSaldo || {}).minimo || []).map(x => Object.assign({}, x)); E.minEd = M.length ? M : [{ especie: 'cao', componente: 'CH', tipo: 'DEA 1 negativo', min: 2 }, { especie: 'cao', componente: 'CH', tipo: 'DEA 1 positivo', min: 2 }, { especie: 'cao', componente: 'PFC', tipo: '', min: 2 }, { especie: 'gato', componente: 'CH', tipo: '', min: 1 }];
+  abrirFolha('Estoque mínimo', '<p class="nota">Quantas bolsas disponíveis o CVH quer ter, no mínimo, de cada uma. "Qualquer tipo" soma todos os tipos sanguíneos da espécie.</p><div id="minLinhas"></div><div class="acoes-form"><button class="btn sec2 peq" data-acao="ci-min-mais">Acrescentar linha</button></div><div class="acoes-form"><button class="btn" data-acao="ci-min-ok">Salvar</button></div>');
+  pintarMinEd();
+}
+function pintarMinEd() {
+  const el = $('#minLinhas'); if (!el) return; const sel = (k, i, op, v) => '<select data-min="' + k + '" data-i="' + i + '">' + op.map(o => '<option value="' + esc(o[0]) + '"' + (o[0] === v ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>';
+  el.innerHTML = E.minEd.map((m, i) => '<div class="min-l">' + sel('especie', i, [['cao', 'Cães'], ['gato', 'Gatos']], m.especie) + sel('componente', i, ['CH', 'PFC', 'CP', 'CRIO', 'PPC'].map(c => [c, c]), m.componente) + sel('tipo', i, TIPOS_MIN[m.especie].map(t => [t, t || 'Qualquer tipo']), m.tipo) +
+    '<input type="number" min="0" max="99" inputmode="numeric" data-min="min" data-i="' + i + '" value="' + esc(m.min) + '" aria-label="Mínimo"><button class="mini" data-acao="ci-min-tirar" data-i="' + i + '" aria-label="Tirar">×</button></div>').join('');
+  el.querySelectorAll('[data-min]').forEach(c => c.onchange = () => { const m = E.minEd[+c.dataset.i]; m[c.dataset.min] = c.dataset.min === 'min' ? +c.value : c.value; if (c.dataset.min === 'especie') { m.tipo = ''; pintarMinEd(); } });
+}
 async function telaInteligencia() {
   E.livro = null;
   if (!E.alertas) { carregando('Calculando os indicadores'); try { await carregarAlertas(); } catch (_) { } }
@@ -3481,6 +3531,7 @@ async function telaInteligencia() {
       kpi(cnt('imp'), 'Possível impedimento', SIT_INT.imp[1], 'alerta urgente ou positivo') + kpi(st.filter(x => x.vacVenc).length, 'Vacinas vencidas', '#A83D3D') +
       kpi(st.filter(x => x.pend.some(p => /alerta|exame|revis/i.test(p)) || (E.alertas && ativos(E.alertas).some(a => a.animalId === x.an.id && a.nivel === 'normal'))).length, 'Exames para revisar', '#3F6E9E') +
       kpi(st.reduce((t, x) => t + x.ult12, 0), 'Doações em 12 meses', '#C49A6C') + '</div>' +
+    '<section class="cartao" id="ciEst"><h3>Estoque mínimo e convocação</h3><p class="nota">Calculando o estoque…</p></section>' +
     '<section class="cartao"><h3>Disponíveis por espécie e tipo sanguíneo</h3><p class="nota">Barra clara = doadores ativos. Barra verde = aptos agora.</p>' + (tabG || '<p class="vazio-p">Sem doadores ativos.</p>') + '</section>' +
     '<section class="cartao"><h3>Motivos mais frequentes de inaptidão</h3>' + (tabM || '<p class="vazio-p">Nenhum doador inapto agora.</p>') + '</section>' +
     '<section class="cartao"><h3>Evolução nos últimos 12 meses</h3><p class="nota"><i class="ci-lg l"></i>doadores ativos · <i class="ci-lg b"></i>doações no mês</p>' + graf + '</section>' +
@@ -3489,6 +3540,7 @@ async function telaInteligencia() {
     '<p class="nota">A situação é calculada com o cadastro, as fichas, os alertas laboratoriais e o intervalo de ' + INTERVALO_DOACAO_MESES + ' meses entre doações. A liberação final é sempre do médico veterinário.</p></div></main>';
   E.ciLinhas = st.map(x => ({ sit: x.sit, html: linhaD(x), ord: ordem[x.sit], nome: x.an.nome }));
   telaClasse('tela-ci');
+  E.ciSt = st; pintarEstMinimo();
 }
 
 /* ═════════════ busca global ═════════════ */
@@ -7525,6 +7577,11 @@ const ACOES = {
   'bg-registro': b => { const r = regPorId(b.dataset.id); if (!r) return; E.modulo = 'carteiras'; E.resp = (animalDe(r.animalId) || {}).responsavelId; E.previa = false; abrirCarteira(r.animalId, r.id); },
   'bg-receita': b => { E.modulo = 'receitas'; telaReceitas(b.dataset.id); },
   'bg-laudo': b => { E.modulo = 'laudos'; telaLaudos(b.dataset.id); },
+  'ci-convocar': b => folhaConvocar(b.dataset.i),
+  'ci-min-ed': () => folhaMinimo(),
+  'ci-min-mais': () => { E.minEd.push({ especie: 'cao', componente: 'CH', tipo: '', min: 1 }); pintarMinEd(); },
+  'ci-min-tirar': b => { E.minEd.splice(+b.dataset.i, 1); pintarMinEd(); },
+  'ci-min-ok': async b => { b.disabled = true; try { E.estSaldo.minimo = await api('estMinimoSalvar', E.sessao, E.minEd); fecharFolha(); toast('Estoque mínimo salvo.'); pintarEstMinimo(); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'ci-filtro': b => { $$('#ciF .filtro').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; $('#ciLista').innerHTML = E.ciLinhas.filter(x => v === 'todos' || x.sit === v).sort((a, c) => a.ord - c.ord || String(a.nome).localeCompare(String(c.nome))).map(x => x.html).join('') || '<p class="vazio-p">Nenhum doador nesta situação.</p>'; },
   'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div class="acoes-form"><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); },
   avisos: () => telaAvisos(E.animal),
