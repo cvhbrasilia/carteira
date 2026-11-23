@@ -946,7 +946,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123210221';
+  var VERSAO = '20261123210538';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5272,6 +5272,7 @@ function formReceptor(rc, pre) {
       $('#rcSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
         const o = { id: rc ? rc.id : '', nome: vl('rcNome'), especie: vl('rcEsp'), raca: vl('rcRaca'), sexo: vl('rcSexo'), idade: vl('rcIdade'), peso: vl('rcPeso'), tipo: vl('rcTipo'), transfundido: vl('rcTransf'), microchip: vl('rcChip'), responsavel: vl('rcResp'), telefone: vl('rcTel'), clinica: vl('rcClin'), veterinario: vl('rcVet'), crmv: vl('rcCrmv'), obs: vl('rcObs'), fontes: lig.map(f => f.k) };
         const r = await api('estReceptorSalvar', E.sessao, o); E.rec = [r].concat((E.rec || []).filter(x => x.id !== r.id)); fecharFolha(); toast(rc ? 'Receptor atualizado.' : 'Receptor cadastrado.');
+        if (E.recNovoCb) { const cb = E.recNovoCb; E.recNovoCb = null; cb(r); }
         if (E.modulo === 'receptores') pintarReceptores($('#buscaRec') ? $('#buscaRec').value : '');
       });
       const ap = $('#rcApagar'); if (ap) ap.onclick = ev => { if (!confirm('Apagar o cadastro de ' + d.nome + '? Os laudos e pedidos continuam guardados.')) return; salvando(ev.currentTarget, async () => { await api('estReceptorExcluir', E.sessao, rc.id); E.rec = E.rec.filter(x => x.id !== rc.id); fecharFolha(); pintarReceptores(''); }); };
@@ -6766,6 +6767,11 @@ const PONTE = {
   receptorGuardar: o => { try { const k = 'cvh_receptores', L = JSON.parse(localStorage.getItem(k) || '[]'), ch = x => semAc(String(x.paciente && x.paciente.nome || '') + '|' + String(x.resp && x.resp.nome || '')).toLowerCase(); const out = [Object.assign({}, o, { em: new Date().toISOString() })].concat(L.filter(x => ch(x) !== ch(o))).slice(0, 40); localStorage.setItem(k, JSON.stringify(out)); return true; } catch (_) { return false; } },
   lerPdf: id => api('lerArquivoDrive', E.sessao, id),
   autoHistorico: r => { fimHistoricoSozinho(r || {}); return true; },
+  // laudo de receptor: abre o cadastro de receptores já preenchido; devolve o receptor no formato da lista do laudo
+  cadastrarReceptor: (pre) => new Promise(res => {
+    E.recNovoCb = rc => { const d = rc.dados || {}; res({ cadastro: rc.id, paciente: { nome: d.nome, especie: d.especie, raca: d.raca, sexo: d.sexo, idade: d.idade, peso: d.peso, microchip: d.microchip, tipo: d.tipo }, resp: { nome: d.responsavel }, exame: { clinica: d.clinica, solicitante: d.veterinario, solicitanteCrmv: d.crmv }, em: rc.atualizado }); };
+    formReceptor(null, Object.assign({}, pre || {}, { especie: /fel|gat/i.test((pre || {}).especie || '') ? 'Felina' : (pre || {}).especie ? 'Canina' : '' }));
+  }),
   revisaoAlerta: () => E.animal ? api('revisaoAlerta', E.sessao, E.animal).catch(() => null) : null,
   salvarHistorico: async (o, aidFixo) => {
     const an = animalDe(aidFixo || o.autoAid || E.animal);
