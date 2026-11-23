@@ -938,7 +938,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123142122';
+  var VERSAO = '20261123142601';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3310,7 +3310,7 @@ async function entrarPeloCelular() {
   clearInterval(QR_ENT); let c;
   try { c = await api('qrEntradaCriar', (navigator.userAgent.match(/(Windows|Mac OS X|Linux)[^;)]*/) || ['computador'])[0] + ' · ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })); } catch (e) { return toast(e.message, 5000); }
   const url = location.origin + location.pathname + '?aprovar=' + c.codigo;
-  raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>Entrar com o celular</h1><p>No celular em que você já entrou no painel, aponte a câmera para o QR Code e confirme com Face ID ou senha.</p><div style="width:240px;max-width:80vw;margin:12px auto">' + qrSvg(url).replace('<svg class="qr"', '<svg class="qr" style="width:100%;height:auto;display:block"') + '</div><p class="nota" id="qrSt">O QR Code vale 3 minutos.</p><button class="btn sec2" id="qrVoltar" style="min-width:200px">Voltar</button></div></main>';
+  raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>Entrar com o celular</h1><p>No celular, abra o app do Painel CVH e toque em <b>Entrar no computador</b>, embaixo de Minha conta. Aponte para o QR Code e confirme.</p><div style="width:240px;max-width:80vw;margin:12px auto">' + qrSvg(url).replace('<svg class="qr"', '<svg class="qr" style="width:100%;height:auto;display:block"') + '</div><p class="nota" id="qrSt">O QR Code vale 3 minutos.</p><button class="btn sec2" id="qrVoltar" style="min-width:200px">Voltar</button></div></main>';
   $('#qrVoltar').onclick = () => { clearInterval(QR_ENT); telaLogin(); };
   const fim = Date.now() + c.validoSeg * 1000;
   QR_ENT = setInterval(async () => {
@@ -3341,8 +3341,12 @@ async function lerQrComputador() {
 async function aprovarComputador(cod) {
   let info; try { info = await api('qrEntradaInfo', E.sessao, cod); } catch (e) { return toast(e.message, 6000); }
   if (info.estado !== 'aguardando') return toast('Este QR Code já foi usado.', 5000);
-  if (!confirm('Entrar no painel neste computador com o seu usuário?\n\n' + (info.aparelho || '') + '\n\nSó confirme se foi você que abriu o QR Code agora.')) return;
-  try { await api('qrEntradaAprovar', E.sessao, cod); toast('Pronto. O computador entrou com o seu usuário. Lembre de tocar em Sair lá ao terminar.', 7000); } catch (e) { toast(e.message, 6000); }
+  // mostra com qual usuário o computador vai entrar: o navegador do leitor de QR pode estar com outro usuário
+  abrirFolha('Entrar no computador', '<p>O computador vai entrar com o usuário <b>' + esc(E.u.nome) + '</b> (' + esc(E.u.usuario) + ').</p><p class="nota">' + esc(info.aparelho || '') + '. Só libere se foi você que abriu o QR Code agora.</p>' +
+    '<div class="acoes" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn" id="apLib">Liberar o computador</button><button class="btn sec2" id="apOutro">Não sou ' + esc(String(E.u.nome || '').split(' ')[0]) + '. Entrar com outro usuário</button></div>', () => {
+      $('#apLib').onclick = ev => salvando(ev.currentTarget, async () => { await api('qrEntradaAprovar', E.sessao, cod); fecharFolha(); toast('Pronto. O computador entrou com o seu usuário. Lembre de tocar em Sair lá ao terminar.', 7000); });
+      $('#apOutro').onclick = () => { fecharFolha(); E.sessao = null; try { localStorage.removeItem('cvh_s'); sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); history.replaceState(null, '', location.pathname + '?aprovar=' + cod); } catch (_) {} telaLogin(); };
+    });
 }
 // chave só de arquivos (12 h) para os links de PDF: pedida antes dos dados, porque os links são montados ao receber
 async function renovarChaveArquivos() { try { const f = await api('chaveArquivos', E.sessao); localStorage.setItem('cvh_fs', f); } catch (_) {} }
