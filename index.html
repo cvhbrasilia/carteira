@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123215528';
+  var VERSAO = '20261123220528';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3371,6 +3371,84 @@ async function entrarPeloCelular() {
 // ler o QR do computador pela câmera, de dentro do app (o app da tela de início tem a sua própria entrada, separada do Safari)
 let JSQR_P = null;
 function carregarJsQRP() { if (window.jsQR) return Promise.resolve(window.jsQR); if (JSQR_P) return JSQR_P; JSQR_P = new Promise((ok, erro) => { const s = document.createElement('script'); s.src = 'bibliotecas/jsQR.js'; s.onload = () => window.jsQR ? ok(window.jsQR) : erro(new Error('leitor')); s.onerror = () => { JSQR_P = null; erro(new Error('leitor')); }; document.head.appendChild(s); }); return JSQR_P; }
+// ── leitor de código de barras e QR do painel ──
+// A câmera fica no painel (não no módulo): o iPhone pede a autorização uma vez por abertura do app e a câmera fica pronta
+// por 10 minutos entre uma leitura e outra. A câmera tripla do iPhone (troca sozinha para a macro) foca de perto.
+const CAMP = { fluxo: null, timer: null };
+async function camPainel() {
+  clearTimeout(CAMP.timer);
+  if (CAMP.fluxo && CAMP.fluxo.getVideoTracks().some(x => x.readyState === 'live')) return CAMP.fluxo;
+  const base = { width: { ideal: 1920 }, height: { ideal: 1080 } }, md = navigator.mediaDevices;
+  let id = ''; try { id = localStorage.getItem('cvh_cam') || ''; } catch (_) {}
+  let f;
+  try { f = await md.getUserMedia({ video: id ? { ...base, deviceId: { exact: id } } : { ...base, facingMode: 'environment' }, audio: false }); }
+  catch (e) { if (!id) throw e; try { localStorage.removeItem('cvh_cam'); } catch (_) {} id = ''; f = await md.getUserMedia({ video: { ...base, facingMode: 'environment' }, audio: false }); }
+  if (!id) { try {
+    const L = (await md.enumerateDevices()).filter(d => d.kind === 'videoinput'), melhor = L.find(d => /tripla|triple/i.test(d.label)) || L.find(d => /dupla grande|dual wide/i.test(d.label));
+    if (melhor && melhor.deviceId) { const atual = (f.getVideoTracks()[0].getSettings() || {}).deviceId; if (atual !== melhor.deviceId) { f.getTracks().forEach(x => x.stop()); f = await md.getUserMedia({ video: { ...base, deviceId: { exact: melhor.deviceId } }, audio: false }); } try { localStorage.setItem('cvh_cam', melhor.deviceId); } catch (_) {} }
+  } catch (_) {} }
+  const tr = f.getVideoTracks()[0], virt = /tripla|triple|dupla grande|dual wide/i.test(tr.label || ''); let cap = {}; try { cap = tr.getCapabilities ? tr.getCapabilities() : {}; } catch (_) {}
+  const adv = {}; if (cap.focusMode && cap.focusMode.includes('continuous')) adv.focusMode = 'continuous'; if (cap.zoom && cap.zoom.max > 1) adv.zoom = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, virt ? 3 : 1.6));
+  try { if (Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); } catch (_) {}
+  CAMP.fluxo = f; return f;
+}
+function camPainelSoltar(agora) { clearTimeout(CAMP.timer); const parar = () => { if (CAMP.fluxo) CAMP.fluxo.getTracks().forEach(x => x.stop()); CAMP.fluxo = null; }; if (agora) parar(); else CAMP.timer = setTimeout(parar, 600000); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) camPainelSoltar(true); });
+let ZX_P = null;
+function carregarZXP() { if (window.ZXing) return Promise.resolve(window.ZXing); if (ZX_P) return ZX_P; ZX_P = new Promise((ok, erro) => { const s = document.createElement('script'); s.src = 'bibliotecas/zxing.min.js'; s.onload = () => window.ZXing ? ok(window.ZXing) : erro(new Error('leitor')); s.onerror = () => { ZX_P = null; erro(new Error('leitor')); }; document.head.appendChild(s); }); return ZX_P; }
+function lerCodigoPainel(titulo) {
+  return new Promise(async resolve => {
+    const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:#000;display:flex;flex-direction:column';
+    ov.innerHTML = '<div style="color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 8px;font-weight:700">' + esc(titulo || 'Aponte a câmera para o código') + '<br><small style="font-weight:400;opacity:.8">Deixe a etiqueta dentro do quadro, a uns 15 a 20 cm.</small></div>' +
+      '<div style="position:relative;flex:1;min-height:0"><video playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:10%;right:10%;top:34%;height:32%;border:3px solid rgba(255,255,255,.85);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.25)"></div></div>' +
+      '<div style="background:#F5EFE7;padding:12px 16px calc(14px + env(safe-area-inset-bottom));display:flex;flex-wrap:wrap;gap:8px"><input id="lcTxt" placeholder="Ou digite o código" style="flex:1 1 160px;min-width:0" autocapitalize="characters"><button class="btn" id="lcOk">OK</button><button class="btn sec2" id="lcLuz" hidden>Lanterna</button><button class="btn sec2" id="lcSair" style="flex:1 1 100%">Cancelar</button></div>';
+    document.body.appendChild(ov); const v = ov.querySelector('video'); let vivo = true, det = null, zx = null, jq = null, luz = false;
+    const fim = txt => { if (!vivo) return; vivo = false; if (luz && CAMP.fluxo) { try { CAMP.fluxo.getVideoTracks()[0].applyConstraints({ advanced: [{ torch: false }] }); } catch (_) {} } v.srcObject = null; ov.remove(); camPainelSoltar(); if (txt && navigator.vibrate) navigator.vibrate(60); resolve(txt ? String(txt).trim() : null); };
+    ov.querySelector('#lcSair').onclick = () => fim(null);
+    ov.querySelector('#lcOk').onclick = () => { const x = ov.querySelector('#lcTxt').value.trim(); if (x) fim(x); };
+    ov.querySelector('#lcTxt').onkeydown = e => { if (e.key === 'Enter') ov.querySelector('#lcOk').click(); };
+    let fl; try { fl = await camPainel(); if (!vivo) return; v.srcObject = fl; await v.play(); } catch (e) { if (vivo) { toast('Não consegui abrir a câmera. Digite o código.', 5000); ov.querySelector('#lcTxt').focus(); } return; }
+    const tr = fl.getVideoTracks()[0]; try { const cap = tr.getCapabilities ? tr.getCapabilities() : {}; if (cap.torch) { const b = ov.querySelector('#lcLuz'); b.hidden = false; b.onclick = async () => { luz = !luz; try { await tr.applyConstraints({ advanced: [{ torch: luz }] }); } catch (_) {} }; } } catch (_) {}
+    const FMT = ['code_128', 'code_39', 'ean_13', 'ean_8', 'itf', 'upc_a', 'qr_code', 'data_matrix'];
+    try { if ('BarcodeDetector' in window) { const f = await BarcodeDetector.getSupportedFormats(), ok = FMT.filter(x => f.includes(x)); if (ok.length) det = new BarcodeDetector({ formats: ok }); } } catch (_) { det = null; }
+    if (!det) {
+      try { const Z = await carregarZXP(), h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128, Z.BarcodeFormat.CODE_39, Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.ITF, Z.BarcodeFormat.QR_CODE, Z.BarcodeFormat.DATA_MATRIX]); h.set(Z.DecodeHintType.TRY_HARDER, true);
+        const r = new Z.MultiFormatReader(); r.setHints(h); const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true }); let vez = 0;
+        zx = () => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const todo = (vez++) % 3 === 2, w = Math.min(todo ? 960 : 1280, vw), k = w / vw, y0 = todo ? 0 : Math.round(vh * .32), fh = todo ? vh : Math.round(vh * .36); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, y0, vw, fh, 0, 0, cv.width, cv.height);
+          try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (_) { try { return r.decodeWithState(new Z.BinaryBitmap(new Z.GlobalHistogramBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (_2) { return null; } } }; } catch (_) { zx = null; }
+      try { jq = await carregarJsQRP(); } catch (_) { jq = null; }
+    }
+    const cq = document.createElement('canvas'), xq = cq.getContext('2d', { willReadFrequently: true }); let n = 0;
+    const passo = async () => {
+      if (!vivo) return;
+      try { if (v.readyState >= 2) {
+        if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) return fim(r[0].rawValue); }
+        else if (zx && (++n % 3 || !jq)) { const x = zx(); if (x) return fim(x); }
+        else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cq.width = w; cq.height = h; xq.drawImage(v, 0, 0, w, h); const r = jq(xq.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' }); if (r && r.data) return fim(r.data); }
+      } } catch (_) {}
+      setTimeout(passo, det ? 80 : 50);
+    };
+    passo();
+  });
+}
+// PDF no celular: vai pela folha de compartilhar do aparelho como arquivo (WhatsApp recebe só o PDF, sem o link "blob:" junto)
+async function entregarArquivo(nome, b64) {
+  const tipo = /\.csv$/i.test(nome) ? 'text/csv;charset=utf-8' : /\.png$/i.test(nome) ? 'image/png' : 'application/pdf', bytes = bytesDeB64(b64);
+  const baixar = () => { const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([bytes], { type: tipo })); l.download = nome; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 30000); return true; };
+  let arq = null; try { arq = new File([bytes], nome, { type: tipo.split(';')[0] }); } catch (_) { arq = null; }
+  if (!ehCelular() || !arq || !navigator.canShare || !navigator.canShare({ files: [arq] })) return baixar();
+  try { await navigator.share({ files: [arq] }); return true; }
+  catch (e) {
+    if (e && e.name === 'AbortError') return true;
+    // o aparelho pede um toque antes de compartilhar (o PDF demorou para ficar pronto): botão para enviar
+    return new Promise(res => {
+      abrirFolha('PDF pronto', '<p class="nota">' + esc(nome) + '</p><div class="mini-bts"><button class="btn" id="eaEnviar">Enviar o PDF</button><button class="btn sec2" id="eaAbrir">Abrir</button></div>', () => {
+        $('#eaEnviar').onclick = async () => { try { await navigator.share({ files: [arq] }); } catch (_) {} fecharFolha(); res(true); };
+        $('#eaAbrir').onclick = () => { fecharFolha(); baixar(); res(true); };
+      });
+    });
+  }
+}
 async function lerQrComputador() {
   const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;flex-direction:column';
   ov.innerHTML = '<div style="color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 10px;font-weight:700">Aponte para o QR Code na tela do computador</div><video playsinline muted autoplay style="flex:1;width:100%;object-fit:cover;min-height:0"></video><div style="padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#1c1412"><button class="btn sec2" style="width:100%">Voltar</button></div>';
@@ -5271,7 +5349,7 @@ function formReceptor(rc, pre) {
   abrirFolha(rc ? d.nome : 'Novo receptor', '<div class="grade">' +
     campo('rcNome', 'Nome do paciente', inp('rcNome', d.nome)) + campo('rcEsp', 'Espécie', sel('rcEsp', d.especie, ['Canina', 'Felina'])) + campo('rcRaca', 'Raça', inp('rcRaca', d.raca)) + campo('rcSexo', 'Sexo', sel('rcSexo', d.sexo, ['Macho', 'Fêmea'])) +
     campo('rcIdade', 'Idade', inp('rcIdade', d.idade)) + campo('rcPeso', 'Peso (kg)', inp('rcPeso', d.peso, 'inputmode="decimal"')) + campo('rcDea', 'Tipo sanguíneo', tipoMarcar(d.tipo)) + campo('rcTransf', 'Já transfundido', sel('rcTransf', d.transfundido, ['Sim', 'Não'])) +
-    campo('rcChip', 'Microchip', inp('rcChip', d.microchip)) + campo('rcResp', 'Responsável', inp('rcResp', d.responsavel)) + campo('rcTel', 'Telefone do responsável', inp('rcTel', d.telefone, 'inputmode="tel"')) + campo('rcClin', 'Clínica', inp('rcClin', d.clinica, 'list="lCliRc" autocomplete="off"') + '<datalist id="lCliRc"></datalist><small id="rcCliAv"></small>') +
+    campo('rcChip', 'Microchip', inp('rcChip', d.microchip)) + campo('rcAmostras', 'Números das etiquetas (amostras)', inp('rcAmostras', (d.amostras || []).join(', '), 'placeholder="ex.: 922-9"')) + campo('rcResp', 'Responsável', inp('rcResp', d.responsavel)) + campo('rcTel', 'Telefone do responsável', inp('rcTel', d.telefone, 'inputmode="tel"')) + campo('rcClin', 'Clínica', inp('rcClin', d.clinica, 'list="lCliRc" autocomplete="off"') + '<datalist id="lCliRc"></datalist><small id="rcCliAv"></small>') +
     campo('rcVet', 'Médico veterinário', inp('rcVet', d.veterinario)) + campo('rcCrmv', 'CRMV', inp('rcCrmv', d.crmv)) + campo('rcObs', 'Observações', '<textarea id="rcObs" rows="3">' + esc(d.obs || '') + '</textarea>', 'larga') +
     '</div><button class="btn" id="rcSalvar">' + (rc ? 'Salvar' : 'Cadastrar') + '</button>' + (rc && pode('admin') ? ' <button class="btn sec2" id="rcApagar">Apagar o cadastro</button>' : '') + hist, () => {
       tipoPorEspecie(); $('#rcEsp').addEventListener('change', tipoPorEspecie);
@@ -5285,7 +5363,7 @@ function formReceptor(rc, pre) {
       rcCli.addEventListener('input', avCli); rcCli.addEventListener('change', avCli);
       if (E.cliCache) encherCli(); else api('cliDados', E.sessao).then(r => { E.cliCache = r.clinicas || []; encherCli(); }).catch(() => {});
       $('#rcSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
-        const o = { id: rc ? rc.id : '', nome: vl('rcNome'), especie: vl('rcEsp'), raca: vl('rcRaca'), sexo: vl('rcSexo'), idade: vl('rcIdade'), peso: vl('rcPeso'), tipo: tipoMarcado(), transfundido: vl('rcTransf'), microchip: vl('rcChip'), responsavel: vl('rcResp'), telefone: vl('rcTel'), clinica: vl('rcClin'), veterinario: vl('rcVet'), crmv: vl('rcCrmv'), obs: vl('rcObs'), fontes: lig.map(f => f.k) };
+        const o = { id: rc ? rc.id : '', nome: vl('rcNome'), especie: vl('rcEsp'), raca: vl('rcRaca'), sexo: vl('rcSexo'), idade: vl('rcIdade'), peso: vl('rcPeso'), tipo: tipoMarcado(), amostras: vl('rcAmostras').split(/[,;\s]+/).filter(Boolean), transfundido: vl('rcTransf'), microchip: vl('rcChip'), responsavel: vl('rcResp'), telefone: vl('rcTel'), clinica: vl('rcClin'), veterinario: vl('rcVet'), crmv: vl('rcCrmv'), obs: vl('rcObs'), fontes: lig.map(f => f.k) };
         const r = await api('estReceptorSalvar', E.sessao, o); E.rec = [r].concat((E.rec || []).filter(x => x.id !== r.id)); fecharFolha(); toast(rc ? 'Receptor atualizado.' : 'Receptor cadastrado.');
         if (E.recNovoCb) { const cb = E.recNovoCb; E.recNovoCb = null; cb(r); }
         if (E.modulo === 'receptores') pintarReceptores($('#buscaRec') ? $('#buscaRec').value : '');
@@ -6630,7 +6708,7 @@ async function abrirModulo(nome, aid, rid) {
   }
   if (nome === 'laudos') {
     E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.idade = an && an.nascimento ? idade(an.nascimento) : ''; E.ponte.peso = an ? pesoAtual(an.id) : ''; E.ponte.animalId = aid || '';
-    E.ponte.tipo = E.laudoTipo || ''; E.laudoTipo = null; E.ponte.pdfLab = E.laudoPdfLab || null; E.laudoPdfLab = null; E.ponte.edicao = E.laudoEdicao || null; E.laudoEdicao = null; try { E.ponte.receptores = JSON.parse(localStorage.getItem('cvh_receptores') || '[]'); } catch (_) { E.ponte.receptores = []; } E.ponte.receptores = (E.rec || []).map(rc => { const d = rc.dados || {}; return { cadastro: rc.id, paciente: { nome: d.nome, especie: d.especie, raca: d.raca, sexo: d.sexo, idade: d.idade, peso: d.peso, microchip: d.microchip, tipo: d.tipo }, resp: { nome: d.responsavel }, exame: { clinica: d.clinica, solicitante: d.veterinario, solicitanteCrmv: d.crmv }, em: rc.atualizado }; }).concat(E.ponte.receptores.filter(r => !(E.rec || []).some(rc => semAc(rc.dados.nome) === semAc((r.paciente || {}).nome) && semAc(String(rc.dados.responsavel || '').split(' ')[0]) === semAc(String((r.resp || {}).nome || '').split(' ')[0]))));
+    E.ponte.tipo = E.laudoTipo || ''; E.laudoTipo = null; E.ponte.pdfLab = E.laudoPdfLab || null; E.laudoPdfLab = null; E.ponte.edicao = E.laudoEdicao || null; E.laudoEdicao = null; try { E.ponte.receptores = JSON.parse(localStorage.getItem('cvh_receptores') || '[]'); } catch (_) { E.ponte.receptores = []; } E.ponte.receptores = (E.rec || []).map(rc => { const d = rc.dados || {}; return { cadastro: rc.id, amostras: d.amostras || [], paciente: { nome: d.nome, especie: d.especie, raca: d.raca, sexo: d.sexo, idade: d.idade, peso: d.peso, microchip: d.microchip, tipo: d.tipo }, resp: { nome: d.responsavel }, exame: { clinica: d.clinica, solicitante: d.veterinario, solicitanteCrmv: d.crmv }, em: rc.atualizado }; }).concat(E.ponte.receptores.filter(r => !(E.rec || []).some(rc => semAc(rc.dados.nome) === semAc((r.paciente || {}).nome) && semAc(String(rc.dados.responsavel || '').split(' ')[0]) === semAc(String((r.resp || {}).nome || '').split(' ')[0]))));
     // quem não é médico veterinário pode liberar o laudo assinado pelo médico veterinário escolhido
     if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; } E.ponte.kits = (E.d.config || {}).kits || {}; E.ponte.racasCao = RACAS_CAO; E.ponte.racasGato = RACAS_GATO; E.ponte.receptor = !an && !!E.laudoReceptor; E.laudoReceptor = false; E.ponte.pedido = E.laudoPedido || null; E.laudoPedido = null;
     // doações (salvas e em andamento) para reconhecer o número da coleta nos PDFs da IDEXX e da TECSA
@@ -6790,9 +6868,11 @@ const PONTE = {
   autoHistorico: r => { fimHistoricoSozinho(r || {}); return true; },
   // laudo de receptor: abre o cadastro de receptores já preenchido; devolve o receptor no formato da lista do laudo
   cadastrarReceptor: (pre) => new Promise(res => {
-    E.recNovoCb = rc => { const d = rc.dados || {}; res({ cadastro: rc.id, paciente: { nome: d.nome, especie: d.especie, raca: d.raca, sexo: d.sexo, idade: d.idade, peso: d.peso, microchip: d.microchip, tipo: d.tipo }, resp: { nome: d.responsavel }, exame: { clinica: d.clinica, solicitante: d.veterinario, solicitanteCrmv: d.crmv }, em: rc.atualizado }); };
+    E.recNovoCb = rc => { const d = rc.dados || {}; res({ cadastro: rc.id, amostras: d.amostras || [], paciente: { nome: d.nome, especie: d.especie, raca: d.raca, sexo: d.sexo, idade: d.idade, peso: d.peso, microchip: d.microchip, tipo: d.tipo }, resp: { nome: d.responsavel }, exame: { clinica: d.clinica, solicitante: d.veterinario, solicitanteCrmv: d.crmv }, em: rc.atualizado }); };
     formReceptor(null, Object.assign({}, pre || {}, { especie: /fel|gat/i.test((pre || {}).especie || '') ? 'Felina' : (pre || {}).especie ? 'Canina' : '' }));
   }),
+  lerCodigo: (titulo) => lerCodigoPainel(titulo),
+  receptorAmostra: (id, num) => api('estReceptorAmostra', E.sessao, id, num).then(d => { const r = (E.rec || []).find(x => x.id === id); if (r && d) r.dados = d; return true; }),
   revisaoAlerta: () => E.animal ? api('revisaoAlerta', E.sessao, E.animal).catch(() => null) : null,
   salvarHistorico: async (o, aidFixo) => {
     const an = animalDe(aidFixo || o.autoAid || E.animal);
@@ -6825,7 +6905,8 @@ const PONTE = {
     return pr;
   },
   cep: c => api('apiCep', c),
-  baixar: (nome, b64) => { const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([bytesDeB64(b64)], { type: /\.csv$/i.test(nome) ? 'text/csv;charset=utf-8' : /\.png$/i.test(nome) ? 'image/png' : 'application/pdf' })); l.download = nome; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 30000); return true; },
+  baixar: (nome, b64) => entregarArquivo(nome, b64),
+  baixarAntigo: (nome, b64) => { const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([bytesDeB64(b64)], { type: /\.csv$/i.test(nome) ? 'text/csv;charset=utf-8' : /\.png$/i.test(nome) ? 'image/png' : 'application/pdf' })); l.download = nome; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(l.href), 30000); return true; },
   voltarReceitas: () => { E.modSujo = false; sairModulo(); return true; },
   voltarLaudos: () => { E.modSujo = false; sairModulo(); return true; },
   abrirHistorico: () => { const aid = E.animal; if (!aid || !pode('historico')) throw new Error('Sem acesso ao Histórico Laboratorial.'); E.modSujo = false; E.ponte = null; E.modAberto = null; E.modulo = 'historico'; abrirModulo('historico', aid); return true; },

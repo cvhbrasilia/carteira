@@ -549,6 +549,12 @@ async function camPegar() {
 function camSoltar(agora){clearTimeout(CAMV.timer);const parar=()=>{if(CAMV.fluxo)CAMV.fluxo.getTracks().forEach(x=>x.stop());CAMV.fluxo=null;};if(agora)parar();else CAMV.timer=setTimeout(parar,300000);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)camSoltar(true);});window.addEventListener('pagehide',()=>camSoltar(true));
 function lerCodigoBarras(titulo){
+  // dentro do painel, a leitura é feita pelo painel (a autorização da câmera vale para o app aberto, não só para esta ficha)
+  let noPainel=false;try{noPainel=window.parent!==window&&typeof window.parent.CVH_PONTE==='function';}catch(e){}
+  if(noPainel)return Promise.resolve().then(()=>window.parent.CVH_PONTE('lerCodigo',[titulo])).catch(()=>lerCodigoBarrasLocal(titulo));
+  return lerCodigoBarrasLocal(titulo);
+}
+function lerCodigoBarrasLocal(titulo){
   return new Promise(async resolve=>{
     const ov=document.createElement('div');ov.id='leitorCB';ov.innerHTML='<div class="lt"></div><video playsinline muted autoplay></video><div class="mira"></div><div class="lb"><input id="cbTxt" placeholder="ou digite o código" autocapitalize="characters"><button id="cbOk">Usar</button><button class="sec" id="cbSair">Voltar</button></div>';
     ov.querySelector('.lt').innerHTML=esc(titulo||'Aponte a câmera para o código de barras')+'<br><small style="font-weight:400;opacity:.8">Deixe o celular a uns 20 cm da etiqueta, com o código dentro do quadro. A imagem já vem aproximada.</small>';document.body.appendChild(ov);

@@ -2216,7 +2216,8 @@ const rotuloData = () => estado.tipo === "idexx" && !estado.exame.labNome ? "An�
 // tipo sanguíneo só por opção (nada digitado): cão DEA 1 e DAL; gato grupo A, B ou AB
 const partesTipo = (s) => { s = String(s || ""); return { dea: /dea\s*1\s*(\+|pos)/i.test(s) ? "positivo" : /dea\s*1\s*(-|–|−|neg)/i.test(s) ? "negativo" : "", dal: /dal\s*(\+|pos)/i.test(s) ? "positivo" : /dal\s*(-|–|−|neg)/i.test(s) ? "negativo" : "", gato: ((s.match(/\b(AB|A|B)\b/) || [])[1] || "") }; };
 // receptor do cadastro (ou de um laudo recente) carregado no laudo: paciente, responsável, clínica e solicitante
-function aplicarReceptor(i) { estado.rcpSel = String(i); const r = RECEPTORES[+i]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; ["clinica", "solicitante", "solicitanteCrmv"].forEach((k) => { if (!X[k] && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
+function aplicarReceptor(i) { estado.rcpSel = String(i); const r = RECEPTORES[+i]; if (!r) return; Object.assign(estado.paciente, r.paciente || {}); estado.resp.nome = (r.resp && r.resp.nome) || estado.resp.nome; const X = estado.exame, RX = r.exame || {}; // cadastro do receptor vale mais que o que ficou de outro paciente; de um laudo recente, só completa o que está vazio
+["clinica", "solicitante", "solicitanteCrmv"].forEach((k) => { if ((r.cadastro || !X[k]) && RX[k]) X[k] = RX[k]; }); if (!X.amostra && RX.amostra) X.amostra = RX.amostra; $("#st").className = "st"; $("#st").textContent = "Dados de " + (estado.paciente.nome || "paciente") + " carregados do último laudo."; return mudou(true); }
 // nome digitado de um receptor já cadastrado: sugere o cadastro e, com o nome completo igual, carrega sozinho
 function sugerirReceptor(nome, final) {
   const box = $("#rcpSug"); if (!estado.receptor) return; const n = semAc(nome).trim();
@@ -3534,7 +3535,8 @@ async function salvar() {
     const fora = dados.resumo.filter((r) => r.alerta).map((r) => r.nome);
     const origens = (estado.tipo === "idexx" || estado.tipo === "tecsa") ? (estado.origens || []) : [];
     const res = await ponte("salvarLaudo", { receptor: !!estado.receptor, labIds: estado.labIds || [], regId: estado.regId || "", rascunhoId: estado.rascunhoId || "", edicao: (() => { try { return serializar(); } catch (_) { return ""; } })(), origens, vetId: (estado.vet && estado.vet.id) || "", animalId: estado.animalId, data: estado.exame.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora }, a4: { nome: nomeBase() + ".pdf", b64: b64De(a4) }, cel: { nome: nomeBase() + " smartphone.pdf", b64: b64De(cel) }, fotos: fotosParaGuardar() });
-    salvo.res = res; if (res && res.id) estado.regId = res.id; estado.assinadoAntes = true; await contarKits(); marcarSujo(false); renderPrevia(); mostrarSalvo(res); st.textContent = "";
+    salvo.res = res; if (res && res.id) estado.regId = res.id;
+    { const rc = RECEPTORES[+estado.rcpSel], num = String(estado.exame.amostra || "").trim(); if (estado.receptor && rc && rc.cadastro && num && !(rc.amostras || []).includes(num)) ponte("receptorAmostra", rc.cadastro, num).then(() => { rc.amostras = (rc.amostras || []).concat([num]); }, () => {}); } estado.assinadoAntes = true; await contarKits(); marcarSujo(false); renderPrevia(); mostrarSalvo(res); st.textContent = "";
   } catch (e) { salvo = null; bt.disabled = false; st.className = "st erro"; st.textContent = "Não consegui salvar. " + (e.message || e); renderPrevia(); }
 }
 // fotos do plasma e dos cartões de gel ficam guardadas com o laudo (privadas), mesmo as que não saem no PDF
@@ -3614,6 +3616,7 @@ function ligar() {
     // no iPhone a lista de opções pode mudar sem o evento "input": repete aqui o que o "input" faria
     if (t.tagName === "SELECT" && !(t._inp && Date.now() - t._inp < 400)) { t.dispatchEvent(new Event("input", { bubbles: true })); return; }
     if (t.dataset && t.dataset.pa === "nome" && estado.receptor) { sugerirReceptor(t.value, true); return; }
+    if (t.dataset && t.dataset.x === "amostra" && estado.receptor) { const num = String(t.value || "").trim(), ir = num ? RECEPTORES.findIndex((r) => r.cadastro && (r.amostras || []).includes(num)) : -1; if (ir >= 0 && estado.rcpSel !== String(ir)) { aplicarReceptor(ir); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Amostra " + num + ": cadastro de " + (RECEPTORES[ir].paciente || {}).nome + " carregado. Confira."; } } return; }
     if (t.id === "arq" && t.files.length) {
       const st = $("#stLer"); st.className = "st"; st.textContent = "Lendo o PDF…";
       try { const fs = [...t.files], somar = t.dataset.somar === "1" && estado.lido && LIDOS.length; t.dataset.somar = "";
@@ -3661,7 +3664,7 @@ function ligar() {
       const P = estado.paciente, X = estado.exame, st = $("#stRcp");
       try {
         const r = await ponte("cadastrarReceptor", { nome: P.nome || "", especie: P.especie || "", raca: P.raca || "", sexo: P.sexo || "", idade: P.idade || "", peso: P.peso || "", microchip: P.microchip || "", tipo: tipoSanguineoTxt() || "",
-          responsavel: (estado.resp || {}).nome || "", clinica: X.clinica || "", veterinario: X.solicitante || "", crmv: X.solicitanteCrmv || "" });
+          responsavel: (estado.resp || {}).nome || "", clinica: X.clinica || "", veterinario: X.solicitante || "", crmv: X.solicitanteCrmv || "", amostras: X.amostra ? [X.amostra] : [] });
         if (r) { RECEPTORES.unshift(r); estado.rcpSel = "0"; montarForm(); const s2 = $("#stRcp"); if (s2) s2.textContent = " Receptor cadastrado."; }
       } catch (e) { if (st) { st.className = "nota erro"; st.textContent = " " + (e.message || e); } }
     }
@@ -3780,6 +3783,12 @@ function camSoltar(agora) { clearTimeout(CAMV.timer); const parar = () => { if (
 document.addEventListener("visibilitychange", () => { if (document.hidden) camSoltar(true); });
 window.addEventListener("pagehide", () => camSoltar(true));
 function lerQR(titulo) {
+  // dentro do painel, a leitura é feita pelo painel (a autorização da câmera vale para o app aberto, não só para este laudo)
+  let noPainel = false; try { noPainel = window.parent !== window && typeof window.parent.CVH_PONTE === "function"; } catch (e) {}
+  if (noPainel) return ponte("lerCodigo", titulo).then((x) => { if (x) bipe(true); return x; }, () => lerQRLocal(titulo));
+  return lerQRLocal(titulo);
+}
+function lerQRLocal(titulo) {
   return new Promise(async (resolve) => {
     const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
     let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
@@ -3832,7 +3841,10 @@ function lidoLeitor(c) {
   if (!estado.tipo) { bipe(false); return msg("Escolha o tipo de laudo antes de ler a etiqueta.", true); }
   // etiqueta do tubo da amostra (sistema da Intensivet e outros): o código vem com símbolos de controle e sem o hífen ("!9202" = 920-2)
   const limpo = String(c || "").replace(/^[^0-9A-Za-z]+|[^0-9A-Za-z]+$/g, "").trim();
-  if (/^\d{2,8}$/.test(limpo)) { const num = limpo.slice(0, -1) + "-" + limpo.slice(-1), f = aplicarEtiqueta({ amostra: num }); bipe(); mudou(true); return msg("Etiqueta lida: amostra " + num + ". Confira com o número impresso no tubo."); }
+  if (/^\d{2,8}$/.test(limpo)) { const num = limpo.slice(0, -1) + "-" + limpo.slice(-1), f = aplicarEtiqueta({ amostra: num }); bipe();
+    const ir = estado.receptor ? RECEPTORES.findIndex((r) => r.cadastro && (r.amostras || []).includes(num)) : -1;
+    if (ir >= 0) { aplicarReceptor(ir); estado.exame.amostra = num; mudou(true); return msg("Etiqueta " + num + ": cadastro de " + (RECEPTORES[ir].paciente || {}).nome + " carregado. Confira."); }
+    mudou(true); return msg("Etiqueta lida: amostra " + num + ". Confira com o número impresso no tubo."); }
   c = limpo || c;
   const m = c.toUpperCase().replace(/\s+/g, " ").match(/^(\d{1,6}-\d{1,2})(?:\s+(CH|PFC|CRIO|CP|PPC|ST))?$/);
   if (estado.tipo === "compat" && m) {
