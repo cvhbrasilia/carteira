@@ -760,6 +760,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .chip-an{border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);font-weight:700;font-size:13px;border-radius:999px;padding:5px 11px}
 .chip-an span{font-weight:500;color:var(--tinta2);margin-left:4px}
+.asl.resp i{background:none;border:1.5px solid #C6B098;border-radius:50%}.asl.resp p b{color:#5F130F}
 .chip-an.rev-atualizado,.rev-op.rev-atualizado.on,.rev-f.rev-atualizado.on,.rev-pill.rev-atualizado{background:#C6B098;border-color:#C6B098;color:#5F130F}.chip-an.rev-atualizado span{color:#5a4636}
 .chip-an.rev-incompleto,.rev-op.rev-incompleto.on,.rev-f.rev-incompleto.on,.rev-pill.rev-incompleto{background:#C49A6C;border-color:#C49A6C;color:#3a1a0c}.chip-an.rev-incompleto span{color:#4a2a14}
 .chip-an.rev-positivo,.rev-op.rev-positivo.on,.rev-f.rev-positivo.on,.rev-pill.rev-positivo{background:#A83D3D;border-color:#A83D3D;color:#fff}.chip-an.rev-positivo span{color:#f3dcd6}
@@ -938,7 +939,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123143541';
+  var VERSAO = '20261123145302';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2483,25 +2484,32 @@ function cVacina(r, ult, ed) {
     '<div class="linha"><div><span class="rot">Revacinar em</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + carimbo(vetDe(r), -3) + '</div>' +
     assinaturaLinha(r) + '</article>';
 }
+// registro feito pelo próprio responsável: sem carimbo nem assinatura de médico veterinário
+const porResp = r => !!(r && r.dados && r.dados.porResponsavel);
+const respPode = () => E.modo !== 'painel' && !!E.token && !(E.d && E.d.temporario);
+function notaResp(r) {
+  const d = r.dados || {};
+  return '<div class="asl resp"><i></i><p><b>Realizado pelo responsável</b>Sem assinatura de médico veterinário' + (d.informadoPor ? ' · informado por ' + esc(d.informadoPor) : '') + '</p>' + (respPode() ? '<button class="mini" data-acao="resp-apagar" data-id="' + r.id + '" style="margin-top:6px">Apagar este registro</button>' : '') + '</div>';
+}
 function cVerm(r, ult, ed) {
   const d = r.dados || {}, novo = ult.has(r.id);
   return '<article class="reg' + (novo ? '' : ' antigo') + '" data-id="' + r.id + '">' + (ed ? btnEd(r) : '') +
     '<div class="linha"><div><span class="rot">Vermifugado em</span><b class="val">' + br(r.data) + '</b></div>' + (novo ? chip(r.proxima) : '<span class="chip neutro">Concluído</span>') + '</div>' +
     '<div class="g3"><div><span class="rot">Vermífugo</span><b class="val">' + esc(d.produto) + '</b></div><div><span class="rot">Dose</span><b class="val">' + esc(comprimidos(d.comprimidos)) + '</b></div><div><span class="rot">Peso</span><b class="val">' + esc(d.peso) + (d.peso ? ' <small>kg</small>' : '') + '</b></div></div>' +
-    '<div class="linha"><div class="g2">' + (d.reforco ? '<div><span class="rot">Reforço</span><b class="val"><span class="marcador">' + br(d.reforco) + '</span></b></div>' : '') + '<div><span class="rot">Próximo</span><b class="val">' + (br(r.proxima) || '·') + '</b></div></div>' + carimbo(vetDe(r), 2) + '</div>' +
-    assinaturaLinha(r) + '</article>';
+    '<div class="linha"><div class="g2">' + (d.reforco ? '<div><span class="rot">Reforço</span><b class="val"><span class="marcador">' + br(d.reforco) + '</span></b></div>' : '') + '<div><span class="rot">Próximo</span><b class="val">' + (br(r.proxima) || '·') + '</b></div></div>' + (porResp(r) ? '' : carimbo(vetDe(r), 2)) + '</div>' +
+    (porResp(r) ? notaResp(r) : assinaturaLinha(r)) + '</article>';
 }
 function cEcto(r, ult, ed) {
   const d = r.dados || {}, novo = ult.has(r.id);
   return '<article class="reg' + (novo ? '' : ' antigo') + '" data-id="' + r.id + '">' + (ed ? btnEd(r) : '') +
     '<div class="linha"><div><span class="rot">Aplicado em</span><b class="val">' + br(r.data) + '</b></div>' + (novo ? chip(r.proxima) : '<span class="chip neutro">Concluído</span>') + '</div>' +
     '<div class="g3"><div><span class="rot">Produto</span><b class="val">' + esc(d.produto) + '</b></div><div><span class="rot">Dose</span><b class="val">' + esc(d.dose || d.apresentacao) + '</b></div><div><span class="rot">Peso</span><b class="val">' + esc(d.peso) + (d.peso ? ' <small>kg</small>' : '') + '</b></div></div>' +
-    '<div class="linha"><div><span class="rot">Próxima dose</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + carimbo(vetDe(r), -2) + '</div>' +
-    assinaturaLinha(r) + '</article>';
+    '<div class="linha"><div><span class="rot">Próxima dose</span><b class="val">' + (br(r.proxima) || '·') + '</b></div>' + (porResp(r) ? '' : carimbo(vetDe(r), -2)) + '</div>' +
+    (porResp(r) ? notaResp(r) : assinaturaLinha(r)) + '</article>';
 }
 function cObs(r, ult, ed) {
   return '<article class="reg" data-id="' + r.id + '">' + (ed ? btnEd(r) : '') +
-    '<div><span class="rot">' + br(r.data) + '</span></div><p class="obs-txt">' + esc((r.dados || {}).texto) + '</p>' + assinatura(r) + '</article>';
+    '<div><span class="rot">' + br(r.data) + '</span></div><p class="obs-txt">' + esc((r.dados || {}).texto) + '</p>' + (porResp(r) ? notaResp(r) : assinatura(r)) + '</article>';
 }
 const IC_PDF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14h6M9 17h4"/></svg>';
 function cHist(r, ult, ed, maisRecente) {
@@ -2662,9 +2670,11 @@ function cartaoFisicoHtml(an) {
   return '<div class="cf-fis">' + (txt ? '<p>' + txt + '</p>' : '<p>Cartão de vacina em papel: não informado.</p>') +
     (vet ? '<div class="mini-bts"><button class="mini' + (cf === 'responsavel' ? ' on' : '') + '" data-acao="cartao-fisico" data-id="' + an.id + '" data-v="responsavel">Com o responsável</button><button class="mini' + (cf === 'cvh' ? ' on' : '') + '" data-acao="cartao-fisico" data-id="' + an.id + '" data-v="cvh">No CVH</button></div>' : '') + '</div>';
 }
-function pgSecao(an, s, cartoes, add) {
+const ADD_RESP = { vermifugo: 'Registrar vermífugo que você deu', ecto: 'Registrar antiparasitário que você aplicou', obs: 'Escrever uma observação' };
+function pgSecao(an, s, cartoes, add, addResp) {
   let corpo = '<div class="sec"><h2>' + s.titulo + '</h2></div>' + cartoes.join('');
   if (add) corpo += '<button class="add' + (cartoes.length ? '' : ' cheia') + '" data-add="' + s.t + '">+ ' + s.add + '</button>';
+  if (addResp && ADD_RESP[s.t]) corpo += '<button class="add' + (cartoes.length ? '' : ' cheia') + '" data-acao="resp-add" data-v="' + s.t + '">+ ' + ADD_RESP[s.t] + '</button>';
   return pagina(an, corpo);
 }
 function pgDoacao(an, r, n, ed) {
@@ -2696,12 +2706,13 @@ function montarPaginas(an, regs, ed) {
   const lt = paginasLinha(an, regs); if (lt.length) { abas.push({ t: 'linha', i: ps.length }); ps.push(...lt); }
   SECOES.forEach(s => {
     const exR = s.t === 'historico' ? examesRecentes(an.id) : [];
-    if (regs.some(r => r.tipo === s.t) || exR.length) abas.push({ t: s.t, i: ps.length });
+    const rAdd = respPode() && !!ADD_RESP[s.t];
+    if (regs.some(r => r.tipo === s.t) || exR.length || rAdd) abas.push({ t: s.t, i: ps.length });
     if (s.t === 'doacao' && an.doador !== '1' && !regs.some(r => r.tipo === 'doacao')) return;
     let lista = regs.filter(r => r.tipo === s.t).sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
     // histórico laboratorial: só a versão mais recente (as anteriores eram cópias com menos exames)
     if (s.t === 'historico' && lista.length > 1) lista = [lista.slice().sort((a, b) => String(a.data + (a.assinadoEm || '')).localeCompare(String(b.data + (b.assinadoEm || '')))).pop()];
-    if (!lista.length && !exR.length && (!ed || !s.add)) return;
+    if (!lista.length && !exR.length && (!ed || !s.add) && !rAdd) return;
     if (s.t === 'doacao') {
       lista.forEach((r, i) => ps.push(pgDoacao(an, r, i + 1, ed)));
       if (ed) ps.push(pgSecao(an, s, [], true));
@@ -2718,9 +2729,9 @@ function montarPaginas(an, regs, ed) {
     }
     for (let i = 0; i < lista.length; i += s.por) {
       const fatia = lista.slice(i, i + s.por), ultima = i + s.por >= lista.length;
-      ps.push(pgSecao(an, s, fatia.map(r => CARTAO[s.t](r, ult, ed)), !!s.add && ed && ultima && fatia.length < s.por));
+      ps.push(pgSecao(an, s, fatia.map(r => CARTAO[s.t](r, ult, ed)), !!s.add && ed && ultima && fatia.length < s.por, rAdd && ultima && fatia.length < s.por));
     }
-    if (s.add && ed && lista.length % s.por === 0) ps.push(pgSecao(an, s, [], true));
+    if ((s.add && ed || rAdd) && lista.length % s.por === 0) ps.push(pgSecao(an, s, [], !!s.add && ed, rAdd));
   });
   const out = ps.map((h, i) => i === 0 ? h : h.replace('{{PG}}', (i + 1) + ' / ' + ps.length));
   out.abas = abas;
@@ -3350,7 +3361,12 @@ async function aprovarComputador(cod) {
     });
 }
 // chave só de arquivos (12 h) para os links de PDF: pedida antes dos dados, porque os links são montados ao receber
-async function renovarChaveArquivos() { try { const f = await api('chaveArquivos', E.sessao); localStorage.setItem('cvh_fs', f); } catch (_) {} }
+async function renovarChaveArquivos() { try { const f = await api('chaveArquivos', E.sessao); localStorage.setItem('cvh_fs', f); localStorage.setItem('cvh_fs_em', String(Date.now())); } catch (_) {} }
+// app que ficou em segundo plano (o celular pausa os relógios): ao voltar, renova a chave dos PDFs antes de qualquer toque
+const chaveVelha = () => { try { return Date.now() - (+localStorage.getItem('cvh_fs_em') || 0) > 3 * 36e5; } catch (_) { return true; } };
+document.addEventListener('visibilitychange', () => { if (!document.hidden && E.sessao && chaveVelha()) renovarChaveArquivos(); });
+// link de PDF montado antes: troca a chave pela atual na hora do toque
+document.addEventListener('click', ev => { const a = ev.target.closest && ev.target.closest('a[href*="arquivo="]'); if (!a) return; try { const f = localStorage.getItem('cvh_fs'); if (f && /[?&]fs=/.test(a.href)) a.href = a.href.replace(/([?&]fs=)[^&#]*/, '$1' + encodeURIComponent(f)); } catch (_) {} }, true);
 setInterval(() => { if (E.sessao) renovarChaveArquivos(); }, 6 * 36e5);
 async function carregarPainel() {
   carregando('Carregando dados');
@@ -7480,6 +7496,22 @@ function abrirRevisao(aid) {
     (r.atualizado ? '<p class="nota">Última alteração: ' + esc(new Date(r.atualizado).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })) + '</p>' : '') +
     '<button class="btn" data-acao="rev-salvar" data-id="' + aid + '">Salvar</button>');
 }
+function formResp(tipo) {
+  const an = animalDe(E.animal); if (!an) return; const hoje = new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
+  const c = (id, rot, inner, cls) => campo(id, rot, inner, cls);
+  let h = '<p class="nota">Fica na carteira como realizado por você, sem assinatura de médico veterinário. O CVH recebe um aviso.</p><div class="grade">' + c('rData', tipo === 'obs' ? 'Data' : tipo === 'ecto' ? 'Data da aplicação' : 'Data', inp('rData', hoje, 'type="date" max="' + hoje + '"'));
+  if (tipo === 'vermifugo') h += c('rProd', 'Vermífugo', inp('rProd', '', 'list="dlVermR"')) + c('rDose', 'Comprimidos', inp('rDose', '', 'placeholder="ex.: 1 ou 1 e 1/2"')) + c('rPeso', 'Peso (kg)', inp('rPeso', '', 'inputmode="decimal"')) + c('rProx', 'Próximo (opcional)', inp('rProx', '', 'type="date"')) + '<datalist id="dlVermR">' + VERMIFUGOS.map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>';
+  else if (tipo === 'ecto') h += c('rProd', 'Produto', inp('rProd', '', 'list="dlEctoR"')) + c('rApr', 'Apresentação', '<select id="rApr">' + ['Comprimido', 'Pipeta', 'Coleira', 'Spray', 'Outra'].map(x => '<option>' + x + '</option>').join('') + '</select>') + c('rDose', 'Dose', inp('rDose', '', 'placeholder="ex.: 1 comprimido"')) + c('rPeso', 'Peso (kg)', inp('rPeso', '', 'inputmode="decimal"')) + c('rProx', 'Próxima dose (opcional)', inp('rProx', '', 'type="date"'), 'larga') + '<datalist id="dlEctoR">' + Object.keys(ECTOS).map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>';
+  else h += c('rTexto', 'Observação', '<textarea id="rTexto" rows="5" placeholder="Ex.: apresentou vômito depois da vacina, trocou de ração, está tomando remédio para a pele"></textarea>', 'larga');
+  h += '</div><button class="btn" id="rSalvar">Salvar na carteira</button>';
+  abrirFolha({ vermifugo: 'Vermífugo dado por você', ecto: 'Antiparasitário aplicado por você', obs: 'Observação' }[tipo] + ' · ' + an.nome, h, () => {
+    $('#rSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
+      const o = { tipo, data: vl('rData'), produto: vl('rProd'), dose: vl('rDose'), peso: vl('rPeso'), apresentacao: vl('rApr'), proxima: vl('rProx'), texto: vl('rTexto') };
+      await api('carteiraRegistrar', E.token, an.id, o); fecharFolha(); toast('Registrado na carteira.', 3000);
+      E.d = await api('carteiraPublica', E.token); abrirCarteira(an.id, E.livro ? E.livro.i : 0);
+    });
+  });
+}
 function menuAnimal() {
   const an = animalDe(E.animal);
   abrirFolha(an.nome, '<div style="display:flex;flex-direction:column;gap:10px">' +
@@ -7966,6 +7998,8 @@ const ACOES = {
   'novo-animal': () => abrirFormAnimal(),
   'editar-animal': () => abrirFormAnimal(animalDe(E.animal)),
   'menu-animal': menuAnimal,
+  'resp-add': b => formResp(b.dataset.v),
+  'resp-apagar': async b => { if (!confirm('Apagar este registro que você fez?')) return; b.disabled = true; try { await api('carteiraApagarMeu', E.token, b.dataset.id); toast('Registro apagado.', 2500); const aid = E.animal; E.d = await api('carteiraPublica', E.token); abrirCarteira(aid, E.livro ? E.livro.i : 0); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'rev-abrir': () => abrirRevisao(E.animal),
   'rev-sit': b => { E.revSel = b.dataset.v || ''; document.querySelectorAll('.rev-op').forEach(x => x.classList.toggle('on', (x.dataset.v || '') === E.revSel)); },
   'rev-salvar': async b => { b.disabled = true; try { const r = await api('revisaoSalvar', E.sessao, b.dataset.id, { situacao: E.revSel, nota: $('#revNota').value }); E.rev = E.rev || {}; if (r) E.rev[b.dataset.id] = r; else delete E.rev[b.dataset.id]; fecharFolha(); toast('Revisão salva.', 2500); if (E.animal === b.dataset.id && $('#livro')) reabrir(); } catch (e) { b.disabled = false; toast(e.message, 5000); } },

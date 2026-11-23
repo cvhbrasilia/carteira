@@ -939,7 +939,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123143047';
+  var VERSAO = '20261123143541';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1017,7 +1017,7 @@ async function listarFaceId() { const el = $('#ciLista'); if (!el) return; try {
 function confirmarIdentidade() {
   return new Promise(async res => {
     const ja = $('#confId'); if (ja) ja.remove();
-    let comChave = false; try { comChave = temPasskey() && await apiBruto('chaveTem', E.sessao); } catch (_) {}
+    let comChave = false; try { comChave = temPasskey() && ehCelular() && await apiBruto('chaveTem', E.sessao); } catch (_) {}
     const cx = document.createElement('div'); cx.id = 'confId'; cx.style.cssText = 'position:fixed;inset:0;z-index:9500;background:rgba(40,20,15,.55);display:flex;align-items:center;justify-content:center;padding:18px';
     cx.innerHTML = '<div class="cartao" style="max-width:380px;width:100%;margin:0"><h3>Confirme que é você</h3><p class="nota">Esta ação é grave. Para seguir, confirme a sua identidade.</p>' + (comChave ? '<button class="btn" id="ciFace" style="width:100%">Usar Face ID ou digital</button><p class="nota" style="text-align:center;margin:8px 0">ou digite a sua senha</p>' : '') +
       '<input id="ciSenha" type="password" autocomplete="current-password" placeholder="sua senha" style="width:100%"><p class="erro" id="ciErro"></p><div class="acoes"><button class="btn' + (comChave ? ' sec2' : '') + '" id="ciOk">Confirmar com a senha</button><button class="btn sec2" id="ciNao">Cancelar</button></div></div>';
@@ -3280,8 +3280,9 @@ async function telaLogin() {
     (criar ? '<input class="cred" id="sen2" type="password" autocomplete="new-password" placeholder="repita a senha" aria-label="Repita a senha">' : '') +
     (aparelhoPessoal() ? '<label class="manter"><input type="checkbox" id="manter" checked> Manter conectado neste aparelho</label>' : '<p class="nota" style="margin:4px 0 10px">Computador de uso comum: a entrada termina ao fechar o navegador. Toque em Sair ao terminar.</p>') +
     '<button class="btn" style="min-width:200px">' + (criar ? 'Criar e entrar' : 'Entrar') + '</button><p class="erro" id="erro"></p>' +
-    (!criar && !ehCelular() ? '<button type="button" class="btn sec2" id="bQrCel" style="min-width:200px;margin-top:8px">Entrar com o celular (QR Code)</button>' : '') +
-    (!criar && temPasskey() ? '<button type="button" class="btn sec2" id="bFace" style="min-width:200px;margin-top:8px">Entrar com Face ID ou digital</button>' : '') +
+    // no computador, o Face ID é o do celular: QR Code na tela, confirmação no celular
+    (!criar && !ehCelular() ? '<button type="button" class="btn sec2" id="bQrCel" style="min-width:200px;margin-top:8px">Entrar com Face ID ou digital<small style="display:block;font-weight:400;font-size:12px;opacity:.8">pelo celular, com QR Code</small></button>' : '') +
+    (!criar && ehCelular() && temPasskey() ? '<button type="button" class="btn sec2" id="bFace" style="min-width:200px;margin-top:8px">Entrar com Face ID ou digital</button>' : '') +
     (criar ? '' : '<button type="button" class="lk-esq" id="bEsqueci" style="background:none;border:0;color:var(--vinho);text-decoration:underline;font-size:14px;margin-top:6px;cursor:pointer">Esqueci minha senha</button>') + '</form></main>';
   $(criar ? '#nom' : '#usu').focus();
   const bfa = $('#bFace'); if (bfa) bfa.onclick = async () => { bfa.disabled = true; $('#erro').textContent = '';
@@ -3311,7 +3312,7 @@ async function entrarPeloCelular() {
   clearInterval(QR_ENT); let c;
   try { c = await api('qrEntradaCriar', (navigator.userAgent.match(/(Windows|Mac OS X|Linux)[^;)]*/) || ['computador'])[0] + ' · ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })); } catch (e) { return toast(e.message, 5000); }
   const url = location.origin + location.pathname + '?aprovar=' + c.codigo;
-  raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>Entrar com o celular</h1><p>No celular, abra o app do Painel CVH e toque em <b>Entrar no computador</b>, embaixo de Minha conta. Aponte para o QR Code e confirme.</p><div style="width:240px;max-width:80vw;margin:12px auto">' + qrSvg(url).replace('<svg class="qr"', '<svg class="qr" style="width:100%;height:auto;display:block"') + '</div><p class="nota" id="qrSt">O QR Code vale 3 minutos.</p><button class="btn sec2" id="qrVoltar" style="min-width:200px">Voltar</button></div></main>';
+  raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>Entrar com Face ID ou digital</h1><p>No celular, abra o app do Painel CVH e toque em <b>Entrar no computador</b>, embaixo de Minha conta. Aponte para o QR Code e confirme com Face ID ou digital.</p><div style="width:240px;max-width:80vw;margin:12px auto">' + qrSvg(url).replace('<svg class="qr"', '<svg class="qr" style="width:100%;height:auto;display:block"') + '</div><p class="nota" id="qrSt">O QR Code vale 3 minutos.</p><button class="btn sec2" id="qrVoltar" style="min-width:200px">Voltar</button></div></main>';
   $('#qrVoltar').onclick = () => { clearInterval(QR_ENT); telaLogin(); };
   const fim = Date.now() + c.validoSeg * 1000;
   QR_ENT = setInterval(async () => {
@@ -3345,7 +3346,7 @@ async function aprovarComputador(cod) {
   // mostra com qual usuário o computador vai entrar: o navegador do leitor de QR pode estar com outro usuário
   abrirFolha('Entrar no computador', '<p>O computador vai entrar com o usuário <b>' + esc(E.u.nome) + '</b> (' + esc(E.u.usuario) + ').</p><p class="nota">' + esc(info.aparelho || '') + '. Só libere se foi você que abriu o QR Code agora.</p>' +
     '<div class="acoes" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn" id="apLib">Liberar o computador</button><button class="btn sec2" id="apOutro">Não sou ' + esc(String(E.u.nome || '').split(' ')[0]) + '. Entrar com outro usuário</button></div>', () => {
-      $('#apLib').onclick = ev => salvando(ev.currentTarget, async () => { await api('qrEntradaAprovar', E.sessao, cod); fecharFolha(); toast('Pronto. O computador entrou com o seu usuário. Lembre de tocar em Sair lá ao terminar.', 7000); });
+      $('#apLib').onclick = ev => salvando(ev.currentTarget, async () => { if (!(await confirmarIdentidade())) throw new Error('Computador não liberado: a identidade não foi confirmada.'); await api('qrEntradaAprovar', E.sessao, cod); fecharFolha(); toast('Pronto. O computador entrou com o seu usuário. Lembre de tocar em Sair lá ao terminar.', 7000); });
       $('#apOutro').onclick = () => { fecharFolha(); E.sessao = null; try { localStorage.removeItem('cvh_s'); sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); history.replaceState(null, '', location.pathname + '?aprovar=' + cod); } catch (_) {} telaLogin(); };
     });
 }
@@ -5009,7 +5010,7 @@ function telaHome() {
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
   const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte'));
   E.meusMods = meus;
-  if (pode('admin') && temPasskey() && !navigator.webdriver) setTimeout(async () => { try { if (localStorage.getItem('cvh_faceid_ofertado') || await apiBruto('chaveTem', E.sessao)) return; localStorage.setItem('cvh_faceid_ofertado', '1'); if (confirm('Cadastrar o Face ID ou a digital neste aparelho? Você passa a entrar e confirmar ações graves sem digitar a senha.')) { await cadastrarFaceId(); toast('Face ID cadastrado.'); } } catch (_) {} }, 1500);
+  if (pode('admin') && temPasskey() && ehCelular() && !navigator.webdriver) setTimeout(async () => { try { if (localStorage.getItem('cvh_faceid_ofertado') || await apiBruto('chaveTem', E.sessao)) return; localStorage.setItem('cvh_faceid_ofertado', '1'); if (confirm('Cadastrar o Face ID ou a digital neste aparelho? Você passa a entrar e confirmar ações graves sem digitar a senha.')) { await cadastrarFaceId(); toast('Face ID cadastrado.'); } } catch (_) {} }, 1500);
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
@@ -6259,7 +6260,7 @@ function telaConta() {
     '<p class="nota">Acesso: ' + esc(E.u.usuario) + ' · ' + esc(listaPt(E.u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + '</p>' +
     '<p class="nota">' + (v ? 'Assina como ' + esc(v.nome + ' · ' + v.crmv) + (v.rubrica ? '' : ' (sem rubrica desenhada)') + '.' : 'Sem assinatura de médico veterinário.') + '</p>' +
     (v ? '<button class="btn sec2 peq" data-acao="minha-rubrica">Minha rubrica</button>' : '') + '</section>' +
-    (temPasskey() ? '<section class="cartao"><h3>Face ID ou digital</h3><p class="nota">Entre no painel e confirme ações graves só olhando para o celular ou tocando no sensor, sem digitar a senha. Cadastre em cada aparelho que você usa.</p><div id="ciLista"></div><button class="btn sec2 peq" data-acao="faceid-cadastrar">Cadastrar Face ID neste aparelho</button></section>' : '') +
+    (temPasskey() && ehCelular() ? '<section class="cartao"><h3>Face ID ou digital</h3><p class="nota">Entre no painel e confirme ações graves só olhando para o celular ou tocando no sensor, sem digitar a senha. Cadastre em cada aparelho que você usa.</p><div id="ciLista"></div><button class="btn sec2 peq" data-acao="faceid-cadastrar">Cadastrar Face ID neste aparelho</button></section>' : '') +
     '<section class="cartao"><h3>E-mail pessoal</h3><p class="nota">Se você esquecer a senha, o link para criar a senha nova vai para este e-mail.</p><div class="grade">' + campo('cEmail', 'E-mail', inp('cEmail', E.u.email || '', 'type="email" autocomplete="email" autocapitalize="none"'), 'larga') + '</div><button class="btn sec2 peq" data-acao="conta-email">Salvar e-mail</button></section>' +
     '<section class="cartao"><h3>Trocar senha</h3><div class="grade">' + campo('sAtual', 'Senha atual', inp('sAtual', '', 'type="password" autocomplete="current-password"'), 'larga') +
     campo('sNova', 'Nova senha', inp('sNova', '', 'type="password" autocomplete="new-password"')) + campo('sNova2', 'Repita', inp('sNova2', '', 'type="password" autocomplete="new-password"')) + '</div>' +
