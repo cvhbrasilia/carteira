@@ -120,7 +120,7 @@ function fecharGaveta() { $("#gaveta").classList.remove("on"); $("#veu").classLi
 (() => { let y0 = null; const g = $("#gaveta"); g.addEventListener("touchstart", (e) => { y0 = $("#gvC").scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); g.addEventListener("touchend", (e) => { if (y0 != null && e.changedTouches[0].clientY - y0 > 90) fecharGaveta(); y0 = null; }, { passive: true }); })();
 
 /* ── estado ── */
-const S = { aba: "hoje", at: [], rem: [], eq: [], ap: [], sel: {}, prod: [], uni: [], ev: [], P: null, admin: !!CTX.admin, f: { comp: "", tipo: "", sit: "ativas" }, prodAberta: null, uniAberta: null };
+const S = { aba: ["hoje", "estoque", "rem", "int", "conf", "rel", "hist"].includes(CTX.aba) ? CTX.aba : "hoje", at: [], rem: [], eq: [], ap: [], sel: {}, prod: [], uni: [], ev: [], P: null, admin: !!CTX.admin, f: { comp: "", tipo: "", sit: "ativas" }, prodAberta: null, uniAberta: null };
 const DOA = (CTX.doacoes || []).filter((d) => d.numero);
 const ANI = Object.fromEntries((CTX.animais || []).map((a) => [a.id, a]));
 const doacao = (c) => DOA.find((d) => d.numero.replace(/\s/g, "") === c) || null;

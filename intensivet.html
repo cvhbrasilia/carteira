@@ -18,7 +18,10 @@
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
   // link de arquivo leva só a chave de arquivos (12 h), nunca a sessão do painel; sem a chave, cai na sessão (versões antigas)
   function chaveArq() { try { return localStorage.getItem('cvh_fs') || ''; } catch (e) { return ''; } }
-  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : ''); }
+  // fora do painel, o PDF leva a chave de PDFs da carteira (ou o código do termo): sem um link que ainda vale, o exame não abre
+  var CHAVE_R = '';
+  function linkResp() { try { var tt = new URLSearchParams(location.search).get('t') || ''; return (CHAVE_R ? '&fr=' + encodeURIComponent(CHAVE_R) : '') + (tt ? '&t=' + encodeURIComponent(tt) : ''); } catch (e) { return ''; } }
+  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : '') + (window.CVH_PAINEL ? '' : linkResp()); }
   function reescrever(x) {
     if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
     if (Array.isArray(x)) return x.map(reescrever);
@@ -36,11 +39,11 @@
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
       .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
         function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
-      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); if (fn === 'carteiraPublica' && r.r && r.r.chaveArquivos) CHAVE_R = r.r.chaveArquivos; return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123104944';
+  var VERSAO = '20261123113339';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -374,7 +377,7 @@ const opFim = (msg) => { const o = OP; OP = null; if (!o) { pintar(); return; }
 ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, opMexeu, { passive: true }));
 setInterval(() => { if (OP && Date.now() - OP.t > 10 * 6e4) opFim("Saída automática do usuário depois de 10 minutos sem uso."); }, 20000);
 window.addEventListener("pagehide", () => { if (OP) { const r = capturarRasc(OP.usuario) || RASC; srv("intSair", OP.op, r ? semExames(r) : null).catch(() => {}); OP = null; } });
-function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><p><small>Este celular é de uso comum. A senha não fica salva e a entrada termina ao sair, ao fechar o app ou depois de 10 minutos sem uso.</small></p><label>Usuário</label><input type="text" id="opU" name="u' + Date.now() + '" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Senha</label><input type="text" id="opS" name="x' + Date.now() + '" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); const cs = $("#opS"); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) { cs.type = "password"; cs.autocomplete = "new-password"; } setTimeout(() => $("#opU").focus(), 100); }
+function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><p><small>Este celular é de uso comum. A senha não fica salva e a entrada termina ao sair, ao fechar o app ou depois de 10 minutos sem uso.</small></p><label>Usuário</label><input type="text" id="opU" name="u' + Date.now() + '" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Senha</label><input type="text" id="opS" name="x' + Date.now() + '" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); const cs = $("#opS"); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) { cs.type = "password"; cs.autocomplete = "new-password"; } setTimeout(() => { const x = $("#opU"); if (x) x.focus(); }, 100); }
 const vetDoOp = () => OP ? { nome: OP.nome, crmv: OP.crmv } : null;
 function pintar() {
   if (!D) return;
@@ -899,7 +902,9 @@ document.addEventListener("click", async (ev) => {
     if (a === "transfundir") return formTransfusao(v);
     if (a === "acomp") return formAcomp(v);
     if (a === "opEntrar") return opEntrar();
-    if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value; try { const r = await srv("intEntrar", u0, s0); cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario || u0.trim().toLowerCase(), t: Date.now() }; fechar(); rascDaEntrada(r.rascunho); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
+    if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value, cn = $("#opN"), cn2 = $("#opN2");
+      let nova = ""; if (cn) { nova = cn.value; if (!nova) { b.disabled = false; return toast("Digite a senha nova.", 4000); } if (nova !== cn2.value) { b.disabled = false; return toast("As duas senhas novas não são iguais.", 5000); } }
+      try { const r = await srv("intEntrar", u0, s0, nova); if (cn) { cn.value = ""; cn2.value = ""; } cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario || u0.trim().toLowerCase(), t: Date.now() }; fechar(); rascDaEntrada(r.rascunho); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; if (/^TROCAR: /.test(e.message) && !$("#opN")) { cs.insertAdjacentHTML("afterend", '<p><small>Primeiro acesso com a senha provisória. Crie a sua senha pessoal, com pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet.</small></p><label>Senha nova</label><input type="text" id="opN" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Repita a senha nova</label><input type="text" id="opN2" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore>'); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) ["#opN", "#opN2"].forEach((q) => { $(q).type = "password"; $(q).autocomplete = "new-password"; }); $("#opN").focus(); return toast("Crie a sua senha pessoal para continuar.", 5000); } toast(e.message.replace(/^TROCAR: /, ""), 6000); } return; }
     if (a === "opSair") { opFim(""); return; }
     if (a === "rascSeguir") { const r = RASC; fechar(); if (r) FORMS_ABRIR(r); return; }
     if (a === "rascDescartar") { rascLimpar(); fechar(); toast("Rascunho descartado.", 3000); return; }

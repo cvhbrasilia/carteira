@@ -25,8 +25,9 @@ self.addEventListener('notificationclick', (e) => {
   e.waitUntil((async () => {
     await marcarIcone();
     const abertos = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const pag = String((e.notification.data || {}).url || 'painel.html').replace(/[?#].*$/, '');
-    for (const c of abertos) if (c.url.indexOf(pag) >= 0) { await c.focus(); return; }
-    await self.clients.openWindow(new URL((e.notification.data || {}).url || 'painel.html', self.registration.scope).href);
+    // abre o assunto do aviso: com o app já aberto, pede para ele ir até lá; fechado, abre direto no módulo
+    const url = new URL((e.notification.data || {}).url || 'painel.html', self.registration.scope).href, pag = url.replace(/[?#].*$/, '');
+    for (const c of abertos) if (c.url.replace(/[?#].*$/, '') === pag) { c.postMessage({ tipo: 'cvh-abrir', url }); await c.focus(); return; }
+    await self.clients.openWindow(url);
   })());
 });

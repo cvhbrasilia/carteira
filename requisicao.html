@@ -18,7 +18,10 @@
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
   // link de arquivo leva só a chave de arquivos (12 h), nunca a sessão do painel; sem a chave, cai na sessão (versões antigas)
   function chaveArq() { try { return localStorage.getItem('cvh_fs') || ''; } catch (e) { return ''; } }
-  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : ''); }
+  // fora do painel, o PDF leva a chave de PDFs da carteira (ou o código do termo): sem um link que ainda vale, o exame não abre
+  var CHAVE_R = '';
+  function linkResp() { try { var tt = new URLSearchParams(location.search).get('t') || ''; return (CHAVE_R ? '&fr=' + encodeURIComponent(CHAVE_R) : '') + (tt ? '&t=' + encodeURIComponent(tt) : ''); } catch (e) { return ''; } }
+  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : '') + (window.CVH_PAINEL ? '' : linkResp()); }
   function reescrever(x) {
     if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
     if (Array.isArray(x)) return x.map(reescrever);
@@ -36,11 +39,11 @@
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
       .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
         function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
-      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); if (fn === 'carteiraPublica' && r.r && r.r.chaveArquivos) CHAVE_R = r.r.chaveArquivos; return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123104944';
+  var VERSAO = '20261123113339';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {

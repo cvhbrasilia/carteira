@@ -904,7 +904,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
   // link de arquivo leva só a chave de arquivos (12 h), nunca a sessão do painel; sem a chave, cai na sessão (versões antigas)
   function chaveArq() { try { return localStorage.getItem('cvh_fs') || ''; } catch (e) { return ''; } }
-  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : ''); }
+  // fora do painel, o PDF leva a chave de PDFs da carteira (ou o código do termo): sem um link que ainda vale, o exame não abre
+  var CHAVE_R = '';
+  function linkResp() { try { var tt = new URLSearchParams(location.search).get('t') || ''; return (CHAVE_R ? '&fr=' + encodeURIComponent(CHAVE_R) : '') + (tt ? '&t=' + encodeURIComponent(tt) : ''); } catch (e) { return ''; } }
+  function arquivo(id) { var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : '') + (window.CVH_PAINEL ? '' : linkResp()); }
   function reescrever(x) {
     if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
     if (Array.isArray(x)) return x.map(reescrever);
@@ -922,11 +925,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
       .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
         function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
-      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); if (fn === 'carteiraPublica' && r.r && r.r.chaveArquivos) CHAVE_R = r.r.chaveArquivos; return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123104944';
+  var VERSAO = '20261123113339';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -978,6 +981,7 @@ function apiBruto(fn, ...args) {
     if (window.DEMO) { DEMO.chamar(fn, args).then(ok, erro); return; }
     CVH_SERVIDOR.chamar(fn, args).then(ok, e => {
       const m = String((e && e.message) || e).replace(/^(Exception|Error):\s*/, '');
+      if (m === 'TROCAR_SENHA' && E.sessao && E.u) { telaTrocarSenha(); erro(new Error('Crie a sua senha pessoal para continuar.')); return; }
       if (m.indexOf('SESSAO') >= 0) { E.sessao = null; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); } catch (_) {} fecharFolha(); telaLogin(); erro(new Error('Sua sessão expirou. Entre de novo.')); return; }
       erro(new Error(m));
     });
@@ -1024,7 +1028,7 @@ function conferirServidor() {
   if (typeof google.script.run.versaoServidor !== 'function') return mostra(avisoServidor('versaoServidor'));
   google.script.run.withSuccessHandler(v => { if (v !== VERSAO_PAINEL) mostra('O Código.gs publicado (' + v + ') não é o mesmo do painel (' + VERSAO_PAINEL + '). Cole o arquivo 1 Codigo de novo e publique uma nova versão.'); }).withFailureHandler(() => {}).versaoServidor();
 }
-function toast(m, ms) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), ms || 2600); }
+function toast(m, ms, aoTocar) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); t.onclick = aoTocar ? () => { t.classList.remove('on'); aoTocar(); } : null; t.style.cursor = aoTocar ? 'pointer' : ''; t.style.pointerEvents = aoTocar ? 'auto' : ''; if (aoTocar) t.textContent = m + ' · tocar para abrir'; clearTimeout(toast.t); toast.t = setTimeout(() => { t.classList.remove('on'); t.onclick = null; t.style.pointerEvents = ''; }, ms || 2600); }
 
 const p2 = n => String(n).padStart(2, '0');
 const hoje = () => { const d = new Date(); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
@@ -3294,7 +3298,37 @@ async function carregarPainel() {
   await renovarChaveArquivos();
   E.d = await api('painelDados', E.sessao);
   E.u = E.d.usuario;
+  if (E.u.trocarSenha) return telaTrocarSenha();
   telaHome();
+  // toque numa notificação com o app fechado: abre o módulo do assunto
+  { const q = new URLSearchParams(location.search); if (q.get('abrir')) { const k = q.get('abrir'), aba = q.get('aba') || ''; try { history.replaceState(null, '', location.pathname); } catch (_) {} abrirDestino(k, aba); } }
+}
+// leva ao módulo (e à aba) do assunto de um aviso
+function abrirDestino(k, aba) {
+  if (!k || !E.u || E.u.trocarSenha) return;
+  if (E.modSujo && !confirm('Há alterações não salvas neste módulo. Sair mesmo assim?')) return;
+  fecharFolha(); E.modSujo = false; E.abrirAba = aba || '';
+  if (k === 'ajustes') return ACOES.ajustes();
+  abrirModPorK(k);
+}
+function abrirDestinoUrl(url) { try { const q = new URL(url, location.href).searchParams; if (q.get('abrir')) abrirDestino(q.get('abrir'), q.get('aba') || ''); } catch (_) {} }
+// primeiro acesso com a senha provisória criada pelo administrador: a pessoa cria a senha pessoal antes de usar o painel
+function telaTrocarSenha() {
+  raiz.innerHTML = '<main class="tela"><form class="tela-c login" id="fTroca"><i class="lg-vert"></i><h1>Crie a sua senha</h1><p>' + esc(String(E.u.nome || '').trim().split(/\s+/)[0]) + ', você entrou com a senha provisória. Para continuar, crie a sua senha pessoal.</p>' +
+    '<p class="nota">Pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet (as mesmas que o Google avisa).</p>' +
+    '<input class="cred" id="usu" autocomplete="username" value="' + esc(E.u.usuario) + '" readonly aria-label="Usuário">' +
+    '<input class="cred" id="sAtual" type="password" autocomplete="current-password" placeholder="senha provisória" aria-label="Senha provisória">' +
+    '<input class="cred" id="sNova" type="password" autocomplete="new-password" placeholder="senha nova" aria-label="Senha nova">' +
+    '<input class="cred" id="sNova2" type="password" autocomplete="new-password" placeholder="repita a senha nova" aria-label="Repita a senha nova">' +
+    '<p class="nota" id="sForca"></p><button type="button" class="btn sec2 peq" id="bGerar">Gerar senha forte</button><div id="sGerada" style="margin-top:8px"></div>' +
+    '<button class="btn" id="bTroca" style="min-width:200px;margin-top:10px">Salvar e continuar</button><p class="erro" id="erro"></p>' +
+    '<button type="button" id="bSairTroca" style="background:none;border:0;color:var(--vinho);text-decoration:underline;font-size:14px;margin-top:6px;cursor:pointer">Sair</button></form></main>';
+  $('#sAtual').focus(); $('#sNova').oninput = forcaSenha;
+  $('#bGerar').onclick = () => ACOES['gerar-senha']();
+  $('#bSairTroca').onclick = () => { E.sessao = null; try { localStorage.removeItem('cvh_s'); sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); } catch (_) {} telaLogin(); };
+  $('#fTroca').onsubmit = async ev => { ev.preventDefault(); const at = $('#sAtual').value, a = $('#sNova').value, b = $('#sNova2').value, bt = $('#bTroca'); $('#erro').textContent = '';
+    if (!at) { $('#erro').textContent = 'Digite a senha provisória.'; return; } if (!a) { $('#erro').textContent = 'Digite a senha nova.'; return; } if (a !== b) { $('#erro').textContent = 'As duas senhas não são iguais.'; return; }
+    bt.disabled = true; try { await api('trocarSenha', E.sessao, at, a); toast('Senha pessoal criada.', 4000); await carregarPainel(); } catch (e) { $('#erro').textContent = e.message; bt.disabled = false; } };
 }
 
 /* ═════════════ painel: tela inicial ═════════════ */
@@ -6094,16 +6128,17 @@ let ALARME = null;
 function alertaCritico(m) {
   somDesbloquear();
   let ov = $('#alertaCrit'); if (!ov) { ov = document.createElement('div'); ov.id = 'alertaCrit'; document.body.appendChild(ov); }
-  ov.innerHTML = '<div class="ac-cx" role="alertdialog" aria-modal="true"><b>ALERTA URGENTE</b><h2>' + esc(m.titulo || '') + '</h2><p>' + esc(m.corpo || '') + '</p><button class="btn" id="acOk">Entendi</button></div>';
+  const temDestino = /[?&]abrir=/.test(m.url || '');
+  ov.innerHTML = '<div class="ac-cx" role="alertdialog" aria-modal="true"><b>ALERTA URGENTE</b><h2>' + esc(m.titulo || '') + '</h2><p>' + esc(m.corpo || '') + '</p><button class="btn" id="acOk">' + (temDestino ? 'Entendi e abrir' : 'Entendi') + '</button>' + (temDestino ? '<button class="btn sec2" id="acSo" style="margin-top:8px">Só entendi</button>' : '') + '</div>';
   const parar = () => { clearInterval(ALARME); ALARME = null; ov.remove(); if (navigator.vibrate) navigator.vibrate(0); };
-  $('#acOk').onclick = parar;
+  $('#acOk').onclick = () => { parar(); if (temDestino) abrirDestinoUrl(m.url); }; if ($('#acSo')) $('#acSo').onclick = parar;
   const ciclo = () => { if (!AUD) return; for (let i = 0; i < 4; i++) { tom(853, i * 0.5, 0.24, 0.35, 'square'); tom(960, i * 0.5 + 0.25, 0.24, 0.35, 'square'); } if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600]); };
   clearInterval(ALARME); ciclo(); ALARME = setInterval(ciclo, 2600);
 }
 function receberAviso(m) {
   if (!m || !m.id) return; let ult = 0; try { ult = +localStorage.getItem('cvh_aviso_ult') || 0; } catch (_) {}
   if (m.id <= ult) return; try { localStorage.setItem('cvh_aviso_ult', String(m.id)); } catch (_) {}
-  if (m.nivel === 'critico') alertaCritico(m); else { somAviso(); toast((m.titulo || '') + (m.corpo ? ' · ' + m.corpo : ''), 7000); }
+  if (m.nivel === 'critico') alertaCritico(m); else { somAviso(); toast((m.titulo || '') + (m.corpo ? ' · ' + m.corpo : ''), 7000, /[?&]abrir=/.test(m.url || '') ? () => abrirDestinoUrl(m.url) : null); }
 }
 // com o app aberto, confere a cada minuto (pega também quem ainda não ligou as notificações)
 async function checarAvisos() {
@@ -6112,7 +6147,7 @@ async function checarAvisos() {
 }
 if (window.CVH_PAINEL) {
   document.addEventListener('pointerdown', somDesbloquear, { once: true });
-  try { navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.tipo === 'cvh-notificacao') receberAviso(ev.data.m); }); } catch (_) {}
+  try { navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.tipo === 'cvh-notificacao') receberAviso(ev.data.m); if (ev.data && ev.data.tipo === 'cvh-abrir') abrirDestinoUrl(ev.data.url); }); } catch (_) {}
   setInterval(checarAvisos, 60000); setTimeout(checarAvisos, 8000);
 }
 function notifEstado() {
@@ -6234,7 +6269,8 @@ function telaResp(id) {
       (contatosDe(r).length ? '<div class="ct-sec" style="margin-top:12px"><h4>Contatos secundários</h4>' + contatosDe(r).map(c => '<div class="ct-v"><div><b>' + esc(c.nome || 'Sem nome') + '</b><small>' + esc([c.relacao, c.telefone].filter(Boolean).join(' · ')) + '</small></div>' + (zapTel(c.telefone) ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(zapTel(c.telefone)) + '">WhatsApp</a>' : '') + '</div>').join('') + '</div>' : '') + '</section>' +
     (cad ? '<section class="cartao"><h3>Link da carteira</h3><p class="nota">O responsável abre por este link e só consegue ver. Ele mostra todos os animais cadastrados aqui.</p>' +
     '<div class="link-box"><input id="link" readonly value="' + esc(link) + '" aria-label="Link da carteira"><button class="btn peq" data-acao="copiar-link">Copiar</button></div>' +
-    '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button></div></section>' : '') +
+    '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button><button class="btn sec2 peq" data-acao="trocar-link">Trocar o link</button></div>' +
+    '<p class="nota">Use Trocar o link se o link foi parar com quem não deve. O link antigo para de abrir na hora, e o responsável precisa receber o link novo.</p></section>' : '') +
     '<section class="cartao" id="respAnimais"><h3>Animais</h3>' + (ans.length ? ans.map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + (a.ativo === '0' ? ' <small style="display:inline">(arquivado)</small>' : '') + '</b><small>' + esc([a.especie, a.raca, tipoTxt(a), a.doador === '1' ? (a.aposentadoEm ? 'Doador aposentado' + (a.aposentadoMotivo ? ' (' + a.aposentadoMotivo.toLowerCase() + ')' : '') : 'Clube do Doador') : ''].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum animal ainda.</p>') +
     (cad ? '<button class="btn sec2" data-acao="novo-animal">+ Novo animal</button>' : '') + '</section>' +
     (pode('admin') ? '<button class="btn perigo peq" data-acao="excluir-resp">Excluir responsável</button>' : '') +
@@ -6412,7 +6448,7 @@ async function abrirModulo(nome, aid, rid) {
   const v = vetLogado(), vp = (E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0];
   E.ponte = { animal: an ? { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: an.tipoSanguineo, dal: an.dal || '', nascimento: an.nascimento } : null,
     responsavel: { nome: rp.nome || '', cpf: rp.cpf || '' }, vet: v ? { nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || '' } : null, temGemini: !!E.d.config.temGemini, fichas: an ? fichasDe(aid) : [],
-    racasExtra: { cao: racasExtra(false), gato: racasExtra(true) } };
+    racasExtra: { cao: racasExtra(false), gato: racasExtra(true) }, aba: E.abrirAba || '' }; E.abrirAba = '';
   if (nome === 'fichas') { E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.rascunhos = an ? andamentoDe(aid) : []; E.ponte.abrir = E.fichaAbrir || null; E.fichaAbrir = null;
     // quem não é médico veterinário salva a ficha assinada pelo médico veterinário escolhido, com o nome de quem liberou
     if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; }
@@ -7424,7 +7460,7 @@ function telaAjustes() {
   const c = E.d.config || {};
   abrirFolha('Ajustes',
     '<section class="cartao"><h3>Usuários</h3><p class="nota">Cada pessoa entra com o próprio usuário e vê só os módulos liberados. Quem tem assinatura vinculada assina sozinho o que salvar.</p>' +
-    (E.d.usuarios || []).map(u => { const v = (E.d.vets || []).find(x => x.id === u.vetId); return '<button class="item" data-acao="editar-usuario" data-id="' + u.id + '"><div class="t"><b>' + esc(u.nome) + (u.ativo === '0' ? ' <small style="display:inline">(desativado)</small>' : '') + '</b><small>' + esc(u.usuario + ' · ' + (listaPt(u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + (v ? ' · ' + v.crmv : '') + (u.temSenha ? '' : ' · sem senha, ainda não entra')) + '</small></div><span class="seta">›</span></button>'; }).join('') +
+    (E.d.usuarios || []).map(u => { const v = (E.d.vets || []).find(x => x.id === u.vetId); return '<button class="item" data-acao="editar-usuario" data-id="' + u.id + '"><div class="t"><b>' + esc(u.nome) + (u.ativo === '0' ? ' <small style="display:inline">(desativado)</small>' : '') + '</b><small>' + esc(u.usuario + ' · ' + (listaPt(u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + (v ? ' · ' + v.crmv : '') + (u.temSenha ? (u.trocarSenha ? ' · ainda não trocou a senha provisória' : '') : ' · sem senha, ainda não entra')) + '</small></div><span class="seta">›</span></button>'; }).join('') +
     '<button class="btn sec2 peq" data-acao="editar-usuario">+ Adicionar usuário</button></section>' +
     '<section class="cartao"><h3>Lembretes por e-mail</h3><p class="nota">Todo dia às 8h o app avisa o responsável e o CVH 30, 15 e 7 dias antes de cada revacinação, vermífugo, reforço e antiparasitário.</p>' +
     campo('cEmail', 'E-mail do CVH', inp('cEmail', c.emailCvh, 'type="email"')) +
@@ -7498,7 +7534,7 @@ function abrirFormUsuario(u) {
     campo('uUsuario', 'Usuário (para entrar)', inp('uUsuario', u.usuario, 'autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ex.: felipe"')) +
     campo('uCrmv', 'CRMV (médico veterinário de fora do CVH)', inp('uCrmv', u.crmv || '', 'autocomplete="off" placeholder="CRMV-DF 00000"')) +
     campo('uEmail', 'E-mail pessoal (recebe o link de senha nova)', inp('uEmail', u.email || '', 'type="email" autocomplete="off" autocapitalize="none" placeholder="nome@exemplo.com"')) +
-    campo('uSenha', u.temSenha ? 'Nova senha' : 'Senha', inp('uSenha', '', 'type="password" autocomplete="new-password" placeholder="' + (u.temSenha ? 'vazio mantém a atual' : 'mínimo 4, pode ser um PIN') + '"')) +
+    campo('uSenha', u.temSenha ? 'Nova senha' : 'Senha', inp('uSenha', '', 'type="password" autocomplete="new-password" placeholder="' + (u.temSenha ? 'vazio mantém a atual' : 'senha provisória') + '"')) + '<p class="nota" style="margin-top:-4px">A senha criada aqui é provisória. A pessoa cria a senha pessoal no primeiro acesso.</p>' +
     campo('uVet', 'Assinatura (médico veterinário)', '<select id="uVet"><option value="">Não assina (não é médico veterinário)</option>' + (E.d.vets || []).map(x => '<option value="' + x.id + '"' + (x.id === u.vetId ? ' selected' : '') + '>' + esc(x.nome + ' · ' + x.crmv) + '</option>').join('') + '<option value="__novo">+ Cadastrar o CRMV agora</option></select>', 'larga') +
     '<div class="campo larga" id="uNovoVet" hidden><div class="grade">' + campo('uVetNome', 'Nome na assinatura', inp('uVetNome', u.nome || '', 'autocomplete="off"'), 'larga') + campo('uVetCrmv', 'CRMV', inp('uVetCrmv', '', 'placeholder="CRMV-DF 0000" autocomplete="off"'), 'larga') + '</div></div></div>' +
     '<p class="nota">Quem tem CRMV assina sozinho o que salvar. A rubrica é opcional. Ela aparece no carimbo das vacinas e na assinatura dos laudos.</p>' +
@@ -7871,6 +7907,13 @@ const ACOES = {
   'juntar-resumos': b => juntarResumos(b.dataset.id, b),
   'ficha-na-carteira': b => { const r = regPorId(b.dataset.id); if (!r) return; fecharFolha(); E.previa = false; abrirCarteira(r.animalId, r.id); },
   previa: () => { E.previa = !E.previa; fecharFolha(); reabrir(0); },
+  'trocar-link': async b => {
+    const r = E.d.responsaveis.find(x => x.id === E.resp); if (!r) return;
+    if (!confirm('Trocar o link da carteira de ' + r.nome + '?\n\nO link antigo para de abrir na hora, inclusive no celular do responsável e nos QR Codes já entregues. Depois envie o link novo para ele.')) return;
+    b.disabled = true;
+    try { const t = await api('responsavelTrocarLink', E.sessao, r.id); r.token = t; telaResp(r.id); toast('Link trocado. Envie o link novo para o responsável.', 6000); }
+    catch (e) { b.disabled = false; toast(e.message, 6000); }
+  },
   'copiar-link': async () => { toast(await copiar($('#link').value) ? 'Link copiado.' : 'Selecione o link e copie manualmente.'); },
   ajustes: () => { if (pode('admin')) telaAjustes(); },
   'editar-vet': b => abrirFormVet(b.dataset.id ? E.d.vets.find(v => v.id === b.dataset.id) : null),
