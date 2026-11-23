@@ -801,4 +801,54 @@ window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharG
 <!--CVH-TRANSPORTE-COMPLETO-->
 <div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
 <input type="file" id="embFotoIn" accept="image/*" capture="environment" hidden>
+<script>
+// Painel CVH · campo de digitação sempre visível acima do teclado do celular (vale para todas as telas e módulos).
+// O iPhone não rola a tela quando o campo está no fim da página ou dentro de um módulo: aqui o sistema abre espaço
+// embaixo e sobe o campo para o meio da parte visível, e repete enquanto o teclado abre ou muda de tamanho.
+(function () {
+  if (window.__cvhTeclado) return; window.__cvhTeclado = 1;
+  var topo = window; try { if (window.top && window.top.document) topo = window.top; } catch (e) { topo = window; }
+  var vv = topo.visualViewport; if (!vv) return;
+  var ESPACO = 'cvh-kb-espaco', foco = null, tSai = null, tRola = null;
+  function campo(el) { return el && (/^(TEXTAREA|SELECT)$/.test(el.tagName) || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|file|range|color|hidden)$/i.test(el.type || ''))) || (el && el.isContentEditable); }
+  function rolador(el) {
+    for (var p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      // painéis que rolam de verdade (tela, folha, gaveta); tabelas com rolagem lateral ficam de fora
+      var s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowY) && p.clientHeight >= window.innerHeight * 0.4) return p;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  // altura que o teclado ocupa na tela do aparelho
+  function alturaTeclado() { return Math.max(0, topo.innerHeight - vv.height - vv.offsetTop); }
+  // posição do topo deste documento dentro da tela (módulos rodam numa moldura dentro do painel)
+  function deslocamento() { var y = 0, w = window; try { while (w !== topo && w.frameElement) { y += w.frameElement.getBoundingClientRect().top; w = w.parent; } } catch (e) {} return y; }
+  function abrirEspaco(r, h) {
+    var esp = r.querySelector(':scope > .' + ESPACO);
+    if (!esp) { esp = document.createElement('div'); esp.className = ESPACO; esp.setAttribute('aria-hidden', 'true'); esp.style.cssText = 'display:block;width:1px;pointer-events:none;flex:none'; (r === document.scrollingElement || r === document.documentElement ? document.body : r).appendChild(esp); }
+    esp.style.height = Math.round(h) + 'px';
+  }
+  function fecharEspaco() { var L = document.querySelectorAll('.' + ESPACO); for (var i = 0; i < L.length; i++) L[i].remove(); }
+  function ajustar() {
+    if (!foco || !document.contains(foco)) return;
+    var kb = alturaTeclado(); if (kb < 80) return; // sem teclado aberto (computador ou teclado externo)
+    var r = rolador(foco); abrirEspaco(r, kb + 40);
+    var b = foco.getBoundingClientRect(), off = deslocamento();
+    var visTopo = vv.offsetTop + 8, visFim = vv.offsetTop + vv.height - 12;
+    var cTopo = off + b.top, cFim = off + Math.min(b.bottom, b.top + 140);
+    // campo escondido pelo teclado ou acima da área visível: leva o campo para perto do meio da parte visível
+    if (cFim > visFim || cTopo < visTopo) {
+      var alvo = visTopo + (visFim - visTopo) * 0.38, delta = cTopo - alvo;
+      if (r === document.scrollingElement || r === document.documentElement) window.scrollBy(0, delta); else r.scrollTop += delta;
+    }
+  }
+  function agendar() { clearTimeout(tRola); ajustar(); tRola = setTimeout(ajustar, 120); setTimeout(ajustar, 320); setTimeout(ajustar, 650); }
+  document.addEventListener('focusin', function (e) { if (!campo(e.target)) return; clearTimeout(tSai); foco = e.target; agendar(); }, true);
+  document.addEventListener('focusout', function () { tSai = setTimeout(function () { if (!campo(document.activeElement)) { foco = null; fecharEspaco(); } }, 250); }, true);
+  // ao digitar (texto que quebra linha, sugestões que aparecem) o campo continua visível
+  document.addEventListener('input', function (e) { if (foco && e.target === foco) { clearTimeout(tRola); tRola = setTimeout(ajustar, 60); } }, true);
+  vv.addEventListener('resize', function () { if (foco) agendar(); });
+  vv.addEventListener('scroll', function () { if (foco) { clearTimeout(tRola); tRola = setTimeout(ajustar, 80); } });
+})();
+
+</script>
 </body></html>
