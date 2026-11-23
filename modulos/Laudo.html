@@ -2296,9 +2296,16 @@ function solicitanteTxt() {
   const crmv = crmvSolicitante();
   return nome + (crmv ? "  ·  " + (/crmv/i.test(crmv) ? crmv : "CRMV " + crmv) : "");
 }
+// laudo de laboratório externo (Citopet): sai com a data e a hora em que o laboratório liberou o exame, não com o dia em que o laudo foi feito
+function libLab() {
+  const X = estado.exame || {};
+  return estado.tipo === "idexx" && !estado.misto && X.labNome && /^\d{4}-\d{2}-\d{2}$/.test(X.labLiberado || "") ? { iso: X.labLiberado, hora: X.labHora || "" } : null;
+}
+const diaLaudo = () => { const l = libLab(); return l ? l.iso : hojeISO(); };
 function liberacaoTxt() {
-  const q = (typeof salvo !== "undefined" && salvo && salvo.assinadoEm) || null;
-  return q ? q.data + " às " + String(q.hora || "").replace(":", "h") : br(hojeISO());
+  const q = (typeof salvo !== "undefined" && salvo && salvo.assinadoEm) || null, l = libLab();
+  if (!q && l) return br(l.iso) + (l.hora ? " às " + l.hora.replace(":", "h") : "");
+  return q ? q.data + (q.hora ? " às " + String(q.hora).replace(":", "h") : "") : br(hojeISO());
 }
 function blocoIdent(x, y, w, tam) {
   // cabeçalho igual em todos os laudos: sempre os mesmos campos, na mesma ordem
@@ -2750,7 +2757,7 @@ function rubricaEls(d, x, y, w, h, cor) {
 function blocoAssinatura(x, w, y, celular) {
   const v = estado.vet || {}, el = [], quando = salvo ? salvo.assinadoEm : null;
   // tamanho parecido com o do endereço do CVH no rodapé do papel timbrado
-  el.push(T(x, y, "Brasília, " + extenso(hojeISO()) + ".", 8.6, { c: COR.TXT2 }));
+  el.push(T(x, y, "Brasília, " + extenso(diaLaudo()) + ".", 8.6, { c: COR.TXT2 }));
   const by = y + 8, h = 50, sz = 38, bx = x, bw = celular ? w : Math.min(w, 300);
   el.push(E.selo(bx, by, bw, h, { s: COR.BEGE, lw: 0.7, r: 7 }));
   el.push(E.img("selo", bx + 7, by + (h - sz) / 2, sz, sz));
@@ -2760,9 +2767,9 @@ function blocoAssinatura(x, w, y, celular) {
   el.push(T(tx, by + 32.5, "Médico veterinário  ·  " + (v.crmv || ""), 7.2, { c: COR.TXT2 }));
   // rubrica alinhada à direita com o fim da linha do CRMV, logo depois do nome
   { const fim = tx + largura("Médico veterinário  ·  " + (v.crmv || ""), 7.2), ini = Math.max(tx + largura(v.nome || "", 9, true) + 4, fim - 60); el.push(...rubricaEls(v.rubrica, ini, by + 5, fim - ini, 24)); }
-  const lib = estado.liberador ? (q) => quebrar("Liberado por " + estado.liberador.nome + (q ? " em " + q.data + " às " + q.hora : ""), 6.2, false, w).forEach((l) => { el.push(T(x, y + hh + 7, l, 6.2, { c: COR.MARROM2 })); hh += 8; }) : null;
+  const lib = estado.liberador ? (q) => quebrar("Liberado por " + estado.liberador.nome + (q ? " em " + q.data + (q.hora ? " às " + q.hora : "") : ""), 6.2, false, w).forEach((l) => { el.push(T(x, y + hh + 7, l, 6.2, { c: COR.MARROM2 })); hh += 8; }) : null;
   let hh = 0;
-  el.push(T(tx, by + 41, quando ? quando.data + " às " + quando.hora : "data e hora ao salvar", 6.6, { c: COR.MARROM2 }));
+  el.push(T(tx, by + 41, quando ? quando.data + (quando.hora ? " às " + quando.hora : "") : libLab() ? br(libLab().iso) + (libLab().hora ? " às " + libLab().hora : "") : "data e hora ao salvar", 6.6, { c: COR.MARROM2 }));
   el.push(T(tx + (celular ? 0 : 92), by + (celular ? 47.5 : 41), salvo ? "Código " + salvo.codigo : "código ao salvar", 6.6, { b: true, c: COR.MARROM2 }));
   if (salvo && CTX.urlVerificacao) el.push(...qrEls(urlVerif(salvo.codigo), qx, by + (h - sz) / 2, sz));
   else { el.push(E.selo(qx, by + (h - sz) / 2, sz, sz, { s: COR.LINHA, lw: 0.7, r: 3 })); el.push(T(qx + sz / 2, by + h / 2 + 2, "QR Code", 5.8, { c: COR.MARROM2, a: "m" })); }
@@ -3560,7 +3567,7 @@ async function salvar() {
   if (estado.receptor) { const P = Object.assign({}, estado.paciente), ts = tipagemTxt(); if (ts) P.tipo = ts; else if (!P.tipo) delete P.tipo; ponte("receptorGuardar", { paciente: P, resp: { nome: estado.resp.nome }, exame: { clinica: estado.exame.clinica || "", solicitante: estado.exame.solicitante || "", solicitanteCrmv: estado.exame.solicitanteCrmv || "", amostra: estado.exame.amostra || "" } }).catch(() => {}); ponte("novaRaca", estado.paciente.especie, estado.paciente.raca).catch(() => {}); }
   const bt = $("#salvar"); bt.disabled = true; st.className = "st"; st.textContent = "Assinando e gerando os PDFs…";
   try {
-    const d = new Date(), quando = { data: br(hojeISO()), hora: p2(d.getHours()) + ":" + p2(d.getMinutes()), iso: d.toISOString() }, dados = dadosLaudo();
+    const d = new Date(), l = libLab(), quando = l ? { data: br(l.iso), hora: l.hora, iso: d.toISOString(), lab: true } : { data: br(hojeISO()), hora: p2(d.getHours()) + ":" + p2(d.getMinutes()), iso: d.toISOString() }, dados = dadosLaudo();
     const h = (await sha(JSON.stringify(dados) + quando.iso)).toUpperCase();
     salvo = { codigo: "L-" + h.slice(0, 4) + "-" + h.slice(4, 8) + "-" + h.slice(8, 12), assinadoEm: quando };
     const anexo = JSON.stringify({ app: "laudo-cvh", v: 2, ...dados, codigo: salvo.codigo, assinadoEm: quando });
