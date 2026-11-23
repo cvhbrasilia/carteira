@@ -945,7 +945,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123194520';
+  var VERSAO = '20261123202041';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3651,8 +3651,8 @@ function paginasLinha(an, regs) {
 function paginasCert(an) {
   const l = certificadosDe(an.id); if (!l.length) return [];
   const out = [];
-  // 4 certificados na primeira página (que tem o texto de abertura) e 5 nas seguintes
-  for (let i = 0, por = 4; i < l.length; i += por, por = 5) out.push(pagina(an, '<div class="sec"><h2>Certificados</h2></div>' + (i ? '' : '<p class="lt-int">Um certificado para cada doação, com versão para imprimir e imagens para postar.</p>') +
+  // 5 certificados por página (a primeira também, com o texto de abertura)
+  for (let i = 0, por = 5; i < l.length; i += por) out.push(pagina(an, '<div class="sec"><h2>Certificados</h2></div>' + (i ? '' : '<p class="lt-int">Um certificado para cada doação, com versão para imprimir e imagens para postar.</p>') +
     l.slice(i, i + por).map(c => '<article class="ct-cart" data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + (c.tipo === 'aposentadoria' ? 'Aposentadoria' : 'Doação de sangue') + '</small><b>' + dataLonga(c.data) + '</b><span class="ct-lks"><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">PDF</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="feed">Feed</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="story">Stories</button></span></div></article>').join('')));
   return out;
 }
