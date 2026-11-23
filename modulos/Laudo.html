@@ -2243,8 +2243,7 @@ function liberacaoTxt() {
   return q ? q.data + " às " + String(q.hora || "").replace(":", "h") : br(hojeISO());
 }
 function blocoIdent(x, y, w, tam) {
-  // cabeçalho igual em todos os laudos, no A4 e no celular: sempre os mesmos campos, na mesma ordem, em duas colunas.
-  // O campo que não cabe em meia largura ocupa a linha inteira.
+  // cabeçalho igual em todos os laudos: sempre os mesmos campos, na mesma ordem
   const P = estado.paciente, R = estado.resp, X = estado.exame, el = [], lh = tam + 5.2, vazio = "não informado";
   const ts = estado.tipo === "tipagem" || tipAtual() ? "" : tipoSanguineoTxt();
   const itens = [["Paciente", P.nome, true], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : "", false, true],
@@ -2253,19 +2252,22 @@ function blocoIdent(x, y, w, tam) {
     ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica]]),
     ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], X.labNome ? [estado.misto ? "Laboratórios" : "Laboratório", (estado.misto ? "IDEXX no CVH e " : "") + X.labNome + (X.labNumero ? " · nº " + X.labNumero : ""), false, true] : ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
-  const gap = 14, wm = (w - 24 - gap) / 2, linhas = [];
+  // A4: três colunas; celular: duas. O campo que não cabe numa coluna ocupa duas (ou a linha inteira), sem mudar a ordem.
+  const cols = w > 400 ? 3 : 2, gap = 14, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
+  let usadas = cols;
+  const por = (it) => { if (usadas + it.span > cols) { linhas.push([]); usadas = 0; } it.col = usadas; usadas += it.span; linhas[linhas.length - 1].push(it); };
   itens.forEach(([rot, val, forte]) => {
-    if (!rot) { const it = { r: val, wr: 0, b: false, vazio: false, ls: [""], meia: largura(val, tam, true) <= wm }; const ult = linhas[linhas.length - 1]; if (it.meia && ult && ult.length === 1 && ult[0].meia) ult.push(it); else linhas.push([it]); return; }
-    const r = rot + ":", wr = largura(r + " ", tam, true), v = String(val || "").trim(), txt = v || vazio, b = !!forte && !!v, cabe = wr + largura(txt, tam, b) <= wm;
-    const it = { r, wr, b, vazio: !v, ls: cabe ? [txt] : quebrar(txt, tam, b, Math.max(60, w - 24 - wr)), meia: cabe };
-    const ult = linhas[linhas.length - 1];
-    if (cabe && ult && ult.length === 1 && ult[0].meia) ult.push(it); else linhas.push([it]);
+    const r = rot ? rot + ":" : "", wr = rot ? largura(r + " ", tam, true) : 0, v = String(val || "").trim(), txt = rot ? v || vazio : v, b = !!forte && !!v && !!rot;
+    let span = 1; while (span < cols && wr + largura(txt, tam, b) > larg(span)) span++;
+    const cabe = wr + largura(txt, tam, b) <= larg(span);
+    if (!rot) { let sp = 1; while (sp < cols && largura(v, tam, true) > larg(sp)) sp++; por({ r: v, wr: 0, b: false, vazio: false, span: sp, ls: [""] }); return; }
+    por({ r, wr, b, vazio: !!rot && !v, span, ls: cabe ? [txt] : quebrar(txt, tam, b, Math.max(60, larg(cols) - wr)) });
   });
   const alt = linhas.map((l) => Math.max(...l.map((i) => i.ls.length)) * lh), h = 13 + alt.reduce((a, c) => a + c, 0);
   el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
   let yy = y + 8 + tam;
-  linhas.forEach((l, li) => { l.forEach((it, ci) => { const cx = x + 12 + ci * (wm + gap);
-      el.push(T(cx, yy, it.r, tam, { b: true, c: COR.OURO }));
+  linhas.forEach((l, li) => { l.forEach((it) => { const cx = x + 12 + it.col * (wm + gap);
+      if (it.r) el.push(T(cx, yy, it.r, tam, { b: true, c: COR.OURO }));
       it.ls.forEach((t2, k) => el.push(T(cx + it.wr, yy + k * lh, t2, tam, { b: it.b, i: it.vazio, c: it.vazio ? COR.MARROM2 : it.b ? COR.BORDO : COR.TEXTO }))); });
     yy += alt[li]; });
   return { el, h };
@@ -2718,22 +2720,65 @@ function paginasLaudo() {
   const blocos = blocosCorpo(X, W, false); while (blocos.length && blocos[blocos.length - 1].vazio) blocos.pop();
   const metodo = quebrar(notaMetodo(), 7.5, false, W), rodapeH = 96 + metodo.length * 10;
   // o fim do laudo (pelo menos umas quatro linhas) vai junto com a assinatura, para ela nunca ficar sozinha numa folha
-  let tail = blocos.length, soma = 0; while (tail > 0 && soma < 50) { tail--; soma += blocos[tail].h; }
-  // observações e notas no fim do laudo ficam na folha onde couberem (logo abaixo dos resultados); a assinatura segue na próxima, se precisar
-  if (tail < blocos.length && blocos.slice(tail).every((b) => b.txt)) tail = blocos.length;
+  let tail0 = blocos.length, soma = 0; while (tail0 > 0 && soma < 50) { tail0--; soma += blocos[tail0].h; }
+  // observações e notas no fim do laudo ficam na folha onde couberem (logo abaixo dos resultados)
+  const soTexto = tail0 < blocos.length && blocos.slice(tail0).every((b) => b.txt);
   const resto = blocos.map((_, i) => blocos.slice(i).reduce((a, b) => a + b.h, 0));
-  blocos.forEach((b, i) => {
-    if (b.quebra) { if (pag.length && y + resto[i] > PG.YMAX - rodapeH) novaPag(); return; }
-    if (b.cola && y + b.h <= PG.YMAX + 14) { pag.push(...b.el(y)); y += b.h; return; }
-    if (i >= tail ? (i === tail && y + resto[i] > PG.YMAX - rodapeH) || y + b.h > PG.YMAX - rodapeH : y + b.h > PG.YMAX) novaPag();
-    pag.push(...b.el(y)); y += b.h;
-  });
-  if (y > PG.YMAX - rodapeH) novaPag();
+  const inicio = { pag: pag.slice(), y };
+  const dispor = (tail) => {
+    pags.length = 0; pag = inicio.pag.slice(); y = inicio.y;
+    blocos.forEach((b, i) => {
+      if (b.quebra) { if (pag.length && y + resto[i] > PG.YMAX - rodapeH) novaPag(); return; }
+      if (b.cola && y + b.h <= PG.YMAX + 14) { pag.push(...b.el(y)); y += b.h; return; }
+      if (i >= tail ? (i === tail && y + resto[i] > PG.YMAX - rodapeH) || y + b.h > PG.YMAX - rodapeH : y + b.h > PG.YMAX) novaPag();
+      pag.push(...b.el(y)); y += b.h;
+    });
+    if (y > PG.YMAX - rodapeH) novaPag();
+  };
+  dispor(soTexto ? blocos.length : tail0);
+  // a assinatura ficaria sozinha na segunda folha: primeiro tenta reduzir tudo um pouco e fechar numa folha só;
+  // se não der, as últimas linhas das observações descem junto com a assinatura
+  if (pags.length === 1 && !pag.length) {
+    const uma = laudoNumaFolha(blocos, metodo); if (uma) return [[...cabecalhoA4(), ...uma]];
+    if (soTexto) dispor(tail0);
+  }
   let yr = Math.max(y + 12, PG.YMAX - rodapeH + 4);
   metodo.forEach((l) => { pag.push(T(X, yr, l, 7.5, { i: true, c: COR.MARROM2 })); yr += 10; }); yr += 12;
   pag.push(...blocoAssinatura(X, W, yr).el);
   pags.push(pag);
   return pags.map((els, i) => [...cabecalhoA4(), ...els, ...(pags.length > 1 ? [T(PG.W / 2 + 10, PG.H - 43, "Página " + (i + 1) + " de " + pags.length, 7.5, { c: COR.MARROM2, a: "m" })] : [])]);
+}
+// laudo inteiro numa folha, em escala reduzida (até 82%), centralizado na largura útil; null se precisar reduzir mais que isso
+const ESCALA_MIN = 0.82;
+function laudoNumaFolha(blocos, metodo) {
+  const X = PG.X, W = PG.CW, el = []; let y = PG.Y;
+  const tt = estado.exame.titulo || "Resultado de exame", tam = tt.length > 24 ? 20 : tt.length > 18 ? 22 : 26;
+  const tb = tuboTitulo(X + largura(tt, tam, true) + 12, y, X + W, tam, 88); y += tb.dy;
+  el.push(T(X, y + tam * 0.86, tt, tam, { b: true, c: COR.BORDO })); el.push(...tb.el);
+  y += Math.max(tam * 0.86 + 16, tb.h + 6);
+  const id = blocoIdent(X, y, W, 9.5); el.push(...id.el); y += id.h + 10;
+  blocos.forEach((b) => { if (b.quebra) return; el.push(...b.el(y)); y += b.h; });
+  let yr = y + 12; metodo.forEach((l) => { el.push(T(X, yr, l, 7.5, { i: true, c: COR.MARROM2 })); yr += 10; }); yr += 12;
+  const as = blocoAssinatura(X, W, yr); el.push(...as.el);
+  const s = (PG.YMAX - 6 - PG.Y) / (yr + as.h - PG.Y);
+  if (s >= 1 || s < ESCALA_MIN) return null;
+  return escalarEls(el, s, X, PG.Y, X + (W - W * s) / 2);
+}
+// reduz elementos em torno de (x0, y0) e leva a borda esquerda para xNovo
+function escalarEls(els, s, x0, y0, xNovo) {
+  const fx = (x) => xNovo + (x - x0) * s, fy = (y) => y0 + (y - y0) * s;
+  return els.map((e) => {
+    const o = Object.assign({}, e);
+    if ("x" in e) o.x = fx(e.x); if ("y" in e) o.y = fy(e.y);
+    if ("w" in e) o.w = e.w * s; if ("h" in e) o.h = e.h * s;
+    if ("x1" in e) { o.x1 = fx(e.x1); o.x2 = fx(e.x2); o.y1 = fy(e.y1); o.y2 = fy(e.y2); }
+    if ("cx" in e) { o.cx = fx(e.cx); o.cy = fy(e.cy); o.r = e.r * s; }
+    if ("rr" in e) o.rr = e.rr * s;
+    if ("lw" in e) o.lw = e.lw * s;
+    if (e.pts) o.pts = e.pts.map((q) => [fx(q[0]), fy(q[1])]);
+    if (e.segs) o.segs = e.segs.map((g) => Object.assign({}, g, { tam: g.tam * s }));
+    return o;
+  });
 }
 const PM = { W: 340, X: 18, CW: 304 };
 function paginaCelular() {
