@@ -897,7 +897,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
   // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
   var r = q.get('r') || '';
-  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  if (!window.CVH_PAINEL && !q.get('painel') && !(q.get('v') && String(q.get('v')).replace(/\s/g, '').length >= 8)) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
   window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
   function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
@@ -924,7 +924,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123033152';
+  var VERSAO = '20261123034345';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -941,7 +941,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
   // notificações: o service worker só existe no painel
   if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
-  if (q.get('v')) {
+  // ?v= é a verificação de receita e laudo (código de 12 caracteres); nos links do painel e do motoboy, ?v=2 é só a versão da prévia do WhatsApp
+  if (q.get('v') && !window.CVH_PAINEL && String(q.get('v')).replace(/\s/g, '').length >= 8) {
     chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
       function (e) { document.body.textContent = e.message; });
   }
