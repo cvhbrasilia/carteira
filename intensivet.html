@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123034550';
+  var VERSAO = '20261123034803';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -336,7 +336,7 @@ function pintar() {
   if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
   if (!notifOk()) h += '<div class="cx av"><p>Ative as notificações para saber quando uma caixa do CVH estiver a caminho, mesmo com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>';
   const vencidas = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao) && vencidaU(u));
-  if (vencidas.length) h += '<div class="cx al"><h2>BOLSA VENCIDA · NÃO USE</h2><p>Separe ' + (vencidas.length === 1 ? "a bolsa" : "as bolsas") + ' e toque em Devolver ao CVH. O CVH já foi avisado.</p>' + vencidas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + '</small><div class="bts"><button class="btn peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") + "</div>";
+  if (vencidas.length) h += '<div class="cx al"><h2>BOLSA VENCIDA · NÃO USE</h2><p>Não use. Bolsa vencida não volta ao CVH: descarte no lixo infectante e toque em Descartar para registrar. O CVH já foi avisado.</p>' + vencidas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + '</small><div class="bts"><button class="btn peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") + "</div>";
   const cps = (D.unidades || []).filter((u) => u.local === A.local && u.componente === "CP" && ["disponivel", "reservada"].includes(u.situacao) && !vencidaU(u));
   if (cps.length) h += '<div class="cx av"><h2>Plaqueta aqui</h2><p><b>Temperatura ambiente (20 a 24 °C), nunca no refrigerador.</b> Transfundir em até 24 h depois que saiu do CVH. Agite suavemente antes de usar.</p>' + cps.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "</div>").join("") + "</div>";
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
@@ -377,7 +377,7 @@ function pintar() {
   const ordem = ["CH", "PFC", "CRIO", "CP", "PPC"];
   h += '<div class="cx"><h2>Estoque na ' + esc(A.local) + " · " + est.length + (est.length === 1 ? " bolsa" : " bolsas") + "</h2>" + (est.length ? est.sort((a, b) => ordem.indexOf(a.componente) - ordem.indexOf(b.componente) || String(a.validade).localeCompare(String(b.validade))).map((u) =>
     '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
-    (interna && u.situacao !== "bloqueada" && !vencidaU(u) ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button><button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
+    (interna && u.situacao !== "bloqueada" && !vencidaU(u) ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + (u.componente === "CP" ? '<button class="btn sec peq" data-a="descartar" data-v="' + esc(u.id) + '">Descartar</button>' : '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button>') + '<button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
   const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
   if (feitas.length) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
     feitas.sort((a, b) => String(b.dados.uso.transfundidaEm).localeCompare(String(a.dados.uso.transfundidaEm))).map((u) => { const U = u.dados.uso || {}, ac = U.acomp || {}, hts = ac.hts || [];
@@ -845,6 +845,8 @@ document.addEventListener("click", async (ev) => {
     if (a === "cancelar") return cancelarUso(v);
     if (a === "cancelarOk") { const c = $("#cSem"); if (c && !c.checked) return toast("Marque a confirmação."); b.disabled = true; await srv("intCancelarRetirada", v, { semUso: !!c }); fechar(); await carregar(); toast("Retirada cancelada. Agora leia o QR do equipamento.", 6000); return lerEquip(v); }
     if (a === "devolver") return devolver(v);
+    if (a === "descartar") { const u = uniDe(v); return modal('<h2>Descartar</h2><div class="bolsa">' + linhaBolsa(u) + '</div><p>' + (vencidaU(u) ? "Bolsa vencida." : "Plaqueta que não será usada.") + ' Descarte no lixo infectante. Nada que saiu do CVH volta para o estoque.</p>' + (vencidaU(u) ? "" : '<label>Motivo</label><input type="text" id="dsMot" placeholder="Ex.: paciente não precisou">') + '<label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="descOk" data-v="' + esc(v) + '">Descartei a bolsa</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); }
+    if (a === "descOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; try { await srv("intDescartar", v, n, ($("#dsMot") || {}).value || ""); fechar(); somOk(); toast("Descarte registrado.", 5000); return carregar(); } catch (e) { b.disabled = false; return toast(e.message, 7000); } }
     if (a === "devOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; await srv("intDevolver", v, n); fechar(); toast("Devolução registrada. Mande a bolsa ao CVH em caixa térmica.", 7000); return carregar(); }
   } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; }
 });
