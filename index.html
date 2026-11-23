@@ -924,7 +924,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123045919';
+  var VERSAO = '20261123052020';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -961,7 +961,14 @@ const E = { modo: BOOT.modo, token: BOOT.token, sessao: null, u: null, modulo: '
 // sessão guardada: no aparelho (manter conectado) ou só nesta aba
 try { E.sessao = localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s'); } catch (_) {}
 
+// ação grave: o servidor responde CONFIRMAR; a pessoa confirma com Face ID ou senha e o pedido segue sozinho
 function api(fn, ...args) {
+  return apiBruto(fn, ...args).catch(async e => {
+    if (e && e.message === 'CONFIRMAR' && fn !== 'senhaConfirmar' && fn !== 'chaveConfirmar') { if (await confirmarIdentidade()) return apiBruto(fn, ...args); throw new Error('Ação cancelada: a identidade não foi confirmada.'); }
+    throw e;
+  });
+}
+function apiBruto(fn, ...args) {
   return new Promise((ok, erro) => {
     if (window.DEMO) { DEMO.chamar(fn, args).then(ok, erro); return; }
     CVH_SERVIDOR.chamar(fn, args).then(ok, e => {
@@ -969,6 +976,39 @@ function api(fn, ...args) {
       if (m.indexOf('SESSAO') >= 0) { E.sessao = null; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); } catch (_) {} fecharFolha(); telaLogin(); erro(new Error('Sua sessão expirou. Entre de novo.')); return; }
       erro(new Error(m));
     });
+  });
+}
+/* ── Face ID ou digital (passkey) ── */
+const temPasskey = () => !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.get);
+const b64uBuf = s => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((String(s).length + 3) % 4)), c => c.charCodeAt(0));
+const bufB64u = b => { let t = ''; new Uint8Array(b).forEach(x => t += String.fromCharCode(x)); return btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+function respostaAssinatura(c) { return { id: c.id, clientDataJSON: bufB64u(c.response.clientDataJSON), authenticatorData: bufB64u(c.response.authenticatorData), signature: bufB64u(c.response.signature), userHandle: c.response.userHandle ? bufB64u(c.response.userHandle) : '' }; }
+async function pedirAssinatura(op) { const c = await navigator.credentials.get({ publicKey: Object.assign({}, op, { challenge: b64uBuf(op.challenge), allowCredentials: (op.allowCredentials || []).map(x => ({ type: 'public-key', id: b64uBuf(x.id) })) }) }); return respostaAssinatura(c); }
+async function cadastrarFaceId() {
+  const op = await apiBruto('chaveOpcoesRegistro', E.sessao, location.origin);
+  const c = await navigator.credentials.create({ publicKey: Object.assign({}, op, { challenge: b64uBuf(op.challenge), user: Object.assign({}, op.user, { id: b64uBuf(op.user.id) }), excludeCredentials: (op.excludeCredentials || []).map(x => ({ type: 'public-key', id: b64uBuf(x.id) })) }) });
+  const r = c.response, pk = r.getPublicKey ? r.getPublicKey() : null;
+  if (!pk) throw new Error('Este navegador não informa a chave. Atualize o sistema do aparelho.');
+  const ua = navigator.userAgent, nome = (/iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Aparelho') + ' · ' + new Date().toLocaleDateString('pt-BR');
+  await apiBruto('chaveRegistrar', E.sessao, { id: c.id, clientDataJSON: bufB64u(r.clientDataJSON), authenticatorData: bufB64u(r.getAuthenticatorData()), publicKey: bufB64u(pk), alg: r.getPublicKeyAlgorithm(), nome, aparelho: ua.slice(0, 200) });
+  try { localStorage.setItem('cvh_faceid', '1'); } catch (_) {}
+}
+async function listarFaceId() { const el = $('#ciLista'); if (!el) return; try { const L = await apiBruto('chaveListar', E.sessao); el.innerHTML = L.length ? L.map(c => '<div class="item"><div class="t"><b>' + esc(c.nome) + '</b><small>' + (c.ultimo_uso ? 'usado em ' + new Date(c.ultimo_uso).toLocaleString('pt-BR') : 'ainda não usado') + '</small></div><button class="btn sec2 peq" data-acao="faceid-remover" data-id="' + esc(c.id) + '">Remover</button></div>').join('') : '<p class="vazio-p">Nenhum aparelho cadastrado.</p>'; } catch (_) { el.innerHTML = ''; } }
+// confirmação de identidade antes de ação grave (Face ID ou senha); devolve true ou false
+function confirmarIdentidade() {
+  return new Promise(async res => {
+    const ja = $('#confId'); if (ja) ja.remove();
+    let comChave = false; try { comChave = temPasskey() && await apiBruto('chaveTem', E.sessao); } catch (_) {}
+    const cx = document.createElement('div'); cx.id = 'confId'; cx.style.cssText = 'position:fixed;inset:0;z-index:9500;background:rgba(40,20,15,.55);display:flex;align-items:center;justify-content:center;padding:18px';
+    cx.innerHTML = '<div class="cartao" style="max-width:380px;width:100%;margin:0"><h3>Confirme que é você</h3><p class="nota">Esta ação é grave. Para seguir, confirme a sua identidade.</p>' + (comChave ? '<button class="btn" id="ciFace" style="width:100%">Usar Face ID ou digital</button><p class="nota" style="text-align:center;margin:8px 0">ou digite a sua senha</p>' : '') +
+      '<input id="ciSenha" type="password" autocomplete="current-password" placeholder="sua senha" style="width:100%"><p class="erro" id="ciErro"></p><div class="acoes"><button class="btn' + (comChave ? ' sec2' : '') + '" id="ciOk">Confirmar com a senha</button><button class="btn sec2" id="ciNao">Cancelar</button></div></div>';
+    document.body.appendChild(cx);
+    const fim = v => { cx.remove(); res(v); };
+    $('#ciNao').onclick = () => fim(false);
+    $('#ciOk').onclick = async () => { const b = $('#ciOk'); b.disabled = true; try { await apiBruto('senhaConfirmar', E.sessao, $('#ciSenha').value); fim(true); } catch (e) { $('#ciErro').textContent = e.message; b.disabled = false; } };
+    $('#ciSenha').onkeydown = ev => { if (ev.key === 'Enter') $('#ciOk').click(); };
+    const bf = $('#ciFace'); if (bf) { bf.onclick = async () => { bf.disabled = true; try { const op = await apiBruto('chaveOpcoesConfirmar', E.sessao, location.origin); await apiBruto('chaveConfirmar', E.sessao, await pedirAssinatura(op)); fim(true); } catch (e) { $('#ciErro').textContent = /NotAllowed|cancel/i.test(e.name + e.message) ? 'Face ID cancelado.' : e.message; bf.disabled = false; } }; setTimeout(() => bf.click(), 200); }
+    else setTimeout(() => { const i = $('#ciSenha'); if (i) i.focus(); }, 100);
   });
 }
 const VERSAO_PAINEL = '2026.11.17f';
@@ -3218,8 +3258,12 @@ async function telaLogin() {
     (criar ? '<input class="cred" id="sen2" type="password" autocomplete="new-password" placeholder="repita a senha" aria-label="Repita a senha">' : '') +
     '<label class="manter"><input type="checkbox" id="manter" checked> Manter conectado neste aparelho</label>' +
     '<button class="btn" style="min-width:200px">' + (criar ? 'Criar e entrar' : 'Entrar') + '</button><p class="erro" id="erro"></p>' +
+    (!criar && temPasskey() ? '<button type="button" class="btn sec2" id="bFace" style="min-width:200px;margin-top:8px">Entrar com Face ID ou digital</button>' : '') +
     (criar ? '' : '<button type="button" class="lk-esq" id="bEsqueci" style="background:none;border:0;color:var(--vinho);text-decoration:underline;font-size:14px;margin-top:6px;cursor:pointer">Esqueci minha senha</button>') + '</form></main>';
   $(criar ? '#nom' : '#usu').focus();
+  const bfa = $('#bFace'); if (bfa) bfa.onclick = async () => { bfa.disabled = true; $('#erro').textContent = '';
+    try { const op = await apiBruto('chaveOpcoesEntrada', location.origin); const r = await apiBruto('chaveEntrar', await pedirAssinatura(op), true); E.sessao = r.sessao; try { localStorage.setItem('cvh_s', E.sessao); } catch (_) {} await carregarPainel(); }
+    catch (e) { $('#erro').textContent = /NotAllowed|cancel/i.test((e.name || '') + e.message) ? 'Face ID cancelado. Entre com a senha.' : e.message; bfa.disabled = false; } };
   const be = $('#bEsqueci'); if (be) be.onclick = async () => {
     const usu = $('#usu').value.trim(); if (!usu) { $('#erro').textContent = 'Digite o seu usuário e toque de novo em Esqueci minha senha.'; $('#usu').focus(); return; }
     be.disabled = true; try { await api('senhaEsqueci', usu); $('#erro').style.color = 'var(--tinta2)'; $('#erro').textContent = 'Pronto. Se o usuário estiver cadastrado, o link para criar a senha nova vai para o e-mail da pessoa. Sem e-mail cadastrado, o administrador é avisado e manda o link.'; } catch (e) { $('#erro').textContent = e.message; } finally { be.disabled = false; } };
@@ -4861,6 +4905,7 @@ function telaHome() {
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
   const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte'));
   E.meusMods = meus;
+  if (pode('admin') && temPasskey() && !navigator.webdriver) setTimeout(async () => { try { if (localStorage.getItem('cvh_faceid_ofertado') || await apiBruto('chaveTem', E.sessao)) return; localStorage.setItem('cvh_faceid_ofertado', '1'); if (confirm('Cadastrar o Face ID ou a digital neste aparelho? Você passa a entrar e confirmar ações graves sem digitar a senha.')) { await cadastrarFaceId(); toast('Face ID cadastrado.'); } } catch (_) {} }, 1500);
   raiz.innerHTML = '<main class="tela tela-home"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
@@ -6084,6 +6129,7 @@ function telaConta() {
     '<p class="nota">Acesso: ' + esc(E.u.usuario) + ' · ' + esc(listaPt(E.u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + '</p>' +
     '<p class="nota">' + (v ? 'Assina como ' + esc(v.nome + ' · ' + v.crmv) + (v.rubrica ? '' : ' (sem rubrica desenhada)') + '.' : 'Sem assinatura de médico veterinário.') + '</p>' +
     (v ? '<button class="btn sec2 peq" data-acao="minha-rubrica">Minha rubrica</button>' : '') + '</section>' +
+    (temPasskey() ? '<section class="cartao"><h3>Face ID ou digital</h3><p class="nota">Entre no painel e confirme ações graves só olhando para o celular ou tocando no sensor, sem digitar a senha. Cadastre em cada aparelho que você usa.</p><div id="ciLista"></div><button class="btn sec2 peq" data-acao="faceid-cadastrar">Cadastrar Face ID neste aparelho</button></section>' : '') +
     '<section class="cartao"><h3>E-mail pessoal</h3><p class="nota">Se você esquecer a senha, o link para criar a senha nova vai para este e-mail.</p><div class="grade">' + campo('cEmail', 'E-mail', inp('cEmail', E.u.email || '', 'type="email" autocomplete="email" autocapitalize="none"'), 'larga') + '</div><button class="btn sec2 peq" data-acao="conta-email">Salvar e-mail</button></section>' +
     '<section class="cartao"><h3>Trocar senha</h3><div class="grade">' + campo('sAtual', 'Senha atual', inp('sAtual', '', 'type="password" autocomplete="current-password"'), 'larga') +
     campo('sNova', 'Nova senha', inp('sNova', '', 'type="password" autocomplete="new-password"')) + campo('sNova2', 'Repita', inp('sNova2', '', 'type="password" autocomplete="new-password"')) + '</div>' +
@@ -6097,6 +6143,7 @@ function telaConta() {
     '<button class="btn sec2 peq" data-acao="notif-teste" data-v="normal">Testar aviso</button><button class="btn sec2 peq" data-acao="notif-teste" data-v="critico">Testar alerta crítico</button><button class="btn sec2 peq" data-acao="notif-fechado">Testar com o app fechado</button></div>' +
     '<div class="mini-bts" style="margin-top:8px"><button class="mini" data-acao="som-ouvir" data-v="normal">Ouvir o som do aviso</button><button class="mini" data-acao="som-ouvir" data-v="critico">Ouvir o alarme crítico</button></div>' +
     '<p class="nota">Com o app aberto, os avisos tocam o som do CVH e o alerta crítico toca até alguém tocar em Entendi. Com o app fechado, chega a notificação do celular com o som do aparelho.</p></section>');
+  setTimeout(listarFaceId, 0);
 }
 
 /* ═════════════ painel: telas ═════════════ */
@@ -7755,6 +7802,8 @@ const ACOES = {
   'notif-fechado': async b => { b.disabled = true; try { await api('pushTeste', E.sessao, 'normal', 20); toast('Feche o app agora (vá para a tela de início do celular). Em 20 segundos chega o aviso, e o ícone fica com o número vermelho.', 9000); } catch (e) { toast(e.message, 6000); } setTimeout(() => { b.disabled = false; }, 20000); },
   'notif-teste': async b => { try { somDesbloquear(); const r = await api('pushTeste', E.sessao, b.dataset.v); toast(r && r.enviadas ? 'Enviado para ' + r.enviadas + (r.enviadas === 1 ? ' aparelho.' : ' aparelhos.') : 'Nenhum aparelho com notificação ligada. Toque em Ativar primeiro.', 5000); setTimeout(checarAvisos, 1500); } catch (e) { toast(e.message, 5000); } },
   'som-ouvir': b => { somDesbloquear(); b.dataset.v === 'critico' ? alertaCritico({ titulo: 'Teste do alarme crítico', corpo: 'É assim que toca um alerta urgente.' }) : somAviso(); },
+  'faceid-cadastrar': async b => { b.disabled = true; try { await cadastrarFaceId(); toast('Face ID cadastrado neste aparelho.'); listarFaceId(); } catch (e) { toast(/NotAllowed|cancel/i.test((e.name || '') + e.message) ? 'Cadastro cancelado.' : /InvalidState/.test(e.name || '') ? 'Este aparelho já está cadastrado.' : e.message, 6000); } finally { b.disabled = false; } },
+  'faceid-remover': async b => { if (!confirm('Remover este Face ID?')) return; try { await apiBruto('chaveRemover', E.sessao, b.dataset.id); listarFaceId(); } catch (e) { toast(e.message); } },
   'conta-email': async b => { b.disabled = true; try { E.u = E.d.usuario = await api('minhaContaEmail', E.sessao, vl('cEmail')); toast('E-mail salvo.'); } catch (e) { toast(e.message, 5000); } finally { b.disabled = false; } },
   'gerar-senha': () => { const w = gerarSenhaForte(); ['sNova', 'sNova2'].forEach(k => { const el = $('#' + k); el.value = w; el.type = 'text'; }); forcaSenha(); $('#sGerada').innerHTML = '<div class="link-box"><input readonly value="' + esc(w) + '" aria-label="Senha gerada"><button class="btn peq" id="sCopiar">Copiar</button></div><p class="nota">Guarde esta senha no Gerenciador de Senhas antes de trocar. Ela não aparece de novo.</p>'; $('#sCopiar').onclick = async () => toast(await copiar(w) ? 'Senha copiada.' : 'Selecione e copie.'); },
   'trocar-senha': async b => {
