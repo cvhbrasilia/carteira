@@ -3107,7 +3107,7 @@ function desenharTubo(a, rot) {
     x.fillStyle = gs; x.fillRect(ex, ey, ew, eh);
     x.strokeStyle = "rgba(0,0,0,.10)"; x.lineWidth = 1; x.strokeRect(ex + 0.5, ey + 0.5, ew - 1, eh - 1);
   }
-  return { url: cv.toDataURL("image/jpeg", 0.93), w: CW, h: CH };
+  return { url: cv.toDataURL("image/jpeg", 0.93), w: CW, h: CH, desenhada: true };
 }
 // microtubos do cartão de gel: só os da prova (cão 2, gato 3), com o fundo neutralizado linha a linha
 // se o recorte pegou a etiqueta escrita à mão embaixo dos microtubos, corta a foto logo depois da ponta deles
@@ -3172,6 +3172,14 @@ function rotTubo() { const X = estado.exame; return { nome: estado.paciente.nome
 function imagensAmostra() {
   const C = AMOSTRA_IMG.cache;
   if (estado.tipo !== "compat") return;
+  // foto do tubo que entrou sem desenho (laudo aberto de antes ou leitura que falhou): tenta ler de novo com a leitura atual
+  const fb = estado.fotos.tubo;
+  if (!AMOSTRA_IMG.tubo && fb && fb.url && !fb.desenhada && C.reTubo !== fb.url) {
+    C.reTubo = fb.url; const im = new Image();
+    im.onload = () => { try { const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext("2d").drawImage(im, 0, 0); const a = analisarTubo(cv);
+      if (a && estado.fotos.tubo === fb) { AMOSTRA_IMG.tubo = a; C.tuboCh = ""; imagensAmostra(); renderPrevia(); } } catch (e) {} };
+    im.src = fb.url;
+  }
   if (AMOSTRA_IMG.tubo) { const ch = JSON.stringify(rotTubo()); if (C.tuboCh !== ch) { C.tubo = desenharTubo(AMOSTRA_IMG.tubo, rotTubo()); C.tuboCh = ch; estado.fotos.tubo = C.tubo; } }
   (AMOSTRA_IMG.gel || []).forEach((g, i) => { if (!g || !estado.t.provas[i]) return; if (g.neutro !== !!estado.t.gelNeutro && g.orig) { g = AMOSTRA_IMG.gel[i] = analisarGel(g.orig, g.n, !!estado.t.gelNeutro); C["gel" + i] = ""; } const r = rotGel(i), ch = JSON.stringify(r); if (C["gel" + i] !== ch || g.n !== r.pocos.length) { if (g.n !== r.pocos.length) { delete estado.fotos["gel" + i]; return; } estado.fotos["gel" + i] = desenharGelProva(g, r); C["gel" + i] = ch; } });
 }
