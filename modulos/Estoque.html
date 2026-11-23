@@ -752,7 +752,7 @@ const FORMATOS = {
 };
 // rolos da Zebra ZD220 do CVH: 50 × 30 mm (pequena) e 100 × 100 mm (grande); 104 × 50,8 mm era só a medida do driver, não existe etiqueta assim (21/11)
 const fmtEtq = () => { try { const f = localStorage.getItem("cvh_etq3"); return FORMATOS[f] ? f : "zg"; } catch (e) { return "zg"; } };
-const CONSERVA = { CH: "Conservar entre 2 e 6 °C", PFC: "Conservar a −18 °C ou menos", CRIO: "Conservar a −18 °C ou menos", PPC: "Conservar a −18 °C ou menos", CP: "Conservar entre 20 e 24 °C, sob agitação" };
+const CONSERVA = { CH: "Conservar entre 2 e 6 °C", PFC: "Conservar a −18 °C ou menos", CRIO: "Conservar a −18 °C ou menos", PPC: "Conservar a −18 °C ou menos", CP: "NÃO REFRIGERAR · 20 a 24 °C" };
 function etiquetaHtml(u, f, qr) {
   const D = u.dados || {}, a = u.animal_id ? animalDe(u.animal_id) : { especie: D.especie || '', tipoSanguineo: D.tipoSanguineo || '' }, esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a);
   const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";

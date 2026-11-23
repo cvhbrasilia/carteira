@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123040150';
+  var VERSAO = '20261123040948';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -243,6 +243,16 @@ function cpAlerta(u) {
   ciclo(); const t = setInterval(ciclo, 3000);
   $("#cpOk").onclick = () => { clearInterval(t); ov.remove(); if (navigator.vibrate) navigator.vibrate(0); try { localStorage.setItem("cvh_cp_" + u.id, String(Date.now())); } catch (e) {} };
 }
+const CP_PERG = { aberta: "" };
+function perguntaCP() {
+  if (!D || !D.aparelho || D.aparelho.setor !== "internacao" || $("#modal").classList.contains("on") || $("#cam").classList.contains("on")) return false;
+  const u = (D.unidades || []).find((x) => x.componente === "CP" && x.local === D.aparelho.local && ["disponivel", "reservada"].includes(x.situacao) && (x.dados || {}).cpPergunta);
+  if (!u) return false; CP_PERG.aberta = u.id; const l = cpLim(u); somAviso(); if (navigator.vibrate) navigator.vibrate([400, 150, 400]);
+  const bt = (r, t, cls) => '<button class="btn' + (cls || "") + '" data-a="cpResp" data-r="' + r + '" data-v="' + esc(u.id) + '" style="width:100%;margin-top:8px">' + t + "</button>";
+  modal('<h2>Onde está a plaqueta?</h2><div class="bolsa">' + linhaBolsa(u) + '</div><p>' + (l ? "Transfundir até <b>" + esc(hmData(l)) + "</b>. " : "") + 'Responda a cada 4 horas para o CVH saber que ela continua segura.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '">' +
+    bt("ambiente", "No ar-condicionado a 21 °C, aguardando") + bt("transfundida", "Vai ser transfundida agora") + bt("nao_usada", "Não será usada", " sec") + bt("refrigerador", "Foi para o refrigerador", " perigo"));
+  return true;
+}
 function conferirCP() {
   if (!D || !D.aparelho) return; const A = D.aparelho;
   const L = (D.unidades || []).filter((u) => u.componente === "CP" && !vencidaU(u) && ((u.local === A.local && ["disponivel", "reservada"].includes(u.situacao)) || (u.situacao === "transito" && (D.remessas || []).some((r) => (r.unidades || []).includes(u.id) && r.destino === A.local))));
@@ -440,7 +450,7 @@ async function carregar(silencio) {
       const ch = (D.pedidos || []).filter((x) => { const am = x.amostra || {}; return am.chamadoEm && !am.enviadaEm && !am.saiuEm && !am.chegouEm && visto[x.id] !== am.chamadoEm; });
       if (ch.length) { somAviso(); setTimeout(somAviso, 1300); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); toast((((ch[0].amostra || {}).via === "motoboy") ? "Motoboy" : "Uber") + " chegou para buscar a amostra de " + (ch[0].paciente || "paciente") + ".", 9000); ch.forEach((x) => { visto[x.id] = x.amostra.chamadoEm; }); try { localStorage.setItem("cvh_int_busca", JSON.stringify(visto)); } catch (_) {} } }
     if (!$("#modal").classList.contains("on") && !$("#cam").classList.contains("on")) pintar();
-    setTimeout(conferirCP, 600);
+    setTimeout(() => { if (!perguntaCP()) conferirCP(); }, 600);
   } catch (e) {
     if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_int_k"); } catch (_) {} K = ""; return carregar(); }
     if (!silencio) toast(e.message || String(e), 6000);
@@ -492,7 +502,7 @@ async function guardar(uidSugerido) {
   const t = await lerQR(uidSugerido ? "Leia a etiqueta da bolsa " + uidSugerido : "Leia a etiqueta da bolsa"); if (!t) return;
   const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
   if (!u || !pendenteGuarda(u)) { bip(false); return toast(u ? "Esta bolsa não está esperando guarda." : "Bolsa não encontrada nesta caixa. Confira a etiqueta.", 7000); }
-  if (u.componente === "CP") { const l = cpLim(u); modal('<h2>Plaqueta · ' + esc(u.id) + '</h2><p style="font-size:17px;color:#8A1D14"><b>NÃO coloque no refrigerador nem no freezer.</b> O frio inativa as plaquetas.</p><p>Deixe a bolsa em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C), deitada, longe do sol e do refrigerador.' + (l ? ' Transfundir até <b>' + esc(hmData(l)) + '</b>.' : ' Transfundir em até 24 h.') + ' Agite suavemente antes de usar.</p><div class="bts"><button class="btn" data-a="cpAmb" data-v="' + esc(u.id) + '">Plaqueta no ar-condicionado a 21 °C</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
+  if (u.componente === "CP") { const l = cpLim(u); modal('<h2>Plaqueta · ' + esc(u.id) + '</h2><p style="font-size:17px;color:#8A1D14"><b>NÃO coloque no refrigerador nem no freezer.</b> O frio inativa as plaquetas.</p><p>Deixe a bolsa em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C), deitada, longe do sol e do refrigerador.' + (l ? ' Transfundir até <b>' + esc(hmData(l)) + '</b>.' : ' Transfundir em até 24 h.') + ' Agite suavemente antes de usar.</p><div class="bts"><button class="btn" data-a="cpUso" data-v="' + esc(u.id) + '">Vou transfundir agora</button><button class="btn" data-a="cpAmb" data-v="' + esc(u.id) + '">Aguardando o paciente (ar-condicionado a 21 °C)</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
   if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
   await lerEquip(u.id);
 }
@@ -845,6 +855,12 @@ document.addEventListener("click", async (ev) => {
     if (a === "nomeOk") return nomeOk(b);
     if (a === "guardar") return guardar(v);
     if (a === "lerEquip") return lerEquip(v);
+    if (a === "cpUso") { b.disabled = true; try { await srv("intGuardar", v, "AMBIENTE_USO", nomeSalvo()); await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); } catch (e) { bip(false); toast(e.message, 9000); b.disabled = false; } return; }
+    if (a === "cpResp") { const n = ($("#mNome") || {}).value ? $("#mNome").value.trim() : ""; if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); const r = b.dataset.r; b.disabled = true;
+      try { await srv("intCPResposta", v, r, n); CP_PERG.aberta = ""; fechar(); await carregar();
+        if (r === "transfundida") { await srv("intRetirar", v); await carregar(); return formTransfusao(v); }
+        if (r === "nao_usada" || r === "refrigerador") { if (r === "refrigerador") { bip(false); toast("Plaqueta refrigerada não pode ser usada. Descarte e registre.", 9000); } return document.querySelector('[data-a="descartar"][data-v="' + v + '"]') ? document.querySelector('[data-a="descartar"][data-v="' + v + '"]').click() : null; }
+        somOk(); toast("Obrigado. Mantenha no ar-condicionado a 21 °C.", 4000); } catch (e) { b.disabled = false; toast(e.message, 7000); } return; }
     if (a === "cpAmb") { b.disabled = true; try { await srv("intGuardar", v, "AMBIENTE", nomeSalvo()); somOk(); fechar(); await carregar(); pedirFotoGuarda(v); } catch (e) { bip(false); toast(e.message, 9000); b.disabled = false; } return; }
     if (a === "lerEtiqueta") return lerEtiquetaGeral();
     if (a === "pedirFoto") return pedirFotoGuarda(v);
