@@ -532,7 +532,7 @@ a.btn{text-decoration:none}
 .ct-oc{margin-top:16px}.ct-oc-l{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFE6DC}
 .av-i.lido{opacity:.55}
 .tx-est{margin:12px 0;padding:10px 12px;border:1px solid var(--areia,#EEE5DB);border-radius:12px;background:#fff}.tx-est h3{margin:0 0 6px}.tx-est label{font-size:.82em;font-weight:700;color:var(--vinho)}.tx-est input,.tx-est select{width:100%;margin-top:3px}
-@media (max-width:600px){.pill{font-size:16px;padding:12px 18px;min-height:46px}.venc{flex-wrap:wrap;row-gap:10px}.venc .t{flex:1 1 100%;min-width:0}.venc .t small{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.venc .mini-bts{flex:1 1 100%;display:flex;gap:10px}.venc .mini-bts .mini{flex:1}.venc .mini-bts .mini,.mini-bts .mini{min-height:42px;padding:9px 14px;font-size:15px}}
+@media (max-width:600px){.pill{font-size:16px;padding:12px 18px;min-height:46px}.venc{flex-wrap:wrap;row-gap:10px}.venc .t{flex:1 1 100%;min-width:0}.venc .t small{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}.venc .mini-bts{flex:1 1 100%;display:flex;gap:10px;flex-wrap:wrap}.venc .mini-bts .mini{flex:1}.venc .mini-bts .mini,.mini-bts .mini{min-height:42px;padding:9px 14px;font-size:15px}}
 .al-imp{margin:.2em 0;color:#A83D3D;font-weight:700;font-size:.85em}.alerta-c.imped{border-color:#A83D3D}
 @media (min-width:1000px){.tela-al .tela-c{max-width:1180px}.al-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.al-lado{position:sticky;top:10px}.al-lado .filtros{flex-wrap:wrap}}
 .cf-fis{margin:.5em 0 .2em;padding:.5em .7em;border:1px dashed var(--areia,#EEE5DB);border-radius:.6em;font-size:.82em;color:var(--vinho)}.cf-fis p{margin:0 0 .3em}.cf-fis .mini.on{background:var(--vinho);color:#fff}
@@ -637,7 +637,8 @@ a.btn{text-decoration:none}
 .ac-lista.on{display:block}
 .ac-lista li{padding:.62em .75em;border-radius:7px;cursor:pointer;font-size:15px;color:var(--tinta,#2b2320)}
 .ac-lista li:hover,.ac-lista li[aria-selected=true]{background:#f4ece5}
-.mini-bts{display:flex;gap:6px;margin-top:2px}
+.mini-bts{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
+.venc.orc{flex-direction:column;align-items:stretch;gap:8px}.venc.orc .t{width:100%;min-width:0}.venc.orc .t small{white-space:normal;overflow:visible;text-overflow:clip}.venc.orc .mini-bts{justify-content:flex-start}
 .pl-filtro{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:6px 0 12px}.pl-filtro select{margin-left:6px}
 .pl-tipos{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.pl-tipos button{border:1px solid #E2D6C8;background:#fff;border-radius:999px;padding:8px 14px;font-weight:700;color:#5F130F}.pl-tipos button.on{background:#5F130F;color:#fff;border-color:#5F130F}.pl-tipos b{background:#A83D3D;color:#fff;border-radius:999px;padding:0 7px;margin-left:4px;font-size:12px}
 .pl-alertas{border:1px solid #e3b9b4}
@@ -929,7 +930,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123113339';
+  var VERSAO = '20261123121628';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5564,7 +5565,7 @@ function pintarOrcamentos() {
   const item = o => { const d = o.dados || {}, x = situOrc(o), quando = new Date(o.criado);
     const tag = x.s === 'virou' ? '<span class="tag ok">virou transfusão</span>' : x.s === 'perdido' ? '<span class="tag al">' + esc(ORC_MOT[x.m] || x.m) + '</span>' : '<span class="tag">em aberto</span>';
     const qual = [d.comp + (d.vol ? ' ' + d.vol + ' mL' : d.unidades ? ' ' + d.unidades + ' un.' : ''), d.esp, d.peso ? String(d.peso).replace('.', ',') + ' kg' : '', d.htAtual ? 'Ht ' + d.htAtual + '%' : '', d.semBolsa ? 'sem bolsa suficiente no estoque' : ''].filter(Boolean).join(' · ');
-    return '<div class="venc" style="cursor:default"><div class="t"><b>' + esc(d.paciente || o.at_paciente || 'Paciente não informado') + '</b> ' + tag + '<small>' + esc(String(quando.getDate()).padStart(2, '0') + '/' + String(quando.getMonth() + 1).padStart(2, '0') + ' · ' + qual + (o.atendimento ? ' · atendimento ' + o.atendimento : '') + (d.por ? ' · ' + d.por : '')) + '</small></div>' +
+    return '<div class="venc orc" style="cursor:default"><div class="t"><b>' + esc(d.paciente || o.at_paciente || 'Paciente não informado') + '</b> ' + tag + '<small>' + esc(String(quando.getDate()).padStart(2, '0') + '/' + String(quando.getMonth() + 1).padStart(2, '0') + ' · ' + qual + (o.atendimento ? ' · atendimento ' + o.atendimento : '') + (d.por ? ' · ' + d.por : '')) + '</small></div>' +
       '<div class="mini-bts">' + (x.s === 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="virou">Virou transfusão</button>' + Object.entries(ORC_MOT).map(([k, t]) => '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="' + k + '">' + t + '</button>').join('') : '') +
       '<button class="mini" data-acao="orc-retomar" data-id="' + o.id + '">' + (o.atendimento && o.at_etapa ? 'Abrir o cálculo e o atendimento' : 'Retomar o cálculo') + '</button>' +
       (x.s === 'virou' && !o.receptor ? '<button class="mini" data-acao="orc-receptor" data-id="' + o.id + '">Cadastrar o receptor</button>' : '') + (x.s !== 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="aberto">Voltar para em aberto</button>' : '') + (E.u && E.u.permissoes.includes('admin') ? '<button class="mini" data-acao="orc-excluir" data-id="' + o.id + '">Excluir</button>' : '') + '</div></div>'; };

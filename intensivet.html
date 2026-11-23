@@ -43,7 +43,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123113339';
+  var VERSAO = '20261123121628';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -196,6 +196,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 @keyframes cpBorda{0%,100%{box-shadow:0 0 0 0 rgba(168,61,61,.0)}50%{box-shadow:0 0 0 6px rgba(168,61,61,.35)}}
 #alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
 .mascara{-webkit-text-security:disc;text-security:disc}
+.cx.teste{border:2px dashed #C49A6C}.cx.teste h2{color:#5F130F}.cx.teste .op{display:flex;gap:8px;align-items:center;margin:6px 0}
 </style></head>
 <body>
 <div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
@@ -218,7 +219,10 @@ function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remo
 /* ── aparelho: o link do CVH (?k=…) ativa este celular; depois o endereço fica limpo ── */
 let K = "";
 try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_int_k", q.get("k")); } K = localStorage.getItem("cvh_int_k") || ""; } catch (e) {}
-const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K, ...a]).catch((e) => { if (/^OPFIM: /.test(e && e.message || "")) { e.message = e.message.slice(7); if (typeof opFim === "function") opFim(""); } throw e; });
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K + (typeof OP !== "undefined" && OP && OP.op ? "|" + OP.op : ""), ...a]).catch((e) => { const m = e && e.message || "";
+  if (/^OPFIM: /.test(m)) { e.message = m.slice(7); if (typeof opFim === "function") opFim(""); }
+  else if (/^ENTRAR: /.test(m)) { e.message = m.slice(8); setTimeout(() => { if (typeof opEntrar === "function") opEntrar(); }, 50); }
+  throw e; });
 const nomeSalvo = () => { try { return localStorage.getItem("cvh_int_nome") || ""; } catch (e) { return ""; } };
 const salvarNome = (n) => { try { localStorage.setItem("cvh_int_nome", n); } catch (e) {} };
 
@@ -282,7 +286,22 @@ try { if (navigator.serviceWorker) { navigator.serviceWorker.register("sw.js").c
 /* ── leitor de QR: BarcodeDetector quando o celular tem; senão jsQR; sempre dá para digitar ── */
 let JSQR = null, CAM_FIM = null;
 function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+const TESTE = { semFoto: false, semQR: false };
+const emTeste = (k) => !!(typeof OP !== "undefined" && OP && OP.adm && TESTE[k]);
+// modo de teste do administrador: em vez da câmera, escolhe a caixa, a bolsa ou o equipamento numa lista
+function escolherSemLer(titulo) {
+  return new Promise((resolve) => {
+    const caixa = /caixa/i.test(titulo), equip = /refrigerador|freezer|equipamento/i.test(titulo);
+    const ops = caixa ? (D.remessas || []).map((r) => [r.id, "Caixa " + r.id + " · " + r.unidades.length + " bolsa(s)"])
+      : equip ? (D.equipamentos || []).map((e) => [e.id, e.nome]) : (D.unidades || []).filter((u) => u.local === D.aparelho.local || u.situacao === "transito").map((u) => [u.id, u.id + " · " + u.componente + " · " + (u.situacao || "")]);
+    modal("<h2>Modo de teste</h2><p>" + esc(titulo) + "</p>" + (ops.length ? ops.map(([c, r]) => '<button class="btn sec" data-a="testeEscolha" data-v="' + esc(c) + '" style="width:100%;margin:4px 0;text-align:left">' + esc(r) + "</button>").join("") : '<p class="vazio">Nada para escolher aqui.</p>') +
+      '<label>Ou digite o código</label><input type="text" id="testeTxt" autocapitalize="characters"><div class="bts"><button class="btn" data-a="testeEscolha" data-v="">Usar o código digitado</button><button class="btn sec" data-a="testeEscolha" data-v="__sair">Voltar</button></div>');
+    TESTE_ESC = (c) => { TESTE_ESC = null; fechar(); if (c === "__sair") return resolve(null); const v = c || ($("#testeTxt") || {}).value || ""; resolve(String(v).trim() || null); };
+  });
+}
+let TESTE_ESC = null;
 function lerQR(titulo) {
+  if (emTeste("semQR")) return escolherSemLer(titulo);
   return new Promise(async (resolve) => {
     const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
     let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
@@ -369,7 +388,7 @@ function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Ma
 let OP = null;
 try { localStorage.removeItem("cvh_int_op"); } catch (e) {}
 const opMexeu = () => { if (OP) OP.t = Date.now(); };
-const opFim = (msg) => { const o = OP; OP = null; if (!o) { pintar(); return; }
+const opFim = (msg) => { const o = OP; OP = null; TESTE.semFoto = false; TESTE.semQR = false; if (!o) { pintar(); return; }
   const r = (typeof capturarRasc === "function" && capturarRasc(o.usuario)) || (RASC && RASC.dono === o.usuario ? RASC : null);
   if (r) GUARDADO[o.usuario] = r; RASC = null; if ($("#modal").dataset.form) fechar();
   srv("intSair", o.op, r ? semExames(r) : null).catch(() => {}); pintar();
@@ -377,6 +396,20 @@ const opFim = (msg) => { const o = OP; OP = null; if (!o) { pintar(); return; }
 ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, opMexeu, { passive: true }));
 setInterval(() => { if (OP && Date.now() - OP.t > 10 * 6e4) opFim("Saída automática do usuário depois de 10 minutos sem uso."); }, 20000);
 window.addEventListener("pagehide", () => { if (OP) { const r = capturarRasc(OP.usuario) || RASC; srv("intSair", OP.op, r ? semExames(r) : null).catch(() => {}); OP = null; } });
+function cadastro() {
+  const campo = (id, rot, extra) => '<label>' + rot + '</label><input type="text" id="' + id + '" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore ' + (extra || "") + '>';
+  modal('<h2>Criar meu usuário</h2><p>Com o seu usuário, os pedidos, as transfusões e o acompanhamento ficam no seu nome. O CVH recebe um aviso do cadastro.</p>' +
+    campo("cdNome", "Nome e sobrenome", 'autocapitalize="words"') + '<label class="op"><input type="checkbox" id="cdVet"> Sou médico veterinário</label><div id="cdCrmvW" hidden>' + campo("cdCrmv", "CRMV-DF (número)", 'inputmode="numeric"') + '</div>' +
+    campo("cdEmail", "E-mail (para recuperar a senha)", 'inputmode="email" autocapitalize="none"') + campo("cdUsu", "Usuário para entrar", 'autocapitalize="none"') +
+    campo("cdSen", "Senha", 'class="mascara" autocapitalize="none"') + campo("cdSen2", "Repita a senha", 'class="mascara" autocapitalize="none"') +
+    '<p><small>Pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet. Este celular é de uso comum: a senha não fica salva.</small></p>' +
+    '<div class="bts"><button class="btn" data-a="cadOk">Criar e entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) ["#cdSen", "#cdSen2"].forEach((q) => { $(q).type = "password"; $(q).autocomplete = "new-password"; });
+  $("#cdVet").onchange = () => { $("#cdCrmvW").hidden = !$("#cdVet").checked; };
+  $("#cdNome").oninput = () => { const u = $("#cdUsu"); if (u.dataset.mexeu) return; const p = $("#cdNome").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]/g, "").split(/\s+/).filter((x) => x && !/^(dr|dra|drs|vet)$/.test(x)); u.value = p.length > 1 ? p[0] + "." + p[p.length - 1] : p[0] || ""; };
+  $("#cdUsu").oninput = () => { $("#cdUsu").dataset.mexeu = "1"; };
+  setTimeout(() => { const x = $("#cdNome"); if (x) x.focus(); }, 100);
+}
 function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><p><small>Este celular é de uso comum. A senha não fica salva e a entrada termina ao sair, ao fechar o app ou depois de 10 minutos sem uso.</small></p><label>Usuário</label><input type="text" id="opU" name="u' + Date.now() + '" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Senha</label><input type="text" id="opS" name="x' + Date.now() + '" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); const cs = $("#opS"); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) { cs.type = "password"; cs.autocomplete = "new-password"; } setTimeout(() => { const x = $("#opU"); if (x) x.focus(); }, 100); }
 const vetDoOp = () => OP ? { nome: OP.nome, crmv: OP.crmv } : null;
 function pintar() {
@@ -384,10 +417,11 @@ function pintar() {
   const A = D.aparelho, interna = A.setor === "internacao", rem = D.remessas || [];
   if (window.CVH_ICONE_SETOR) CVH_ICONE_SETOR(A.setor);
   let h = '<div class="topo"><h1>Mini Estação CVH<small>'  + esc(A.nome) + "</small></h1><button class=\"btn sec peq\" data-a=\"atualizar\">Atualizar</button></div>";
-  if (interna) h += OP ? '<div class="cx" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px"><span>Usando: <b>' + esc(OP.nome) + "</b>" + (OP.crmv ? " · " + esc(OP.crmv) : "") + '</span><button class="btn sec peq" data-a="opSair">Sair</button></div>' : '<div class="cx" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px"><span>Ninguém entrou com o próprio usuário.</span><button class="btn peq" data-a="opEntrar">Entrar com o meu usuário</button></div>';
+  h += OP ? '<div class="cx" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px"><span>Usando: <b>' + esc(OP.nome) + "</b>" + (OP.crmv ? " · " + esc(OP.crmv) : "") + '</span><button class="btn sec peq" data-a="opSair">Sair</button></div>' +
+    (OP.adm ? '<div class="cx teste"><h2>Administrador · modo de teste</h2><label class="op"><input type="checkbox" data-a="teste" data-v="semFoto"' + (TESTE.semFoto ? " checked" : "") + '> Seguir sem fotos</label><label class="op"><input type="checkbox" data-a="teste" data-v="semQR"' + (TESTE.semQR ? " checked" : "") + '> Escolher na lista em vez de ler QR e código de barras</label><p><small>Vale só enquanto você estiver entrado neste celular. Fica registrado que foi teste do administrador.</small></p></div>' : "") : ('<div class="cx" style="padding:12px 14px"><p style="margin:0 0 10px"><b>Entre com o seu usuário</b> para pedir bolsa, retirar, registrar a transfusão e o acompanhamento. Para receber e guardar a caixa basta o primeiro nome e a foto.</p><div class="bts" style="margin:0"><button class="btn peq" data-a="opEntrar">Entrar com o meu usuário</button><button class="btn sec peq" data-a="cadastro">Criar meu usuário</button></div></div>');
   // caixas a caminho
   const caminho = rem.filter((r) => r.situacao === "transito");
-  if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
+  if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>" + (OP && OP.adm ? '<div class="bts"><button class="btn sec peq" data-a="informar" data-v="' + esc(r.id) + '">Informar que chegou e foi guardada</button></div>' : "")).join("") + "</div>";
   if (!notifOk()) h += '<div class="cx av"><p>Ative as notificações para saber quando uma caixa do CVH estiver a caminho, mesmo com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>';
   const vencidas = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao) && vencidaU(u));
   if (vencidas.length) h += '<div class="cx al"><h2>BOLSA VENCIDA · NÃO USE</h2><p>Não use. Bolsa vencida não volta ao CVH: descarte no lixo infectante e toque em Descartar para registrar. O CVH já foi avisado.</p>' + vencidas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + '</small><div class="bts"><button class="btn peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") + "</div>";
@@ -395,7 +429,7 @@ function pintar() {
   if (cps.length) h += '<div class="cx av cp-pisca"><h2>Plaqueta aqui · NÃO REFRIGERAR, NÃO CONGELAR</h2><p><b>Manter em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C). Nunca no refrigerador nem no freezer.</b> Transfundir em até 24 h depois que saiu do CVH. Agite suavemente antes de usar.</p>' + cps.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "</div>").join("") + "</div>";
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
   // pedidos ao CVH: bolsa, tipagem, prova de compatibilidade e Coombs (internação)
-  if (interna) {
+  if (interna && OP) {
     const Hr = D.horario || {};
     if (Hr.aberto === false) h += '<div class="cx av" style="margin-top:10px"><h2>CVH fora do horário de funcionamento</h2><p>' + esc(Hr.grade || "") + "</p><p>Pedidos de rotina e de reserva enviados agora ficam registrados e chegam à equipe do CVH " + esc(Hr.quando || "na abertura") + ".</p><p><b>Infelizmente não poderemos atender urgência ou emergência fora do horário.</b></p></div>";
     h += '<button class="btn grande sec" data-a="solicitar" style="margin-top:10px">Solicitar bolsa ou teste ao CVH</button>';
@@ -414,7 +448,7 @@ function pintar() {
         else st = '<span class="tag ok">guardada</span>';
         const eq = (D.equipamentos || []).find((e) => (e.aceita || []).includes(u.componente));
         return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && u.componente === "CP" ? '<small><b>Ar-condicionado a 21 °C, NUNCA no refrigerador nem no freezer</b></small>' : u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
-      (r.recebida_em ? '<div class="bts"><button class="btn sec peq" data-a="ocorrencia" data-v="Caixa ' + esc(r.id) + '">Informar ocorrência ao CVH</button></div>' : "") + "</div>";
+      (r.recebida_em ? '<div class="bts"><button class="btn sec peq" data-a="ocorrencia" data-v="Caixa ' + esc(r.id) + '">Informar ocorrência ao CVH</button></div>' : "") + (OP && OP.adm ? '<div class="bts"><button class="btn sec peq" data-a="informar" data-v="' + esc(r.id) + '">Informar que chegou e foi guardada</button></div>' : "") + "</div>";
   }
   // bolsas que voltaram ao estoque por cancelamento e ainda esperam o QR do equipamento e a foto
   const regu = (D.unidades || []).filter((u) => (u.dados || {}).guardaPendente || ((u.dados || {}).guarda && !u.dados.guarda.foto && !u.dados.remessa && u.local === A.local && ["disponivel", "reservada"].includes(u.situacao)));
@@ -422,18 +456,18 @@ function pintar() {
   // internação: TRANSFUNDIDO | CANCELAR E DEVOLVER AO ESTOQUE
   const dez = (u) => Date.parse(((u.dados || {}).uso || {}).retiradaEm) + 6e5;
   const ret = (D.unidades || []).filter((u) => u.situacao === "retirada" || (u.situacao === "utilizada" && dez(u) > agora()));
-  if (ret.length) h += '<div class="cx av"><h2>Retiradas para uso</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora(), feita = u.situacao === "utilizada";
+  if (ret.length && OP) h += '<div class="cx av"><h2>Retiradas para uso</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora(), feita = u.situacao === "utilizada";
     return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + (feita ? " · transfundida em " + esc(((u.dados.uso || {}).paciente || {}).nome || "") : "") + (u.reserva ? " · reserva " + esc(u.reserva) : "") + '</small><div class="bts">' + (interna && !feita ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">TRANSFUNDIDO</button>' : "") + (interna ? '<button class="btn sec peq" data-a="monit" data-v="' + esc(u.id) + '">Ficha de monitoramento</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">' + (feita ? "Corrigir: não foi usada" : "CANCELAR E DEVOLVER AO ESTOQUE") + " (" + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
-  h += '<button class="btn grande sec" data-a="lerEtiqueta">Ler etiqueta da bolsa</button>';
-  if (interna) h += '<button class="btn grande sec" data-a="monitEsc" style="margin-top:10px">Ficha de monitoramento da transfusão</button>';
+  if (OP) h += '<button class="btn grande sec" data-a="lerEtiqueta">Ler etiqueta da bolsa</button>';
+  if (interna && OP) h += '<button class="btn grande sec" data-a="monitEsc" style="margin-top:10px">Ficha de monitoramento da transfusão</button>';
   // miniestoque
   const est = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada"].includes(u.situacao));
   const ordem = ["CH", "PFC", "CRIO", "CP", "PPC"];
   h += '<div class="cx"><h2>Estoque na ' + esc(A.local) + " · " + est.length + (est.length === 1 ? " bolsa" : " bolsas") + "</h2>" + (est.length ? est.sort((a, b) => ordem.indexOf(a.componente) - ordem.indexOf(b.componente) || String(a.validade).localeCompare(String(b.validade))).map((u) =>
     '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
-    (interna && u.situacao !== "bloqueada" && !vencidaU(u) ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + (u.componente === "CP" ? '<button class="btn sec peq" data-a="descartar" data-v="' + esc(u.id) + '">Descartar</button>' : '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button>') + '<button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
+    (!OP ? "" : interna && u.situacao !== "bloqueada" && !vencidaU(u) ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + (u.componente === "CP" ? '<button class="btn sec peq" data-a="descartar" data-v="' + esc(u.id) + '">Descartar</button>' : '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button>') + '<button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
   const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
-  if (feitas.length) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
+  if (feitas.length && OP) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
     feitas.sort((a, b) => String(b.dados.uso.transfundidaEm).localeCompare(String(a.dados.uso.transfundidaEm))).map((u) => { const U = u.dados.uso || {}, ac = U.acomp || {}, hts = ac.hts || [];
       const st = !U.acomp ? '<span class="tag al">acompanhamento pendente</span>' : (ac.reacao === "sim" ? '<span class="tag al">reação registrada</span> ' : ac.reacao === "nao" ? '<span class="tag ok">sem reação</span> ' : "") + (hts.length ? '<span class="tag ok">Ht ' + esc(hts.map((x) => x.valor + "%").join(" · ")) + "</span>" : '<span class="tag">falta o Ht de controle</span>');
       return '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · " + esc(hora(U.transfundidaEm)) + "</small><div>" + st + '</div><div class="bts">' + (Date.now() - Date.parse(U.transfundidaEm) < 4 * 864e5 ? '<button class="btn peq' + (U.acomp ? " sec" : "") + '" data-a="acomp" data-v="' + esc(u.id) + '">' + (U.acomp ? "Completar ou corrigir" : "Acompanhamento") + "</button>" : "") + '<button class="btn sec peq" data-a="monit" data-v="' + esc(u.id) + '">' + (U.monitoramento ? "Ficha de monitoramento ✓" : "Ficha de monitoramento") + "</button></div></div>"; }).join("") + "</div>";
@@ -485,6 +519,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) carr
 /* ── ações ── */
 // recebimento (10.2): nome, foto rápida pela câmera frontal (sem prévia), depois o QR externo da caixa
 async function fotoFrontal() {
+  if (emTeste("semFoto")) return null;
   let f = null; const v = document.createElement("video"); v.playsInline = true; v.muted = true; v.setAttribute("playsinline", ""); v.style.cssText = "position:fixed;width:2px;height:2px;opacity:0;left:0;top:0"; document.body.appendChild(v);
   try {
     f = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 } }, audio: false }); v.srcObject = f; await v.play();
@@ -494,6 +529,7 @@ async function fotoFrontal() {
   } catch (e) { return null; } finally { if (f) f.getTracks().forEach((t) => t.stop()); v.remove(); }
 }
 function pedirNome(titulo, depois) {
+  if (typeof OP !== "undefined" && OP && OP.adm && TESTE.semFoto) { const n = OP.nome.split(" ")[0]; return depois(n, null); }
   modal("<h2>" + esc(titulo) + '</h2><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '" autocomplete="given-name"><p><small>Ao continuar, o aplicativo registra uma foto rápida pela câmera da frente para identificar quem recebeu. A foto tem acesso restrito ao CVH.</small></p><div class="bts"><button class="btn" data-a="nomeOk">Continuar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
   PROX = depois;
 }
@@ -532,7 +568,7 @@ async function guardar(uidSugerido) {
 }
 async function lerEquip(uid) {
   fechar(); const u = uniDe(uid); const t = await lerQR(uid + " · leia o QR do " + (u.componente === "CH" ? "refrigerador" : "freezer")); if (!t) return;
-  try { await srv("intGuardar", uid, norm(t), nomeSalvo()); somOk(); await carregar(); pedirFotoGuarda(uid); }
+  try { await srv("intGuardar", uid, norm(t), nomeSalvo() || (OP ? OP.nome.split(" ")[0] : "")); somOk(); await carregar(); if (emTeste("semFoto")) return fotoGuarda(uid); pedirFotoGuarda(uid); }
   catch (e) { bip(false); toast(e.message, 9000); }
 }
 function pedirFotoGuarda(uid) {
@@ -540,6 +576,7 @@ function pedirFotoGuarda(uid) {
   modal("<h2>No equipamento · foto pendente</h2><p>Tire a foto da bolsa " + esc(uid) + (u.componente === "CP" ? " no lugar onde ela vai ficar, fora do refrigerador." : " já dentro do equipamento.") + (u.componente === "CH" ? " A foto precisa mostrar a bolsa fora do ziplock, apoiada sobre o plástico aberto." : "") + '</p><div class="bts"><button class="btn" data-a="fotoGuarda" data-v="' + esc(uid) + '">Tirar a foto</button><button class="btn sec" data-a="fechar">Depois</button></div>');
 }
 async function fotoGuarda(uid) {
+  if (emTeste("semFoto")) { fechar(); try { await srv("intFotoGuarda", uid, ""); somOk(); toast("Bolsa guardada (teste sem foto).", 4000); await carregar(); } catch (e) { toast(e.message, 7000); } return; }
   const f = await tirarFoto(); if (!f) return toast("Tire a foto da bolsa guardada.");
   fechar(); toast("Enviando a foto…", 20000);
   try { await srv("intFotoGuarda", uid, f); somOk(); toast("Bolsa guardada.", 4000); await carregar(); } catch (e) { toast(e.message, 7000); }
@@ -902,9 +939,16 @@ document.addEventListener("click", async (ev) => {
     if (a === "transfundir") return formTransfusao(v);
     if (a === "acomp") return formAcomp(v);
     if (a === "opEntrar") return opEntrar();
+    if (a === "cadastro") return cadastro();
+    if (a === "cadOk") { b.disabled = true; const o = { nome: $("#cdNome").value, vet: $("#cdVet").checked, crmv: $("#cdCrmv").value, email: $("#cdEmail").value, usuario: $("#cdUsu").value, senha: $("#cdSen").value, senha2: $("#cdSen2").value };
+      try { const r = await srv("intCadastrar", o); $("#cdSen").value = $("#cdSen2").value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario, adm: !!r.adm, t: Date.now() }; fechar(); somOk(); toast("Usuário criado. Olá, " + r.nome.split(" ")[0] + ".", 4000); pintar(); }
+      catch (e) { b.disabled = false; toast(e.message, 7000); } return; }
+    if (a === "teste") { TESTE[v] = !!b.checked; toast(b.checked ? "Modo de teste ligado." : "Modo de teste desligado.", 2500); return; }
+    if (a === "testeEscolha") { if (TESTE_ESC) TESTE_ESC(v); return; }
+    if (a === "informar") { const m = prompt("A caixa " + v + " chegou e as bolsas já estão no lugar certo?\n\nEscreva o motivo (por exemplo: celular não abriu, emergência). Fica registrado no histórico de cada bolsa."); if (!m) return; await srv("intInformarRecebida", v, m); somOk(); toast("Registrado: caixa recebida e bolsas guardadas.", 6000); await carregar(); return; }
     if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value, cn = $("#opN"), cn2 = $("#opN2");
       let nova = ""; if (cn) { nova = cn.value; if (!nova) { b.disabled = false; return toast("Digite a senha nova.", 4000); } if (nova !== cn2.value) { b.disabled = false; return toast("As duas senhas novas não são iguais.", 5000); } }
-      try { const r = await srv("intEntrar", u0, s0, nova); if (cn) { cn.value = ""; cn2.value = ""; } cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario || u0.trim().toLowerCase(), t: Date.now() }; fechar(); rascDaEntrada(r.rascunho); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; if (/^TROCAR: /.test(e.message) && !$("#opN")) { cs.insertAdjacentHTML("afterend", '<p><small>Primeiro acesso com a senha provisória. Crie a sua senha pessoal, com pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet.</small></p><label>Senha nova</label><input type="text" id="opN" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Repita a senha nova</label><input type="text" id="opN2" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore>'); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) ["#opN", "#opN2"].forEach((q) => { $(q).type = "password"; $(q).autocomplete = "new-password"; }); $("#opN").focus(); return toast("Crie a sua senha pessoal para continuar.", 5000); } toast(e.message.replace(/^TROCAR: /, ""), 6000); } return; }
+      try { const r = await srv("intEntrar", u0, s0, nova); if (cn) { cn.value = ""; cn2.value = ""; } cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario || u0.trim().toLowerCase(), adm: !!r.adm, t: Date.now() }; fechar(); rascDaEntrada(r.rascunho); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; if (/^TROCAR: /.test(e.message) && !$("#opN")) { cs.insertAdjacentHTML("afterend", '<p><small>Primeiro acesso com a senha provisória. Crie a sua senha pessoal, com pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet.</small></p><label>Senha nova</label><input type="text" id="opN" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Repita a senha nova</label><input type="text" id="opN2" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore>'); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) ["#opN", "#opN2"].forEach((q) => { $(q).type = "password"; $(q).autocomplete = "new-password"; }); $("#opN").focus(); return toast("Crie a sua senha pessoal para continuar.", 5000); } toast(e.message.replace(/^TROCAR: /, ""), 6000); } return; }
     if (a === "opSair") { opFim(""); return; }
     if (a === "rascSeguir") { const r = RASC; fechar(); if (r) FORMS_ABRIR(r); return; }
     if (a === "rascDescartar") { rascLimpar(); fechar(); toast("Rascunho descartado.", 3000); return; }
