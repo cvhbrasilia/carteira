@@ -40,7 +40,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123103728';
+  var VERSAO = '20261123104944';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -209,7 +209,7 @@ const dataBr = (iso) => iso ? String(iso).slice(0, 10).split("-").reverse().join
 const NOME_COMP = { CH: "CH com SAG", CP: "Concentrado de plaquetas", PFC: "Plasma fresco congelado", CRIO: "Crioprecipitado", PPC: "Plasma pobre em crio" };
 let tT = null;
 function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 4000); }
-function modal(h) { $("#modal").innerHTML = h; $("#modal").classList.add("on"); $("#veu").classList.add("on"); $("#modal").scrollTop = 0; }
+function modal(h) { if (typeof rascAgora === "function") rascAgora(); const mm = $("#modal"); delete mm.dataset.form; delete mm.dataset.arg; $("#modal").innerHTML = h; $("#modal").classList.add("on"); $("#veu").classList.add("on"); $("#modal").scrollTop = 0; }
 function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remove("on"); }
 
 /* ── aparelho: o link do CVH (?k=…) ativa este celular; depois o endereço fica limpo ── */
@@ -366,10 +366,14 @@ function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Ma
 let OP = null;
 try { localStorage.removeItem("cvh_int_op"); } catch (e) {}
 const opMexeu = () => { if (OP) OP.t = Date.now(); };
-const opFim = (msg) => { if (OP) srv("intSair", OP.op).catch(() => {}); OP = null; pintar(); if (msg) toast(msg, 6000); };
+const opFim = (msg) => { const o = OP; OP = null; if (!o) { pintar(); return; }
+  const r = (typeof capturarRasc === "function" && capturarRasc(o.usuario)) || (RASC && RASC.dono === o.usuario ? RASC : null);
+  if (r) GUARDADO[o.usuario] = r; RASC = null; if ($("#modal").dataset.form) fechar();
+  srv("intSair", o.op, r ? semExames(r) : null).catch(() => {}); pintar();
+  if (msg || r) toast((msg ? msg + " " : "") + (r ? "O que estava preenchido ficou guardado. Entre de novo com o seu usuário para continuar de onde parou." : ""), 9000); };
 ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, opMexeu, { passive: true }));
 setInterval(() => { if (OP && Date.now() - OP.t > 10 * 6e4) opFim("Saída automática do usuário depois de 10 minutos sem uso."); }, 20000);
-window.addEventListener("pagehide", () => { if (OP) { srv("intSair", OP.op).catch(() => {}); OP = null; } });
+window.addEventListener("pagehide", () => { if (OP) { const r = capturarRasc(OP.usuario) || RASC; srv("intSair", OP.op, r ? semExames(r) : null).catch(() => {}); OP = null; } });
 function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><p><small>Este celular é de uso comum. A senha não fica salva e a entrada termina ao sair, ao fechar o app ou depois de 10 minutos sem uso.</small></p><label>Usuário</label><input type="text" id="opU" name="u' + Date.now() + '" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Senha</label><input type="text" id="opS" name="x' + Date.now() + '" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); const cs = $("#opS"); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) { cs.type = "password"; cs.autocomplete = "new-password"; } setTimeout(() => $("#opU").focus(), 100); }
 const vetDoOp = () => OP ? { nome: OP.nome, crmv: OP.crmv } : null;
 function pintar() {
@@ -757,7 +761,7 @@ async function solicitarOk(b) {
   if (ASS.tracos < 8 && !ASS.anexo) return toast("Assine a requisição no quadro ou anexe a requisição em PDF.", 6000);
   if (ASS.tracos >= 8) o.assinatura = $("#sAss").toDataURL("image/png").split(",")[1]; if (ASS.anexo) o.anexo = ASS.anexo;
   b.disabled = true; b.textContent = "Enviando…";
-  try { await srv("intSolicitar", o); guardarVet(o.vet.nome, o.vet.crmv);
+  try { await srv("intSolicitar", o); rascLimpar(); guardarVet(o.vet.nome, o.vet.crmv);
     fechar(); toast("Pedido enviado ao CVH. Acompanhe aqui em Pedidos ao CVH.", 6000); await carregar(); }
   catch (e) { b.disabled = false; b.textContent = "Enviar pedido ao CVH"; toast(e.message || String(e), 7000); }
 }
@@ -785,7 +789,7 @@ async function transfOk(uid, b) {
   o.etiqueta = norm(t);
   b.disabled = true;
   try {
-    await srv("intTransfundir", uid, o); somOk();
+    await srv("intTransfundir", uid, o); rascLimpar(); somOk();
     guardarVet(o.vet, o.crmv);
     fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar();
   } catch (e) { if (/ESPÉCIE TROCADA/.test(e.message)) { bip(false); modal('<h2 style="color:#8A1D14">Não transfunda</h2><p style="font-size:17px">' + esc(e.message) + '</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>'); } else toast(e.message, 8000); } finally { b.disabled = false; }
@@ -835,7 +839,7 @@ async function acOk(b) {
   const o = { reacao: AC.reacao, sinais: AC.sinais, outro: $("#acOutro").value.trim(), interrompida: AC.interrompida, hts: AC.hts, volume: AC.volume, volumeMl: $("#acMl").value.trim(), inicio: $("#acIni").value, fim: $("#acFim").value, obs: $("#acObs").value.trim(), por };
   if (o.volume === "parte" && !o.volumeMl) return toast("Escreva quantos mL foram transfundidos.");
   salvarNome(por); b.disabled = true;
-  try { await srv("intAcompanhar", AC.uid, o); somOk(); fechar(); toast(o.reacao === "sim" ? "Registrado. O CVH foi avisado da reação." : "Acompanhamento salvo. Obrigado.", 5000); await carregar(); }
+  try { await srv("intAcompanhar", AC.uid, o); rascLimpar(); somOk(); fechar(); toast(o.reacao === "sim" ? "Registrado. O CVH foi avisado da reação." : "Acompanhamento salvo. Obrigado.", 5000); await carregar(); }
   catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
 }
 function cancelarUso(uid) {
@@ -895,8 +899,10 @@ document.addEventListener("click", async (ev) => {
     if (a === "transfundir") return formTransfusao(v);
     if (a === "acomp") return formAcomp(v);
     if (a === "opEntrar") return opEntrar();
-    if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value; try { const r = await srv("intEntrar", u0, s0); cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, t: Date.now() }; fechar(); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
+    if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value; try { const r = await srv("intEntrar", u0, s0); cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario || u0.trim().toLowerCase(), t: Date.now() }; fechar(); rascDaEntrada(r.rascunho); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
     if (a === "opSair") { opFim(""); return; }
+    if (a === "rascSeguir") { const r = RASC; fechar(); if (r) FORMS_ABRIR(r); return; }
+    if (a === "rascDescartar") { rascLimpar(); fechar(); toast("Rascunho descartado.", 3000); return; }
     if (a === "monitEsc") { const L = (D.unidades || []).filter((u) => u.local === D.aparelho.local && (u.situacao === "retirada" || (u.situacao === "utilizada" && Date.now() - Date.parse(((u.dados || {}).uso || {}).transfundidaEm || 0) < 4 * 864e5)));
       if (!L.length) return modal('<h2>Ficha de monitoramento</h2><p>A ficha é aberta para a bolsa que foi retirada para uso. Toque em Retirar para uso na bolsa do estoque e depois abra a ficha por aqui.</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>');
       return modal('<h2>Ficha de monitoramento</h2><p>Escolha a bolsa da transfusão.</p>' + L.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((((u.dados || {}).uso || {}).paciente || {}).nome || "retirada " + hora(((u.dados || {}).uso || {}).retiradaEm)) + '</small><div class="bts"><button class="btn peq" data-a="monit" data-v="' + esc(u.id) + '">Abrir a ficha</button></div></div>').join("") + '<div class="bts"><button class="btn sec" data-a="fechar">Voltar</button></div>'); }
@@ -930,6 +936,63 @@ function lidoLeitor(c) {
   bip(false); toast("Código não reconhecido aqui: " + c, 5000);
 }
 if (!("BarcodeDetector" in window)) setTimeout(() => { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }, 1500);
+// rascunho automático: o que está preenchido no pedido, no registro da transfusão ou no acompanhamento não se perde.
+// Fica na memória da página e, com alguém entrado, também no servidor (24 h, só para o mesmo usuário). A assinatura é feita de novo.
+let RASC = null, RASC_T = 0, RASC_ENV = 0; const GUARDADO = {};
+const _formSolicitar = formSolicitar, _formTransfusao = formTransfusao, _formAcomp = formAcomp;
+const FORM_ORIG = { solicitar: () => _formSolicitar(), transfusao: (a) => _formTransfusao(a), acomp: (a) => _formAcomp(a) };
+const FORM_NOME = { solicitar: "Pedido ao CVH", transfusao: "Registro da transfusão", acomp: "Acompanhamento da transfusão" };
+const donoAtual = () => (OP ? OP.usuario : "");
+const semExames = (r) => Object.assign({}, r, { exames: undefined });
+function camposModal() {
+  const m = $("#modal"), c = {};
+  m.querySelectorAll("input, textarea, select").forEach((el, i) => { if (el.type === "file" || ((el.id === "tVet" || el.id === "tCrmv") && el.readOnly)) return;
+    const k = el.id ? "#" + el.id : [el.tagName, el.className, el.name || "", el.dataset.c || "", el.type === "checkbox" || el.type === "radio" ? el.value : i].join("|");
+    c[k] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
+  return c;
+}
+function estadoModal() { return { campos: camposModal(), esc: Object.assign({}, ESC), ac: AC ? JSON.parse(JSON.stringify(AC)) : null }; }
+function capturarRasc(dono) {
+  const m = $("#modal"); if (!m.classList.contains("on") || !m.dataset.form) return null;
+  const e = estadoModal(); if (JSON.stringify(e) === m.dataset.ini && !EXAMES.length) return (RASC && RASC.form === m.dataset.form && RASC.arg === (m.dataset.arg || "")) ? RASC : null;
+  return Object.assign(e, { form: m.dataset.form, arg: m.dataset.arg || "", dono: dono === undefined ? donoAtual() : dono, em: Date.now(), exames: m.dataset.form === "solicitar" && EXAMES.length ? EXAMES.slice() : undefined });
+}
+function rascAgora() { const r = capturarRasc(); if (!r) return; RASC = r; if (OP && Date.now() - RASC_ENV > 4000) { RASC_ENV = Date.now(); srv("intRascunho", OP.op, semExames(r)).catch(() => {}); } }
+function rascAgendar() { clearTimeout(RASC_T); RASC_T = setTimeout(rascAgora, 1200); }
+["input", "change", "click"].forEach((ev) => document.addEventListener(ev, (e) => { if (e.target.closest && e.target.closest("#modal") && $("#modal").dataset.form) rascAgendar(); }, true));
+setInterval(() => { if (OP && $("#modal").dataset.form) { RASC_ENV = 0; rascAgora(); } }, 15000);
+function rascLimpar() { RASC = null; if (OP) { delete GUARDADO[OP.usuario]; srv("intRascunho", OP.op, null).catch(() => {}); } }
+function aplicarRasc(r) {
+  const m = $("#modal"), c = r.campos || {};
+  m.querySelectorAll("input, textarea, select").forEach((el, i) => { if (el.type === "file" || el.readOnly) return;
+    const k = el.id ? "#" + el.id : [el.tagName, el.className, el.name || "", el.dataset.c || "", el.type === "checkbox" || el.type === "radio" ? el.value : i].join("|");
+    if (!(k in c)) return; if (el.type === "checkbox" || el.type === "radio") { if (el.checked !== !!c[k]) { el.checked = !!c[k]; el.dispatchEvent(new Event("change", { bubbles: true })); } }
+    else if (el.value !== c[k]) { el.value = c[k]; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); } });
+  Object.keys(r.esc || {}).forEach((k) => marcar(k, r.esc[k]));
+  if (r.ac && AC && r.ac.uid === AC.uid) { AC = JSON.parse(JSON.stringify(r.ac));
+    ["reacao", "volume", "mom"].forEach((g) => document.querySelectorAll('.esc[data-g="' + g + '"] .op').forEach((x) => x.classList.toggle("on", AC[g] === x.dataset.v)));
+    document.querySelectorAll('.esc[data-g="sinais"] .op').forEach((x) => x.classList.toggle("on", AC.sinais.includes(x.dataset.v)));
+    document.querySelectorAll('.esc[data-g="interrompida"] .op').forEach((x) => x.classList.toggle("on", (x.dataset.v === "sim") === AC.interrompida));
+    if ($("#acReac")) $("#acReac").hidden = AC.reacao !== "sim"; if ($("#acMl")) $("#acMl").hidden = AC.volume !== "parte"; pintarHts(); }
+  if (r.exames && r.exames.length) { EXAMES = r.exames.slice(); pintarExames(); }
+}
+function abrirForm(nome, arg) {
+  FORM_ORIG[nome](arg); const m = $("#modal"); if (!m.classList.contains("on")) return;
+  m.dataset.form = nome; m.dataset.arg = arg || ""; m.dataset.ini = JSON.stringify(estadoModal());
+  if (RASC && RASC.form === nome && RASC.arg === (arg || "") && RASC.dono === donoAtual()) { aplicarRasc(RASC); toast("Continuei de onde parou. Confira e envie" + (nome === "solicitar" ? ", e assine de novo." : "."), 6000); }
+}
+formSolicitar = () => abrirForm("solicitar");
+formTransfusao = (uid) => abrirForm("transfusao", uid);
+formAcomp = (uid) => abrirForm("acomp", uid);
+const FORMS_ABRIR = (r) => ({ solicitar: () => formSolicitar(), transfusao: () => formTransfusao(r.arg), acomp: () => formAcomp(r.arg) })[r.form]();
+function rascDaEntrada(doServidor) {
+  const usu = OP.usuario, mem = GUARDADO[usu]; let r = doServidor && doServidor.form ? doServidor : null;
+  if (mem && (!r || (mem.em || 0) >= (r.em || 0))) r = mem; else if (r && mem && mem.form === r.form && mem.arg === r.arg) r.exames = mem.exames;
+  delete GUARDADO[usu]; if (!r) return; r.dono = usu; RASC = r;
+  const pac = (r.campos || {})["#sAn"] || (r.campos || {})["#tAn"] || ""; const desc = FORM_NOME[r.form] + (r.arg ? " da bolsa " + r.arg : "") + (pac ? " · " + pac : "");
+  modal("<h2>Continuar de onde parou?</h2><p>Você tinha começado: <b>" + esc(desc) + "</b>.</p><div class=\"bts\"><button class=\"btn\" data-a=\"rascSeguir\">Continuar</button><button class=\"btn sec\" data-a=\"rascDescartar\">Descartar</button></div>");
+}
+
 carregar();
 </script>
 </body></html>
