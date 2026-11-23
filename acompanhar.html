@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Acompanhar pedido · CVH"><meta property="og:description" content="Linha do tempo do pedido de hemocomponentes ao CVH."><meta property="og:image" content="https://carteira.cvh.vet.br/painel-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Linha do tempo do pedido de hemocomponentes ao CVH.">
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !q.get('painel') && !q.get('v')) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  function arquivo(id) { var s = sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (s ? '&s=' + encodeURIComponent(s) : ''); }
+  function reescrever(x) {
+    if (typeof x === 'string') return x.indexOf('drive.google.com') >= 0 ? x.replace(DRIVE, function (_, id) { return arquivo(id); }) : x;
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261123014537';
+  function conferirVersao() {
+    if (document.hidden) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+      v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
+      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.onclick = function () { location.reload(); }; document.body.appendChild(d);
+    }).catch(function () {});
+  }
+  setInterval(conferirVersao, 180000);
+  document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  if (q.get('v')) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Acompanhar pedido · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png"><link rel="icon" type="image/png" href="painel-192.png"><link rel="manifest" href="painel.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Acompanhar pedido · CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--areia:#EEE5DB;--areia2:#E2D6C8;--caramelo:#C49A6C;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding:22px 16px 60px}
+h1{margin:0;font-size:22px;color:var(--vinho)}
+.sub{color:var(--tinta2);font-size:13.5px;margin:2px 0 14px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:18px;padding:16px;margin:12px 0}
+.pac{font-size:18px;font-weight:700;color:var(--vinho)}.pac small{display:block;font-size:14px;color:var(--tinta2);font-weight:600;margin-top:2px}
+.tl{list-style:none;margin:6px 0 0;padding:0}
+.tl li{position:relative;padding:0 0 18px 34px}
+.tl li:last-child{padding-bottom:0}
+.tl li::before{content:"";position:absolute;left:10px;top:22px;bottom:-2px;width:2px;background:var(--areia2)}
+.tl li:last-child::before{display:none}
+.tl i{position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;border:2px solid var(--areia2);background:#fff}
+.tl li.feito i{background:var(--vinho);border-color:var(--vinho)}
+.tl li.feito i::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.tl li.feito::before{background:var(--vinho)}
+.tl li.atual i{border-color:var(--caramelo);box-shadow:0 0 0 4px #F3E6D6}
+.tl li.cancel i{background:var(--verm);border-color:var(--verm)}
+.tl b{display:block;font-size:15.5px}.tl li:not(.feito):not(.atual):not(.cancel) b{color:#9a8b82;font-weight:600}
+.tl small{color:var(--tinta2);font-size:13px}
+.rod{color:var(--tinta2);font-size:12.5px;text-align:center;margin-top:18px}
+.erro{color:var(--verm);font-weight:700}
+</style></head><body>
+<div class="wrap" id="app"><p>Abrindo o pedido…</p></div>
+<script>
+// acompanhamento do pedido para a clínica: só a linha do tempo deste atendimento, sem login
+const $ = (q) => document.querySelector(q), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const p2 = (n) => String(n).padStart(2, "0");
+const hora = (iso) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const T = new URLSearchParams(location.search).get("p") || "";
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, a);
+async function abrir() {
+  let r; try { r = await srv("acompDados", T); } catch (e) { $("#app").innerHTML = '<h1>Pedido CVH</h1><div class="cx"><p class="erro">' + esc(e.message || e) + "</p></div>"; return; }
+  const P = r.passos || [], ult = P.reduce((i, x, k) => (x.em || x.pulado ? k : i), -1), fim = ["concluido", "entregue", "cancelado"].includes(r.etapa);
+  const li = (x, k) => { const cls = x.k === "cancelado" ? "cancel" : x.em || x.pulado ? "feito" : !fim && k === ult + 1 ? "atual" : "";
+    return '<li class="' + cls + '"><i></i><b>' + esc(x.t) + "</b><small>" + (x.em ? esc(hora(x.em)) : x.pulado ? "" : cls === "atual" ? (x.prev ? "previsão " + esc(hora(x.prev)) : "próxima etapa") : "") + "</small></li>"; };
+  $("#app").innerHTML = '<h1>Acompanhar pedido</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia · pedido ' + esc(r.id) + "</div>" +
+    '<div class="cx"><div class="pac">' + esc(r.paciente || "Paciente") + "<small>" + esc(r.oque || "") + (r.destino ? " · " + esc(r.destino) : "") + "</small></div></div>" +
+    '<div class="cx"><ul class="tl">' + P.map(li).join("") + "</ul></div>" +
+    '<p class="rod">' + (fim ? "Pedido encerrado." : "Esta página se atualiza sozinha.") + " Dúvidas, fale com o CVH.</p>";
+  if (!fim) setTimeout(abrir, 60000);
+}
+abrir();
+</script></body></html>
