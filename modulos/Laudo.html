@@ -2388,12 +2388,19 @@ function blocoDiagrama(x, w, cel) {
 
 /* ═════════════ corpo de cada tipo ═════════════ */
 const HEMO = ["Eritrograma", "Leucograma", "Plaquetograma"];
+// proteínas juntas e nesta ordem, no lugar da primeira delas: proteínas totais, albumina, globulinas e relação albumina/globulina
+const ORD_PROT = ["Proteínas totais", "Albumina", "Globulinas", "Relação albumina/globulina"];
+function juntarProteinas(ls) {
+  const ps = ORD_PROT.map((n) => ls.find((l) => l.nome === n)).filter(Boolean); if (ps.length < 2) return ls;
+  const i = ls.findIndex((l) => ps.includes(l)), resto = ls.filter((l) => !ps.includes(l));
+  return [...resto.slice(0, i), ...ps, ...resto.slice(i)];
+}
 function blocosResultados(x, w, cel, so) {
   const blocos = [], grupos = GRUPO_ORD.filter((g) => (!so || so(g)) && estado.linhas.some((l) => l.grupo === g && (l.v != null || l.texto)));
   const tam = cel ? 11.4 : 9.8, rh = cel ? 29 : 17;
   const pares = grupos.flatMap((g) => (estado.misto ? ["IDEXX", "Citopet"] : [""]).map((lab) => [g, lab])).filter(([g, lab]) => estado.linhas.some((l) => l.grupo === g && (l.v != null || l.texto) && (!lab || l.lab === lab)));
   pares.forEach(([g, lab]) => {
-    const ls = estado.linhas.filter((l) => l.grupo === g && (l.v != null || l.texto) && (!lab || l.lab === lab)), leuco = g === "Leucograma" && ls.some((l) => l.pct != null);
+    const ls = juntarProteinas(estado.linhas.filter((l) => l.grupo === g && (l.v != null || l.texto) && (!lab || l.lab === lab))), leuco = g === "Leucograma" && ls.some((l) => l.pct != null);
     // celular: a mesma ordem do A4 (exame, resultado, unidade, referência, barra), com letra maior e colunas ajustadas à largura
     // celular: colunas espalhadas pela largura toda, letra grande para ler sem zoom
     const cN = x, cP = cel ? x + w * 0.4 : x + w * 0.34, cV = cel ? x + w * (leuco ? 0.55 : 0.5) : x + w * (leuco ? 0.52 : 0.44), cU = cV + 3,
