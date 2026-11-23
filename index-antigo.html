@@ -653,7 +653,7 @@ a.btn{text-decoration:none}
 .ac-cx b{color:#A83D3D;letter-spacing:.12em;font-size:13px}.ac-cx h2{color:#5F130F;margin:8px 0}.ac-cx p{color:#2b2320}.ac-cx .btn{width:100%;margin-top:10px}
 .lab-it{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid #eee3d8;padding:.6em 0}
 .lab-it.novo .t b{color:var(--vinho)}
-.lab-it .t small{display:block}
+.lab-par{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin:4px 0;padding:6px 8px;border-radius:8px;background:#F7EFE6;font-size:14px}.lab-it .t small{display:block}
 /* celular: nome e dados do laudo na largura toda, botões embaixo (sem cortar o nome) */
 @media (max-width:760px){.item.lab-it{flex-direction:column;align-items:stretch!important;gap:8px}.lab-it .t{width:100%}.lab-it .t small{white-space:normal}.lab-it .mini-bts{justify-content:flex-start!important;flex-wrap:wrap;margin-left:0!important}}
 .lab-pos{color:#A83D3D;font-weight:800}
@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123222533';
+  var VERSAO = '20261123223329';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6256,6 +6256,18 @@ function animalDoLab(x) {
   const dist = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; const d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; };
   const par = (E.d.animais || []).filter(a => mesmoResp(a) && dist(semAc(a.nome), nome) <= 2); return par.length === 1 ? par[0] : null;
 }
+// laudo do laboratório sem animal identificado: animais de nome parecido (Thunder x Thunderstruck) para perguntar
+function parecidosDoLab(x) {
+  if (x.origem === 'idexx') { const n = idexxNome(x.nomeArquivo); if (n.qc) return []; }
+  const bruto = x.origem === 'idexx' ? (idexxNome(x.nomeArquivo).animal || '') : String(x.animal || '');
+  const nome = semAc(bruto.replace(/\(.*?\)/g, '').replace(/\d{2,5}\s*-\s*\d{1,2}/, '')).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); if (nome.length < 3) return [];
+  const rp = semAc(x.responsavel || (x.origem === 'idexx' ? idexxNome(x.nomeArquivo).resp : '') || '').split(' ')[0];
+  const d1 = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; const d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; };
+  const L = (E.d.animais || []).filter(a => a.ativo !== '0').map(a => { const an = semAc(a.nome).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), p1 = an.split(' ')[0], n1 = nome.split(' ')[0];
+    const pareceu = (an.startsWith(nome) || nome.startsWith(an)) && Math.min(an.length, nome.length) >= 4 || p1 === n1 && p1.length >= 3 || d1(p1, n1) <= (Math.min(p1.length, n1.length) <= 4 ? 1 : 2);
+    return pareceu ? { a, mesmoResp: !!rp && semAc((respDe(a) || {}).nome || '').split(' ')[0] === rp } : null; }).filter(Boolean);
+  return L.sort((p, q) => q.mesmoResp - p.mesmoResp).slice(0, 3).map(p => p.a);
+}
 async function pintarLaboratorios(todos) {
   const el = $('#labRec'); if (!el) return;
   let L; try { L = E.labRec = await api('laboratoriosListar', E.sessao, !!todos); } catch (e) { el.innerHTML = '<h3>Laudos dos laboratórios</h3><p class="nota">' + esc(e.message) + '</p>'; return; }
@@ -6272,6 +6284,7 @@ async function pintarLaboratorios(todos) {
       return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (pos ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(rot) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + (an ? '' : ' <small class="lab-pos">· não identificado no cadastro</small>') + '</b>' +
         '<small>' + esc([br(isoLab(x)) || x.data, x.numero ? 'nº ' + x.numero : '', (an && respDe(an) ? respDe(an).nome : '') || x.responsavel || (nI ? nI.resp : ''), x.completo === 'NÃO' ? 'resultado parcial' : '', x.situacao === 'feito' ? 'laudo feito' : x.situacao === 'ignorado' ? 'ignorado' : ''].filter(Boolean).join(' · ')) + '</small>' +
         (pos ? '<small class="lab-pos">DETECTADO: ' + esc(alt.filter(r => r.positivo).map(r => r.exame + ' ' + r.resultado).join(' · ')) + '</small>' : alt.length ? '<small>Fora da referência: ' + esc(alt.slice(0, 6).map(r => r.exame).join(', ')) + '</small>' : (x.resumo || []).length ? '<small>' + esc((x.resumo || []).slice(0, 4).map(r => r.exame + ': ' + r.resultado).join(' · ')) + '</small>' : '') + '</div>' +
+        (!an && x.situacao !== 'feito' ? parecidosDoLab(x).map(a => '<div class="lab-par"><span>É ' + esc(a.nome) + (respDe(a) ? ' (' + esc(respDe(a).nome) + ')' : '') + '?</span><button class="mini" data-acao="lab-ligar" data-id="' + esc(x.id) + '" data-aid="' + a.id + '">Sim, é ' + esc(a.nome) + '</button></div>').join('') : '') +
         '<div class="mini-bts"><a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF</a>' +
         (x.situacao !== 'feito' ? '<button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">Fazer laudo CVH</button><button class="mini" data-acao="lab-marcar" data-id="' + esc(x.id) + '" data-v="' + (x.situacao === 'ignorado' ? 'novo' : 'ignorado') + '">' + (x.situacao === 'ignorado' ? 'Voltar' : 'Ignorar') + '</button>' : '') + '</div></div>';
     }).join('') : '<p class="vazio-p">Nenhum laudo novo dos laboratórios.</p>') +
@@ -7893,6 +7906,11 @@ const ACOES = {
   'prep-calcular': () => { E.modulo = 'transfusao'; return escolherAtTx(E.prepAt); },
   'atalho-cvh': async b => { b.disabled = true; try { const ch = await api('caixaChave', E.sessao); $('#atalhoPassos').innerHTML = passosAtalho(CVH_SERVIDOR.api + '?caixa=' + ch, 'a HemoCalculadora IA aberta'); } catch (e) { toast(e.message, 6000); } b.disabled = false; },
   'atalho-copiar': async b => { try { await navigator.clipboard.writeText(b.dataset.v); toast('Link copiado.'); } catch (_) { toast('Toque e segure no link para copiar.', 5000); } },
+  'lab-ligar': async b => {
+    b.disabled = true;
+    try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { animalId: b.dataset.aid }); const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (x) x.animalId = b.dataset.aid; toast('Laudo ligado a ' + (animalDe(b.dataset.aid) || {}).nome + '.'); pintarLaboratorios(); }
+    catch (e) { b.disabled = false; toast(e.message, 5000); }
+  },
   'cartao-fisico': async b => {
     const an = animalDe(b.dataset.id); if (!an) return; const v = b.dataset.v; b.disabled = true;
     try {
