@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123024608';
+  var VERSAO = '20261123025155';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -698,15 +698,16 @@ async function solicitarOk(b) {
 }
 function formTransfusao(uid) {
   Object.keys(ESC).forEach((k) => delete ESC[k]);
-  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Peso (kg)</label><input type="text" inputmode="decimal" id="tPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="tPesoV"></span><label>Hematócrito do paciente (%)</label><input type="text" inputmode="decimal" id="tHt" data-num="ht"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
+  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Espécie</label>' + escolha("esp", ["Canina", "Felina"]) + '<label>Peso (kg)</label><input type="text" inputmode="decimal" id="tPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="tPesoV"></span><label>Hematócrito do paciente (%)</label><input type="text" inputmode="decimal" id="tHt" data-num="ht"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
     '<label>Nome e sobrenome do médico veterinário</label><input type="text" id="tVet" placeholder="digite a primeira letra"><label>CRMV-DF</label><input type="text" inputmode="numeric" id="tCrmv" placeholder="00000">' +
     "<label>Responsável</label>" + blocoOrienta() +
     '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">TRANSFUNDIDO</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
   ligarNumeros(); ligarVet(); $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
 }
 async function transfOk(uid, b) {
-  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc() };
+  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc(), especie: ESC.esp || "" };
   if (["animal", "peso", "ht", "telefone", "vet", "crmv"].some((k) => !o[k])) return toast("Preencha todos os dados do paciente e do médico veterinário.", 6000);
+  if (!o.especie) return toast("Marque a espécie do paciente.", 5000);
   if (!checarVet(o.vet)) return toast("Na primeira vez, escreva o nome e o sobrenome do médico veterinário.", 6000);
   if (!o.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 6000);
   // confirmação física: depois de TRANSFUNDIDO, a etiqueta da bolsa usada precisa ser lida; sem a leitura, nada é registrado
@@ -719,7 +720,7 @@ async function transfOk(uid, b) {
     await srv("intTransfundir", uid, o); somOk();
     guardarVet(o.vet, o.crmv);
     fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar();
-  } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+  } catch (e) { if (/ESPÉCIE TROCADA/.test(e.message)) { bip(false); modal('<h2 style="color:#8A1D14">Não transfunda</h2><p style="font-size:17px">' + esc(e.message) + '</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>'); } else toast(e.message, 8000); } finally { b.disabled = false; }
 }
 /* ── acompanhamento da transfusão (hemovigilância) ── */
 const SINAIS = { febre: "Febre", tremores: "Tremores", urticaria: "Urticária ou prurido", edema: "Edema facial", vomito: "Vômito ou salivação", taquicardia: "Taquicardia", dispneia: "Taquipneia ou dispneia", hipotensao: "Hipotensão ou colapso", hemolise: "Hemoglobinúria ou plasma hemolisado" };
