@@ -921,7 +921,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123025911';
+  var VERSAO = '20261123030909';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6276,6 +6276,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.admin = pode('admin');
     if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
       E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, intervaloMeses: INTERVALO_DOACAO_MESES,
+        vacinas: regsDe(aid).filter(r => r.tipo === 'vacina' && r.excluido !== '1').map(r => ({ data: r.data, produtos: produtos(r) })),
         doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })) }; } }
   if (nome === 'tcle') {
     E.ponte.resp = rp.id ? { id: rp.id, nome: rp.nome, email: rp.email, tel: rp.telefone, cpf: rp.cpf || '', cep: rp.cep || '', logradouro: rp.logradouro || '', numero: rp.numero || '', complemento: rp.complemento || '', bairro: rp.bairro || '', cidade: rp.cidade || '', uf: rp.uf || '' } : null;

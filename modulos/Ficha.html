@@ -2838,7 +2838,9 @@ init();
 
   // à prova de erros na ficha de doação. Graves (bloqueio): intervalo menor que o combinado, impedimento laboratorial, doador aposentado ou fora do cadastro,
   // peso ou hematócrito abaixo do mínimo. Avisos: pendências do doador e valores que parecem digitados errado.
-  const MIN_DOADOR = { Canina: { peso: 25, ht: 40 }, Felina: { peso: 4, ht: 30 } };
+  // critérios das Recomendações de Boas Práticas da ABVHMT (2024): arts. 21 a 25, 38 e tabela 1
+  const MIN_DOADOR = { Canina: { peso: 25, ht: 40, hb: 13, mlkg: 18, volMax: 450 }, Felina: { peso: 4, ht: 35, hb: 11.5, mlkg: 13, volMax: 75 } };
+  const VAC_28 = /dappv|dhpp|vanguard|recombitek|inomune|tricat|feline|feligen|felocell|\bkc\b|giardia|oral|m[uú]ltipla|v8|v10|v4|v5/i, VAC_2 = /raiva|rabi|defensor|rabmune|bronchiguard|guard-vac|lepto/i;
   function checarDoacao(iso) {
     const T = ctx.triagem || {}, graves = [], avisos = [], nc = S.tempo === "NC";
     const n = (k) => { const v = sv(k); if (!v) return NaN; const x = parseFloat(v.replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(x) ? x : NaN; };
@@ -2856,6 +2858,13 @@ init();
     (T.imp || []).forEach((p) => graves.push("Impedimento laboratorial: " + p + "."));
     const meses = T.intervaloMeses || 3, ant = (T.doacoes || []).filter((d) => d.data && d.data < iso && !(S.numero && d.numero === S.numero)).map((d) => d.data).sort().pop();
     if (ant) { const lib = new Date(ant + "T12:00:00"); lib.setMonth(lib.getMonth() + meses); const libIso = lib.toISOString().slice(0, 10); if (iso < libIso) graves.push("Intervalo menor que " + meses + " meses. Última doação em " + isoBR(ant) + ", liberado a partir de " + isoBR(libIso) + "."); }
+    if (!isNaN(hb) && hb >= 2 && hb < M.hb) graves.push("Hemoglobina " + sv("hb") + " g/dL abaixo do mínimo para doador (" + String(M.hb).replace(".", ",") + " g/dL).");
+    const nasc = (ctx.animal || {}).nascimento; if (/^\d{4}-\d{2}-\d{2}/.test(nasc || "")) { const anos = (Date.parse(iso) - Date.parse(String(nasc).slice(0, 10))) / (365.25 * 864e5); if (anos < 1 || anos >= 9) graves.push("Idade fora da faixa de doação (1 a 8 anos): " + Math.floor(anos * 10) / 10 + " anos."); }
+    const vol = n("volume"); if (!isNaN(vol) && vol > 0) { if (vol > M.volMax) graves.push("Volume coletado " + sv("volume") + " mL acima do máximo para " + (gato ? "gato" : "cão") + " (" + M.volMax + " mL)."); else if (!isNaN(peso) && peso > 0 && vol / peso > M.mlkg + 0.5) graves.push("Volume coletado de " + Math.round(vol / peso * 10) / 10 + " mL/kg, acima do máximo (" + M.mlkg + " mL/kg)."); }
+    (T.vacinas || []).forEach((v) => { const dias = (Date.parse(iso) - Date.parse(v.data)) / 864e5; if (!(dias >= 0)) return; const nome = (v.produtos || []).join(" + ") || "vacina";
+      const lim = VAC_28.test(nome) ? 28 : VAC_2.test(nome) ? 2 : 0;
+      if (lim && dias < lim) graves.push("Vacina recente (" + nome + ", em " + isoBR(v.data) + "). Inaptidão de " + (lim === 28 ? "4 semanas" : "48 horas") + ".");
+      else if (!lim && dias < 28) avisos.push("Vacina há " + Math.round(dias) + " dias (" + nome + "). Confira o tempo de inaptidão."); });
     if (!isNaN(peso) && peso >= 0.5 && peso < M.peso) graves.push("Peso " + sv("peso") + " kg abaixo do mínimo para doador (" + M.peso + " kg).");
     if (!isNaN(ht) && ht >= 5 && ht < M.ht) graves.push("Hematócrito " + sv("ht") + "% abaixo do mínimo para doador (" + M.ht + "%).");
     return { graves, avisos };

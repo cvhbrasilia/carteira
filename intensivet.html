@@ -38,7 +38,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261123025911';
+  var VERSAO = '20261123030909';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -314,9 +314,15 @@ const tipoRestoA = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return "
 const seloTipo = (u) => seloTipoA(anDe(u.animal_id)), tipoResto = (u) => tipoRestoA(anDe(u.animal_id));
 const tipoTxt = (u) => { const a = anDe(u.animal_id), t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
 const especie = (u) => /fel|gat/i.test(anDe(u.animal_id).especie || "") ? "Felino" : "Canino";
-const linhaBolsa = (u) => "<b>" + esc(u.componente) + " · " + esc(u.coleta) + seloTipo(u) + "</b>" + '<small>' + esc(NOME_COMP[u.componente] || u.componente) + " · " + esc(especie(u)) + (tipoResto(u) ? " " + esc(tipoResto(u)) : "") + (u.volume_ml ? " · " + esc(u.volume_ml) + " mL" : "") + (u.validade ? " · validade " + esc(dataBr(u.validade)) : "") + "</small>";
+const linhaBolsa = (u) => "<b>" + esc(u.componente) + " · " + esc(u.coleta) + seloTipo(u) + seloCP(u) + "</b>" + '<small>' + esc(NOME_COMP[u.componente] || u.componente) + " · " + esc(especie(u)) + (tipoResto(u) ? " " + esc(tipoResto(u)) : "") + (u.volume_ml ? " · " + esc(u.volume_ml) + " mL" : "") + (u.validade ? " · validade " + esc(dataBr(u.validade)) : "") + "</small>";
 const prazo = (u) => (D.prazos || {})[u.componente] || 20;
 const inicioGuarda = (r) => r && (r.entrega_em || r.recebida_em) ? Date.parse(r.entrega_em || r.recebida_em) : null;
+// plaqueta: 24 h fora do agitador (ABVHMT); qualquer bolsa: validade
+const cpLim = (u) => u && u.componente === "CP" && (u.dados || {}).saidaAgitador ? Date.parse(u.dados.saidaAgitador) + 864e5 : null;
+const hojeBR = () => new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
+const vencidaU = (u) => !!u && ((cpLim(u) != null && agora() > cpLim(u)) || (!!u.validade && String(u.validade).slice(0, 10) < hojeBR()));
+const hmData = (ms) => { const d = new Date(ms); return p2(d.getHours()) + ":" + p2(d.getMinutes()) + " de " + p2(d.getDate()) + "/" + p2(d.getMonth() + 1); };
+const seloCP = (u) => { const l = cpLim(u); if (l == null) return ""; const resta = l - agora(); return ' <span class="tag ' + (resta < 0 ? "al" : resta < 6 * 36e5 ? "al" : "av") + '">' + (resta < 0 ? "VENCIDA, não use" : "transfundir até " + hmData(l)) + "</span>"; };
 function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Math.abs(s), t = p2(Math.floor(a / 60)) + ":" + p2(a % 60); return '<span class="relogio' + (s < 0 ? " al" : "") + '" data-fim="' + fimMs + '">' + (s < 0 ? "atrasado " + t : t) + "</span>"; }
 
 function pintar() {
@@ -328,6 +334,10 @@ function pintar() {
   const caminho = rem.filter((r) => r.situacao === "transito");
   if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>").join("") + "</div>";
   if (!notifOk()) h += '<div class="cx av"><p>Ative as notificações para saber quando uma caixa do CVH estiver a caminho, mesmo com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>';
+  const vencidas = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao) && vencidaU(u));
+  if (vencidas.length) h += '<div class="cx al"><h2>BOLSA VENCIDA · NÃO USE</h2><p>Separe ' + (vencidas.length === 1 ? "a bolsa" : "as bolsas") + ' e toque em Devolver ao CVH. O CVH já foi avisado.</p>' + vencidas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + '</small><div class="bts"><button class="btn peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button></div></div>').join("") + "</div>";
+  const cps = (D.unidades || []).filter((u) => u.local === A.local && u.componente === "CP" && ["disponivel", "reservada"].includes(u.situacao) && !vencidaU(u));
+  if (cps.length) h += '<div class="cx av"><h2>Plaqueta aqui</h2><p><b>Temperatura ambiente (20 a 24 °C), nunca no refrigerador.</b> Transfundir em até 24 h depois que saiu do CVH. Agite suavemente antes de usar.</p>' + cps.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "</div>").join("") + "</div>";
   h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
   // pedidos ao CVH: bolsa, tipagem, prova de compatibilidade e Coombs (internação)
   if (interna) {
@@ -348,7 +358,7 @@ function pintar() {
         else if (g && !g.foto) { st = '<span class="tag av">No equipamento · foto pendente</span>'; bt = '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
         else st = '<span class="tag ok">guardada</span>';
         const eq = (D.equipamentos || []).find((e) => (e.aceita || []).includes(u.componente));
-        return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
+        return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && u.componente === "CP" ? '<small><b>Temperatura ambiente, NUNCA no refrigerador</b></small>' : u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
       (r.recebida_em ? '<div class="bts"><button class="btn sec peq" data-a="ocorrencia" data-v="Caixa ' + esc(r.id) + '">Informar ocorrência ao CVH</button></div>' : "") + "</div>";
   }
   // bolsas que voltaram ao estoque por cancelamento e ainda esperam o QR do equipamento e a foto
@@ -365,7 +375,7 @@ function pintar() {
   const ordem = ["CH", "PFC", "CRIO", "CP", "PPC"];
   h += '<div class="cx"><h2>Estoque na ' + esc(A.local) + " · " + est.length + (est.length === 1 ? " bolsa" : " bolsas") + "</h2>" + (est.length ? est.sort((a, b) => ordem.indexOf(a.componente) - ordem.indexOf(b.componente) || String(a.validade).localeCompare(String(b.validade))).map((u) =>
     '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
-    (interna && u.situacao !== "bloqueada" ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button><button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
+    (interna && u.situacao !== "bloqueada" && !vencidaU(u) ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + '<button class="btn sec peq" data-a="devolver" data-v="' + esc(u.id) + '">Devolver ao CVH</button><button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
   const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
   if (feitas.length) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
     feitas.sort((a, b) => String(b.dados.uso.transfundidaEm).localeCompare(String(a.dados.uso.transfundidaEm))).map((u) => { const U = u.dados.uso || {}, ac = U.acomp || {}, hts = ac.hts || [];
@@ -457,6 +467,7 @@ async function guardar(uidSugerido) {
   const t = await lerQR(uidSugerido ? "Leia a etiqueta da bolsa " + uidSugerido : "Leia a etiqueta da bolsa"); if (!t) return;
   const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
   if (!u || !pendenteGuarda(u)) { bip(false); return toast(u ? "Esta bolsa não está esperando guarda." : "Bolsa não encontrada nesta caixa. Confira a etiqueta.", 7000); }
+  if (u.componente === "CP") { const l = cpLim(u); modal('<h2>Plaqueta · ' + esc(u.id) + '</h2><p style="font-size:17px;color:#8A1D14"><b>NÃO coloque no refrigerador nem no freezer.</b> O frio inativa as plaquetas.</p><p>Deixe a bolsa em temperatura ambiente (20 a 24 °C), deitada, longe do sol, do ar-condicionado direto e do refrigerador.' + (l ? ' Transfundir até <b>' + esc(hmData(l)) + '</b>.' : ' Transfundir em até 24 h.') + ' Agite suavemente antes de usar.</p><div class="bts"><button class="btn" data-a="cpAmb" data-v="' + esc(u.id) + '">Plaqueta em temperatura ambiente</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
   if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
   await lerEquip(u.id);
 }
@@ -467,7 +478,7 @@ async function lerEquip(uid) {
 }
 function pedirFotoGuarda(uid) {
   const u = uniDe(uid) || {};
-  modal("<h2>No equipamento · foto pendente</h2><p>Tire a foto da bolsa " + esc(uid) + " já dentro do equipamento." + (u.componente === "CH" ? " A foto precisa mostrar a bolsa fora do ziplock, apoiada sobre o plástico aberto." : "") + '</p><div class="bts"><button class="btn" data-a="fotoGuarda" data-v="' + esc(uid) + '">Tirar a foto</button><button class="btn sec" data-a="fechar">Depois</button></div>');
+  modal("<h2>No equipamento · foto pendente</h2><p>Tire a foto da bolsa " + esc(uid) + (u.componente === "CP" ? " no lugar onde ela vai ficar, fora do refrigerador." : " já dentro do equipamento.") + (u.componente === "CH" ? " A foto precisa mostrar a bolsa fora do ziplock, apoiada sobre o plástico aberto." : "") + '</p><div class="bts"><button class="btn" data-a="fotoGuarda" data-v="' + esc(uid) + '">Tirar a foto</button><button class="btn sec" data-a="fechar">Depois</button></div>');
 }
 async function fotoGuarda(uid) {
   const f = await tirarFoto(); if (!f) return toast("Tire a foto da bolsa guardada.");
@@ -698,16 +709,16 @@ async function solicitarOk(b) {
 }
 function formTransfusao(uid) {
   Object.keys(ESC).forEach((k) => delete ESC[k]);
-  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>Espécie</label>' + escolha("esp", ["Canina", "Felina"]) + '<label>Peso (kg)</label><input type="text" inputmode="decimal" id="tPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="tPesoV"></span><label>Hematócrito do paciente (%)</label><input type="text" inputmode="decimal" id="tHt" data-num="ht"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
+  modal("<h2>Transfundido · " + esc(uid) + '</h2><label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>O paciente é</label>' + escolha("espT", ["Canino", "Felino"]) + '<label>Peso (kg)</label><input type="text" inputmode="decimal" id="tPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="tPesoV"></span><label>Hematócrito do paciente (%)</label><input type="text" inputmode="decimal" id="tHt" data-num="ht"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
     '<label>Nome e sobrenome do médico veterinário</label><input type="text" id="tVet" placeholder="digite a primeira letra"><label>CRMV-DF</label><input type="text" inputmode="numeric" id="tCrmv" placeholder="00000">' +
     "<label>Responsável</label>" + blocoOrienta() +
     '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">TRANSFUNDIDO</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
   ligarNumeros(); ligarVet(); $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
 }
 async function transfOk(uid, b) {
-  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc(), especie: ESC.esp || "" };
+  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc(), especie: ESC.espT || "" };
   if (["animal", "peso", "ht", "telefone", "vet", "crmv"].some((k) => !o[k])) return toast("Preencha todos os dados do paciente e do médico veterinário.", 6000);
-  if (!o.especie) return toast("Marque a espécie do paciente.", 5000);
+  if (!o.especie) return toast("Marque se o paciente é canino ou felino.", 5000);
   if (!checarVet(o.vet)) return toast("Na primeira vez, escreva o nome e o sobrenome do médico veterinário.", 6000);
   if (!o.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 6000);
   // confirmação física: depois de TRANSFUNDIDO, a etiqueta da bolsa usada precisa ser lida; sem a leitura, nada é registrado
@@ -809,6 +820,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "nomeOk") return nomeOk(b);
     if (a === "guardar") return guardar(v);
     if (a === "lerEquip") return lerEquip(v);
+    if (a === "cpAmb") { b.disabled = true; try { await srv("intGuardar", v, "AMBIENTE", nomeSalvo()); somOk(); fechar(); await carregar(); pedirFotoGuarda(v); } catch (e) { bip(false); toast(e.message, 9000); b.disabled = false; } return; }
     if (a === "lerEtiqueta") return lerEtiquetaGeral();
     if (a === "pedirFoto") return pedirFotoGuarda(v);
     if (a === "fotoGuarda") return fotoGuarda(v);
