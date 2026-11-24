@@ -640,13 +640,15 @@ function compTexto(t) {
   if (/^PFC$|^PLASMAFRESCO|^PLASMA$/.test(c)) return "PFC";
   if (/^PC$|^PLASMACOMUM$/.test(c)) return "PC";
   if (/^ST$|^SANGUETOTAL$/.test(c)) return "ST";
+  if (/^CHS(SG|EMSAG)$/.test(c)) return "CHS";   // CH sem SAG (amostra da produção): fica fora das contas do CH
   if (/^CHD$|^CHDESLEUC/.test(c)) return "CHD";
   if (/^CH(C?SA?G|COMSAG)?$|^CONCENTRADODEHEMACIAS$|^HEMACIAS$/.test(c)) return "CH";
   return "";
 }
 function compDe(cli, nome) {
   const c = compTexto(cli); if (c) return c;
-  const f = String(nome || "").toUpperCase(), m = f.match(/^(PFC|PIC|PC|CP|CRIO|CHD|CH|ST)[^A-Z]/); if (m) return m[1];
+  const f = String(nome || "").toUpperCase(); if (/^CH-S-SG/.test(f)) return "CHS";
+  const m = f.match(/^(PFC|PIC|PC|CP|CRIO|CHD|CH|ST)[^A-Z]/); if (m) return m[1];
   const w = f.match(/(PLAQUETAS?|PLASMA FRESCO|PLASMA|SANGUE TOTAL|HEM[AÁ]CIAS|CRIO)/); return w ? compTexto(w[1]) : "";
 }
 function lerProcyte(linhas, nome) {
