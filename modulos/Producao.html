@@ -1253,7 +1253,7 @@ document.addEventListener("click", async (ev) => {
     if (a === "pAvanca") await salvarProd(c, v, {});
     if (a === "pSalvar" && v === "ch") {
       const D = { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value), sagAdicionado: num($("#pSagAd").value), pesoCHfinal: num($("#pPesoFinal").value), htCHfinal: num($("#pHtFinal").value) };
-      if (D.pesoCHsem == null) throw new Error("Informe o peso do CH sem SAG.");
+      if (D.pesoCHsem == null) throw new Error("Informe o peso do CH sem SAG."); if (D.pesoCHfinal != null && D.pesoCHfinal <= D.pesoCHsem) throw new Error("O peso final do CH com SAG (" + fmt(D.pesoCHfinal, 1) + " g) está menor que o peso sem SAG (" + fmt(D.pesoCHsem, 1) + " g). Confira a pesagem.");
       const cs = sag(D); if (cs) { D.sagCalculado = Math.round(cs.calc); D.htUsadoSag = cs.ht; D.htMedidoSag = cs.medido; }
       if (D.pesoCHfinal == null) { await salvarProd(c, "ch_com_sag", D, "CH sem SAG registrado. Falta o peso final."); return; }
       await salvarProd(c, "cp_pfc", D, "CH com SAG registrado.");
