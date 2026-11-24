@@ -499,7 +499,7 @@ function busy(on,t){$('#busy').classList.toggle('show',!!on);if(t)$('#busyTx').t
 const LS_DRAFT='cvh_ficha_rascunho_v1', LS_SIGN='cvh_ficha_assinante_v1', LS_FICHAS='cvh_fichas_andamento_v1', LS_ATUAL='cvh_ficha_atual_v1', DIAS_GUARDA=30;
 function blank(){return{
   id:null,numero:'',etq:'',animal:'',idade:'',sexo:'',raca:'',peso:'',responsavel:'',microchip:'',data:todayISO(),
-  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
+  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,clinico:false,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
   ps:'',pd:'',hb:'',ht:'',fc:'',fr:'',temp:'',tpc:'',spo2:'',
   inicio:'',fim:'',tempo:'',volume:'',lote:'',validade:'',seguimento:'',
   obsIni:'',lesoes:[],obsDoa:'',obsDemais:'',
@@ -611,11 +611,13 @@ function txa(k,label,ph){
 }
 function buildForm(){
   $('#form').innerHTML=`
-  <div class="intro"><h1>Ficha de doação de sangue canina</h1><p>Preencha direto aqui ou leia uma ficha em papel. A prévia mostra o documento exatamente como sai no PDF. Campo em branco ou marcado como NI não aparece na ficha.</p></div>
+  <div class="intro"><h1 id="introT">Ficha de doação de sangue canina</h1><p>Preencha direto aqui ou leia uma ficha em papel. A prévia mostra o documento exatamente como sai no PDF. Campo em branco ou marcado como NI não aparece na ficha.</p></div>
   <div class="qstrip" id="qstrip"><span id="qtx"></span><button class="btn" id="qFoto">Ver foto</button><button class="btn pri" id="qProx">Próxima ficha</button></div>
   <div class="banner" id="banner"><b>Ficha lida da foto.</b> Os campos com fundo dourado vieram da leitura. Os destacados em vermelho ficaram com leitura duvidosa. Confira cada um com a foto e toque em “Conferido” para liberar a assinatura.<div class="row"><button class="btn" id="bConfTudo">Marcar tudo como conferido</button><span class="hint" id="nConf" style="align-self:center"></span></div></div>
 
-  <section class="sec" style="border-top:0;padding-top:4px"><h2><span class="n">1</span>Doação</h2>
+  <section class="sec" style="border-top:0;padding-top:4px"><h2><span class="n">1</span><span id="secDoaT">Doação</span></h2>
+    <div class="chips" style="margin:0 0 10px"><button type="button" class="chip" id="bClinico" aria-pressed="false">Atendimento clínico, sem coleta</button></div>
+    <p id="clinicoNota" hidden style="margin:-4px 0 10px;font-size:13px;color:#7A6A63">Atendimento clínico: não gera número de doação, não gera bolsa e não conta como doação. Fica na aba de doações da carteira como atendimento clínico.</p>
     <div class="grid">
       ${fld('numero','Número da doação',{cls:'s3',scan:1,ph:'Leia a etiqueta ou digite',ni:false})}
       ${fld('data','Data da doação',{cls:'s3',type:'date',ni:false})}
@@ -742,7 +744,12 @@ function dogImg(v){return v==='d'?IMG.dogd:IMG.dogv}
 const TEXT_KEYS=['auscObs','numero','data','etq','animal','idade','peso','raca','responsavel','microchip','ps','pd','hb','ht','ppt','plasma','fc','fr','temp','inicio','fim','tempo','volume','lote','validade','seguimento','obsIni','obsDoa','obsDemais'];
 const CHIP_KEYS=['ausc','sexo','mucosas','tpc','dea1','dal','pele','plCor','plAsp','plHem','plLip','acDoa'];
 const NC_DEP=['volume','lote','validade','seguimento'];
-function syncAll(){
+function pintarClinico(){const c=!!S.clinico,b=document.getElementById('bClinico');if(!b)return;b.setAttribute('aria-pressed',c);
+  const n=document.querySelector('[data-wrap="numero"]');if(n)n.hidden=c;const nt=document.getElementById('clinicoNota');if(nt)nt.hidden=!c;
+  const st=document.getElementById('secDoaT');if(st)st.textContent=c?'Atendimento':'Doação';const ld=document.querySelector('label[for="i_data"]');if(ld)ld.textContent=c?'Data do atendimento':'Data da doação';
+  document.querySelectorAll('.sec').forEach(s=>{const h=s.querySelector('h2');if(h&&/Coleta$/.test(h.textContent.trim()))s.hidden=c;});
+  const t1=document.querySelector('.tt .t1');if(t1)t1.textContent=c?'Ficha de atendimento clínico':'Ficha de doação';const it=document.getElementById('introT');if(it)it.textContent=c?'Ficha de atendimento clínico':'Ficha de doação de sangue canina';}
+function syncAll(){pintarClinico();
   _numBusca=S.numero||'';
   TEXT_KEYS.forEach(syncText);
   CHIP_KEYS.forEach(syncChips);
@@ -838,6 +845,7 @@ function bind(){
     if(t){
       if(t.dataset.cf){conferir(t.dataset.cf);return;}
       if(t.dataset.pl){const cur=S.plasma==='NI'?'':(S.plasma||'').trim();const v=t.dataset.pl;if(!cur.toLowerCase().includes(v.toLowerCase())){setV('plasma',cur?cur+', '+v.charAt(0).toLowerCase()+v.slice(1):v);syncText('plasma');}return;}
+      if(t.id==='bClinico'){S.clinico=!S.clinico;if(S.clinico){if(S.tempo!=='NC')setV('tempo','NC');if(S.numero)setV('numero','');}else if(S.tempo==='NC')setV('tempo','');['tempo','numero',...NC_DEP].forEach(syncText);pintarClinico();touched('clinico');return;}
       if(t.dataset.nc){setV('tempo',S.tempo==='NC'?'':'NC');['tempo',...NC_DEP].forEach(syncText);return;}
       if(t.dataset.ni){const k=t.dataset.ni;setV(k,S[k]==='NI'?'':'NI');k==='fr'?syncText('fr'):syncText(k);wrapState(k);return;}
       if(t.closest('[data-chips]')){const k=t.closest('[data-chips]').dataset.chips;const v=t.dataset.v;
@@ -1028,6 +1036,7 @@ function fPlasma(){const p=[];const c=sv('plCor'),a=sv('plAsp'),h=sv('plHem'),l=
   if(c)p.push(c);if(a)p.push(p.length?a.toLowerCase():a);if(h&&h!=='Ausente')p.push('hemólise '+h.toLowerCase());if(l&&l!=='Ausente')p.push('lipemia '+l);if(o)p.push(o);
   const t=p.join(', ');return t?t[0].toUpperCase()+t.slice(1):'';}
 function coletaTabs(){
+  if(S.clinico)return [];
   const nc=S.tempo==='NC';
   return [{t:'Horário e volume',r:[lin('Início e fim da triagem',fTriagem()),nc?{l:'Tempo de coleta',v:'Não coletado',h:'<i>Não coletado</i>'}:lin('Tempo de coleta',nu('tempo'),'min'),nc?{l:'Volume coletado',v:'-'}:lin('Volume coletado',nu('volume'),'mL')].filter(Boolean)},
           {t:'Bolsa',r:(nc?[{l:'Lote',v:'-'},{l:'Validade',v:'-'},{l:'Seguimento',v:'-'}]:[lin('Lote',sv('lote')),lin('Validade',fVal()),lin('Seguimento',sv('seguimento'))]).filter(Boolean)}].filter(t=>t.r.length);
@@ -1043,7 +1052,7 @@ async function sha(txt){
 async function assinar(){
   const nome=$('#i_sNome').value.trim(),crmv=$('#i_sCrmv').value.trim(),uf=$('#sUf').value;
   if(!nome||!crmv){toast('Preencha o nome e o CRMV de quem assina.');$('#i_sNome').focus();return;}
-  const falta=[];if(!S.numero)falta.push('número da doação');if(!S.animal)falta.push('animal');if(!S.data)falta.push('data');
+  const falta=[];if(!S.numero&&!S.clinico)falta.push('número da doação');if(!S.animal)falta.push('animal');if(!S.data)falta.push('data');
   if(falta.length){toast('Antes de assinar, preencha '+falta.join(', ')+'.');return;}
   const nd=Object.keys(S.duvidas||{}).length;
   if(nd){toast(`Ainda ${nd>1?`há ${nd} campos`:'há 1 campo'} para conferir. Toque em “Conferido” em cada um.`);$('.f.duv')?.scrollIntoView({behavior:'smooth',block:'center'});return;}
@@ -1094,6 +1103,7 @@ function lesCol(h=112){
 function obsCol(){const o=obsLista();if(!o.length)return '';return `<div class="ocol">${o.map(x=>`<div class="ob">${barHTML(x.t)}<div class="tx">${esc(x.v)}</div></div>`).join('')}</div>`;}
 function lesObsHTML(h){const o=obsCol();return `<div class="blk lo${o?'':' so'}">${lesCol(h)}${o}</div>`;}
 function tituloHTML(mob){
+  if(S.clinico)return `<div class="ttl"><h1>Ficha de${mob?'<br>':' '}atendimento clínico</h1><span class="tw"><img class="tubo" src="${IMG.tubo}" alt=""></span></div>`;
   return `<div class="ttl"><h1>Ficha de doação${mob?'<br>':' '}de sangue canina</h1><span class="tw"><img class="tubo" src="${IMG.tubo}" alt=""></span></div>`;
 }
 // QR Code para a verificação da receita. QRCode for JavaScript, Copyright (c) 2009 Kazuhiko Arase, licença MIT (http://www.d-project.com/). "QR Code" é marca registrada da DENSO WAVE.
@@ -2377,8 +2387,8 @@ function blocos(){
     lesObsHTML(104),`<div class="blk" style="margin-top:12px">${assHTML()}</div>`].filter(Boolean);
 }
 function hdrHTML(mob){
-  const t=fTipo();const s=fDate('data')?'Doação em '+fDate('data'):'';
-  return `<div class="hdr"><div class="k">FICHA DE DOAÇÃO${S.numero?' '+esc(S.numero):''}</div><div class="n">${esc(sv('animal')||'')}${t?`<small>${esc(t)}</small>`:''}</div>${s?`<div class="s">${esc(s)}</div>`:''}</div>`;
+  const t=fTipo();const s=fDate('data')?(S.clinico?'Atendimento em ':'Doação em ')+fDate('data'):'';
+  return `<div class="hdr"><div class="k">${S.clinico?'ATENDIMENTO CLÍNICO':'FICHA DE DOAÇÃO'+(S.numero?' '+esc(S.numero):'')}</div><div class="n">${esc(sv('animal')||'')}${t?`<small>${esc(t)}</small>`:''}</div>${s?`<div class="s">${esc(s)}</div>`:''}</div>`;
 }
 let measureBox=null;
 function paginar(){
@@ -2585,7 +2595,7 @@ function tab(t){
 
 /* ================= exportação ================= */
 const LIB={h2c:'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js',pdf:'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',zip:'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'};
-function nomeArq(ext,suf){const a=sv('animal').toUpperCase(),r=(sv('responsavel').split(/\s+/)[0]||'');const b=(`Doação${a?' '+a:''}${S.numero?' '+S.numero:''}${r?' - '+r:''}`+(suf?` (${suf})`:'')).replace(/[\/\\:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();return `${b}.${ext}`;}
+function nomeArq(ext,suf){const a=sv('animal').toUpperCase(),r=(sv('responsavel').split(/\s+/)[0]||'');const b=(`${S.clinico?'Atendimento clínico':'Doação'}${a?' '+a:''}${S.numero?' '+S.numero:''}${r?' - '+r:''}`+(suf?` (${suf})`:'')).replace(/[\/\\:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim();return `${b}.${ext}`;}
 async function getDl(){
   if(dl)return dl;if(!window.claude?.use)return null;
   try{dl=await Promise.race([claude.use('downloads'),new Promise(r=>setTimeout(()=>r(null),4000))]);}catch(e){dl=null}
@@ -2628,7 +2638,7 @@ async function exportar(tipo){
     await Promise.all([loadScript(LIB.h2c),loadScript(LIB.pdf)]);
     const host=document.createElement('div');host.style.cssText='position:fixed;left:0;top:0;z-index:-5;pointer-events:none';document.body.appendChild(host);
     const {PDFDocument}=PDFLib;const pdf=await PDFDocument.create();
-    pdf.setTitle(`Ficha de doação ${S.numero} ${S.animal}`);pdf.setAuthor(S.ass?S.ass.nome:'CVH');pdf.setCreator('CVH Centro Veterinário de Hemoterapia');
+    pdf.setTitle(S.clinico?`Atendimento clínico ${S.animal}`:`Ficha de doação ${S.numero} ${S.animal}`);pdf.setAuthor(S.ass?S.ass.nome:'CVH');pdf.setCreator('CVH Centro Veterinário de Hemoterapia');
     if(tipo==='mob'){
       host.innerHTML=mobileHTML();await imgsProntas(host);
       const cv=await capturar(host.firstElementChild,3);
@@ -2680,9 +2690,9 @@ async function gerarDocx(){
   const body=[];
   // logo e cabeçalho com número, nome e tipo
   const t=fTipo();const sub=fDate('data')?'Doação em '+fDate('data'):'';
-  const hd=P(R('FICHA DE DOAÇÃO'+(S.numero?' '+S.numero:''),{b:true,sz:15,c:'A83D3D',sp:10}),{jc:'right'})+P(R(sv('animal'),{b:true,sz:32})+(t?R('  '+t,{b:true,sz:20,c:'A83D3D'}):''),{jc:'right',before:40})+(sub?P(R(sub,{sz:17,c:'8A6A60'}),{jc:'right',before:30}):'');
+  const hd=P(R(S.clinico?'ATENDIMENTO CLÍNICO':'FICHA DE DOAÇÃO'+(S.numero?' '+S.numero:''),{b:true,sz:15,c:'A83D3D',sp:10}),{jc:'right'})+P(R(sv('animal'),{b:true,sz:32})+(t?R('  '+t,{b:true,sz:20,c:'A83D3D'}):''),{jc:'right',before:40})+(sub?P(R(sub,{sz:17,c:'8A6A60'}),{jc:'right',before:30}):'');
   body.push(TB([5600,4038],[TC(P(IMGX(rid['logo.png'],6.4,1.875)),5600,{va:'center',ml:0})+TC(hd,4038,{va:'center'})]));
-  body.push(P(R('Ficha de doação de sangue canina',{b:true,sz:42,c:'5F130F'}),{before:260,after:180,line:240}));
+  body.push(P(R(S.clinico?'Ficha de atendimento clínico':'Ficha de doação de sangue canina',{b:true,sz:42,c:'5F130F'}),{before:260,after:180,line:240}));
   // identificação
   {const g=idGrupos();const blocos=[];
     if(g.nome||g.tipo)blocos.push(TB([W],[TC(P(R('ANIMAL',{sz:14,c:'8A6A60',sp:10}))+P(R(g.nome,{b:true,sz:34})+(g.tipo?R('     '+g.tipo,{b:true,sz:21,c:'A83D3D'}):''),{before:40}),W,{fill:'EEE5DB',mt:120,mb:110,ml:220})],{top:'A83D3D'}));
@@ -2966,7 +2976,7 @@ init();
     const host = document.createElement("div"); host.style.cssText = "position:fixed;left:0;top:0;z-index:-5;pointer-events:none"; document.body.appendChild(host);
     try {
       const { PDFDocument } = PDFLib; const pdf = await PDFDocument.create();
-      pdf.setTitle(`Ficha de doação ${S.numero} ${S.animal}`); pdf.setAuthor(S.ass ? S.ass.nome : "CVH"); pdf.setCreator("CVH Centro Veterinário de Hemoterapia");
+      pdf.setTitle(S.clinico?`Atendimento clínico ${S.animal}`:`Ficha de doação ${S.numero} ${S.animal}`); pdf.setAuthor(S.ass ? S.ass.nome : "CVH"); pdf.setCreator("CVH Centro Veterinário de Hemoterapia");
       const jpgDe = async (cv) => pdf.embedJpg(await (await new Promise((r) => cv.toBlob(r, "image/jpeg", 0.92))).arrayBuffer());
       if (tipo === "mob") {
         host.innerHTML = mobileHTML(); await imgsProntas(host);
@@ -2988,7 +2998,7 @@ init();
     const { lidos, duvidas, srvId, ...ficha } = JSON.parse(JSON.stringify(S));
     return { numero: S.numero || "", peso: d("peso"), mucosas: fMuc(), linfonodos: fLinf(), pspd: fPres(), ausculta: fAusc(), lesoes: les,
       fc: d("fc"), fr: fFr(), temperatura: d("temp"), tpc: fTpc(), spo2: d("spo2"), hb: d("hb"), ht: d("ht"), pp: d("ppt"),
-      naoColetado: S.tempo === "NC", ficha };
+      naoColetado: S.tempo === "NC", clinico: !!S.clinico, ficha };
   }
 
   // à prova de erros na ficha de doação. Graves (bloqueio): intervalo menor que o combinado, impedimento laboratorial, doador aposentado ou fora do cadastro,
@@ -3048,7 +3058,7 @@ init();
     const precisaAnalise = graves.length && !ctx.admin;
     const div = document.createElement("div"); div.className = "cvh-conf";
     div.innerHTML = `<div class="cx" role="dialog" aria-modal="true"><h3>Salvar na carteira de ${esc(a.nome || S.animal)}</h3>
-      <dl><dt>Doação nº</dt><dd>${esc(S.numero || "sem número")}</dd><dt>Data</dt><dd>${esc(isoBR(iso))}</dd><dt>Assinatura</dt><dd>${esc(S.ass.nome)} · CRMV-${esc(S.ass.uf)} ${esc(S.ass.crmv)}${S.ass.por ? ", liberado por " + esc(S.ass.por) : ""}</dd></dl>
+      <dl>${S.clinico ? "<dt>Tipo</dt><dd>Atendimento clínico, sem coleta</dd>" : `<dt>Doação nº</dt><dd>${esc(S.numero || "sem número")}</dd>`}<dt>Data</dt><dd>${esc(isoBR(iso))}</dd><dt>Assinatura</dt><dd>${esc(S.ass.nome)} · CRMV-${esc(S.ass.uf)} ${esc(S.ass.crmv)}${S.ass.por ? ", liberado por " + esc(S.ass.por) : ""}</dd></dl>
       ${graves.map((t) => `<div class="av" style="color:#8A1D14;background:#FBE9E7;border-color:#e3b9b4"><b>Bloqueio.</b> ${esc(t)}</div>`).join("")}
       ${avisos.map((t) => `<div class="av">${esc(t)}</div>`).join("")}
       ${graves.length && ctx.admin ? `<label style="display:block;margin:8px 0 4px;font-size:13px">Justificativa para salvar mesmo assim</label><input type="text" id="cfJus" style="width:100%;padding:8px;border:1px solid #C6B098;border-radius:8px" placeholder="Ex.: analisei, doação autorizada por mim">` : ""}

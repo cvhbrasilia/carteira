@@ -949,7 +949,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124180612';
+  var VERSAO = '20261124182759';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2718,12 +2718,13 @@ function pgDoacao(an, r, n, ed) {
   const d = r.dados || {};
   const fichaPdf = ed && d.a4 && d.a4.id ? '<div class="pdfs"><button class="pdf" data-acao="ver-ficha" data-id="' + r.id + '">' + IC_PDF + 'Ficha completa (só no painel)</button></div>' : '';
   const l = (k, v, u) => num(v) ? '<dt>' + k + '</dt><dd>' + esc(v) + (u ? ' <small>' + u + '</small>' : '') + '</dd>' : '';
-  return pagina(an, '<div class="sec"><h2>Doação de sangue</h2></div>' +
-    '<div class="doa-top" data-id="' + r.id + '"><div><span class="rot">Doação nº</span><b class="val">' + n + '</b></div><div><span class="rot">Data</span><b class="val">' + br(r.data) + '</b></div><div><span class="rot">Peso</span><b class="val">' + esc(d.peso) + (d.peso ? ' <small>kg</small>' : '') + '</b></div></div>' +
+  const clin = d.clinico || (d.ficha && d.ficha.clinico);
+  return pagina(an, '<div class="sec"><h2>' + (clin ? 'Atendimento clínico' : 'Doação de sangue') + '</h2></div>' +
+    '<div class="doa-top" data-id="' + r.id + '">' + (clin ? '' : '<div><span class="rot">Doação nº</span><b class="val">' + n + '</b></div>') + '<div><span class="rot">Data</span><b class="val">' + br(r.data) + '</b></div><div><span class="rot">Peso</span><b class="val">' + esc(d.peso) + (d.peso ? ' <small>kg</small>' : '') + '</b></div></div>' +
     '<div class="bloco"><h3>Exame físico</h3><dl>' + l('Mucosas', d.mucosas) + l('Linfonodos', d.linfonodos) + l('PS x PD', d.pspd, 'mmHg') + l('Ausculta cardíaca', d.ausculta) + l('Lesões corporais', d.lesoes) + '</dl></div>' +
     '<div class="bloco"><h3>Sinais vitais</h3><dl>' + l('FC', d.fc, 'bpm') + l('FR', d.fr, /^\d/.test(num(d.fr)) ? 'mpm' : '') + l('Temperatura', d.temperatura, '°C') + l('TPC', d.tpc) + l('SpO₂', d.spo2, '%') + '</dl></div>' +
     '<div class="bloco"><h3>Triagem laboratorial</h3><dl>' + l('Hemoglobina', d.hb, 'g/dL') + l('Hematócrito', d.ht, '%') + l('Proteína plasmática', d.pp, 'g/dL') + '</dl></div>' +
-    (d.naoColetado ? '<p class="nada">Avaliação feita, sem coleta de sangue nesta data.</p>' : '') + fichaPdf +
+    (d.naoColetado && !clin ? '<p class="nada">Avaliação feita, sem coleta de sangue nesta data.</p>' : '') + fichaPdf +
     assinatura(r) + (ed ? '<button class="ed" style="top:auto;bottom:4.4em;right:1.2em" data-ed="' + r.id + '">Editar</button>' : ''));
 }
 const SECOES = [
@@ -3702,7 +3703,7 @@ function eventosLinha(an, regs) {
   const ev = [], d0 = x => x || {}, histUlt = regs.filter(r => r.tipo === 'historico').sort((a, b) => String(a.data + (a.assinadoEm || '')).localeCompare(String(b.data + (b.assinadoEm || '')))).pop();
   regs.forEach(r => {
     const d = d0(r.dados);
-    if (r.tipo === 'doacao') ev.push({ data: r.data, t: 'doacao', tit: d.naoColetado ? 'Avaliação para doação, sem coleta' : 'Doação de sangue', det: [d.peso ? d.peso + ' kg' : '', d.ht ? 'Ht ' + d.ht + '%' : '', d.hb ? 'Hb ' + d.hb + ' g/dL' : ''].filter(Boolean).join(' · '), id: r.id });
+    if (r.tipo === 'doacao') ev.push({ data: r.data, t: 'doacao', tit: (d.clinico || (d.ficha && d.ficha.clinico)) ? 'Atendimento clínico' : d.naoColetado ? 'Avaliação para doação, sem coleta' : 'Doação de sangue', det: [d.peso ? d.peso + ' kg' : '', d.ht ? 'Ht ' + d.ht + '%' : '', d.hb ? 'Hb ' + d.hb + ' g/dL' : ''].filter(Boolean).join(' · '), id: r.id });
     else if (r.tipo === 'vacina') ev.push({ data: r.data, t: 'vacina', tit: 'Vacina', det: produtos(r).join(' + ') + (r.proxima ? ' · próxima em ' + br(r.proxima) : ''), id: r.id });
     else if (r.tipo === 'vermifugo') ev.push({ data: r.data, t: 'vermifugo', tit: 'Vermífugo', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
     else if (r.tipo === 'ecto') ev.push({ data: r.data, t: 'ecto', tit: 'Ectoparasitas (pulgas e carrapatos)', det: (d.produto || '') + (r.proxima ? ' · próximo em ' + br(r.proxima) : ''), id: r.id });
@@ -7577,7 +7578,7 @@ function telaFichas(aid, busca) {
     $('#listaF').innerHTML = '<h3>' + fs.length + (fs.length === 1 ? ' ficha' : ' fichas') + '</h3>' + (fs.length ? fs.map(r => {
       const d = r.dados || {}, a = animalDe(r.animalId) || {};
       const ff = d.ficha || {}, semCol = d.naoColetado || ff.tempo === 'NC', soResumo = !d.ficha && !(d.a4 && d.a4.id);
-      const linha = [semCol ? 'sem coleta' : ff.volume ? ff.volume + ' mL' : '', ff.lote ? 'lote ' + ff.lote : '', d.hb ? 'Hb ' + d.hb : '', d.ht ? 'Ht ' + d.ht + '%' : '', d.peso ? d.peso + ' kg' : ''].filter(Boolean).join(' · ');
+      const linha = [d.clinico || ff.clinico ? 'atendimento clínico' : semCol ? 'sem coleta' : ff.volume ? ff.volume + ' mL' : '', ff.lote ? 'lote ' + ff.lote : '', d.hb ? 'Hb ' + d.hb : '', d.ht ? 'Ht ' + d.ht + '%' : '', d.peso ? d.peso + ' kg' : ''].filter(Boolean).join(' · ');
       return '<button class="item ficha-it" data-acao="ver-ficha" data-id="' + r.id + '"><div class="t"><b>' + (aid ? esc(br(r.data)) + (d.numero ? ' · nº ' + esc(d.numero) : '') : (d.numero ? 'Nº ' + esc(d.numero) + ' · ' : '') + esc(a.nome || '')) + '</b>' +
         '<small>' + (aid ? '' : esc(br(r.data)) + (linha ? ' · ' : '')) + esc(linha) + '</small>' + trechoObs(r, q) + (soResumo ? '<span class="so-res">' + (fichasSalvas(r.animalId).some(x => x !== r && x.data === r.data && x.dados && x.dados.ficha) ? 'resumo repetido · já existe a ficha completa desta data' : 'só o resumo da carteira · anexe a ficha') + '</span>' : '') + (d.foto && d.foto.id ? '<span class="so-res foto">imagem original</span>' : '') + '</div><span class="seta">›</span></button>';
     }).join('') : '<p class="vazio-p">' + (q ? 'Nenhuma ficha encontrada.' : 'Ainda não há fichas salvas.') + '</p>');
