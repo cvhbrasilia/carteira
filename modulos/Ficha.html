@@ -499,7 +499,7 @@ function busy(on,t){$('#busy').classList.toggle('show',!!on);if(t)$('#busyTx').t
 const LS_DRAFT='cvh_ficha_rascunho_v1', LS_SIGN='cvh_ficha_assinante_v1', LS_FICHAS='cvh_fichas_andamento_v1', LS_ATUAL='cvh_ficha_atual_v1', DIAS_GUARDA=30;
 function blank(){return{
   id:null,numero:'',etq:'',animal:'',idade:'',sexo:'',raca:'',peso:'',responsavel:'',microchip:'',data:todayISO(),
-  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,clinico:false,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
+  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,hemoFoto:null,clinico:false,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
   ps:'',pd:'',hb:'',ht:'',fc:'',fr:'',temp:'',tpc:'',spo2:'',
   inicio:'',fim:'',tempo:'',volume:'',lote:'',validade:'',seguimento:'',
   obsIni:'',lesoes:[],obsDoa:'',obsDemais:'',
@@ -654,7 +654,8 @@ function buildForm(){
       ${fld('temp','Temperatura',{cls:'s2 m1',unit:'°C',im:'decimal',ph:'38,5'})}
       ${chips('tpc','TPC',[['1','1"'],['2','2"'],['3','3"'],['>4','>4"']],{cls:'s4'})}
       ${fld('spo2','SpO₂',{cls:'s2 m1',unit:'%',im:'numeric',ph:'98'})}
-      <div class="grp s6"><div class="gt">Hemochromax</div><div class="gg">${fld('hb','HB',{unit:'g/dL',im:'decimal',ph:'16,7'})}${fld('ht','HT',{unit:'%',im:'decimal',ph:'50,1'})}</div></div>
+      <div class="grp s6"><div class="gt">Hemochromax</div><div class="gg">${fld('hb','HB',{unit:'g/dL',im:'decimal',ph:'16,7'})}${fld('ht','HT',{unit:'%',im:'decimal',ph:'50,1'})}</div>
+        <div id="hcBox" hidden style="margin-top:8px"><label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 0 0"><input type="file" id="hcFoto" accept="image/*" hidden><span id="hcTx">Foto do Hemochromax</span></label><button type="button" class="btn" id="hcAbrir" hidden>Abrir a foto</button><div id="hcInfo" style="margin-top:6px;font-size:13px;color:#7A6A63"></div></div></div>
       <div class="f s6" id="monBox" hidden><div class="fl"><span class="lb">Foto do monitor</span></div>
         <p style="margin:2px 0 8px;font-size:13px;color:#7A6A63">Lê SpO₂, pulso, PS, PD, FR e temperatura (o que estiver na tela) e desenha a onda do SpO₂ igual à da foto.</p>
         <div id="monVer" style="margin:4px 0 8px"></div>
@@ -3233,6 +3234,41 @@ init();
       monPintar();
     });
     monPintar();
+    // foto do visor do Hemochromax: lê HB e HT, confere a data do visor e o nome escrito no tubo
+    function hcPintar() {
+      const box = $("#hcBox"); if (!box) return; box.hidden = false; const h = S.hemoFoto, L = (h && h.lido) || {};
+      $("#hcTx").textContent = h ? "Trocar a foto do Hemochromax" : "Foto do Hemochromax";
+      const ab = $("#hcAbrir"); ab.hidden = !(h && h.foto && h.foto.id); ab.onclick = async () => { try { const u = await ponte("urlArquivo", h.foto.id); if (u) window.open(u, "_blank"); } catch (e) { toast("Não consegui abrir a foto."); } };
+      $("#hcInfo").textContent = h ? ["Lido da foto", L.data ? "visor de " + isoBR(L.data) + (L.hora ? " às " + L.hora : "") : "", L.nomeTubo ? "tubo " + L.nomeTubo : ""].filter(Boolean).join(" · ") : "";
+    }
+    const syncHc = syncAll; syncAll = function () { syncHc(); hcPintar(); };
+    document.addEventListener("change", async (ev) => {
+      if (!ev.target || ev.target.id !== "hcFoto") return;
+      const file = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (!file) return;
+      const tx = $("#hcTx"); tx.textContent = "Lendo o Hemochromax...";
+      try {
+        const bl = await reduzir(file), b64 = b64De(new Uint8Array(await bl.arrayBuffer()));
+        const [foto, lido] = await Promise.all([
+          ponte("acFoto", { nome: "Hemochromax " + [S.numero, S.animal].filter(Boolean).join(" ") + ".jpg", b64 }),
+          ponte("iaRapida", "hemochromax", "image/jpeg", b64).catch(() => null)]);
+        const L = lido || {}, num = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
+        const hb = num(L.hb), hct = num(L.hct), data = /^\d{4}-\d{2}-\d{2}$/.test(L.data || "") ? L.data : "", nomeTubo = String(L.nomeTubo || "").trim().slice(0, 60);
+        S.hemoFoto = { foto: { id: foto.id }, lido: { hb, hct, data, hora: String(L.hora || "").slice(0, 5), nomeTubo }, em: new Date().toISOString() };
+        const feitos = [];
+        if (hb != null) { S.hb = String(hb).replace(".", ","); S.lidos = Object.assign({}, S.lidos || {}, { hb: true }); feitos.push("HB " + S.hb + " g/dL"); }
+        if (hct != null) { S.ht = String(hct).replace(".", ","); S.lidos = Object.assign({}, S.lidos || {}, { ht: true }); feitos.push("HT " + S.ht + "%"); }
+        dirty = true; $("#bSalvar").classList.add("dirty"); syncAll(); schedule();
+        // conferência: data do visor diferente da ficha e nome do tubo diferente do animal
+        const av = [];
+        if (data && S.data && data !== S.data) av.push("A data do visor (" + isoBR(data) + ") é diferente da data da ficha (" + isoBR(S.data) + ").");
+        const sem = (x) => norm(x).replace(/[^a-z0-9]/g, ""), na = sem(S.animal || (ctx.animal || {}).nome || ""), nt = sem(nomeTubo);
+        const parecido = (a, b) => { if (!a || !b) return true; if (a.includes(b) || b.includes(a)) return true; let d = Math.abs(a.length - b.length); for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) d++; return d <= 2; };
+        if (nomeTubo && !parecido(na, nt)) av.push("O nome no tubo (" + nomeTubo + ") não parece ser de " + (S.animal || (ctx.animal || {}).nome) + ".");
+        toast((feitos.length ? "Lido do Hemochromax: " + feitos.join(", ") + "." : "Não consegui ler o visor. Digite os valores.") + (av.length ? " Atenção: " + av.join(" ") : ""), av.length ? 10000 : 6000);
+      } catch (e) { toast("Não consegui usar a foto do Hemochromax. " + ((e && e.message) || "")); }
+      hcPintar();
+    });
+    hcPintar();
 
     // leitura automática pelo Gemini do painel
     if (ctx.temGemini) {

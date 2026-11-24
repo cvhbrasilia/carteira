@@ -584,6 +584,8 @@ a.btn{text-decoration:none}
 .pd-c{flex:1;min-width:0}.pd-c b{display:block;color:#2b2320;font-size:14.5px;white-space:pre-wrap}.pd-i.feita .pd-c b{text-decoration:line-through;color:#7a6a62}.pd-c small{display:block;color:#7a6a62;font-size:12px;margin-top:2px}
 .pd-ms{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}.pd-pz{font-style:normal;font-size:11.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#F1EAE1;color:#5F130F}.pd-pz.atr{background:#A83D3D;color:#fff}.pd-pz.hj{background:#C49A6C;color:#fff}
 .pd-an{border:1px solid #C6B098;background:#fff;border-radius:99px;padding:2px 8px;font:inherit;font-size:11.5px;font-weight:700;color:#5F130F;cursor:pointer}
+.pd-pri{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;background:#5F130F;color:#fff;border-radius:6px;padding:2px 6px;vertical-align:1px}
+.pd-i.pri{background:#F7EFE7;border-radius:10px;padding:10px 8px;margin:2px -8px}.pd-bt .pd-pbt{color:#5F130F}.pd-bt .pd-pbt.on{color:#8A5A2B}
 .pd-bt{display:flex;flex-direction:column;gap:4px}.pd-bt button{border:0;background:none;color:#8A5A2B;font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}
 .mod .conta{position:absolute;top:10px;right:10px;min-width:22px;height:22px;border-radius:99px;background:#A83D3D;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px}
 .termos-tp{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:0 0 12px}.termos-tp .tt{display:flex;flex-direction:column;gap:2px;text-align:left;background:#fff;border:1px solid #eadfd6;border-radius:12px;padding:10px 12px;font:inherit;color:#3b1512;cursor:pointer}.termos-tp .tt b{color:#5F130F;font-size:14px}.termos-tp .tt span{font-size:12px;color:#7a6a62}.termos-tp .tt i{font-style:normal;font-size:11px;font-weight:600;color:#A83D3D;margin-top:3px}.termos-tp .tt.on{border-color:#5F130F;box-shadow:inset 0 0 0 1px #5F130F}
@@ -948,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124182759';
+  var VERSAO = '20261124184607';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5180,6 +5182,8 @@ function telaHome() {
   if (bg) bg.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; const ms = modulosBusca(bg.value); if (ms.length === 1) { ev.preventDefault(); abrirModPorK(ms[0].k); } });
 }
 /* ── Pendências da equipe na tela inicial, acima dos pedidos: as minhas primeiro, atrasadas e de hoje em destaque ── */
+// pendência prioritária fica na frente de todas (a que virou prioridade por último fica no topo); depois o prazo e a data de criação
+const ordemPend = (a, b) => String(b.prioridade || '').localeCompare(String(a.prioridade || '')) || (a.prazo || '9999').localeCompare(b.prazo || '9999') || String(a.criadoEm).localeCompare(String(b.criadoEm));
 async function pendenciasHome() {
   let R; try { R = await api('pendenciasListar', E.sessao); } catch (_) { return; }
   const box = $('#pdHome'); if (!box || !R) return;
@@ -5190,10 +5194,10 @@ async function pendenciasHome() {
   const eq = pode('admin') ? ab.filter(p => p.paraId !== E.u.id).length : 0;
   box.hidden = false; box.classList.toggle('vazio', !minhas.length && !eq);
   const resumo = minhas.length ? minhas.length + (minhas.length === 1 ? ' para você' : ' para você') + (atr ? ' · ' + atr + (atr === 1 ? ' atrasada' : ' atrasadas') : '') + (hj ? ' · ' + hj + ' vence' + (hj === 1 ? '' : 'm') + ' hoje' : '') : 'nenhuma para você';
-  const L = minhas.slice().sort((a, b) => (a.prazo || '9999').localeCompare(b.prazo || '9999') || String(a.criadoEm).localeCompare(String(b.criadoEm))).slice(0, 3);
+  const L = minhas.slice().sort(ordemPend).slice(0, 3);
   box.innerHTML = '<div class="ped-cab" data-acao="modulo" data-k="pendencias" role="button"><b>Pendências</b><span>' + esc(resumo + (eq ? ' · ' + eq + ' com a equipe' : '')) + '</span></div>' +
     L.map(p => { const an = p.animalId ? animalDe(p.animalId) : null, at = p.prazo && p.prazo < h, hoje_ = p.prazo === h;
-      return '<button class="pd-hl' + (at ? ' atr' : hoje_ ? ' hj' : '') + '" data-acao="modulo" data-k="pendencias"><span>' + esc(p.texto) + (an ? ' <small>(' + esc(an.nome) + ')</small>' : '') + '</span>' + (p.prazo ? '<em>' + (at ? 'atrasada · ' : hoje_ ? 'hoje' : '') + (hoje_ ? '' : br(p.prazo).slice(0, 5)) + '</em>' : '') + '</button>'; }).join('') +
+      return '<button class="pd-hl' + (at ? ' atr' : hoje_ ? ' hj' : '') + '" data-acao="modulo" data-k="pendencias"><span>' + (p.prioridade ? '<i class="pd-pri">Prioridade</i> ' : '') + esc(p.texto) + (an ? ' <small>(' + esc(an.nome) + ')</small>' : '') + '</span>' + (p.prazo ? '<em>' + (at ? 'atrasada · ' : hoje_ ? 'hoje' : '') + (hoje_ ? '' : br(p.prazo).slice(0, 5)) + '</em>' : '') + '</button>'; }).join('') +
     (minhas.length > 3 ? '<button class="pd-hl mais" data-acao="modulo" data-k="pendencias">e mais ' + (minhas.length - 3) + '</button>' : '');
 }
 /* ── Pedidos da Intensivet que esperam o CVH (acima dos alertas laboratoriais) ──
@@ -5453,7 +5457,7 @@ async function telaPendencias(filtro) {
 function pintarPendencias() {
   const R = E.pd, f = E.pdFiltro, h = hoje(), adm = pode('admin');
   const ab = R.lista.filter(p => !p.feitoEm), grupos = { minhas: ab.filter(p => p.paraId === E.u.id), criadas: ab.filter(p => p.criadoPorId === E.u.id && p.paraId !== E.u.id), todas: ab, feitas: R.lista.filter(p => p.feitoEm) };
-  const l = (grupos[f] || []).slice().sort((a, b) => f === 'feitas' ? String(b.feitoEm).localeCompare(String(a.feitoEm)) : (a.prazo || '9999').localeCompare(b.prazo || '9999') || String(a.criadoEm).localeCompare(String(b.criadoEm)));
+  const l = (grupos[f] || []).slice().sort((a, b) => f === 'feitas' ? String(b.feitoEm).localeCompare(String(a.feitoEm)) : ordemPend(a, b));
   const chip = (v, t) => '<button class="filtro' + (f === v ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + v + '">' + t + ' <b>' + grupos[v].length + '</b></button>';
   const porPessoa = {}; if (adm) ab.forEach(p => { (porPessoa[p.paraNome] = porPessoa[p.paraNome] || { n: 0, at: 0 }).n++; if (p.prazo && p.prazo < h) porPessoa[p.paraNome].at++; });
   raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
@@ -5462,10 +5466,11 @@ function pintarPendencias() {
     (adm && Object.keys(porPessoa).length ? '<div class="pd-eq">' + Object.keys(porPessoa).sort().map(n => '<div class="ci-k" style="--c:' + (porPessoa[n].at ? '#A83D3D' : '#C49A6C') + '"><b>' + porPessoa[n].n + '</b><span>' + esc(n.split(' ')[0]) + '</span><small>' + (porPessoa[n].at ? porPessoa[n].at + (porPessoa[n].at === 1 ? ' atrasada' : ' atrasadas') : 'em dia') + '</small></div>').join('') + '</div>' : '') +
     '<div class="filtros">' + chip('minhas', 'Para mim') + chip('criadas', 'Que eu passei') + (adm ? chip('todas', 'Todas') : '') + chip('feitas', 'Concluídas') + '</div>' +
     '<section class="cartao">' + (l.length ? l.map(p => { const an = p.animalId ? animalDe(p.animalId) : null, atr = !p.feitoEm && p.prazo && p.prazo < h, hj = !p.feitoEm && p.prazo === h, meu = adm || p.criadoPorId === E.u.id;
-      return '<div class="pd-i' + (p.feitoEm ? ' feita' : atr ? ' atr' : '') + '"><button class="pd-ck" data-acao="pd-feito" data-id="' + p.id + '" aria-label="' + (p.feitoEm ? 'Reabrir' : 'Concluir') + '">' + (p.feitoEm ? '✓' : '') + '</button><div class="pd-c"><b>' + esc(p.texto) + '</b>' +
+      const podePri = !p.feitoEm && (adm || p.criadoPorId === E.u.id || p.paraId === E.u.id);
+      return '<div class="pd-i' + (p.feitoEm ? ' feita' : atr ? ' atr' : '') + (p.prioridade && !p.feitoEm ? ' pri' : '') + '"><button class="pd-ck" data-acao="pd-feito" data-id="' + p.id + '" aria-label="' + (p.feitoEm ? 'Reabrir' : 'Concluir') + '">' + (p.feitoEm ? '✓' : '') + '</button><div class="pd-c"><b>' + (p.prioridade && !p.feitoEm ? '<i class="pd-pri">Prioridade</i> ' : '') + esc(p.texto) + '</b>' +
         '<small>' + esc([p.paraId === E.u.id ? 'Para mim' : 'Para ' + p.paraNome, p.criadoPorId === E.u.id ? 'criada por mim' : 'de ' + p.criadoPor, 'em ' + br(String(p.criadoEm).slice(0, 10))].join(' · ')) + '</small>' +
         '<span class="pd-ms">' + (p.prazo ? '<em class="pd-pz' + (atr ? ' atr' : hj ? ' hj' : '') + '">' + (atr ? 'Atrasada, prazo ' : hj ? 'Vence hoje, ' : 'Prazo ') + br(p.prazo) + '</em>' : '') + (an ? '<button class="pd-an" data-acao="abrir-animal" data-id="' + an.id + '">' + esc(an.nome) + ' ›</button>' : '') + (p.feitoEm ? '<em class="pd-pz">Concluída por ' + esc(p.feitoPor) + ' em ' + br(String(p.feitoEm).slice(0, 10)) + '</em>' : '') + '</span></div>' +
-        (meu ? '<div class="pd-bt">' + (p.feitoEm ? '' : '<button data-acao="pd-editar" data-id="' + p.id + '">Editar</button>') + '<button data-acao="pd-apagar" data-id="' + p.id + '">Apagar</button></div>' : '') + '</div>'; }).join('')
+        (meu || podePri ? '<div class="pd-bt">' + (podePri ? '<button class="pd-pbt' + (p.prioridade ? ' on' : '') + '" data-acao="pd-prioridade" data-id="' + p.id + '">' + (p.prioridade ? 'Tirar prioridade' : '▲ Prioridade') + '</button>' : '') + (meu && !p.feitoEm ? '<button data-acao="pd-editar" data-id="' + p.id + '">Editar</button>' : '') + (meu ? '<button data-acao="pd-apagar" data-id="' + p.id + '">Apagar</button>' : '') + '</div>' : '') + '</div>'; }).join('')
       : '<p class="vazio-p">' + (f === 'minhas' ? 'Nenhuma pendência para você.' : f === 'feitas' ? 'Nenhuma pendência concluída nos últimos 30 dias.' : 'Nenhuma pendência aqui.') + '</p>') + '</section></div></main>';
 }
 function formPendencia(p, aid) {
@@ -8140,6 +8145,8 @@ const ACOES = {
   'pd-animal': async () => { fecharFolha(); if (!E.pd) { try { E.pd = await api('pendenciasListar', E.sessao); } catch (e) { return toast(e.message, 6000); } } formPendencia(null, E.animal); },
   'pd-editar': b => formPendencia(E.pd.lista.find(p => p.id === b.dataset.id)),
   'pd-feito': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; try { Object.assign(p, await api('pendenciaConcluir', E.sessao, p.id, !p.feitoEm)); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast(p.feitoEm ? 'Pendência concluída.' : 'Pendência reaberta.'); } catch (e) { toast(e.message, 6000); } },
+  'pd-prioridade': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; b.disabled = true;
+    try { Object.assign(p, await api('pendenciaPrioridade', E.sessao, p.id, !p.prioridade)); toast(p.prioridade ? 'Pendência na frente de todas.' : 'Prioridade retirada.'); pintarPendencias(); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'pd-apagar': async b => { if (!confirm('Apagar esta pendência?')) return; try { await api('pendenciaExcluir', E.sessao, b.dataset.id); E.pd.lista = E.pd.lista.filter(p => p.id !== b.dataset.id); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast('Pendência apagada.'); } catch (e) { toast(e.message, 6000); } },
   'pf-lista': () => telaPerfis(),
   'pf-filtro': b => { E.pfFiltro = b.dataset.v; aplicarFiltroPf(); },

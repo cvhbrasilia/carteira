@@ -951,7 +951,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124184607';
+  var VERSAO = '20261124184917';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6892,7 +6892,7 @@ const PONTE = {
   // controle de qualidade: o módulo chama só as funções qc… do servidor
   qcAba: a => { const b = document.querySelector('.mod-barra [data-acao=sair-modulo]'); if (b) b.textContent = a === 'geral' ? '‹ Painel' : '‹ Controle de qualidade'; },
   // leitura rápida por foto (balança): até 3 tentativas em modelos diferentes, sem esperar minutos
-  iaRapida: async (tipo, mime, b64) => { if (!['balanca', 'monitor'].includes(tipo)) throw new Error('Leitura não permitida.'); for (let t = 0; t < 3; t++) { const r = await api('lerComIA', E.sessao, tipo, mime, b64, t); if (r && r.dados) return r.dados; } throw new Error(tipo === 'monitor' ? 'A leitura automática está ocupada agora. Digite os valores.' : 'A leitura automática está ocupada agora. Digite o peso.'); },
+  iaRapida: async (tipo, mime, b64) => { if (!['balanca', 'monitor', 'hemochromax'].includes(tipo)) throw new Error('Leitura não permitida.'); for (let t = 0; t < 3; t++) { const r = await api('lerComIA', E.sessao, tipo, mime, b64, t); if (r && r.dados) return r.dados; } throw new Error(tipo !== 'balanca' ? 'A leitura automática está ocupada agora. Digite os valores.' : 'A leitura automática está ocupada agora. Digite o peso.'); },
   qr: t => qrSvg(String(t || '')),
   origem: () => location.origin + location.pathname.replace(/[^/]*$/, ''),
   // o administrador do CVH pode ver e mexer numa conta separada do Motoboy (ex.: DEA): a sessão leva a conta escolhida
