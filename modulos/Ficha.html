@@ -1032,7 +1032,12 @@ function ondaSvg(o, cor, fundo) {
 function ondaHTML(){const m=S.monitor;if(!m||!m.onda)return '';
   const L=m.lido||{},it=[L.spo2!=null?'SpO₂ '+L.spo2+'%':'',L.pr!=null?'pulso '+L.pr+' bpm':''].filter(Boolean).join(' · ');
   return `<div class="blk">${barHTML('Onda do SpO₂',it?'Traçado do monitor na avaliação · '+it:'Traçado do monitor na avaliação')}<div style="margin-top:8px;border:1px solid #EADFD3;border-radius:8px;overflow:hidden">${ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FBF8F4')}</div></div>`;}
-function exameTabs(){
+function exameTabs(a4){
+  const T=exameTabsBase(),m=S.monitor;
+  if(a4&&m&&m.onda){const sv=T.find(x=>x.t==='Sinais vitais');if(sv)sv.onda=ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FBF8F4');}
+  return T;
+}
+function exameTabsBase(){
   return [{t:'Avaliação física',r:[lin('Mucosas',fMuc()),lin('Linfonodos',fLinf()),lin('PS x PD',fPres(),'mmHg'),lin('Ausculta cardíaca',fAusc())].filter(Boolean)},
           {t:'Sinais vitais',r:[lin('FC',nu('fc'),'bpm'),lin('FR',fFr(),'mpm'),lin('Temperatura',nu('temp'),'°C'),lin('TPC',fTpc()),lin('SpO₂',nu('spo2'),'%')].filter(Boolean)},
           {t:'Triagem laboratorial',r:[hemoLin(),lin('PPT',nu('ppt'),'g/dL'),lin('Plasma',fPlasma())].filter(Boolean)}].filter(t=>t.r.length);
@@ -1098,7 +1103,7 @@ function idHTML(cols=4){
   return rows.length?`<div class="blk idb">${rows.join('')}</div>`:'';
 }
 function barHTML(t,s){return `<div class="sbar"><b>${t}</b>${s?`<span>${s}</span>`:''}</div>`;}
-function kvHTML(tab){return `<table class="kv"><colgroup><col class="ck"><col></colgroup><thead><tr><th colspan="2">${tab.t}</th></tr></thead><tbody>${tab.r.map(x=>`<tr><td class="k">${x.l}</td><td class="v">${x.h||H(x.v)}</td></tr>`).join('')}</tbody></table>`;}
+function kvHTML(tab){return `<table class="kv"><colgroup><col class="ck"><col></colgroup><thead><tr><th colspan="2">${tab.t}</th></tr></thead><tbody>${tab.r.map(x=>`<tr><td class="k">${x.l}</td><td class="v">${x.h||H(x.v)}</td></tr>`).join('')}${tab.onda?`<tr><td colspan="2" style="padding:4px 0 2px"><div style="font-size:9px;color:#8A6A63;margin:0 0 2px 6px">Onda do SpO₂ (traçado do monitor)</div><div style="border:1px solid #EADFD3;border-radius:6px;overflow:hidden">${tab.onda}</div></td></tr>`:''}</tbody></table>`;}
 function secKV(t,s,tabs,cols=2,tpl){if(!tabs.length)return '';const gc=tpl&&tabs.length===3&&cols>=3?tpl:`repeat(${Math.min(cols,tabs.length)},minmax(0,1fr))`;return `<div class="blk">${barHTML(t,s)}<div class="kvg${gc===tpl?' k3':''}" style="grid-template-columns:${gc}">${tabs.map(kvHTML).join('')}</div></div>`;}
 function figHTML(v,h){return `<figure><img src="${dogImg(v)}" alt="" style="height:${h}px;width:${(h*60/134).toFixed(1)}px">${S.lesoes.map((l,i)=>l.v===v?`<span class="m" style="left:${(l.x*100).toFixed(1)}%;top:${(l.y*h).toFixed(1)}px">${i+1}</span>`:'').join('')}<figcaption>${v==='d'?'Dorsal':'Ventral'}</figcaption></figure>`;}
 function lesCol(h=112){
@@ -2388,8 +2393,7 @@ function assHTML(){
 }
 function blocos(){
   return [`<div class="blk">${tituloHTML()}</div>`,idHTML(),
-    secKV('Exame clínico','Avaliação do doador antes da coleta',exameTabs(),3,'minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.3fr)'),
-    ondaHTML(),
+    secKV('Exame clínico','Avaliação do doador antes da coleta',exameTabs(true),3,'minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.3fr)'),
     secKV('Coleta','Horários, volume e bolsa',coletaTabs()),
     lesObsHTML(104),`<div class="blk" style="margin-top:12px">${assHTML()}</div>`].filter(Boolean);
 }
