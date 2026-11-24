@@ -499,7 +499,7 @@ function busy(on,t){$('#busy').classList.toggle('show',!!on);if(t)$('#busyTx').t
 const LS_DRAFT='cvh_ficha_rascunho_v1', LS_SIGN='cvh_ficha_assinante_v1', LS_FICHAS='cvh_fichas_andamento_v1', LS_ATUAL='cvh_ficha_atual_v1', DIAS_GUARDA=30;
 function blank(){return{
   id:null,numero:'',etq:'',animal:'',idade:'',sexo:'',raca:'',peso:'',responsavel:'',microchip:'',data:todayISO(),
-  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
+  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
   ps:'',pd:'',hb:'',ht:'',fc:'',fr:'',temp:'',tpc:'',spo2:'',
   inicio:'',fim:'',tempo:'',volume:'',lote:'',validade:'',seguimento:'',
   obsIni:'',lesoes:[],obsDoa:'',obsDemais:'',
@@ -653,6 +653,11 @@ function buildForm(){
       ${chips('tpc','TPC',[['1','1"'],['2','2"'],['3','3"'],['>4','>4"']],{cls:'s4'})}
       ${fld('spo2','SpO₂',{cls:'s2 m1',unit:'%',im:'numeric',ph:'98'})}
       <div class="grp s6"><div class="gt">Hemochromax</div><div class="gg">${fld('hb','HB',{unit:'g/dL',im:'decimal',ph:'16,7'})}${fld('ht','HT',{unit:'%',im:'decimal',ph:'50,1'})}</div></div>
+      <div class="f s6" id="monBox" hidden><div class="fl"><span class="lb">Foto do monitor</span></div>
+        <p style="margin:2px 0 8px;font-size:13px;color:#7A6A63">Lê SpO₂, pulso, PS, PD, FR e temperatura (o que estiver na tela) e desenha a onda do SpO₂ igual à da foto.</p>
+        <div id="monVer" style="margin:4px 0 8px"></div>
+        <label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="monFoto" accept="image/*" hidden><span id="monTx">Foto do monitor</span></label>
+      </div>
     </div>
   </section>
 
@@ -949,6 +954,69 @@ function lin(l,v,u){if(!v)return null;const nb=u&&isNum(v.replace(',','.'));retu
 function hemoLin(){const hb=nu('hb'),ht=nu('ht');if(!hb&&!ht)return null;
   const p=[];if(hb)p.push(`<span class="sl">HB</span> ${esc(hb)} <span class="un">g/dL</span>`);if(ht)p.push(`<span class="sl">HT</span> ${esc(ht)} <span class="un">%</span>`);
   return {l:'Hemochromax',v:[hb&&`HB ${hb} g/dL`,ht&&`HT ${ht} %`].filter(Boolean).join('\n'),h:p.join('<br>')};}
+/* ================= onda do SpO₂ (foto do monitor) ================= */
+// extrai o traçado vermelho da pletismografia (SpO2) da foto do monitor: coluna a coluna, os pixels vermelhos viram uma linha
+function extrairOnda(img) {
+  const k = Math.min(1, 1600 / Math.max(img.width, img.height)), W = Math.round(img.width * k), H = Math.round(img.height * k);
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const cx = cv.getContext("2d"); cx.drawImage(img, 0, 0, W, H);
+  const px = cx.getImageData(0, 0, W, H).data, M = new Uint8Array(W * H);
+  for (let i = 0, j = 0; j < W * H; i += 4, j++) { const r = px[i], g = px[i + 1], b = px[i + 2]; M[j] = r > 120 && r - g > 55 && r - b > 45 ? 1 : 0; }
+  // faixa da onda: linhas com pixels vermelhos, agrupadas (falhas de até 8 linhas); fica o grupo com mais pixels
+  const lin = new Int32Array(H); for (let y = 0; y < H; y++) { let n = 0; for (let x = 0; x < W; x++) n += M[y * W + x]; lin[y] = n; }
+  let best = null, cur = null, gap = 0;
+  for (let y = 0; y < H; y++) {
+    if (lin[y] >= 2) { if (!cur) cur = { y0: y, y1: y, s: 0 }; cur.y1 = y; cur.s += lin[y]; gap = 0; }
+    else if (cur && ++gap > 8) { if (!best || cur.s > best.s) best = cur; cur = null; gap = 0; }
+  }
+  if (cur && (!best || cur.s > best.s)) best = cur;
+  if (!best || best.s < 200) return null;
+  const { y0, y1 } = best;
+  // colunas: de cada coluna, o pixel vermelho mais alto e o mais baixo
+  const col = []; for (let x = 0; x < W; x++) { let a = -1, b = -1; for (let y = y0; y <= y1; y++) if (M[y * W + x]) { if (a < 0) a = y; b = y; } col.push(a < 0 ? null : [a, b]); }
+  // pedaço principal: ignora pontos soltos longe da onda (mais de 40 colunas de vazio)
+  let x0 = col.findIndex(Boolean), x1 = W - 1 - col.slice().reverse().findIndex(Boolean);
+  { let runs = [], s = -1, vaz = 0; for (let x = 0; x < W; x++) { if (col[x]) { if (s < 0) s = x; vaz = 0; } else if (s >= 0 && ++vaz > 40) { runs.push([s, x - vaz]); s = -1; vaz = 0; } } if (s >= 0) runs.push([s, W - 1]);
+    runs.sort((p, q) => (q[1] - q[0]) - (p[1] - p[0])); if (runs.length) { const r0 = runs[0]; x0 = r0[0]; x1 = r0[1]; for (const r of runs.slice(1)) if (r[1] - r[0] > (r0[1] - r0[0]) * 0.15) { x0 = Math.min(x0, r[0]); x1 = Math.max(x1, r[1]); } } }
+  const esp = (() => { const d = col.slice(x0, x1 + 1).filter(Boolean).map(([a, b]) => b - a).sort((p, q) => p - q); return d.length ? d[Math.floor(d.length * 0.3)] : 2; })();
+  const yt = Math.min(...col.slice(x0, x1 + 1).filter(Boolean).map((c) => c[0])), yb = Math.max(...col.slice(x0, x1 + 1).filter(Boolean).map((c) => c[1]));
+
+  const N = (x, y) => [Math.round((x - x0) / Math.max(1, x1 - x0) * 1000), Math.round((y - yt) / Math.max(1, yb - yt) * 1000)];
+  // o monitor liga cada amostra à anterior por um risco vertical: em cada coluna, a linha sai de onde parou e vai até a outra ponta;
+  // colunas seguidas com o mesmo risco (linha grossa) continuam no mesmo sentido, sem voltar
+  const partes = []; let p = null, prev = null, dir = 0, antes = null, vazio = 0;
+  const sobre = (r, s) => { const i = Math.min(r[1], s[1]) - Math.max(r[0], s[0]); return i / Math.max(1, Math.min(r[1] - r[0], s[1] - s[0])); };
+  for (let x = x0; x <= x1; x++) {
+    const c = col[x]; if (!c) { if (p && ++vazio > 1) { partes.push(p); p = null; prev = null; dir = 0; antes = null; } continue; } vazio = 0;
+    if (!p) p = [];
+    const [a, b] = c, A = a + esp / 2, Bb = b - esp / 2;
+    if (b - a <= esp + 1) { const y = (a + b) / 2; if (prev != null && Math.abs(y - prev) > esp) dir = Math.sign(y - prev); p.push(N(x, y)); prev = y; }
+    else {
+      let alvo;
+      if (prev == null) { p.push(N(x, A)); prev = A; alvo = Bb; }
+      else if (antes && sobre(antes, c) > 0.7 && dir) alvo = dir > 0 ? Bb : A;
+      else alvo = Math.abs(prev - a) <= Math.abs(prev - b) ? Bb : A;
+      const ent = Math.min(Bb, Math.max(A, prev));
+      if (Math.abs(alvo - prev) > 0.5) { if (Math.abs(ent - prev) > 0.5) p.push(N(x, ent)); p.push(N(x, alvo)); dir = Math.sign(alvo - prev); prev = alvo; }
+    }
+    antes = c;
+  }
+  if (p) partes.push(p);
+  // simplifica (Douglas-Peucker) sem mudar o desenho
+  const dp = (P, e) => { if (P.length < 3) return P; let dm = 0, im = 0; const [ax, ay] = P[0], [bx, by] = P[P.length - 1], L = Math.hypot(bx - ax, by - ay) || 1;
+    for (let i = 1; i < P.length - 1; i++) { const d = Math.abs((by - ay) * P[i][0] - (bx - ax) * P[i][1] + bx * ay - by * ax) / L; if (d > dm) { dm = d; im = i; } }
+    return dm > e ? dp(P.slice(0, im + 1), e).slice(0, -1).concat(dp(P.slice(im), e)) : [P[0], P[P.length - 1]]; };
+  const fin = partes.filter((q) => q.length > 2).map((q) => dp(q, 1.2));
+  return { tracado: fin.map((q) => q.map((xy) => xy.join(",")).join(" ")).join("|"), proporcao: Math.round((x1 - x0) / Math.max(1, yb - yt) * 100) / 100 };
+}
+function ondaSvg(o, cor, fundo) {
+  if (!o || !o.tracado) return "";
+  const h = Math.round(1000 / (o.proporcao || 4)), d = o.tracado.split("|").map((q) => "M" + q.split(" ").map((xy) => { const [x, y] = xy.split(","); return x + " " + Math.round(+y / 1000 * h); }).join("L")).join("");
+  return '<svg viewBox="-10 -10 1020 ' + (h + 20) + '" preserveAspectRatio="none" style="width:100%;height:auto;display:block' + (fundo ? ";background:" + fundo : "") + '"><path d="' + d + '" fill="none" stroke="' + (cor || "#A83D3D") + '" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+}
+
+function ondaHTML(){const m=S.monitor;if(!m||!m.onda)return '';
+  const L=m.lido||{},it=[L.spo2!=null?'SpO₂ '+L.spo2+'%':'',L.pr!=null?'pulso '+L.pr+' bpm':''].filter(Boolean).join(' · ');
+  return `<div class="blk">${barHTML('Onda do SpO₂',it?'Traçado do monitor na avaliação · '+it:'Traçado do monitor na avaliação')}<div style="margin-top:8px;border:1px solid #EADFD3;border-radius:8px;overflow:hidden">${ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FBF8F4')}</div></div>`;}
 function exameTabs(){
   return [{t:'Avaliação física',r:[lin('Mucosas',fMuc()),lin('Linfonodos',fLinf()),lin('PS x PD',fPres(),'mmHg'),lin('Ausculta cardíaca',fAusc())].filter(Boolean)},
           {t:'Sinais vitais',r:[lin('FC',nu('fc'),'bpm'),lin('FR',fFr(),'mpm'),lin('Temperatura',nu('temp'),'°C'),lin('TPC',fTpc()),lin('SpO₂',nu('spo2'),'%')].filter(Boolean)},
@@ -2304,6 +2372,7 @@ function assHTML(){
 function blocos(){
   return [`<div class="blk">${tituloHTML()}</div>`,idHTML(),
     secKV('Exame clínico','Avaliação do doador antes da coleta',exameTabs(),3,'minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.3fr)'),
+    ondaHTML(),
     secKV('Coleta','Horários, volume e bolsa',coletaTabs()),
     lesObsHTML(104),`<div class="blk" style="margin-top:12px">${assHTML()}</div>`].filter(Boolean);
 }
@@ -2334,7 +2403,7 @@ function mobileHTML(){
   return `<div class="mb">
    <div class="mh"><img src="${IMG.logo}" alt="CVH">${hdrHTML(true)}</div>
    <div class="blk">${tituloHTML(true)}</div>${idHTML(2)}
-   ${secKV('Exame clínico','',exameTabs(),1)}${secKV('Coleta','',coletaTabs(),1)}
+   ${secKV('Exame clínico','',exameTabs(),1)}${ondaHTML()}${secKV('Coleta','',coletaTabs(),1)}
    <div class="blk">${lesCol(112)}</div>${obsLista().length?`<div class="blk">${obsCol()}</div>`:''}
    <div class="blk" style="margin-top:18px">${assHTML()}</div>
    <div class="ft"><b>CVH - Centro Veterinário de Hemoterapia</b><br>QNB 17 Lote 15 Loja 01, Taguatinga Norte, Brasília, DF, 72115-170<br>(61) 9 8237-2772 · www.cvh.vet.br · bancodesangue@cvh.vet.br</div>
@@ -3125,6 +3194,35 @@ init();
       } catch (e) { toast("Não consegui guardar a foto. " + ((e && e.message) || "")); acFotoPintar(); }
     });
     acFotoPintar();
+    // foto do monitor multiparamétrico: a leitura automática preenche os sinais vitais e o traçado da onda sai da própria foto
+    function monPintar() {
+      const box = $("#monBox"); if (!box) return; box.hidden = false; const m = S.monitor;
+      $("#monVer").innerHTML = m && m.onda ? `<div style="border:1px solid #EADFD3;border-radius:8px;overflow:hidden">${ondaSvg({ tracado: m.onda, proporcao: m.prop }, "#A83D3D", "#FBF8F4")}</div>` + (m.foto && m.foto.id ? `<button type="button" class="btn" id="monAbrir" style="margin-top:6px">Abrir a foto</button>` : "") : "";
+      $("#monTx").textContent = m ? "Trocar a foto do monitor" : "Foto do monitor";
+      const ab = $("#monAbrir"); if (ab) ab.onclick = async () => { try { const u = await ponte("urlArquivo", m.foto.id); if (u) window.open(u, "_blank"); } catch (e) { toast("Não consegui abrir a foto."); } };
+    }
+    const syncMon = syncAll; syncAll = function () { syncMon(); monPintar(); };
+    document.addEventListener("change", async (ev) => {
+      if (!ev.target || ev.target.id !== "monFoto") return;
+      const file = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (!file) return;
+      const tx = $("#monTx"); tx.textContent = "Lendo o monitor...";
+      try {
+        const img = await carregarImg(URL.createObjectURL(file)), o = extrairOnda(img);
+        const bl = await reduzir(file), b64 = b64De(new Uint8Array(await bl.arrayBuffer()));
+        const [foto, lido] = await Promise.all([
+          ponte("acFoto", { nome: "Monitor " + [S.numero, S.animal].filter(Boolean).join(" ") + ".jpg", b64 }),
+          ponte("iaRapida", "monitor", "image/jpeg", b64).catch(() => null)]);
+        const L = lido || {}, num = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
+        const val = { spo2: num(L.spo2), pr: num(L.pr), sys: num(L.sys), dia: num(L.dia), resp: num(L.resp), temp: num(L.temp) };
+        S.monitor = { foto: { id: foto.id }, onda: o ? o.tracado : "", prop: o ? o.proporcao : null, lido: val, em: new Date().toISOString() };
+        const campos = [["spo2", "spo2", "SpO₂", "%"], ["fc", "pr", "FC", "bpm"], ["ps", "sys", "PS", "mmHg"], ["pd", "dia", "PD", "mmHg"], ["fr", "resp", "FR", "mpm"], ["temp", "temp", "temperatura", "°C"]], feitos = [];
+        for (const [k, l, rot, un] of campos) if (val[l] != null) { S[k] = String(val[l]).replace(".", ","); S.lidos = Object.assign({}, S.lidos || {}, { [k]: true }); feitos.push(rot + " " + S[k] + " " + un); }
+        dirty = true; $("#bSalvar").classList.add("dirty"); syncAll(); schedule();
+        toast((feitos.length ? "Lido do monitor: " + feitos.join(", ") + "." : "Não consegui ler os números do monitor.") + (o ? "" : " A onda não apareceu na foto."), 7000);
+      } catch (e) { toast("Não consegui usar a foto do monitor. " + ((e && e.message) || "")); }
+      monPintar();
+    });
+    monPintar();
 
     // leitura automática pelo Gemini do painel
     if (ctx.temGemini) {
