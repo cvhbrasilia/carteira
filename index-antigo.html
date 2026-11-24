@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124142009';
+  var VERSAO = '20261124144000';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5139,6 +5139,7 @@ function telaHome() {
   }).catch(e => { const c = $('#alCont'); if (c) c.textContent = /Código\.gs/.test(e.message) ? 'servidor desatualizado' : 'Abrir'; }), 50);
   if (pode('estoque') || pode('producao') || pode('admin')) setTimeout(pedidosHome, 40);
   if (pode('pendencias') && !E.d.externo) setTimeout(pendenciasHome, 30);
+  clearTimeout(E.recVermT); E.recVermT = setTimeout(() => { try { receitasVermPendentes(); } catch (_) {} }, 2500);
   if (pode('laudos')) setTimeout(novosResultadosHome, 60);
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
@@ -7105,7 +7106,7 @@ function fimReceitaSozinha(r) {
 function receitasVermPendentes() {
   if (!pode('receitas') || !vetLogado() || !E.d || !E.d.registros) return;
   const lim = somaDiasIso(hoje(), -3), agora = Date.now();
-  E.d.registros.filter(r => r.tipo === 'vermifugo' && r.excluido !== '1' && r.data >= lim && (r.dados || {}).origem !== 'receita' && !temReceitaVerm(r)).forEach(r => {
+  E.d.registros.filter(r => r.tipo === 'vermifugo' && r.excluido !== '1' && (r.data >= lim || ((E.d.config || {}).receitasPedidas || []).includes(r.id)) && (r.dados || {}).origem !== 'receita' && !temReceitaVerm(r)).forEach(r => {
     let t0 = 0; try { t0 = +localStorage.getItem('cvh_rec_verm_' + r.id) || 0; } catch (_) {}
     if (agora - t0 > 30 * 60000) receitaVermSozinha(r);
   });
