@@ -949,7 +949,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124172738';
+  var VERSAO = '20261124175617';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4908,6 +4908,23 @@ function sugestoesReceita() {
   const out = []; E.d.registros.filter(r => r.tipo === 'receita' && r.dados).sort((a, b) => a.data < b.data ? -1 : 1).forEach(r => (r.dados.itens || []).forEach(i => out.push(i)));
   return out.slice(-400);
 }
+// peso digitado errado (528 kg no lugar de 28 kg): aviso na hora, em qualquer campo de peso do painel
+document.addEventListener('change', ev => { const el = ev.target; if (!el || !/^(fPeso|rPeso|rcPeso|txPeso|hiPeso)$/.test(el.id || '')) return;
+  const x = parseFloat(String(el.value || '').replace(',', '.')); const ruim = String(el.value || '').trim() !== '' && (!isFinite(x) || x <= 0 || x > 100);
+  el.style.borderColor = ruim ? '#A83D3D' : ''; if (ruim) toast('Peso ' + el.value + ' kg parece digitado errado. Confira antes de salvar.', 6000); });
+// sexo e raça corrigidos na ficha de doação corrigem também o cadastro do animal (o cadastro é um só para todos os módulos);
+// microchip só completa o cadastro vazio, porque microchip diferente é sinal de ficha de outro animal
+async function cadastroDaFicha(an, f) {
+  if (!an || !f || !an.responsavelId) return;
+  const sx = f.sexo === 'F' ? 'Fêmea' : f.sexo === 'M' ? 'Macho' : '', rc = String(f.raca || '').trim(), mc = String(f.microchip || '').replace(/\D/g, '');
+  const novo = {};
+  if (sx && sx !== an.sexo) novo.sexo = sx;
+  if (rc && rc !== 'NI' && semAc(rc).toLowerCase() !== semAc(an.raca || '').toLowerCase()) novo.raca = rc;
+  if (mc.length >= 9 && !String(an.microchip || '').replace(/\D/g, '')) novo.microchip = mc;
+  if (!Object.keys(novo).length) return;
+  try { const salvo = await api('salvarAnimal', E.sessao, Object.assign({}, an, novo, { doador: an.doador === '1' || an.doador === true, ativo: an.ativo !== '0' })); const i = E.d.animais.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.animais[i] = salvo; }
+  catch (e) { toast('A ficha foi salva, mas o cadastro do animal não foi atualizado. ' + e.message, 6000); }
+}
 function pesoAtual(aid) {
   const d = regsDe(aid).filter(r => r.tipo === 'doacao' && r.dados).sort((a, b) => a.data < b.data ? 1 : -1).map(r => r.dados.peso || (r.dados.ficha && r.dados.ficha.peso)).find(Boolean);
   return d ? String(d).replace(/[^\d.,]/g, '') : '';
@@ -6936,6 +6953,7 @@ const PONTE = {
     E.txEst = null; setTimeout(() => { E.modulo = 'transfusao'; telaPreparoTx(id); }, 0); return true; },
   salvarRascunho: async o => {
     const r = await api('fichaAndamentoSalvar', E.sessao, { id: o.id, animalId: E.animal, ficha: o.ficha });
+    await cadastroDaFicha(animalDe(E.animal), o.ficha);
     E.d.fichasAndamento = (E.d.fichasAndamento || []).filter(x => x.id !== r.id).concat([r]);
     return { id: r.id };
   },
@@ -7080,6 +7098,7 @@ const PONTE = {
     const px = (o.dados || {}).naoColetado || ((o.dados || {}).ficha || {}).tempo === 'NC' || an.doador !== '1' || an.aposentadoEm ? '' : somaMeses(o.data, 3);
     guardarRegistro(await api('salvarRegistro', E.sessao, { id: igual ? igual.id : '', vetId: o.vetId || '', animalId: an.id, tipo: 'doacao', grupo: 'doacao', data: o.data, proxima: px, dados: Object.assign({}, o.dados, { cel, a4 }, foto ? { foto } : fotoAnt ? { foto: fotoAnt } : {}) }));
     if (o.rascunhoId) { try { await api('fichaAndamentoExcluir', E.sessao, o.rascunhoId); } catch (_) {} E.d.fichasAndamento = (E.d.fichasAndamento || []).filter(x => x.id !== o.rascunhoId); }
+    await cadastroDaFicha(an, (o.dados || {}).ficha);
     return { atualizado: !!igual, animal: an.nome, fichas: fichasDe(an.id) };
   }
 };

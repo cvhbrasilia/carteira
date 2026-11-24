@@ -29,7 +29,7 @@ button{cursor:pointer}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:12px}
 .kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
 .kpi{position:relative}.kpi span.kco{position:absolute;top:10px;right:10px;width:38px;height:24px;border-radius:7px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:#5F130F}.kpi span.kco.PFC,.kpi span.kco.CRIO{background:#A83D3D}.kpi span.kco.CP{background:#C49A6C}
-.ag-abas button{border:1px solid #E5D8CB;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--vinho)}.ag-abas button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}
+.ag-abas button{border:1px solid #E5D8CB;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--vinho)}.ag-abas button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}.hj-abas{margin:0 0 14px}
 .kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
 .kpi span{font-size:12.5px;color:var(--tinta2)}
 .lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
@@ -225,7 +225,8 @@ function abrirProducao(coleta) {
   abrirGaveta("Produção da coleta " + coleta, passos + cab + corpo + qcColetaHtml(coleta, D) + '<div id="qcIdexx"></div>');
   // lembrete da amostra para o micro-hematócrito e a IDEXX em cada etapa: ST, CH sem SAG e, ao pesar o CH com SAG, CH com SAG
   if (et === "peso_st") lembrarAmostra(coleta, "ST");
-  if (et === "ch_sem_sag" || et === "ch_com_sag") { lembrarAmostra(coleta, "CHS"); const pf = $("#pPesoFinal"), sa = $("#pSagAd"); const chSag = () => lembrarAmostra(coleta, "CH"); if (pf) pf.addEventListener("change", chSag); if (sa) sa.addEventListener("change", chSag); }
+  if (et === "ch_sem_sag" || et === "ch_com_sag") { lembrarAmostra(coleta, "CHS"); const pf = $("#pPesoFinal"), sa = $("#pSagAd"); let tCh = 0; const chSag = () => { clearTimeout(tCh); tCh = setTimeout(() => lembrarAmostra(coleta, "CH"), 900); }; if (pf) pf.addEventListener("input", chSag); if (sa) sa.addEventListener("input", chSag); }
+  // o aviso do CH com SAG espera o fim da digitação, para não aparecer por cima do toque em "Salvar"
   ponte("qcDaColeta", coleta).then((L) => { const el = $("#qcIdexx"); if (!el || S.prodAberta !== coleta) return; el.innerHTML = '<h2 style="margin-top:14px">Laudos IDEXX desta coleta</h2>' + (L.length ? L.sort((a, b) => String(a.em).localeCompare(String(b.em))).map((x) => '<div class="lin"><div class="t"><b>' + esc(x.etapa) + " · " + esc(x.nome) + "</b><small>" + esc(hora(x.em)) + (x.resumo.length ? " · " + esc(x.resumo.slice(0, 4).map((r) => (r.nome || r.k || "") + " " + (r.valor ?? r.v ?? "")).join(", ")) : "") + "</small></div>" + (x.url ? '<a class="btn sec peq" href="' + esc(x.url) + '" target="_blank" rel="noopener">PDF</a>' : "") + "</div>").join("") : '<p class="nota">Nenhum laudo IDEXX chegou ainda com o número ' + esc(coleta) + '. Eles aparecem aqui sozinhos quando chegam, mesmo depois de concluída a produção.</p>'); }).catch(() => {});
 }
 async function salvarProd(coleta, etapa, dados, msg) {
@@ -317,8 +318,8 @@ function kpisProd() {
 function kpis() {
   if (PROD) return kpisProd();
   const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && !["utilizada", "descartada"].includes(u.situacao)), disp = cvh.filter((u) => u.situacao === "disponivel"), noInt = S.uni.filter((u) => u.local === "Intensivet" && ["disponivel", "reservada"].includes(u.situacao)).length;
-  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
-  return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis no CVH", "filtro", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis no CVH", "filtro", "PFC") + k(disp.filter((u) => u.componente === "CRIO").length, "CRIO disponíveis no CVH", "filtro", "CRIO") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis no CVH", "filtro", "CP") +
+  const k = (n, t, a, v, c) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '">' + (c ? '<span class="co kco ' + c + '">' + c + "</span>" : "") + "<b>" + n + "</b><span>" + t + "</span></button>";
+  return '<div class="kpis">' + k(disp.filter((u) => u.componente === "CH").length, "CH disponíveis no CVH", "filtro", "CH", "CH") + k(disp.filter((u) => u.componente === "PFC").length, "PFC disponíveis no CVH", "filtro", "PFC", "PFC") + k(disp.filter((u) => u.componente === "CRIO").length, "CRIO disponíveis no CVH", "filtro", "CRIO", "CRIO") + k(disp.filter((u) => u.componente === "CP").length, "CP disponíveis no CVH", "filtro", "CP", "CP") +
     k(cvh.filter((u) => u.situacao === "reservada").length, "Reservadas", "filtro", "reservada") + k(cvh.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "filtro", "quarentena") + k(noInt, "Na Intensivet", "aba", "int") + "</div>";
 }
 function abrirUnidade(id) {
@@ -348,7 +349,7 @@ function abrirUnidade(id) {
     ((D.identificacao || D.loteBolsa) ? "<dt>Identificação</dt><dd>" + esc([D.identificacao, D.loteBolsa].filter(Boolean).join(" · ")) + (u.mae_id ? " <small>(fração da bolsa " + esc(u.mae_id) + ")</small>" : "") + "</dd>" : "") + (D.obs ? "<dt>Observação</dt><dd>" + esc(D.obs) + "</dd>" : "") +
     "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
     "<dt>Validade</dt><dd>" + esc(br(String(u.validade || "").slice(0, 10))) + (al ? ' <span class="chip ' + al.c + '">' + al.t + "</span>" : "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_SIT[u.situacao] || u.situacao) + (u.reserva ? " · " + esc(u.reserva) : "") + "</dd><dt>Local</dt><dd>" + esc(u.local || "") + (u.equipamento ? " · " + esc(u.equipamento) : "") + "</dd>" +
-    (u.componente === "CH" && D.htFinal != null ? "<dt>Ht do CH com SAG</dt><dd>" + fmt(D.htFinal, 1) + "% <small>(micro-Ht)</small></dd>" : "") +
+    (u.componente === "CH" ? "<dt>Micro-hematócrito</dt><dd>" + microTxt(D) + (fim ? "" : ' <button class="btn sec peq" data-a="microAbrir" style="margin-left:6px">' + (D.htFinal != null || D.htCHsem != null ? "Corrigir" : "Lançar") + "</button>") + "</dd>" : "") +
     ((D.fracionamentos || []).length ? "<dt>Fracionamentos</dt><dd>" + D.fracionamentos.map((c) => esc(hora(c.em)) + " · " + esc(c.por) + "<br><small>inicial " + fmt(c.volumeInicial, 1) + " mL · restante " + fmt(c.volumeRestante, 1) + " mL · " + c.fracoes.map((f) => esc(f.id) + " " + fmt(f.volume, 1) + " mL").join(", ") + ' · <span class="chip ' + (c.nivel === "ok" ? "ok" : c.nivel === "alerta" ? "av" : "al") + '">diferença ' + fmt(c.diferenca, 1) + " mL (" + fmt(c.diferencaPct, 1) + "%)</span></small>").join("<br>") + "</dd>" : "") +
     (D.fracionamento ? "<dt>Origem</dt><dd>fração de " + esc(D.fracionamento.de) + " · " + esc(hora(D.fracionamento.em)) + "</dd>" : "") +
     (D.crioDe ? "<dt>Origem</dt><dd>CRIO do plasma " + esc(D.crioDe) + "</dd>" : "") + (D.crio ? "<dt>CRIO</dt><dd>produção iniciada " + esc(hora(D.crio.inicio)) + (D.crio.crio ? " · CRIO " + esc(D.crio.crio) + " · plasma pobre descartado (" + esc(D.crio.ppc.confirmadoPor) + ")" : "") + "</dd>" : "") +
@@ -410,6 +411,28 @@ async function acaoUnidade(acao, o) {
     // bolsa vencida: bloqueio; só o administrador analisa e libera com justificativa registrada
     if (/vencida/i.test(e.message) && S.admin && !o.forcarVencida) { $("#uForm").innerHTML = '<div class="cx" style="background:#FBE9E7;border:1px solid #e3b9b4;margin-top:8px"><h2 style="color:#8A1D14">Bolsa vencida</h2><p>' + esc(e.message) + '</p><label>Justificativa para continuar mesmo assim</label><input type="text" id="vcJus" placeholder="Ex.: validade estendida após análise"><div class="bts" style="margin-top:8px"><button class="btn peq perigo" data-a="vcForcar" data-v="' + esc(a) + '">Continuar mesmo vencida</button></div></div>'; S.vcPend = { u, a, o }; return; }
     toast(e.message, 7000); }
+}
+
+/* ── micro-hematócrito do CH: lançado aqui vale para todas as bolsas de CH da coleta, a produção, o estudo de SAG e o controle de qualidade ── */
+const pct = (v) => String(v).replace(".", ",") + "%";
+function microTxt(D) {
+  const p = [D.htCHsem != null ? "CH sem SAG " + pct(D.htCHsem) : "", D.htFinal != null ? "CH com SAG " + pct(D.htFinal) : ""].filter(Boolean).join(" · ");
+  return p || "não lançado" + (D.htUsadoNoSag != null && !D.htUsadoMedido ? " <small>(SAG calculado pela média do CVH, " + pct(D.htUsadoNoSag) + ")</small>" : "");
+}
+function formMicro(u) {
+  const D = u.dados || {}, v = (x) => (x != null ? String(x).replace(".", ",") : "");
+  return '<div class="cx" style="margin-top:12px"><h2>Micro-hematócrito da coleta ' + esc(u.coleta) + '</h2><p><small>Vale para todas as bolsas de CH desta coleta, para a produção, para o estudo de SAG e para o controle de qualidade. Campo vazio fica sem valor.</small></p>' +
+    '<label>CH sem SAG (%)</label><input type="text" inputmode="decimal" id="miSem" value="' + v(D.htCHsem) + '" placeholder="ex.: 93,5"><label>CH com SAG (%)</label><input type="text" inputmode="decimal" id="miCom" value="' + v(D.htFinal) + '" placeholder="ex.: 65,8">' +
+    '<div class="bts" style="margin-top:10px"><button class="btn peq" data-a="miConf">Salvar</button><button class="btn sec peq" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div></div>';
+}
+async function salvarMicro() {
+  const u = S.uni.find((x) => x.id === S.uniAberta); if (!u) return;
+  try {
+    const L = await est("estMicroHt", u.coleta, { htCHsem: $("#miSem").value, htFinal: $("#miCom").value });
+    (L || []).forEach((r) => { const x = S.uni.find((y) => y.id === r.id); if (x) Object.assign(x, r); });
+    const p = S.prod.find((x) => x.coleta === u.coleta); if (p) { const c = (L || []).find((r) => r.componente === "CH"); if (c) p.dados = Object.assign({}, p.dados, { htCHsem: c.dados.htCHsem ?? null, htCHfinal: c.dados.htFinal ?? null }); }
+    toast("Micro-hematócrito salvo."); pintar(); abrirUnidade(u.id);
+  } catch (e) { toast(e.message, 7000); }
 }
 
 /* ── desleucocitação (5.2): filtros Fresenius; o estoque fica com o volume depois do filtro ── */
@@ -506,6 +529,7 @@ function pendencias() {
   S.uni.filter((u) => (u.dados || {}).qcPendente && !["utilizada", "descartada"].includes(u.situacao)).forEach((u) => L.push({ g: "e", n: 0, t: u.id + " · qualidade aguarda decisão", s: ((u.dados.indicacaoDescarte || {}).motivo || ((u.dados.coloracoes || []).slice(-1)[0] || {}).motivo || ""), a: "uni", v: u.id }));
   S.uni.filter((u) => (u.dados || {}).qcPedido === "novaFoto" && !["utilizada", "descartada"].includes(u.situacao)).forEach((u) => L.push({ g: "p", n: 1, t: "Nova foto da coloração de " + u.id, s: "pedida pelo Plínio", a: "uni", v: u.id }));
   S.uni.filter((u) => u.situacao === "quarentena").forEach((u) => L.push({ g: "e", n: 3, t: u.id + " aguardando liberação", s: "exames e critérios do CVH", a: "uni", v: u.id }));
+  L.forEach((x) => { if (x.a === "uni") { const u = S.uni.find((y) => y.id === x.v); if (u) x.c = u.componente; } });
   return L.filter((x) => x.g === (PROD ? "p" : "e")).sort((a, b) => a.n - b.n);
 }
 function telaHojeProd() {
@@ -525,7 +549,15 @@ function telaHojeProd() {
 function telaHoje() {
   const P = pendencias(), vivas = ["disponivel", "reservada"];
   const cvh = S.uni.filter((u) => (u.local || "CVH") === "CVH" && vivas.includes(u.situacao)), intv = S.uni.filter((u) => u.local === "Intensivet" && vivas.concat(["bloqueada", "retirada"]).includes(u.situacao)), caminho = S.uni.filter((u) => u.situacao === "transito");
-  return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente agora.</p>') + "</div>" +
+  // abas como as da carteira: todas, ou só CH, CP, PFC ou CRIO, valendo para as listas da tela
+  const ab = S.hjTab || "", soAb = (L, f) => ab ? L.filter((x) => (f ? f(x) : x.componente) === ab) : L;
+  const todasU = P.length + cvh.length + intv.length + caminho.length, nAb = (c) => P.filter((x) => x.c === c).length + [...cvh, ...intv, ...caminho].filter((u) => u.componente === c).length;
+  const tab = (c, t) => '<button class="' + (ab === c ? "on" : "") + '" data-a="hjTab" data-v="' + c + '">' + t + " · " + (c ? nAb(c) : todasU) + "</button>";
+  const abas = '<div class="filtros ag-abas hj-abas">' + tab("", "Todas") + tab("CH", "CH") + tab("CP", "CP") + tab("PFC", "PFC") + tab("CRIO", "CRIO") + "</div>";
+  return abas + telaHojeLista(soAb(P, (x) => x.c), soAb(cvh), soAb(intv), soAb(caminho), ab);
+}
+function telaHojeLista(P, cvh, intv, caminho, ab) {
+  return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">' + (ab ? "Nada pendente com " + esc(ab) + "." : "Nada pendente agora.") + '</p>') + "</div>" +
     '<div class="duas"><div class="cx"><h2>Bolsas disponíveis no CVH · ' + cvh.length + "</h2>" + (cvh.length ? porComponente(cvh) : '<p class="vazio">Nenhuma bolsa disponível.</p>') + "</div>" +
     '<div class="cx"><h2>Bolsas na Intensivet · ' + intv.length + "</h2>" + (intv.length ? porComponente(intv) : '<p class="vazio">Nenhuma bolsa na Intensivet.</p>') + (caminho.length ? '<div class="grupo-t">Em trânsito · ' + caminho.length + "</div>" + listaAninhada(caminho) : "") + "</div></div>";
 }
@@ -1195,6 +1227,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "remMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
   if (a === "agTab") { S.agTab = v; pintar(); return; }
+  if (a === "hjTab") { S.hjTab = v; pintar(); return; }
   if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast(/^https?:\/\//.test(v) ? "Link copiado." : "Copiado: " + v); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
   if (a === "cfAdd") { const i = $("#cfCod"); if (i && i.value.trim()) lidoConf(i.value.trim().toUpperCase().replace(/\s+/g, " ")); return; }
@@ -1204,6 +1237,8 @@ document.addEventListener("click", async (ev) => {
   if (a === "rlCsv") { const q = (x) => '"' + String(x == null ? "" : x).replace(/"/g, '""') + '"', L = ["Relatório do estoque CVH;" + br(S.rel.ini) + " a " + br(S.rel.fim)]; secoesRel(S.rel).forEach(([t, R]) => { L.push(""); L.push(q(t)); R.forEach(([k, v]) => L.push(q(k) + ";" + q(v))); }); L.push(""); L.push(q("Bolsas do período")); L.push(["Bolsa", "Hemocomponente", "Coleta", "Situação", "Local", "Equipamento", "Volume (mL)", "Validade", "Reserva", "Bolsa mãe"].map(q).join(";")); S.rel.d.unidades.forEach((u) => L.push([u.id, u.componente, u.coleta, ROT_SIT[u.situacao] || u.situacao, u.local, u.equipamento, u.volume_ml, String(u.validade || "").slice(0, 10), u.reserva, u.mae_id].map(q).join(";")));
     const txt = "\ufeff" + L.join("\r\n"), b64 = btoa(unescape(encodeURIComponent(txt))); try { await ponte("baixar", "Relatório estoque CVH " + S.rel.ini + " a " + S.rel.fim + ".csv", b64); } catch (e) { toast(e.message, 5000); } return; }
   if (a === "rlImp") return imprimirDoc("Relatório do estoque CVH", '<div style="font:12px/1.4 Arial;color:#2b2320;padding:20px"><h1 style="color:#5F130F;font-size:20px">Relatório do estoque CVH · ' + br(S.rel.ini) + " a " + br(S.rel.fim) + "</h1>" + secoesRel(S.rel).map(([t, L]) => '<h2 style="color:#A83D3D;font-size:14px;margin:14px 0 4px">' + esc(t) + "</h2>" + (L.length ? '<table style="width:100%;border-collapse:collapse">' + L.map(([k, v]) => '<tr><td style="border-bottom:1px solid #EEE5DB;padding:3px 6px;width:30%"><b>' + esc(k) + '</b></td><td style="border-bottom:1px solid #EEE5DB;padding:3px 6px">' + esc(v) + "</td></tr>").join("") + "</table>" : "<p>Nada no período.</p>")).join("") + "</div>");
+  if (a === "microAbrir") { const u = S.uni.find((x) => x.id === S.uniAberta); if (u) { $("#uForm").innerHTML = formMicro(u); $("#miSem").focus(); } return; }
+  if (a === "miConf") return salvarMicro();
   if (a === "dlConf") { const u = S.uni.find((x) => x.id === S.uniAberta); return acaoUnidade("desleucocitar", { filtro: $("#dlF").value, volAntes: num($("#dlA").value), volDepois: num($("#dlD").value) }); }
   if (a === "corFoto") { const f = $("#corArq"); if (f) { f.value = ""; f.click(); } return; }
   if (a === "corSalvar") { if (!COR_AV) return; const o = { foto: COR_AV.b64, resultado: COR_AV.resultado, motivo: COR_AV.motivo, cor: COR_AV.cor }; COR_AV = null; return acaoUnidade("coloracao", o); }

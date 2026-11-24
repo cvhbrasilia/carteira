@@ -2842,10 +2842,17 @@ init();
       dea1: /DEA\s*1/i.test(t) ? (/neg/i.test(t) ? "-" : /pos/i.test(t) ? "+" : "") : "",
       dal: a.dal === "Positivo" ? "+" : a.dal === "Negativo" ? "-" : "" };
   }
-  // só completa o que está vazio, para não apagar o que veio da ficha em papel
+  // o cadastro é um só: na ficha ainda não assinada, sexo, raça, responsável, idade e tipagem seguem o cadastro (microchip diferente vira aviso de ficha de outro animal)
+  // (corrigiu lá, a ficha acompanha; corrigiu na ficha, o painel corrige o cadastro ao salvar). O nome só completa o que está vazio.
+  const ROT_CAD = { sexo: "sexo", raca: "raça", microchip: "microchip", responsavel: "responsável", idade: "idade", dea1: "DEA 1", dal: "DAL" };
   function preencher(forcar) {
-    const c = cadastro();
-    for (const [k, v] of Object.entries(c)) if (v && (forcar || !S[k] || S[k] === "NI")) S[k] = v;
+    const c = cadastro(), mud = [];
+    for (const [k, v] of Object.entries(c)) {
+      if (!v) continue;
+      const segue = !S.ass && ROT_CAD[k] && k !== "microchip" && (k !== "raca" || norm(S[k] || "").trim() !== norm(v).trim());
+      if (forcar || !S[k] || S[k] === "NI" || (segue && S[k] !== v)) { if (S[k] && S[k] !== "NI" && S[k] !== v && ROT_CAD[k]) mud.push(ROT_CAD[k]); S[k] = v; }
+    }
+    if (mud.length) setTimeout(() => toast("Atualizado pelo cadastro do animal: " + mud.join(", ") + ".", 5000), 300);
     // tipagem: vale a do cadastro (corrigida lá, a ficha ainda não assinada acompanha)
     if (!S.ass) for (const k of ["dea1", "dal"]) if (c[k] && S[k] !== c[k]) S[k] = c[k];
     syncAll(); schedule();
@@ -2920,6 +2927,13 @@ init();
   // critérios das Recomendações de Boas Práticas da ABVHMT (2024): arts. 21 a 25, 38 e tabela 1
   const MIN_DOADOR = { Canina: { peso: 25, ht: 40, hb: 13, mlkg: 18, volMax: 450 }, Felina: { peso: 4, ht: 35, hb: 11.5, mlkg: 13, volMax: 75 } };
   const VAC_28 = /dappv|dhpp|vanguard|recombitek|inomune|tricat|feline|feligen|felocell|\bkc\b|giardia|oral|m[uú]ltipla|v8|v10|v4|v5/i, VAC_2 = /raiva|rabi|defensor|rabmune|bronchiguard|guard-vac|lepto/i;
+  // peso fora do possível para a espécie: não deixa assinar nem salvar na carteira (528 kg no lugar de 28 kg)
+  function pesoAbsurdo() {
+    const v = String(S.peso || "").trim(); if (!v || v === "NI") return "";
+    const x = parseFloat(v.replace(",", ".").replace(/[^\d.]/g, "")), gato = /fel|gat/i.test((ctx.animal || {}).especie || ""), mx = gato ? 15 : 100;
+    return !isFinite(x) || x < 1 || x > mx ? "Peso " + v + " kg não é possível para " + (gato ? "gato" : "cão") + ". Confira o peso antes de salvar." : "";
+  }
+  document.addEventListener("change", (ev) => { if (ev.target && ev.target.id === "i_peso") { const pe = pesoAbsurdo(); ev.target.style.borderColor = pe ? "#A83D3D" : ""; if (pe) toast(pe, 6000); } });
   function checarDoacao(iso) {
     const T = ctx.triagem || {}, graves = [], avisos = [], nc = S.tempo === "NC";
     const n = (k) => { const v = sv(k); if (!v) return NaN; const x = parseFloat(v.replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(x) ? x : NaN; };
@@ -2954,6 +2968,7 @@ init();
     if (!S.ass) { toast("Assine a ficha antes de salvar na carteira."); $("#secAss").scrollIntoView({ behavior: "smooth" }); return; }
     if (dig(S.ass.crmv) !== dig((/(\d[\d.\-\/]*)\s*$/.exec(vAss.crmv) || [""])[0]) || (!ctx.vet && S.ass.por !== ctx.liberador.nome)) { toast("A ficha foi assinada por outra pessoa. Remova a assinatura e assine de novo."); return; }
     const a = ctx.animal || {}, avisos = [];
+    { const pe = pesoAbsurdo(); if (pe) { toast(pe, 7000); const f = $("#i_peso"); if (f) { f.scrollIntoView({ behavior: "smooth", block: "center" }); f.focus(); } return; } }
     if (S.animal && a.nome && !nomeIgual(S.animal, a.nome)) avisos.push(`O nome na ficha (${S.animal}) é diferente do cadastro (${a.nome}). Confira se a ficha é mesmo deste animal.`);
     if (dig(S.microchip) && dig(a.microchip) && dig(S.microchip) !== dig(a.microchip)) avisos.push("O microchip da ficha é diferente do cadastro. Confira se a ficha é mesmo deste animal.");
     const iso = /^\d{4}-\d{2}-\d{2}$/.test(S.data || "") ? S.data : todayISO();
