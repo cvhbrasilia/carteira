@@ -499,7 +499,7 @@ function busy(on,t){$('#busy').classList.toggle('show',!!on);if(t)$('#busyTx').t
 const LS_DRAFT='cvh_ficha_rascunho_v1', LS_SIGN='cvh_ficha_assinante_v1', LS_FICHAS='cvh_fichas_andamento_v1', LS_ATUAL='cvh_ficha_atual_v1', DIAS_GUARDA=30;
 function blank(){return{
   id:null,numero:'',etq:'',animal:'',idade:'',sexo:'',raca:'',peso:'',responsavel:'',microchip:'',data:todayISO(),
-  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
+  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
   ps:'',pd:'',hb:'',ht:'',fc:'',fr:'',temp:'',tpc:'',spo2:'',
   inicio:'',fim:'',tempo:'',volume:'',lote:'',validade:'',seguimento:'',
   obsIni:'',lesoes:[],obsDoa:'',obsDemais:'',
@@ -694,6 +694,13 @@ function buildForm(){
         ${chips('plHem','Hemólise',GRAUS_HEMOLISE.map(c=>[c,c]),{ni:false})}
         ${chips('plLip','Lipemia',GRAUS_LIPEMIA.map(c=>[c,c]),{ni:false})}
         ${fld('plasma','Outras observações do plasma',{ph:'Opcional',ni:false})}</div>
+      <div class="grp s6"><div class="gt">Autocontrole do doador (cartão em gel)</div><p class="hint" style="margin:0 0 8px">Uso interno do CVH: não sai no PDF nem na carteira. Entra sozinho no laudo da prova de compatibilidade das bolsas desta doação. Positivo bloqueia as bolsas.</p>
+        ${chips('acDoa','Resultado',[['Negativo','Negativo'],['Positivo','Positivo']],{ni:false})}
+        <div class="f" id="acFotoBox" hidden><div class="fl"><span class="lb">Fotos do cartão de gel e do plasma</span></div>
+          <div id="acFotoVer" style="margin:4px 0 8px"></div>
+          <label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="acFotoGel" accept="image/*" hidden><span id="acFotoGelTx">Foto do cartão de gel</span></label>
+          <label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="acFotoPla" accept="image/*" hidden><span id="acFotoPlaTx">Foto do plasma</span></label>
+          <p class="hint" style="margin:6px 0 0">As duas fotos saem numa folha só, com uma etiqueta embaixo: ACD, o número da doação e o nome do animal. Preencha esses dois antes das fotos.</p></div></div>
       <div class="s6"><button type="button" class="btn pri" id="bSalvarDepois">Salvar para continuar depois</button></div>
     </div>
   </section>
@@ -728,7 +735,7 @@ function dogImg(v){return v==='d'?IMG.dogd:IMG.dogv}
 
 /* ================= sincronização formulário ⇄ estado ================= */
 const TEXT_KEYS=['auscObs','numero','data','etq','animal','idade','peso','raca','responsavel','microchip','ps','pd','hb','ht','ppt','plasma','fc','fr','temp','inicio','fim','tempo','volume','lote','validade','seguimento','obsIni','obsDoa','obsDemais'];
-const CHIP_KEYS=['ausc','sexo','mucosas','tpc','dea1','dal','pele','plCor','plAsp','plHem','plLip'];
+const CHIP_KEYS=['ausc','sexo','mucosas','tpc','dea1','dal','pele','plCor','plAsp','plHem','plLip','acDoa'];
 const NC_DEP=['volume','lote','validade','seguimento'];
 function syncAll(){
   _numBusca=S.numero||'';
@@ -3046,7 +3053,63 @@ init();
     const novaOrig = novaFicha; novaFicha = function () { novaOrig(); preencher(false); travarAssinante(); };
     $("#bNova").onclick = novaFicha;
     const lerOrig = aplicarLeitura; aplicarLeitura = function (j, it) { lerOrig(j, it); preencher(false); };
-    const syncOrig = syncAll; syncAll = function () { syncOrig(); travarAssinante(); };
+    const syncOrig = syncAll; syncAll = function () { syncOrig(); travarAssinante(); acFotoPintar(); };
+    // fotos do autocontrole do doador (cartão em gel) e do plasma: uma folha só, com a etiqueta ACD, a doação e o animal (uso interno, Drive do CVH)
+    const acLocal = { gel: null, pla: null, folha: "" };
+    function acFotoPintar() {
+      const box = $("#acFotoBox"); if (!box) return; box.hidden = false;
+      const v = $("#acFotoVer"), f = S.acFoto, fs = S.acFotos || {};
+      v.innerHTML = acLocal.folha ? `<img src="${acLocal.folha}" alt="Folha do autocontrole do doador" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid #EADFD3">` : f && f.id ? `<button type="button" class="btn" id="acFotoAbrir">Ver a folha guardada</button>` : "";
+      $("#acFotoGelTx").textContent = fs.gel ? "Trocar a foto do gel" : "Foto do cartão de gel";
+      $("#acFotoPlaTx").textContent = fs.pla ? "Trocar a foto do plasma" : "Foto do plasma";
+      const ab = $("#acFotoAbrir"); if (ab) ab.onclick = async () => { try { const u = await ponte("urlArquivo", f.id); if (u) window.open(u, "_blank"); } catch (e) { toast("Não consegui abrir a folha."); } };
+    }
+    const carregarImg = (src) => new Promise((ok, erro) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = erro; i.src = src; });
+    const blobJpg = (cv, q) => new Promise((ok) => cv.toBlob(ok, "image/jpeg", q || 0.88));
+    async function reduzir(file) {
+      const img = await carregarImg(URL.createObjectURL(file)), k = Math.min(1, 1400 / Math.max(img.width, img.height));
+      const cv = document.createElement("canvas"); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); return blobJpg(cv);
+    }
+    async function imgDe(k) {
+      if (acLocal[k]) return carregarImg(URL.createObjectURL(acLocal[k]));
+      const x = (S.acFotos || {})[k]; if (!x || !x.id) return null;
+      try { const r = await ponte("lerPdf", x.id), b = atob(r.base64), u8 = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u8[i] = b.charCodeAt(i); const bl = new Blob([u8], { type: "image/jpeg" }); acLocal[k] = bl; return carregarImg(URL.createObjectURL(bl)); } catch (e) { return null; }
+    }
+    async function montarFolha() {
+      const P = [["gel", "Cartão em gel"], ["pla", "Plasma"]], imgs = [];
+      for (const [k, tit] of P) { const im = await imgDe(k); if (im) imgs.push([im, tit]); }
+      if (!imgs.length) return null;
+      const W = 1400, pad = 28, topo = 56, H = 820, L = 130, pw = (W - pad * (imgs.length + 1)) / imgs.length;
+      const cv = document.createElement("canvas"); cv.width = W; cv.height = topo + H + pad + L; const c = cv.getContext("2d");
+      c.fillStyle = "#FFFFFF"; c.fillRect(0, 0, cv.width, cv.height);
+      imgs.forEach(([im, tit], i) => { const x0 = pad + i * (pw + pad), k = Math.min(pw / im.width, H / im.height), w = im.width * k, h = im.height * k;
+        c.fillStyle = "#A83D3D"; c.font = "bold 26px 'Proza Libre', Georgia, serif"; c.textAlign = "left"; c.textBaseline = "alphabetic"; c.fillText(tit.toUpperCase(), x0, 40);
+        c.drawImage(im, x0 + (pw - w) / 2, topo + (H - h) / 2, w, h); });
+      // etiqueta: faixa clara, selo ACD em vinho, doação, animal e data
+      const y = topo + H + pad; c.fillStyle = "#EEE5DB"; c.fillRect(0, y, W, L); c.fillStyle = "#C49A6C"; c.fillRect(0, y, W, 4);
+      const bx = pad, by = y + 24, bw = 170, bh = L - 48; c.fillStyle = "#5F130F"; c.beginPath(); if (c.roundRect) c.roundRect(bx, by, bw, bh, 16); else c.rect(bx, by, bw, bh); c.fill();
+      c.fillStyle = "#FFFFFF"; c.font = "bold 50px 'Proza Libre', Georgia, serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ACD", bx + bw / 2, by + bh / 2 + 2);
+      c.textAlign = "left"; c.textBaseline = "alphabetic"; c.fillStyle = "#5F130F"; c.font = "bold 40px 'Proza Libre', Georgia, serif"; c.fillText("Doação " + (S.numero || ""), bx + bw + 30, y + 56);
+      c.fillStyle = "#3A2A26"; c.font = "32px 'Proza Libre', Georgia, serif"; c.fillText(String(S.animal || "").toUpperCase() + (S.data ? "  ·  " + isoBR(S.data) : ""), bx + bw + 30, y + 102);
+      c.textAlign = "right"; c.fillStyle = "#A83D3D"; c.font = "bold 26px 'Proza Libre', Georgia, serif"; c.fillText("Autocontrole do doador" + (S.acDoa ? " · " + S.acDoa.toLowerCase() : ""), W - pad, y + 56);
+      c.fillStyle = "#7A6A63"; c.font = "24px 'Proza Libre', Georgia, serif"; c.fillText("CVH · uso interno", W - pad, y + 102);
+      return blobJpg(cv);
+    }
+    document.addEventListener("change", async (ev) => {
+      const id = ev.target && ev.target.id; if (id !== "acFotoGel" && id !== "acFotoPla") return; const k = id === "acFotoGel" ? "gel" : "pla";
+      const file = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (!file) return;
+      if (!S.numero || !S.animal) { toast("Preencha o número da doação e o nome do animal antes das fotos, para a etiqueta sair completa."); return; }
+      const tx = $(k === "gel" ? "#acFotoGelTx" : "#acFotoPlaTx"); tx.textContent = "Guardando...";
+      try {
+        const bl = await reduzir(file); acLocal[k] = bl;
+        const r1 = await ponte("acFoto", { nome: (k === "gel" ? "ACD gel " : "ACD plasma ") + S.numero + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await bl.arrayBuffer())) });
+        S.acFotos = Object.assign({}, S.acFotos || {}, { [k]: { id: r1.id } });
+        const folha = await montarFolha();
+        if (folha) { const r2 = await ponte("acFoto", { nome: "ACD " + S.numero + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await folha.arrayBuffer())) }); S.acFoto = { id: r2.id, nome: r2.nome || "" }; acLocal.folha = URL.createObjectURL(folha); }
+        dirty = true; $("#bSalvar").classList.add("dirty"); acFotoPintar(); toast("Foto guardada na folha do autocontrole.");
+      } catch (e) { toast("Não consegui guardar a foto. " + ((e && e.message) || "")); acFotoPintar(); }
+    });
+    acFotoPintar();
 
     // leitura automática pelo Gemini do painel
     if (ctx.temGemini) {

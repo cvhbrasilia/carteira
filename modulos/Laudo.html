@@ -1900,6 +1900,21 @@ function registroTecsa() {
   const d = doacoesDoAnimal().filter((x) => /^\d{4}-\d{2}-\d{2}/.test(x.data || "") && dia(x.data) <= r && r - dia(x.data) <= 45 * 864e5)[0];
   return d ? d.numero : "";
 }
+// autocontrole do doador registrado na ficha de doação (uso interno): Negativo, Positivo ou vazio
+function acRegistrado(p) {
+  const cod = String((p && p.doador) || "").trim() || ((String((p && p.bolsa) || "").match(/\d{2,5}\s*[-.]\s*\d{1,2}/) || [])[0] || "");
+  const d = cod ? acharDoacao(cod.replace(/\s/g, "").replace(".", "-")) : null;
+  return d && d.ac ? { res: d.ac, numero: d.numero, data: d.data } : null;
+}
+// com bolsa de doação que tem autocontrole registrado, o autocontrole do doador entra sozinho no laudo (uma vez; desmarcar vale)
+let AC_CHAVE = "";
+function sincAc() {
+  const t = estado.t || {}; if (estado.tipo !== "compat" || !t.provas) return false;
+  const regs = t.doadorExterno ? [] : t.provas.map(acRegistrado), k = regs.map((r) => (r ? r.res : "")).join(",");
+  const mudou_ = k !== AC_CHAVE; AC_CHAVE = k;
+  if ((t.metodo === "gel" || t.acGel) && !t.acAutoFeito && regs.some((r) => r && r.res === "Negativo")) { t.acDoadorOn = true; t.acAutoFeito = true; return true; }
+  return mudou_;
+}
 const acharDoacao = (cod) => { const c = codNorm(cod); return c ? DOACOES.find((d) => codNorm(d.numero) === c) || null : null; };
 const sexoTxt = (s) => /^m/i.test(s || "") ? "Macho" : /^f/i.test(s || "") ? "Fêmea" : s || "";
 function usarAnimal(id) {
@@ -3412,6 +3427,7 @@ function formTipo() {
   if (k === "coombs") return `<div class="cx"><h3>Resultado</h3>${segm('data-a="tg" data-c="res"', t.res, ["Negativo", "Positivo"])}${t.res === "Positivo" ? `<label style="margin-top:8px">Intensidade</label>${segm('data-a="tg" data-c="grau"', t.grau, GRAUS)}` : ""}
     <div class="grade" style="margin-top:9px">${campo("Método", inp('data-t="metodo"', t.metodo), "larga")}${campo("Lote", inp('data-t="lote"', t.lote))}${campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>${caixaKit(felino() ? "coombsGato" : "coombsCao")}${campo("Texto sobre o teste", `<textarea rows="6" data-t="nota">${esc(t.nota)}</textarea>`)}</div>`;
   if (k === "compat") {
+    sincAc();
     const gel = t.metodo === "gel";
     return `<div class="cx"><h3>Tipagem no mesmo laudo</h3><label class="chk"><span><input type="checkbox" data-comtip="1" ${estado.tip ? "checked" : ""}> Incluir a tipagem sanguínea deste paciente (sai um laudo só, com a tipagem e a prova de compatibilidade)</span></label></div>${estado.tip ? `<div data-sub="tip">${comTip(formTipo)}</div>` : ""}
       <div class="cx"><h3>Método</h3>${segm('data-a="tg" data-c="metodo"', gel ? "Em gel" : "Imunocromatográfica", ["Em gel", "Imunocromatográfica"])}
@@ -3424,6 +3440,7 @@ function formTipo() {
           : campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa)) + campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || "Bolsa", ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
         <label style="margin-top:6px">Prova maior</label>${segm(`data-a="pv" data-i="${i}" data-c="maior"`, p.maior, ["Compatível", "Incompatível"])}
         ${gel && t.menor ? `<label style="margin-top:6px">Prova menor</label>${segm(`data-a="pv" data-i="${i}" data-c="menor"`, p.menor, ["Compatível", "Incompatível"])}` : ""}
+        ${(() => { const r = t.doadorExterno ? null : acRegistrado(p); return r && r.res === "Positivo" ? `<p class="aviso-erro" style="margin:8px 0 0;color:#8A1D14;background:#FBE9E7;border:1px solid #e3b9b4;border-radius:8px;padding:8px 10px"><b>Autocontrole do doador positivo</b> na ficha da doação ${esc(r.numero)}. Esta bolsa não pode ser usada.</p>` : r ? `<p class="nota" style="margin:6px 0 0">Autocontrole do doador ${esc(r.res.toLowerCase())}, registrado na ficha da doação ${esc(r.numero)}${r.data ? " (" + esc(br(r.data)) + ")" : ""}.</p>` : ""; })()}
         ${(gel || t.acGel) && t.acDoadorOn ? `<label style="margin-top:6px">Autocontrole do doador</label>${segm(`data-a="pv" data-i="${i}" data-c="acDoador"`, "Negativo", ["Negativo"])}` : ""}
         ${gel ? caixaFoto("gel" + i, "Foto do cartão de gel desta bolsa", "Recorte só os microtubos da prova (" + rotGel(i).pocos.join(", ") + "), sem a etiqueta escrita. O painel neutraliza o fundo e põe embaixo uma etiqueta com " + rotGel(i).pocos.join(" e ") + ", o paciente, o doador e a bolsa.") : ""}</div>`).join("")}
         <button type="button" class="btn sec mini" data-a="mais-bolsa">${t.doadorExterno ? "+ Outro doador" : "+ Outra bolsa"}</button></div>
@@ -3517,6 +3534,7 @@ function validar() {
   if (k === "tipagem" && !estado.paciente.especie) return "Preencha a espécie do paciente.";
   if (k === "tipagem" && !felino() && !t.dea1.on && !t.dal.on) return "Marque o DEA 1, o DAL ou os dois.";
   if (k === "compat" && t.provas.some((p) => !String(p.doador || "").trim())) return t.doadorExterno ? "Preencha a identificação do doador de cada prova." : "Preencha o número da doação de cada bolsa.";
+  if (k === "compat" && !t.doadorExterno) { const pos = t.provas.map(acRegistrado).find((r) => r && r.res === "Positivo"); if (pos) return "A doação " + pos.numero + " tem autocontrole do doador positivo na ficha. Essa bolsa não pode ser usada: troque a bolsa."; }
   if (k === "compat") t.provas.forEach((p) => (p.acDoador = "Negativo"));
   // exigência do CRMV: solicitante com CRMV e clínica de origem
   if (!ehTriagem() && !String(estado.exame.solicitante || "").trim()) return "Preencha o médico veterinário solicitante.";
@@ -3947,7 +3965,7 @@ async function usarProva(i) {
   mudou(true); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Doação " + x.doacao + " na prova" + (x.paciente ? ", paciente " + x.paciente : "") + ". Confira."; }
 }
 // número da doação digitado só com algarismos ganha o hífen ao sair do campo (5673 vira 567-3)
-document.addEventListener("change", (e) => { const el = e.target; if (!el || el.dataset.pvC !== "doador" || (estado.t || {}).doadorExterno) return; const v = el.value.trim(); if (/^\d{2,7}$/.test(v)) { el.value = v.slice(0, -1) + "-" + v.slice(-1); estado.t.provas[+el.dataset.i].doador = el.value; preencherSegmentos(); mudou(false); } }, true);
+document.addEventListener("change", (e) => { const el = e.target; if (!el || el.dataset.pvC !== "doador" || (estado.t || {}).doadorExterno) return; const v = el.value.trim(); if (/^\d{2,7}$/.test(v)) { el.value = v.slice(0, -1) + "-" + v.slice(-1); estado.t.provas[+el.dataset.i].doador = el.value; preencherSegmentos(); mudou(false); } if (sincAc()) setTimeout(() => mudou(true), 0); }, true);
 window.CVH_LAUDO_TESTE = (lidos) => { if (estado.tipo !== "idexx") iniciarTipo("idexx"); aplicarLeitura(lidos); montarForm(); renderPrevia(); };
 window.CVH_LAUDO = { lerFitaDea, imagemDe, desenharFita, estado, iniciarTipo, aplicarTecsa, lerTecsa, montarForm, renderPrevia, foto: (alvo, f) => { estado.fotos[alvo] = f; montarForm(); renderPrevia(); } };
 let avisoAbertura = "";
