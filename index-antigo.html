@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124125738';
+  var VERSAO = '20261124142009';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6752,7 +6752,7 @@ async function abrirModulo(nome, aid, rid) {
     // quem não é médico veterinário pode liberar o laudo assinado pelo médico veterinário escolhido
     if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; } E.ponte.kits = (E.d.config || {}).kits || {}; E.ponte.racasCao = RACAS_CAO; E.ponte.racasGato = RACAS_GATO; E.ponte.receptor = !an && !!E.laudoReceptor; E.laudoReceptor = false; E.ponte.pedido = E.laudoPedido || null; E.laudoPedido = null;
     // doações (salvas e em andamento) para reconhecer o número da coleta nos PDFs da IDEXX e da TECSA
-    const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}; return { numero: String(d.numero || (d.ficha || {}).numero || '').trim(), data: r.data, animalId: r.animalId }; });
+    const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}; return { numero: String(d.numero || (d.ficha || {}).numero || '').trim(), data: r.data, animalId: r.animalId, ac: (d.ficha || {}).acDoa || '' }; });
     andamentoDe().forEach(f => { const n = String(f.numero || (f.ficha || {}).numero || '').trim(); if (n && !doa.some(x => x.numero === n)) doa.push({ numero: n, data: f.data, animalId: f.animalId, andamento: true }); });
     E.ponte.doacoes = doa.filter(x => x.numero);
     if (!an) E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip, idade: a.nascimento ? idade(a.nascimento) : '', peso: pesoAtual(a.id), resp: (respDe(a) || {}).nome || '', tipoSanguineo: a.tipoSanguineo, dal: a.dal || '' })).sort((a, b) => a.nome.localeCompare(b.nome));
@@ -7023,6 +7023,9 @@ const PONTE = {
   novaClinica: o => novaClinica((o || {}).nome || ''),
   clinicaFim: c => { if (NOVA_CLI.fim) NOVA_CLI.fim(c); return true; },
   pedirAnaliseFicha: o => api('fichaPedirAnalise', E.sessao, { animalId: E.animal, numero: (o || {}).numero || '', motivos: (o || {}).motivos || [] }),
+  // foto do autocontrole do doador (ficha de doação): arquivo privado do animal, só para o CVH
+  acFoto: async o => { const an = animalDe(E.animal); if (!an) throw new Error('Abra a ficha pelo cadastro do animal.'); return await api('salvarArquivo', E.sessao, an.id, String(o.nome || 'ACD.jpg').slice(0, 120), 'image/jpeg', o.b64, true); },
+  urlArquivo: async id => (window.CVH_SERVIDOR && window.CVH_SERVIDOR.arquivo) ? window.CVH_SERVIDOR.arquivo(id) : '',
   salvarFicha: async o => {
     const an = animalDe(E.animal);
     try { const f = (o.dados && o.dados.ficha) || {}; racaNova(an.especie || 'Canina', f.raca || (o.dados || {}).raca); } catch (_) {}
@@ -7544,6 +7547,7 @@ function verFicha(id) {
     bloco('Avaliação física', lin('Mucosas', d.mucosas) + lin('Linfonodos', d.linfonodos) + lin('PS x PD', d.pspd, 'mmHg') + lin('Ausculta cardíaca', d.ausculta) + lin('Pele e lesões', d.lesoes)) +
     bloco('Sinais vitais', lin('FC', d.fc, 'bpm') + lin('FR', d.fr, 'mpm') + lin('Temperatura', d.temperatura, '°C') + lin('TPC', d.tpc) + lin('SpO₂', d.spo2, '%')) +
     bloco('Triagem laboratorial', lin('Hemoglobina (Hemochromax)', d.hb, 'g/dL') + lin('Hematócrito (Hemochromax)', d.ht, '%') + lin('PPT', d.pp, 'g/dL') + lin('Plasma', [plasma, val(f.plasma)].filter(Boolean).join(', '))) +
+    (f.acDoa || (f.acFoto && f.acFoto.id) ? bloco('Autocontrole do doador (uso interno)', lin('Cartão em gel', f.acDoa) + (f.acFoto && f.acFoto.id ? '<dt>Foto</dt><dd><a href="' + esc((window.CVH_SERVIDOR || {}).arquivo ? window.CVH_SERVIDOR.arquivo(f.acFoto.id) : '#') + '" target="_blank" rel="noopener">Ver a foto do cartão</a></dd>' : '')) : '') +
     bloco('Coleta', lin('Início e fim da triagem', triagem) + (nc ? '<dt>Tempo de coleta</dt><dd><i>Não coletado</i></dd>' : lin('Tempo de coleta', f.tempo, 'min') + lin('Volume coletado', f.volume, 'mL') +
       lin('Lote da bolsa', f.lote) + lin('Validade da bolsa', valid) + lin('Seguimento', f.seguimento))) +
     (obs || '<p class="nota">Sem observações nesta ficha.</p>') +
