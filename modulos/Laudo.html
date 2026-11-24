@@ -2102,10 +2102,16 @@ async function recortarGraficos(doc, g) {
   const ox = out.getContext("2d"); ox.fillStyle = "#fff"; ox.fillRect(0, 0, cw, ch); ox.drawImage(cv, Math.max(0, x0 - m), Math.round(top) + Math.max(0, y0 - m), cw, ch, 0, 0, cw, ch);
   return { url: out.toDataURL("image/jpeg", 0.9), w: cw, h: ch };
 }
+// laudos já feitos do mesmo animal com PDF da IDEXX que chegou perto deste (vêm do painel ao abrir pelo laudo do laboratório)
+let OFERTA = [];
+const dataDoNome = (n) => { const m = /_(\d{4})(\d{2})(\d{2})_\d{6}/.exec(n || ""); return m ? m[3] + "/" + m[2] + "/" + m[1] : ""; };
 // hemograma e bioquímica em PDFs separados: oferece juntar o que falta no mesmo laudo
 function caixaOutroPdf() {
   if (!estado.lido) return "";
   const g = new Set(estado.linhas.map((l) => l.grupo)), hemo = ["Eritrograma", "Leucograma", "Plaquetograma"].some((x) => g.has(x)), bio = ["Bioquímica", "Eletrólitos", "Endocrinologia"].some((x) => g.has(x));
+  if (OFERTA.length && (hemo !== bio)) return `<div class="kit aviso-kit"><b>Este PDF tem só ${bio ? "a bioquímica" : "o hemograma"}.</b><p class="nota">${OFERTA.length === 1 ? "Já existe um laudo feito" : "Já existem laudos feitos"} deste animal com PDF da IDEXX recebido nos mesmos dias. Juntar atualiza esse mesmo laudo, que passa a ter os dois (não cria outro).</p>` +
+    OFERTA.map((o, i) => `<button type="button" class="btn sec mini" data-a="juntar-feito" data-i="${i}" style="margin:4px 6px 0 0">Juntar com o laudo já feito${dataDoNome(o.nome) ? " (PDF de " + dataDoNome(o.nome) + ")" : ""}</button>`).join("") +
+    `<p class="nota" style="margin-top:8px">Ou <button type="button" class="lnk" data-a="pdf-mais">escolher outro PDF</button>.</p></div>`;
   if (hemo && !bio) return `<div class="kit aviso-kit"><b>Este PDF tem só o hemograma.</b><p class="nota">Quer juntar o PDF da bioquímica no mesmo laudo?</p><button type="button" class="btn sec mini" data-a="pdf-mais">Adicionar o PDF da bioquímica</button></div>`;
   if (bio && !hemo) return `<div class="kit aviso-kit"><b>Este PDF tem só a bioquímica.</b><p class="nota">Quer juntar o PDF do hemograma no mesmo laudo?</p><button type="button" class="btn sec mini" data-a="pdf-mais">Adicionar o PDF do hemograma</button></div>`;
   return `<button type="button" class="lnk" data-a="pdf-mais">adicionar outro PDF a este laudo</button>`;
@@ -3721,6 +3727,21 @@ function ligar() {
     if (a === "trocar-tipo") { estado.tipo = ""; salvo = null; $("#salvo").hidden = true; montarForm(); renderPrevia(); }
     if (a === "pdf") { $("#arq").dataset.somar = ""; $("#arq").click(); }
     if (a === "pdf-mais") { $("#arq").dataset.somar = "1"; $("#arq").click(); }
+    if (a === "juntar-feito") {
+      const o = OFERTA[+b.dataset.i]; if (!o) return; const st = $("#stLer"); if (st) { st.className = "st"; st.textContent = "Abrindo o PDF do laudo já feito…"; } b.disabled = true;
+      try {
+        const r2 = await ponte("arquivoLab", o.id), b2 = Uint8Array.from(atob(r2.base64), (c) => c.charCodeAt(0)), f2 = new File([b2], r2.nome || o.nome || "idexx.pdf", { type: "application/pdf" });
+        const L2 = await lerArquivos([f2]);
+        // o mais completo (normalmente o hemograma) fica primeiro: a data e a hora do laudo vêm dele
+        LIDOS = LIDOS.concat(L2).sort((x, y) => y.linhas.length - x.linhas.length); aplicarLeitura(LIDOS);
+        estado.origens = (estado.origens || []).concat(await origensDe([f2]));
+        estado.labIds = [...new Set((estado.labIds || []).concat(o.labId).filter(Boolean))];
+        if (o.regId) estado.regId = o.regId;
+        OFERTA = OFERTA.filter((x) => x !== o);
+        estado.avisos = (estado.avisos || []).concat([o.regId ? "Juntei o PDF do laudo já feito. Ao salvar, esse mesmo laudo é atualizado com os dois exames e assinado de novo." : "Juntei o PDF do laudo já feito."]);
+        if (st) st.textContent = ""; salvo = null; $("#salvo").hidden = true; montarForm(); renderPrevia(); marcarSujo(true);
+      } catch (e) { if (st) { st.className = "st erro"; st.textContent = "Não consegui juntar: " + (e.message || e); } b.disabled = false; }
+    }
     if (a === "pdf-tecsa") $("#arqT").click();
     if (a === "foto") { const i = $("#arqFoto"); i.dataset.alvo = b.dataset.alvo; i.click(); }
     if (a === "fotoCam") { const i = $("#arqCam"); i.value = ""; i.dataset.alvo = b.dataset.alvo; i.click(); }
@@ -3981,6 +4002,7 @@ montarForm(); ligar(); renderPrevia();
 if (CTX.pedido && CTX.pedido.id && !avisoAbertura) avisoAbertura = "Laudo do pedido " + CTX.pedido.id + " da " + (CTX.pedido.clinica || "Intensivet") + ". Paciente, solicitante" + ((CTX.pedido.provas || []).length && estado.tipo === "compat" ? " e bolsas da prova" : "") + " já preenchidos. Confira.";
 if (avisoAbertura) { $("#st").className = "st"; $("#st").textContent = avisoAbertura; }
 // laudo que chegou sozinho do laboratório (TECSA, Citopet ou IDEXX): abre o PDF original e preenche o laudo do CVH
+if (CTX.pdfLab && CTX.pdfLab.id) OFERTA = (CTX.pdfLab.feitos || []).slice();
 if (CTX.pdfLab && CTX.pdfLab.id) (async () => {
   const st = $("#st"); st.className = "st"; st.textContent = "Abrindo o PDF do laboratório…";
   try {

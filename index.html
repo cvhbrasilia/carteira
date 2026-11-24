@@ -950,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124202251';
+  var VERSAO = '20261124203117';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -8224,11 +8224,16 @@ const ACOES = {
   'laudo-tecsa': () => { E.laudoTipo = 'tecsa'; abrirModulo('laudos', null); },
   'lab-todos': () => pintarLaboratorios(true),
   'lab-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); pintarLaboratorios(); } catch (e) { toast(e.message, 4000); } },
-  'lab-laudo': b => { const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (!x) return; const an = animalDoLab(x);
+  'lab-laudo': async b => { const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (!x) return; const an = animalDoLab(x);
+    // laudo já feito do mesmo animal (por exemplo o hemograma) com PDF da IDEXX que chegou perto deste: o laudo oferece juntar e atualizar o mesmo laudo
+    let feitos = [];
+    if (x.origem === 'idexx' && an) { try { const T = await api('laboratoriosListar', E.sessao, true), t0 = Date.parse(x.criadoEm) || Date.now();
+      feitos = T.filter(y => y.origem === 'idexx' && !ehQualidade(y) && y.id !== x.id && y.situacao === 'feito' && (animalDoLab(y) || {}).id === an.id && Math.abs((Date.parse(y.criadoEm) || 0) - t0) < 4 * 864e5)
+        .map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id, regId: y.registroId || '' })); } catch (_) {} }
     api('laboratorioMarcar', E.sessao, x.id, { situacao: x.situacao === 'novo' ? 'visto' : x.situacao }).catch(() => {});
     // IDEXX: os outros PDFs do mesmo dia vão junto; o laudo junta os que forem do mesmo paciente
     const cand = x.origem === 'idexx' ? (E.labRec || []).filter(y => y.origem === 'idexx' && !ehQualidade(y) && y.id !== x.id && y.data === x.data && y.situacao !== 'feito').map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id })) : [];
-    E.laudoPdfLab = { id: x.arquivoId, origem: x.origem, nome: x.nomeArquivo, labId: x.id, candidatos: cand }; E.laudoTipo = x.origem === 'tecsa' ? 'tecsa' : 'idexx'; abrirModulo('laudos', an ? an.id : null); },
+    E.laudoPdfLab = { id: x.arquivoId, origem: x.origem, nome: x.nomeArquivo, labId: x.id, candidatos: cand, feitos }; E.laudoTipo = x.origem === 'tecsa' ? 'tecsa' : 'idexx'; abrirModulo('laudos', an ? an.id : null); },
   'laudo-receptor': () => { E.laudoReceptor = true; abrirModulo('laudos', null); },
   'laudo-apagar': async b => { const r = regPorId(b.dataset.id); if (!r || !confirm('Apagar este laudo?')) return; try { await api('excluirRegistro', E.sessao, r.id); E.d.registros = E.d.registros.filter(x => x.id !== r.id); telaLaudos(E.animal); toast('Laudo apagado.'); } catch (e) { toast(e.message, 6000); } },
   'ag-dia': b => telaAgenda(b.dataset.v),
