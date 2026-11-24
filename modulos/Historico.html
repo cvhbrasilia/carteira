@@ -2950,6 +2950,7 @@ function revisarExames() {
   const nomeRef = norm(estado.animal.nome), espRef = norm(especieTxt(estado.animal.especie)), sexoRef = norm(estado.animal.sexo);
   for (const e of estado.exames) {
     e.alertas = [];
+    if (e.cab) e.cab.nome = String(e.cab.nome || "").replace(/^(\s*\d{2,5})\s*\.\s*(\d{1,2})(?!\d)/, "$1-$2");   // número da doação com ponto (493.6) vira 493-6
     const n = norm(e.cab.nome);
     if (nomeRef && n && n !== nomeRef && !n.includes(nomeRef) && !nomeRef.includes(n) && !doacaoPropria(e.cab.nome) && !grafiaParecida(n, e.cab.responsavel)) e.alertas.push(`O laudo é de ${titulo(e.cab.nome)}, não de ${estado.animal.nome}.`);
     if (espRef && e.cab.especie && norm(especieTxt(e.cab.especie)) !== espRef) e.alertas.push(`Espécie no laudo ${e.cab.especie}.`);

@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124000308';
+  var VERSAO = '20261124001346';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6457,6 +6457,7 @@ function termosTipos() {
 }
 function telaInicio(busca) {
   E.livro = null; E.animal = null; E.resp = null;
+  clearTimeout(E.recVermT); E.recVermT = setTimeout(() => { try { receitasVermPendentes(); } catch (_) {} }, 2500);
   const h = hoje();
   const venc = [];
   const mod = E.modulo, cart = mod === 'carteiras';
@@ -6973,8 +6974,9 @@ const PONTE = {
     if (E.ponte && E.ponte.pdfLab && E.ponte.pdfLab.labId) { for (const lid of (o.labIds && o.labIds.length ? o.labIds : [E.ponte.pdfLab.labId])) { try { await api('laboratorioMarcar', E.sessao, lid, { situacao: 'feito', registroId: salvo.id, animalId: an.id }); } catch (_) {} } }
     return { id: salvo.id, whats: whatsLaudo(salvo), historico: !!origens.length && pode('historico') };
   },
+  autoReceita: async o => { fimReceitaSozinha(o || {}); return true; },
   salvarReceita: async o => {
-    const an = animalDe(E.animal), docs = [];
+    const an = animalDe(o.autoAid || E.animal), docs = [];
     // a receita simples fica com link (vai para a carteira do responsável); as controladas ficam privadas até o PDF assinado ser anexado
     for (const a of o.arquivos) {
       // todas saem assinadas no painel e vão para a carteira do responsável
@@ -7014,7 +7016,8 @@ const PONTE = {
   }
 };
 // o módulo chama o painel direto por esta função; as mensagens abaixo ficam de reserva
-window.CVH_PONTE = (metodo, args) => { if (AUTO_HIST.aid && ['lerPdf', 'ia', 'salvarHistorico', 'autoHistorico'].includes(metodo) && (metodo === 'autoHistorico' || !E.ponte || ((args || [])[0] && (args[0].autoAid || metodo !== 'salvarHistorico')))) return Promise.resolve().then(() => PONTE[metodo](...(args || [])));
+window.CVH_PONTE = (metodo, args) => { if (AUTO_REC.atual && (metodo === 'autoReceita' || (metodo === 'salvarReceita' && (args || [])[0] && args[0].autoAid))) return Promise.resolve().then(() => PONTE[metodo](...(args || [])));
+  if (AUTO_HIST.aid && ['lerPdf', 'ia', 'salvarHistorico', 'autoHistorico'].includes(metodo) && (metodo === 'autoHistorico' || !E.ponte || ((args || [])[0] && (args[0].autoAid || metodo !== 'salvarHistorico')))) return Promise.resolve().then(() => PONTE[metodo](...(args || [])));
   if ((!E.ponte && !(NOVA_CLI.fim && ['trp', 'clinicaFim'].includes(metodo))) || !PONTE[metodo]) return Promise.reject(new Error('O módulo foi fechado.')); return Promise.resolve().then(() => PONTE[metodo](...(args || []))); };
 // cadastro completo de clínica por cima de qualquer tela (câmaras, motoboy, receptores): o formulário do módulo Clínicas numa moldura
 const NOVA_CLI = { fim: null };
@@ -7033,6 +7036,52 @@ async function novaClinica(nome) {
 }
 // Histórico Laboratorial refeito em segundo plano (moldura escondida) depois de salvar um laudo da IDEXX ou da TECSA: a carteira se atualiza sozinha
 const AUTO_HIST = { aid: null, fila: [] };
+/* ── receita do vermífugo: ao lançar o vermífugo (da ficha ou à mão), a receita sai sozinha, assinada, e vai para a carteira ── */
+const AUTO_REC = { atual: null, fila: [] };
+const plural = c => /\be\b/.test(String(c)) || (parseFloat(String(c).replace(',', '.')) > 1);
+function itemReceitaVerm(d) {
+  const comp = String(d.comprimidos || '').trim() || '1', prod = d.produto || 'Vermicanis Plus';
+  return { med: prod, conc: /vermicanis/i.test(prod) ? '30kg' : '', forma: 'Comprimido', uso: 'veterinario', via: 'Uso oral', controle: 'nao', qtd: comp, duracao: '',
+    posologia: 'Administrar ' + comp + (plural(comp) ? ' comprimidos' : ' comprimido') + '. Em dose única.' };
+}
+function temReceitaVerm(v) { return regsDe(v.animalId).some(r => r.tipo === 'receita' && r.excluido !== '1' && (r.id === (v.dados || {}).receitaId || (r.data === v.data && (((r.dados || {}).itens) || []).some(i => VERMIFUGOS.some(x => semAc(i.med || '').includes(semAc(x))))))); }
+async function receitaVermSozinha(v) {
+  if (!v || v.tipo !== 'vermifugo' || v.excluido === '1' || (v.dados || {}).origem === 'receita' || !pode('receitas') || !vetLogado() || temReceitaVerm(v)) return;
+  if (AUTO_REC.atual) { if (AUTO_REC.atual.id !== v.id && !AUTO_REC.fila.some(x => x.id === v.id)) AUTO_REC.fila.push(v); return; }
+  const an = animalDe(v.animalId); if (!an) return;
+  AUTO_REC.atual = v; try { localStorage.setItem('cvh_rec_verm_' + v.id, String(Date.now())); } catch (_) {}
+  try {
+    if (!E.modHtml.receitas) E.modHtml.receitas = await api('moduloHtml', E.sessao, 'receitas');
+    const h = E.modHtml.receitas; if (h.indexOf(MODULO_CFG.receitas.marca) < 0) throw new Error('arquivo da Receita incompleto');
+    const rp = respDe(an) || {}, vt = vetLogado(), d = v.dados || {};
+    const P = { animal: { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: an.tipoSanguineo, dal: an.dal || '', nascimento: an.nascimento },
+      responsavel: { id: rp.id || '', nome: rp.nome || '', cpf: rp.cpf || '', cep: rp.cep || '', logradouro: rp.logradouro || '', numero: rp.numero || '', complemento: rp.complemento || '', bairro: rp.bairro || '', cidade: rp.cidade || '', uf: rp.uf || '' },
+      vet: { nome: vt.nome, crmv: vt.crmv, rubrica: vt.rubrica || '' }, urlVerificacao: (E.d.config || {}).urlExec || '', idade: an.nascimento ? idade(an.nascimento) : '', peso: d.peso || pesoAtual(an.id) || '',
+      sugestoes: [], base: [itemReceitaVerm(d)], baseOrient: d.reforco ? 'Após 15 dias, repetir a mesma dose para reforço.' : '', autoSalvar: true, autoAid: an.id, dataReceita: v.data };
+    let fr = $('#moduloRec'); if (fr) fr.remove();
+    fr = document.createElement('iframe'); fr.id = 'moduloRec'; fr.title = 'Receita do vermífugo'; fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
+    fr.style.cssText = 'position:fixed;left:-3000px;top:0;width:1200px;height:900px;border:0;visibility:hidden';
+    document.body.appendChild(fr);
+    const ctx = '<script>window.CVH_CTX = ' + JSON.stringify(P).replace(/</g, '\\u003c') + ';<\/script>', i = h.indexOf('<head>');
+    fr.srcdoc = i >= 0 ? h.slice(0, i + 6) + ctx + h.slice(i + 6) : ctx + h;
+    AUTO_REC.limite = setTimeout(() => fimReceitaSozinha({ ok: false, erro: 'tempo esgotado' }), 120000);
+  } catch (e) { fimReceitaSozinha({ ok: false, erro: e.message }); }
+}
+function fimReceitaSozinha(r) {
+  const v = AUTO_REC.atual, an = v ? animalDe(v.animalId) : null; clearTimeout(AUTO_REC.limite); AUTO_REC.atual = null;
+  const fr = $('#moduloRec'); if (fr) fr.remove();
+  if (an) toast(r && r.ok ? 'Receita do vermífugo de ' + an.nome + ' salva na carteira.' : 'Não consegui fazer sozinho a receita do vermífugo de ' + an.nome + '. Faça pelo Receituário.' + (r && r.erro ? ' (' + r.erro + ')' : ''), r && r.ok ? 3500 : 7000);
+  const prox = AUTO_REC.fila.shift(); if (prox) receitaVermSozinha(prox);
+}
+// vermífugos lançados nos últimos 3 dias sem receita (por quem não é médico veterinário, ou com o app fechado no meio): a receita sai quando um médico veterinário abre o painel
+function receitasVermPendentes() {
+  if (!pode('receitas') || !vetLogado() || !E.d || !E.d.registros) return;
+  const lim = somaDiasIso(hoje(), -3), agora = Date.now();
+  E.d.registros.filter(r => r.tipo === 'vermifugo' && r.excluido !== '1' && r.data >= lim && (r.dados || {}).origem !== 'receita' && !temReceitaVerm(r)).forEach(r => {
+    let t0 = 0; try { t0 = +localStorage.getItem('cvh_rec_verm_' + r.id) || 0; } catch (_) {}
+    if (agora - t0 > 30 * 60000) receitaVermSozinha(r);
+  });
+}
 async function atualizarHistoricoSozinho(aid) {
   if (!pode('historico') || !aid) return;
   if (AUTO_HIST.aid) { if (AUTO_HIST.aid !== aid && !AUTO_HIST.fila.includes(aid)) AUTO_HIST.fila.push(aid); return; }
@@ -7108,7 +7157,7 @@ function vermParaConfirmar() {
 // receita com vermífugo: o vermífugo entra sozinho na carteira (aba Vermífugos, com reforço e próxima dose nos avisos)
 function vermDaReceita(an, rec) {
   const it = ((rec.dados || {}).docs || []).flatMap(d => d.itens || []).find(i => VERMIFUGOS.some(v => semAc(i.med || '').includes(semAc(v)))); if (!it) return null;
-  if (regsDe(an.id).some(r => r.tipo === 'vermifugo' && (r.dados || {}).receitaId === rec.id)) return null;
+  if (regsDe(an.id).some(r => r.tipo === 'vermifugo' && r.excluido !== '1' && ((r.dados || {}).receitaId === rec.id || r.data === rec.data))) return null;
   const prod = VERMIFUGOS.filter(v => semAc(it.med).includes(semAc(v))).sort((x, y) => y.length - x.length)[0], txt = semAc([it.qtd, it.posologia].filter(Boolean).join(' '));
   const peso = ultimoPeso(an.id), m = txt.match(/(\d+(?:[.,]\d+)?|1\/2|meio)\s*(?:e\s*(1\/2|meio)\s*)?(?:comprimido|cp)/);
   const comp = compPorPeso(prod, peso) || (m ? (m[1] === 'meio' ? '1/2' : m[1].replace('.', ',')) + (m[2] ? ' e 1/2' : '') : '');
@@ -7292,6 +7341,7 @@ function abrirFormRegistro(r, pre) {
       const salvo = await api('salvarRegistro', E.sessao, o);
       const i = E.d.registros.findIndex(x => x.id === salvo.id);
       if (i >= 0) E.d.registros[i] = salvo; else E.d.registros.push(salvo);
+      if (!(r && r.id) && salvo.tipo === 'vermifugo') receitaVermSozinha(salvo);
       if (pre && pre.aoSalvar) { pre.aoSalvar(); return; }
       fecharFolha(); reabrir(salvo.id); toast('Registro salvo e assinado.');
     });

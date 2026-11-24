@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124001346';
+  var VERSAO = '20261124001604';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6219,8 +6219,8 @@ const ROT_LAB = { tecsa: 'TECSA', citopet: 'Citopet', idexx: 'IDEXX' };
 function idexxNome(nome) {
   const base = String(nome || '').replace(/\.pdf$/i, ''), dt = (base.match(/_(\d{4})(\d\d)(\d\d)_\d{6}/) || []), sem = base.replace(/_\d{8}_\d{6}_\d+$/, '');
   // só o hemograma e a bioquímica do doador (Responsável_código ANIMAL) viram laudo; o resto da IDEXX vai para o controle de qualidade
-  const qc = /^(ST|CHD?|CH-C-SG|CP|PFC?|PF|PLAQUETA|CRIO)[_ -]/i.test(sem) || /[_ ]BOLSA([_ ]|$)/i.test(sem) || !/^[A-Za-zÀ-ÿ][^_]*_\s*(\d{2,5}\s*-\s*\d{1,2}\s+)?[A-Za-zÀ-ÿ]/.test(sem);
-  const cod = (sem.match(/(\d{2,5})\s*-\s*(\d{1,2})(?!\d)/) || []), codigo = cod[1] ? cod[1] + '-' + cod[2] : '';
+  const qc = /^(ST|CHD?|CH-C-SG|CP|PFC?|PF|PLAQUETA|CRIO)[_ -]/i.test(sem) || /[_ ]BOLSA([_ ]|$)/i.test(sem) || !/^[A-Za-zÀ-ÿ][^_]*_\s*(\d{2,5}\s*[-.]\s*\d{1,2}\s+)?[A-Za-zÀ-ÿ]/.test(sem);
+  const cod = (sem.match(/(\d{2,5})\s*[-.]\s*(\d{1,2})(?!\d)/) || []), codigo = cod[1] ? cod[1] + '-' + cod[2] : '';
   const partes = sem.split('_').map(t => t.trim()).filter(Boolean);
   const pc = partes.find(t => codigo && t.indexOf(cod[0]) >= 0) || '';
   const animal = qc ? '' : (pc ? pc.replace(cod[0], '').trim() : (partes.length > 1 ? partes[partes.length - 1] : ''));
@@ -6247,9 +6247,9 @@ function animalDoLab(x) {
     const rp = semAc(n.resp), nm = semAc(n.animal);
     const c = (E.d.animais || []).filter(a => (!nm || semAc(a.nome) === nm) && (!rp || semAc((respDe(a) || {}).nome || '') === rp));
     return (nm || rp) && c.length === 1 ? c[0] : null; }
-  const cod = String(x.codigo || '').replace(/\s/g, '');
+  const cod = String(x.codigo || '').replace(/\s/g, '').replace(/^(\d{2,5})\.(\d{1,2})$/, '$1-$2');
   if (cod) { const r = (E.d.registros || []).find(r => r.tipo === 'doacao' && r.excluido !== '1' && String((r.dados || {}).numero || ((r.dados || {}).ficha || {}).numero || '').replace(/\s/g, '') === cod); if (r) return animalDe(r.animalId); }
-  const nome = semAc(String(x.animal || '').replace(/\(.*?\)/g, '').replace(/\d{2,5}\s*-\s*\d{1,2}/, '').trim()); if (!nome) return null;
+  const nome = semAc(String(x.animal || '').replace(/\(.*?\)/g, '').replace(/\d{2,5}\s*[-.]\s*\d{1,2}/, '').trim()); if (!nome) return null;
   const c = (E.d.animais || []).filter(a => semAc(a.nome) === nome), rp = semAc(x.responsavel || '');
   const mesmoResp = a => rp && semAc((respDe(a) || {}).nome || '').split(' ')[0] === rp.split(' ')[0];
   const achado = (rp && c.find(mesmoResp)) || (c.length === 1 ? c[0] : null); if (achado) return achado;
@@ -6261,7 +6261,7 @@ function animalDoLab(x) {
 function parecidosDoLab(x) {
   if (x.origem === 'idexx') { const n = idexxNome(x.nomeArquivo); if (n.qc) return []; }
   const bruto = x.origem === 'idexx' ? (idexxNome(x.nomeArquivo).animal || '') : String(x.animal || '');
-  const nome = semAc(bruto.replace(/\(.*?\)/g, '').replace(/\d{2,5}\s*-\s*\d{1,2}/, '')).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); if (nome.length < 3) return [];
+  const nome = semAc(bruto.replace(/\(.*?\)/g, '').replace(/\d{2,5}\s*[-.]\s*\d{1,2}/, '')).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); if (nome.length < 3) return [];
   const rp = semAc(x.responsavel || (x.origem === 'idexx' ? idexxNome(x.nomeArquivo).resp : '') || '').split(' ')[0];
   const d1 = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; const d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; };
   const L = (E.d.animais || []).filter(a => a.ativo !== '0').map(a => { const an = semAc(a.nome).replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(), p1 = an.split(' ')[0], n1 = nome.split(' ')[0];

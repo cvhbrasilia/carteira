@@ -1681,7 +1681,7 @@ function lerIdexxLaudo(paginas) {
   if (!/IDEXX|ProCyte|Catalyst|SNAP|SediVue/i.test(t)) throw new Error("Este PDF não parece ser um resultado da IDEXX (VetLab Station).");
   const cli = campoLx(t, "Cliente"), chip = (t.match(/\((\d{15})\)/) || [])[1] || "";
   const cab = {
-    responsavel: cli.replace(/\s*\(.*$/, "").trim(), chip, nome: campoLx(t, "Nome do paciente").replace(/^\d{2,5}\s*-\s*\d{1,2}\s+/, ""), codigo: (campoLx(t, "Nome do paciente").match(/^(\d{2,5}\s*-\s*\d{1,2})\s/) || [])[1] || "", especie: campoLx(t, "Esp[ée]cie"), raca: campoLx(t, "Ra[çc]a"),
+    responsavel: cli.replace(/\s*\(.*$/, "").trim(), chip, nome: campoLx(t, "Nome do paciente").replace(/^\d{2,5}\s*[-.]\s*\d{1,2}\s+/, ""), codigo: ((campoLx(t, "Nome do paciente").match(/^(\d{2,5}\s*[-.]\s*\d{1,2})\s/) || [])[1] || "").replace(/\s/g, "").replace(".", "-"), especie: campoLx(t, "Esp[ée]cie"), raca: campoLx(t, "Ra[çc]a"),
     sexo: campoLx(t, "Sexo"), peso: (campoLx(t, "Peso").match(/[\d.,]+/) || [""])[0], idade: campoLx(t, "Idade"), doutor: campoLx(t, "Doutor").replace(/^\d[\d\s-]*$/, ""),
   };
   const secoes = []; let sec = null; const notas = [], linhasRes = [];
@@ -1755,8 +1755,8 @@ function lerCitopetLaudo(paginas) {
   const L = linhasPdf(paginas), t = L.map((l) => l.t).join("\n");
   if (!/CITOPET|citopet\.com\.br/i.test(t) && !/Data e hora da libera[çc][ãa]o/i.test(t)) throw new Error("Este PDF não parece ser um laudo do Citopet.");
   const cp = (rot, prox) => { const m = t.match(new RegExp(rot + ":\\s*(.*?)(?=\\s{2,}|\\s+(?:" + prox + "):|\\n|$)", "i")); return m ? m[1].trim() : ""; };
-  const animal = cp("Animal", "Esp[ée]cie|Ra[çc]a"), cod = (animal.match(/(\d{2,5}\s*-\s*\d{1,2})(?!\d)/) || [])[1] || "";
-  const nome = animal.replace(/\(\s*\d+\s*\)/, "").replace(cod, "").replace(/\s+/g, " ").trim();
+  const animal = cp("Animal", "Esp[ée]cie|Ra[çc]a"), cod0 = (animal.match(/(\d{2,5}\s*[-.]\s*\d{1,2})(?!\d)/) || [])[1] || "", cod = cod0.replace(/\s/g, "").replace(".", "-");
+  const nome = animal.replace(/\(\s*\d+\s*\)/, "").replace(cod0, "").replace(/\s+/g, " ").trim();
   const col = (t.match(/Data da Coleta:\s*(\d\d\/\d\d\/\d{4})/i) || [])[1] || "", lib = t.match(/Data e hora da libera[çc][ãa]o:\s*(\d\d\/\d\d\/\d{4})\s*(\d\d:\d\d)?/i) || [];
   const rtm = t.match(/Respons[áa]vel\s+(.+?)\s+(CRMV[\s-]*[A-Z]{2}\s*\d+)/i);
   const cab = { responsavel: cp("Propriet[áa]rio", "Veterin[áa]rio|Sexo|Idade"), chip: "", nome, codigo: cod, especie: cp("Esp[ée]cie", "Ra[çc]a"), raca: cp("Ra[çc]a", "Sexo"),
@@ -1894,7 +1894,7 @@ const felino = () => /fel|gat/.test(semAc(estado.paciente.especie));
 const doacoesDoAnimal = () => DOACOES.filter((d) => d.animalId && d.animalId === estado.animalId && d.numero).sort((a, b) => String(b.data).localeCompare(String(a.data)));
 // registro da TECSA: o número da doação; se o PDF não traz, a doação deste animal mais próxima (até 45 dias antes) do cadastro na TECSA
 function registroTecsa() {
-  if (estado.exame.doacao) return estado.exame.doacao;
+  if (estado.exame.doacao) return String(estado.exame.doacao).trim().replace(/^(\d{2,5})\s*\.\s*(\d{1,2})$/, "$1-$2");
   const ref = (estado.t && (estado.t.cadastro || estado.t.liberado)) || ""; if (!ref || !estado.animalId) return "";
   const dia = (s) => Date.parse(String(s).slice(0, 10) + "T12:00:00"), r = dia(ref);
   const d = doacoesDoAnimal().filter((x) => /^\d{4}-\d{2}-\d{2}/.test(x.data || "") && dia(x.data) <= r && r - dia(x.data) <= 45 * 864e5)[0];
