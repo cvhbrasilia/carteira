@@ -2394,10 +2394,11 @@ function blocoCartao(c, x, w, cel) {
   const tamT = c.tamT ? (cel ? c.tamT - 1.5 : c.tamT) : cel ? 16 : 19, fotoK = c.foto && IMG_DIN[c.foto] ? c.foto : null, im = fotoK ? IMG_DIN[fotoK] : null;
   const abaixo = cel || c.fotoAbaixo, fwMax = abaixo ? w - 28 : Math.min(230, w * 0.48), fhMax = c.fhMax || (cel ? 150 : 118);
   const escF = im ? Math.min(fwMax / im.w, fhMax / im.h) : 0, fw = im ? im.w * escF : 0, fh = im ? im.h * escF : 0;
-  const rotW = c.rotW || 78, larguraTxt = w - 32 - (im && !abaixo ? fw + 16 : 0);
+  const tb = c.tubo && IMG_DIN[c.tubo] ? IMG_DIN[c.tubo] : null, thT = tb ? (cel ? 92 : 84) : 0, twT = tb ? tb.w * thT / tb.h : 0;
+  const rotW = c.rotW || 78, larguraTxt = w - 32 - (im && !abaixo ? fw + 16 : 0) - (tb ? twT + 18 : 0);
   const det = []; (c.linhas || []).forEach(([rot, val, dest]) => { if (!val) return; if (val === "\u00a0") return det.push([rot, "", false]); quebrar(val, dest ? 10 : 8.8, !!dest, larguraTxt - rotW).forEach((l, i) => det.push([i ? "" : rot, l, dest])); });
   const wSelo = c.res ? largura(c.res, c.tamRes || 8.6, true) + 18 : 0, selBaixo = !!(c.titulo && c.res && 22 + largura(c.titulo, tamT, true) + wSelo > w - 10);
-  const tit0 = (c.tamT ? 40 : 46) + (selBaixo ? (c.tamRes ? 24 : 19) : 0), hTxt = (c.titulo ? tit0 : 18) + det.reduce((s, d) => s + (d[2] ? 15 : 13), 0) + (det.length ? 6 : 0);
+  const tit0 = (c.tamT ? 40 : 46) + (selBaixo ? (c.tamRes ? 24 : 19) : 0), hTxt = Math.max((c.titulo ? tit0 : 18) + det.reduce((s, d) => s + (d[2] ? 15 : 13), 0) + (det.length ? 6 : 0), tb ? thT + 14 : 0);
   const h = abaixo ? hTxt + (im ? fh + 12 : 0) : Math.max(hTxt, im ? fh + 24 : 0, c.titulo ? (c.tamT ? (det.length ? 54 : 40) : 62) : 0);
   return { h: h + 10, el: (y) => {
     const e = [E.ret(x, y, w, h, { f: COR.CLARO }), E.ret(x, y, 3, h, { f: COR.BORDO })];
@@ -2406,6 +2407,7 @@ function blocoCartao(c, x, w, cel) {
     let yy = y + (c.titulo ? tit0 : 20);
     det.forEach(([rot, val, dest]) => { e.push(T(x + 16, yy, rot, 8.6, { c: COR.MARROM2 }), T(x + 16 + rotW, yy, val, dest ? 10 : 8.8, { b: !!dest, c: dest ? COR.BORDO : COR.TEXTO })); yy += dest ? 15 : 13; });
     if (im) { const fx = abaixo ? x + 16 : x + w - 12 - fw, fy = abaixo ? y + hTxt : y + (h - fh) / 2; e.push(E.img(fotoK, fx, fy, fw, fh), E.ret(fx, fy, fw, fh, { s: COR.BEGE, lw: 0.6 })); }
+    if (tb) e.push(E.img(c.tubo, x + w - 14 - twT, y + 8, twT, thT));
     return e; } };
 }
 
@@ -2550,12 +2552,14 @@ const DAVR = [["CP", "Compatível com padrão", "raça com características feno
 const siglaDavr = () => { const t = estado.t; return t.davr ? "DAVR-" + t.davr + (t.davr === "SP" && String(t.davrRaca || "").trim() ? " " + t.davrRaca.trim() : "") : ""; };
 function blocosTipagem(x, w, cel) {
   const t = estado.t, B = [secTit(x, w, "Tipagem sanguínea " + (felino() ? "felina" : "canina"), t.material ? "Material  " + t.material : "")];
-  const cartoes = [];
+  // foto do plasma (opcional, só na tipagem): o tubo entra no primeiro cartão, à direita, com a linha do aspecto do plasma
+  const cartoes = [], tuboTip = estado.tipo === "tipagem" && IMG_DIN.fotoTubo ? "fotoTubo" : null, plasmaTip = t.plasma ? t.plasma : "";
   if (felino()) cartoes.push({ titulo: "Grupo " + t.grupo, res: "", linhas: [["Sistema", "AB"], ["Método", t.metodoGato], ["Kit", loteTxt(t.loteG, t.validadeG)]] });
   else {
     if (t.dea1.on) cartoes.push({ titulo: "DEA 1", res: t.dea1.res, pos: t.dea1.res === "Positivo", foto: "fotoDea", linhas: [["Intensidade", t.dea1.res === "Positivo" ? t.dea1.grau : "", true], ["Método", t.dea1.metodo], ["Kit", loteTxt(t.dea1.lote, t.dea1.validade)]] });
     if (t.dal.on) cartoes.push({ titulo: "DAL", res: t.dal.res, pos: t.dal.res === "Positivo", foto: "fotoDal", linhas: [["Intensidade", t.dal.res === "Positivo" ? t.dal.grau : "", true], ["Método", t.dal.metodo], ["Kit", loteTxt(t.dal.lote, t.dal.validade)]] });
   }
+  if (tuboTip && cartoes.length) { cartoes[0].tubo = tuboTip; if (plasmaTip) cartoes[0].linhas.push(["Plasma", plasmaTip]); }
   // classificação DAVR (DAL versus raça): no laudo sai só a sigla, no cartão do DAL
   if (!felino() && t.davr && cartoes.length) { const alvo = cartoes.find((c) => c.titulo === "DAL") || cartoes[0]; alvo.linhas.push(["", siglaDavr()]); }
   const lado = !cel && t.diagrama && sistemasCompat().length;
@@ -2570,7 +2574,7 @@ function blocosTipagem(x, w, cel) {
       const sis = SL.find((s2) => s2.titulo === c.titulo); if (!sis) return;
       if (separar && i === 1) B.push({ h: 0, quebra: true, el: () => [] });
       // separado em duas folhas sobra espaço: a fita do DEA 1 vai na largura toda, abaixo da faixa, e a foto do DAL fica maior
-      const fitaLarga = separar && c.foto === "fotoDea" && IMG_DIN.fotoDea;
+      const fitaLarga = separar && c.foto === "fotoDea" && IMG_DIN.fotoDea && !c.tubo;
       const cb = blocoCartao(Object.assign({ rotW: 70, fhMax: c.foto === "fotoDea" ? 60 : separar ? 128 : 100, fotoAbaixo: c.foto === "fotoDea" }, c, fitaLarga ? { foto: null } : {}), x, wl, false);
       const pw = Math.min(176, wr - 12), sp = Object.assign({}, sis, { titulo: "" }), pp = painelCompat(0, 0, pw, sp), hb = Math.max(cb.h - 10, pp.h + 14);
       B.push({ h: hb + 10, el: (y) => {
@@ -2911,6 +2915,7 @@ function sincronizarImagens() {
   IMG_DIN = {};
   if (estado.tipo === "idexx" && estado.graficos) Object.assign(IMG_DIN, GRAF);
   if (estado.tipo === "compat") { imagensAmostra(); const so = estado.fotoSo || {}; if (estado.t.metodo === "gel") estado.t.provas.forEach((_, i) => { if (estado.fotos["gel" + i] && !so["gel" + i]) IMG_DIN["fotoGel" + i] = estado.fotos["gel" + i]; }); if (estado.fotos.tubo && !so.tubo) IMG_DIN.fotoTubo = estado.fotos.tubo; }
+  if (estado.tipo === "tipagem") { imagensAmostra(); if (estado.fotos.tubo && !(estado.fotoSo || {}).tubo) IMG_DIN.fotoTubo = estado.fotos.tubo; }
   const tp = tipAtual();
   if (tp && !felino() && tp.dal && tp.dal.on && estado.fotos.dal) IMG_DIN.fotoDal = estado.fotos.dal;
   if (tp && !felino() && tp.dea1 && tp.dea1.on && estado.fotos.dea) IMG_DIN.fotoDea = estado.fotos.dea;
@@ -3258,7 +3263,7 @@ function desenharGelProva(g, rot) {
 function rotTubo() { const X = estado.exame; return { nome: estado.paciente.nome || "", amostra: X.amostra || X.doacao || "", data: X.data ? br(X.data) : "", extra: "" }; }
 function imagensAmostra() {
   const C = AMOSTRA_IMG.cache;
-  if (estado.tipo !== "compat") return;
+  if (estado.tipo !== "compat" && estado.tipo !== "tipagem") return;
   // foto do tubo que entrou sem desenho (laudo aberto de antes ou leitura que falhou): tenta ler de novo com a leitura atual
   const fb = estado.fotos.tubo;
   if (!AMOSTRA_IMG.tubo && fb && fb.url && !fb.desenhada && C.reTubo !== fb.url) {
@@ -3268,7 +3273,7 @@ function imagensAmostra() {
     im.src = fb.url;
   }
   if (AMOSTRA_IMG.tubo) { const ch = JSON.stringify(rotTubo()); if (C.tuboCh !== ch) { C.tubo = desenharTubo(AMOSTRA_IMG.tubo, rotTubo()); C.tuboCh = ch; estado.fotos.tubo = C.tubo; } }
-  (AMOSTRA_IMG.gel || []).forEach((g, i) => { if (!g || !estado.t.provas[i]) return; if (g.neutro !== !!estado.t.gelNeutro && g.orig) { g = AMOSTRA_IMG.gel[i] = analisarGel(g.orig, g.n, !!estado.t.gelNeutro); C["gel" + i] = ""; } const r = rotGel(i), ch = JSON.stringify(r); if (C["gel" + i] !== ch || g.n !== r.pocos.length) { if (g.n !== r.pocos.length) { delete estado.fotos["gel" + i]; return; } estado.fotos["gel" + i] = desenharGelProva(g, r); C["gel" + i] = ch; } });
+  (AMOSTRA_IMG.gel || []).forEach((g, i) => { if (!g || !(estado.t.provas || [])[i]) return; if (g.neutro !== !!estado.t.gelNeutro && g.orig) { g = AMOSTRA_IMG.gel[i] = analisarGel(g.orig, g.n, !!estado.t.gelNeutro); C["gel" + i] = ""; } const r = rotGel(i), ch = JSON.stringify(r); if (C["gel" + i] !== ch || g.n !== r.pocos.length) { if (g.n !== r.pocos.length) { delete estado.fotos["gel" + i]; return; } estado.fotos["gel" + i] = desenharGelProva(g, r); C["gel" + i] = ch; } });
 }
 const PLASMA_IA = (d) => { const h = String(d.hemolise || ""), i = String(d.ictericia || ""), l = String(d.lipemia || ""); if (/acentuada|intensa/i.test(h)) return "Intensamente hemolisado"; if (/moderada/i.test(h)) return "Moderadamente hemolisado"; if (/intensa/i.test(i)) return "Intensamente ictérico"; if (/moderada/i.test(i)) return "Moderadamente ictérico"; if (/discreta/i.test(i)) return "Discretamente ictérico"; if (/discreta/i.test(h)) return "Discretamente hemolisado"; if (/intensa/i.test(l)) return "Intensamente lipêmico"; if (/moderada/i.test(l)) return "Moderadamente lipêmico"; if (/discreta/i.test(l)) return "Discretamente lipêmico"; return "Normal"; };
 // aspecto do plasma pela cor média medida na foto do tubo (não depende do Gemini). Lipemia não dá para ver pela cor.
@@ -3415,7 +3420,8 @@ function comTipForm() { const a = SUB; SUB = true; try { return formTipo(); } fi
 function formTipo() {
   const t = estado.t, k = estado.tipo;
   if (k === "requisicao") return `<div class="cx"><h3>Requisição</h3><p class="nota">Dados do pedido feito pela internação. Confira e ajuste o texto se precisar.</p>${(t.linhas || []).map(([rot, txt], i) => `<label>${esc(rot)}<textarea data-rq="${i}" rows="${Math.min(6, String(txt).split("\n").length + 1)}">${esc(txt)}</textarea></label>`).join("")}${estado.fotos.assSol ? `<p class="nota">Assinatura do solicitante: ${esc((t.solicitante || {}).nome || "")}, guardada na requisição.</p>` : `<p class="nota">A requisição não tem assinatura feita no celular${(t.solicitante || {}).anexo ? ". Ela veio em arquivo, que fica no pedido." : "."}</p>`}</div>`;
-  if (k === "tipagem" && !SUB) return `<div class="cx"><h3>Prova de compatibilidade no mesmo laudo</h3><label class="chk"><span><input type="checkbox" data-comxm="1"> Incluir a prova de compatibilidade deste paciente (sai um laudo só, com a tipagem e a prova de compatibilidade)</span></label></div>` + comTipForm();
+  if (k === "tipagem" && !SUB) return `<div class="cx"><h3>Prova de compatibilidade no mesmo laudo</h3><label class="chk"><span><input type="checkbox" data-comxm="1"> Incluir a prova de compatibilidade deste paciente (sai um laudo só, com a tipagem e a prova de compatibilidade)</span></label></div>` + comTipForm() +
+    `<div class="cx"><h3>Plasma (opcional)</h3>${caixaFoto("tubo", "Foto do tubo de plasma", "Opcional. O tubo entra no quadro do resultado, com o aspecto do plasma. Depois de escolher, você recorta do topo do plasma até o fundo.")}${estado.fotos.tubo ? formPlasma(t) : ""}</div>`;
   if (k === "tipagem") {
     if (felino()) return `<div class="cx"><h3>Tipagem felina</h3><label>Grupo sanguíneo</label>${segm('data-a="tg" data-c="grupo"', t.grupo, ["A", "B", "AB"])}
       <div class="grade" style="margin-top:9px">${campo("Método", inp('data-t="metodoGato"', t.metodoGato), "larga")}${campo("Lote", inp('data-t="loteG"', t.loteG))}${campo("Validade", inp('data-t="validadeG"', t.validadeG, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>${caixaKit("gatoAB")}
