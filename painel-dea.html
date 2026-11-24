@@ -951,7 +951,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124184917';
+  var VERSAO = '20261124192116';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3490,6 +3490,30 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && E.
 // (links antigos com a sessão de quem gerou o PDF também passam a usar a chave atual)
 document.addEventListener('click', ev => { const a = ev.target.closest && ev.target.closest('a[href*="?arquivo="]'); if (!a || !window.CVH_PAINEL || !window.CVH_SERVIDOR || a.href.indexOf(CVH_SERVIDOR.api) !== 0) return; try { const f = localStorage.getItem('cvh_fs'); if (f) a.href = a.href.replace(/&(s|fs)=[^&#]*/g, '') + '&fs=' + encodeURIComponent(f); } catch (_) {} }, true);
 setInterval(() => { if (E.sessao) renovarChaveArquivos(); }, 6 * 36e5);
+// PDF salvo aberto no celular: escolhe entre abrir e enviar; enviar manda o arquivo com o nome certo (Laudo ... .pdf),
+// sem o link do servidor junto e sem a página "api"
+document.addEventListener('click', ev => {
+  const a = ev.target.closest && ev.target.closest('a[href*="?arquivo="]'); if (!a || !window.CVH_SERVIDOR || a.href.indexOf(CVH_SERVIDOR.api) !== 0) return;
+  if (!ehCelular() || !navigator.canShare || ev.defaultPrevented) return;
+  ev.preventDefault(); const url = a.href;
+  const abrir = () => { const w = window.open(url, '_blank'); if (!w) location.href = url; };
+  let arq = null, falhou = false;
+  const pronto = fetch(url).then(async r => {
+    if (!r.ok) throw new Error('falhou');
+    const cd = r.headers.get('Content-Disposition') || '', m = /filename\*=UTF-8''([^;]+)/i.exec(cd) || /filename="?([^";]+)"?/i.exec(cd);
+    let nome = m ? decodeURIComponent(m[1]) : (a.textContent || 'Documento CVH').trim();
+    const bl = await r.blob(), tipo = bl.type || 'application/pdf';
+    { const i = nome.indexOf(' · '); if (i > 0 && semAc(nome.slice(i + 3)).includes(semAc(nome.slice(0, i)))) nome = nome.slice(i + 3); }
+    if (/pdf/.test(tipo) && !/\.pdf$/i.test(nome)) nome += '.pdf';
+    arq = new File([bl], nome.replace(/[\/\\:*?"<>|]+/g, ' ').slice(0, 120), { type: tipo });
+    if (!navigator.canShare({ files: [arq] })) throw new Error('falhou');
+    const b = $('#eaEnviar'), n = $('#eaNome'); if (b) { b.disabled = false; b.textContent = 'Enviar o PDF'; } if (n) n.textContent = arq.name;
+  }).catch(() => { falhou = true; const b = $('#eaEnviar'); if (b) { b.textContent = 'Não deu para preparar o envio'; } });
+  abrirFolha('PDF', '<p class="nota" id="eaNome">' + esc((a.textContent || 'Documento').trim()) + '</p><div class="mini-bts"><button class="btn" id="eaEnviar" disabled>Preparando o PDF...</button><button class="btn sec2" id="eaAbrir">Abrir</button></div>', () => {
+    $('#eaEnviar').onclick = async () => { if (!arq) { await pronto; if (!arq) return; } try { await navigator.share({ files: [arq] }); } catch (_) {} fecharFolha(); };
+    $('#eaAbrir').onclick = () => { fecharFolha(); abrir(); };
+  });
+});
 async function carregarPainel() {
   carregando('Carregando dados');
   await renovarChaveArquivos();
