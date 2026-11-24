@@ -950,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124205848';
+  var VERSAO = '20261124220131';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2418,8 +2418,10 @@ function qrSvg(texto) {
   } catch (_) { return ''; }
 }
 const urlVerifCarteira = cod => { const b = (E.d && E.d.config && (E.d.config.urlExec || E.d.config.urlApp)) || (location.origin + '/'); return b + (b.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(String(cod || '').replace(/\s/g, '')); };
-const rubSvgDir = d => d ? '<svg viewBox="0 0 300 120" preserveAspectRatio="xMaxYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="' + esc(d) + '"/></svg>' : '';
-const rubSvg = (d, cls) => d ? '<svg class="' + (cls || 'rub') + '" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="' + esc(d) + '"/></svg>' : '';
+// a rubrica ocupa só o pedaço desenhado (sem a sobra do quadro de 300 × 120), centralizada no espaço dela
+function rubVB(d){const n=String(d||'').match(/-?\d+(\.\d+)?/g)||[];let a=1e9,b=1e9,c=-1e9,e=-1e9;for(let i=0;i+1<n.length;i+=2){const x=+n[i],y=+n[i+1];if(x<a)a=x;if(x>c)c=x;if(y<b)b=y;if(y>e)e=y;}if(a>c)return '0 0 300 120';const p=4;return (a-p)+' '+(b-p)+' '+(c-a+2*p)+' '+(e-b+2*p);}
+const rubSvgDir = d => d ? '<svg viewBox="' + rubVB(d) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(d) + '"/></svg>' : '';
+const rubSvg = (d, cls) => d ? '<svg class="' + (cls || 'rub') + '" viewBox="' + rubVB(d) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(d) + '"/></svg>' : '';
 /* ═════════════ peças da página ═════════════ */
 // prévia da assinatura eletrônica no cadastro do médico veterinário (o mesmo bloco dos laudos)
 function previaAssinaturaVet(v) {
@@ -2430,7 +2432,7 @@ function carimbo(v, rot) {
   v = v || {};
   const nome = esc(v.nome || ''), crmv = esc(v.crmv || '');
   const largo = (v.nome || '').length * 10.6 > 168 ? ' textLength="168" lengthAdjust="spacingAndGlyphs"' : '';
-  const rub = v.rubrica ? '<svg class="rub" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet"><path fill="none" stroke="#1E3FA6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".88" d="' + esc(v.rubrica) + '"/></svg>' : '';
+  const rub = v.rubrica ? '<svg class="rub" viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1E3FA6" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".88" d="' + esc(v.rubrica) + '"/></svg>' : '';
   return '<div class="carimbo" style="--r:' + (rot == null ? -3 : rot) + 'deg"><svg class="tinta" viewBox="0 0 200 66"><g filter="url(#gasto)" fill="currentColor" text-anchor="middle">' +
     '<text x="100" y="22" font-size="19" font-weight="800"' + largo + '>' + nome + '</text>' +
     '<text x="100" y="41" font-size="12.5" font-weight="600">Médico Veterinário</text>' +
@@ -3594,7 +3596,7 @@ function seloAno(ano, rot) {
 // carimbo preto com leve aspecto de falhado, só para o certificado (o filtro vai junto com a imagem)
 function carimboCert(v) {
   const id = 'cg' + Math.random().toString(36).slice(2, 8), nome = esc(v.nome || ''), largo = (v.nome || '').length * 10.6 > 168 ? ' textLength="168" lengthAdjust="spacingAndGlyphs"' : '';
-  const rub = v.rubrica ? '<svg class="ct-rub" viewBox="0 0 300 120" preserveAspectRatio="xMidYMid meet"><path fill="none" stroke="#1C1C1C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg>' : '';
+  const rub = v.rubrica ? '<svg class="ct-rub" viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1C1C1C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg>' : '';
   return '<div class="ct-carimbo">' + rub + '<svg viewBox="0 0 200 66"><defs><filter id="' + id + '" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -7 4.85" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></defs>' +
     '<g filter="url(#' + id + ')" fill="#1C1C1C" text-anchor="middle" font-family="Proza Libre,Arial,sans-serif" transform="rotate(-2 100 33)"><text x="100" y="24" font-size="14.5" font-weight="800">' + nome + '</text><text x="100" y="41" font-size="12" font-weight="600">Médico Veterinário</text><text x="100" y="56" font-size="12" font-weight="600">' + esc(v.crmv || '') + '</text></g></svg></div>';
 }
@@ -3616,7 +3618,7 @@ function certHtml(c, fmt) {
     '<h1 class="ct-tit">' + (apos ? 'Certificado de Aposentadoria' : 'Certificado de Doação') + '</h1></div>' +
     '<div class="ct-g"><p class="ct-sub">' + (apos ? 'O Centro Veterinário de Hemoterapia homenageia' : 'O Centro Veterinário de Hemoterapia certifica e agradece a') + '</p>' +
     '<h2 class="ct-nome">' + esc(an.nome) + '</h2><p class="ct-quando">' + quando + '</p><p class="ct-txt">' + texto + '</p></div>' +
-    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b><span class="ct-as-rub">' + (v.rubrica ? '<svg viewBox="0 0 300 120" preserveAspectRatio="xMaxYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg>' : '') + '</span></div><small>Médico veterinário · ' + esc(v.crmv || '') + '</small></div>' + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
+    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b><span class="ct-as-rub">' + (v.rubrica ? '<svg viewBox="' + rubVB(d) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg>' : '') + '</span></div><small>Médico veterinário · ' + esc(v.crmv || '') + '</small></div>' + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
     '<p class="ct-rod">Brasília, DF · ' + br(c.data) + ' · Certificado ' + codCert(c) + ' · cvh.vet.br</p></div></div></div>';
 }
 async function certImagem(c, fmt, tipoImg) {

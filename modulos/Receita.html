@@ -1746,7 +1746,11 @@ function blocoOrient(x, w) {
 // rubrica do médico veterinário (traço SVG em 300 × 120) desenhada no bloco da assinatura
 function rubricaEls(d, x, y, w, h, cor) {
   if (!d) return [];
-  const kx = w / 300, ky = h / 120, k = Math.min(kx, ky), ox = x + (w - 300 * k) / 2, oy = y + (h - 120 * k) / 2, P = (a, b) => [ox + a * k, oy + b * k];
+  // só o pedaço desenhado da rubrica, centralizado no espaço (o quadro de 300 × 120 tem sobra e deixava a rubrica torta)
+  const nn = String(d).match(/-?\d+(\.\d+)?/g) || []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i + 1 < nn.length; i += 2) { const a = +nn[i], b = +nn[i + 1]; if (a < x0) x0 = a; if (a > x1) x1 = a; if (b < y0) y0 = b; if (b > y1) y1 = b; }
+  if (x0 > x1) { x0 = 0; y0 = 0; x1 = 300; y1 = 120; }
+  const k0 = Math.min(w / 300, h / 120), bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0), k = Math.min(w / bw, h / bh), ox = x + (w - bw * k) / 2 - x0 * k, oy = y + (h - bh * k) / 2 - y0 * k, P = (a, b) => [ox + a * k, oy + b * k];
   const out = [], re = /([MLQ])([^MLQ]*)/g; let m, cur = null, ult = null;
   while ((m = re.exec(d))) {
     const n = m[2].trim().split(/[\s,]+/).map(Number).filter((v) => isFinite(v));
@@ -1755,7 +1759,7 @@ function rubricaEls(d, x, y, w, h, cor) {
     else if (m[1] === "Q" && cur && ult) for (let i = 0; i + 3 < n.length; i += 4) { const [x0, y0] = ult; for (let t = 0.25; t <= 1.001; t += 0.25) { const u = 1 - t; cur.push(P(u * u * x0 + 2 * u * t * n[i] + t * t * n[i + 2], u * u * y0 + 2 * u * t * n[i + 1] + t * t * n[i + 3])); } ult = [n[i + 2], n[i + 3]]; }
   }
   if (cur && cur.length > 1) out.push(cur);
-  return out.map((pts) => E.cam(pts, { s: cor || "#1A2A9C", lw: Math.max(0.45, 1.5 * k) }));
+  return out.map((pts) => E.cam(pts, { s: cor || "#1A2A9C", lw: Math.max(0.45, 1.5 * Math.max(k0, k * 0.45)) }));
 }
 function blocoAssinatura(tipo, x, w, y, celular) {
   const v = estado.vet || {}, el = [], quando = salvo ? salvo.assinadoEm : null, ctl = tipo === "controle";

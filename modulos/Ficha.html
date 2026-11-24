@@ -272,6 +272,30 @@ textarea:focus{border-color:var(--verm);box-shadow:0 0 0 3px rgba(168,61,61,.12)
 .nm{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:700;color:#5F130F;margin-top:2px;line-height:1.15}
 .tp{display:inline-flex;align-items:center;background:#A83D3D;color:#fff;font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:999px;padding:3px 11px 3px;white-space:pre}
 .mb .nm{font-size:18px}
+
+/* visual novo do exame clínico, triagem laboratorial e coleta (A4 e celular) */
+.nv-st{font-size:12px;font-weight:700;color:#5F130F;padding:0 0 3px;border-bottom:1.2px solid #C6B098;margin-bottom:0}
+.nv-kv .r{display:grid;grid-template-columns:44% 56%;align-items:center;padding:4px 8px;border-bottom:1px solid #E6DCD0}
+.nv-kv .r:nth-child(odd){background:#F7F2EC}
+.nv-kv .k{font-size:9.6px;color:#7A6A63}.nv-kv .v{font-size:11px;font-weight:700;color:#3A2420;line-height:1.25}.nv-kv .v .un{font-size:8px;font-weight:500;color:#8a6a60}
+.nv-2{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:0 22px;align-items:start}
+.nv-pc{background:#F7F2EC;border-bottom:1px solid #E6DCD0}
+.nv-pc .ln{display:flex;align-items:flex-end;gap:16px;padding:5px 10px 6px}.nv-pc .ln+.ln{border-top:1px solid #E6DCD0;background:#fff}
+.nv-pc .it{display:flex;flex-direction:column;flex:none}.nv-pc .it small{font-size:9px;color:#7A6A63}
+.nv-pc .it b{font-size:16px;font-weight:700;color:#5F130F;line-height:1.1}.nv-pc .it b i{font-style:normal;font-size:8.5px;font-weight:500;color:#8a6a60;margin-left:2px}
+.nv-pc .sep{align-self:stretch;width:1px;background:#D8C9B8;margin:0 2px}
+.nv-pc .pa b span{font-size:8.5px;font-weight:600;color:#7A6A63;margin-right:3px}
+.nv-pc .onda{flex:1;min-width:90px;text-align:center}.nv-pc .onda small{display:block;font-size:8px;color:#7A6A63;margin-bottom:1px}
+.nv-pc .onda .cx{border-radius:4px;overflow:hidden;background:#fff}
+.nv-tl{display:grid;gap:0 14px;align-items:center}
+.nv-tl .cel{display:flex;align-items:center;gap:10px;min-width:0}.nv-tl .cel+.cel{border-left:1px solid #D8C9B8;padding-left:14px}
+.nv-tl .ft{flex:none;background:#EEE5DB;border:1px solid #E0D3C3;border-radius:7px;padding:5px;display:flex;align-items:center;justify-content:center}
+.nv-tl .ft img{height:var(--nvh,92px);width:auto;display:block;border-radius:3px}
+.nv-tl .tx small{display:block;font-size:9.5px;color:#7A6A63;line-height:1.3}.nv-tl .tx b{display:block;font-size:13px;font-weight:700;color:#5F130F;line-height:1.25;margin-top:3px}
+.nv-hc .nv-st{border-bottom:0}
+.pg.cp{--nvh:78px}.pg.cp .nv-kv .r{padding:3px 8px}.pg.cp .nv-pc .ln{padding:4px 10px 5px}
+.mb .nv-2{grid-template-columns:1fr!important;gap:10px}.mb .nv-tl{grid-template-columns:1fr!important;gap:8px}.mb .nv-tl .cel+.cel{border-left:0;padding-left:0;border-top:1px solid #D8C9B8;padding-top:8px}
+.mb .nv-pc .ln{flex-wrap:wrap;gap:10px 16px}.mb .nv-pc .onda{flex:1 1 100%}
 /* faixas de seção */
 .sbar{display:flex;align-items:baseline;gap:8px;background:#EEE5DB;border-left:4px solid #A83D3D;padding:5px 12px;margin-bottom:6px}
 .sbar b{font-size:13px;font-weight:700;color:#5F130F}
@@ -314,7 +338,7 @@ table.kv{width:100%;border-collapse:collapse;table-layout:fixed}
 .as .as-top{display:flex;align-items:stretch}.as .as-nm{display:flex;flex-direction:column;flex:none}
 .as .as-lbl{display:block;font-size:6.6px;font-weight:800;letter-spacing:.04em;color:#A83D3D;line-height:1.3}
 .as .as-rub{flex:1 1 auto;min-width:60px;position:relative;margin-left:6px}
-.as .as-rub svg{position:absolute;right:0;top:-13px;height:calc(100% + 18px);width:100%;overflow:visible}
+.as .as-rub svg{position:absolute;right:0;top:-3px;height:calc(100% + 9px);width:100%;overflow:visible}
 .as-lib{font-size:8.6px;color:#8a5a50;margin-top:4px}
 .as .cod{font-size:8.8px;letter-spacing:.06em;color:#8a5a50;font-variant-numeric:tabular-nums;margin-top:1px}
 .as .qr{width:58px;height:58px;flex:none;margin-left:auto}
@@ -1105,6 +1129,38 @@ function desenharGelProva(g, rot) {
   });
   caixa(x); x.strokeStyle = "rgba(95,19,15,.28)"; x.lineWidth = 1.2; x.stroke();
   return { url: cv.toDataURL("image/jpeg", 0.92), w: CW, h: CH };
+}
+
+/* ================= visual novo: exame clínico, triagem laboratorial e coleta ================= */
+function nvKV(tab){return `<div class="nv-st">${tab.t}</div><div class="nv-kv">${tab.r.map(x=>`<div class="r"><span class="k">${x.l}</span><span class="v">${x.h||unH(x.v)}</span></div>`).join('')}</div>`;}
+function nvExame(mob){
+  const T=exameTabsBase(),af=T.find(x=>x.t==='Avaliação física');
+  const it=(rot,v,u)=>v?`<div class="it"><small>${rot}</small><b>${H(v)}${u?`<i>${u}</i>`:''}</b></div>`:'';
+  const val=k=>{const v=sv(k);return v&&v!=='NI'?dec(v):'';};
+  const fr=S.fr==='ofegante'?'Ofegante':val('fr'),tpc=sv('tpc')?sv('tpc').replace('>','&gt;'):'';
+  const l1=[it('FC',val('fc'),'bpm'),it('FR',fr,fr==='Ofegante'?'':'mpm')].filter(Boolean),pa=val('ps')||val('pd')?`<div class="it pa"><small>Pressão arterial</small><b>${val('ps')?`<span>PS</span>${H(val('ps'))}<i>mmHg</i>`:''}${val('ps')&&val('pd')?'&nbsp;&nbsp;&nbsp;':''}${val('pd')?`<span>PD</span>${H(val('pd'))}<i>mmHg</i>`:''}</b></div>`:'';
+  const m=S.monitor,onda=m&&m.onda?`<div class="onda" style="flex:0 1 ${Math.round((mob?70:46)*(m.prop||4))}px"><small>Traçado do monitor</small><div class="cx">${ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FFFFFF')}</div></div>`:'';
+  const l2=[it('Temperatura',val('temp'),'°C'),tpc?`<div class="it"><small>TPC</small><b>${esc(sv('tpc'))}<i>s</i></b></div>`:'',it('SpO₂',val('spo2'),'%')].filter(Boolean);
+  const pc=(l1.length||pa||l2.length||onda)?`<div class="nv-st">Parâmetros clínicos</div><div class="nv-pc">${l1.length||pa?`<div class="ln">${l1.join('')}${l1.length&&pa?'<span class="sep"></span>':''}${pa}</div>`:''}${l2.length||onda?`<div class="ln">${l2.join('')}${onda}</div>`:''}</div>`:'';
+  // pressão arterial já aparece nos parâmetros clínicos
+  const af2=af?Object.assign({},af,{r:af.r.filter(x=>x.l!=='PS x PD')}):null,a=af2&&af2.r.length?nvKV(af2):'';
+  if(!a&&!pc)return '';
+  return `<div class="blk">${barHTML('Exame clínico',mob?'':'Avaliação do doador antes da coleta')}<div class="nv-2">${a?`<div>${a}</div>`:''}${pc?`<div>${pc}</div>`:''}</div></div>`;
+}
+function nvTriagem(mob){
+  const hb=nu('hb'),ht=nu('ht'),ppt=nu('ppt'),pl=fPlasma(),ac=S.clinico?'':sv('acDoa');
+  const rows=[hb&&['Hb',dec(sv('hb')),'g/dL'],ht&&['Ht',dec(sv('ht')),'%']].filter(Boolean);
+  const c1=rows.length||ppt?`<div class="nv-hc" style="min-width:0">${rows.length?`<div class="nv-st">Hemochromax</div>`:''}<div class="nv-kv">${rows.map(([k,v,u])=>`<div class="r"><span class="k">${k}</span><span class="v">${H(v)} <span class="un">${u}</span></span></div>`).join('')}${ppt?`<div class="r" style="border-top:1.2px solid #C6B098"><span class="k">PPT</span><span class="v">${H(dec(sv('ppt')))} <span class="un">g/dL</span></span></div>`:''}</div></div>`:'';
+  const cel=(img,rot,v)=>(img||v)?`<div class="cel">${img?`<div class="ft"><img src="${img}" alt=""></div>`:''}<div class="tx"><small>${rot}</small><b>${H(v||'não informado')}</b></div></div>`:'';
+  const c2=cel(S.clinico?'':S.plasmaImg,'Aspecto do plasma',pl),c3=S.clinico?'':cel(S.gelImg,'Autocontrole do doador',ac);
+  const cs=[c1,c2,c3].filter(Boolean);if(!cs.length)return '';
+  const tpl=cs.length===3?'minmax(0,.78fr) minmax(0,1.11fr) minmax(0,1.11fr)':cs.length===2?'minmax(0,.8fr) minmax(0,1.2fr)':'1fr';
+  return `<div class="blk">${barHTML('Triagem laboratorial','')}<div class="nv-tl" style="grid-template-columns:${tpl}">${cs.map((c,i)=>i===0&&c1?`<div class="cel" style="display:block">${c}</div>`:c).join('')}</div></div>`;
+}
+function nvColeta(mob){
+  const T=coletaTabs();if(!T.length)return '';
+  const tit={'Horário e volume':'Horários e volume'};
+  return `<div class="blk">${barHTML('Coleta',mob?'':'Horários, volume e bolsa')}<div class="nv-2" style="grid-template-columns:repeat(${Math.min(2,T.length)},minmax(0,1fr))">${T.map(x=>`<div>${nvKV(Object.assign({},x,{t:tit[x.t]||x.t}))}</div>`).join('')}</div></div>`;
 }
 /* ================= onda do SpO₂ (foto do monitor) ================= */
 // extrai o traçado vermelho da pletismografia (SpO2) da foto do monitor: coluna a coluna, os pixels vermelhos viram uma linha
@@ -2547,19 +2603,19 @@ return { QRCode: M['index'], L: M['QRErrorCorrectLevel'] };
 function qrFicha(texto){try{const q=new QRLIB.QRCode(-1,QRLIB.L.M);q.addData(texto);q.make();const n=q.getModuleCount();let d='';
   for(let y=0;y<n;y++){let x=0;while(x<n){if(!q.isDark(y,x)){x++;continue;}let k=x;while(k<n&&q.isDark(y,k))k++;d+='M'+x+' '+y+'h'+(k-x)+'v1h-'+(k-x)+'z';x=k;}}
   return `<svg class="qr" viewBox="-1 -1 ${n+2} ${n+2}" shape-rendering="crispEdges"><rect x="-1" y="-1" width="${n+2}" height="${n+2}" fill="#fff"/><path fill="#2b2320" d="${d}"/></svg>`;}catch(_){return '';}}
+function rubVB(d){const n=String(d||'').match(/-?\d+(\.\d+)?/g)||[];let a=1e9,b=1e9,c=-1e9,e=-1e9;for(let i=0;i+1<n.length;i+=2){const x=+n[i],y=+n[i+1];if(x<a)a=x;if(x>c)c=x;if(y<b)b=y;if(y>e)e=y;}if(a>c)return '0 0 300 120';const p=4;return (a-p)+' '+(b-p)+' '+(c-a+2*p)+' '+(e-b+2*p);}
 function assHTML(){
   if(!S.ass)return `<div class="nas">Ficha não assinada eletronicamente</div>`;
   const t=assTexto(S.ass);
   const rub=S.ass.rub||(window.CVH_RUB?window.CVH_RUB():'');
   const url=((window.CVH_CTX||{}).urlVerificacao||'https://carteira.cvh.vet.br/')+'?v='+encodeURIComponent(S.ass.codigo);
   // mesmo modelo dos laudos: selo, ASSINADO ELETRONICAMENTE, nome com a rubrica à direita terminando junto com a linha do CRMV, data, código e QR
-  const rubSvg=rub?`<svg viewBox="0 0 300 120" preserveAspectRatio="xMaxYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="${esc(rub)}"/></svg>`:'';
+  const rubSvg=rub?`<svg viewBox="${rubVB(rub)}" preserveAspectRatio="xMidYMid meet"><path fill="none" stroke="#1A2A9C" stroke-width="1" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" d="${esc(rub)}"/></svg>`:'';
   return `<div class="as"><img src="${IMG.selo}" alt=""><div class="tx"><small class="as-lbl">ASSINADO ELETRONICAMENTE</small><div class="as-top"><div class="as-nm"><b>${esc(S.ass.nome)}</b></div><span class="as-rub">${rubSvg}</span></div><div>Médico veterinário · CRMV-${esc(S.ass.uf)} ${esc(S.ass.crmv)}</div><div>${esc(t.l3.replace(/^em /,''))}</div><div class="cod">${esc(t.cod)}</div></div>${qrFicha(url)}</div>${t.lib?`<div class="as-lib">${esc(t.lib)}${t.l3?' '+esc(t.l3):''}</div>`:''}`;
 }
 function blocos(){
   return [`<div class="blk">${tituloHTML()}</div>`,idHTMLA4(),
-    exameA4(),
-    secKV('Coleta','Horários, volume e bolsa',coletaTabs()),
+    nvExame(false),nvTriagem(false),nvColeta(false),
     lesObsHTML(S.monitor||S.plasmaImg||S.gelImg?88:104),`<div class="blk" style="margin-top:12px">${assHTML()}</div>`].filter(Boolean);
 }
 function hdrHTML(mob){
@@ -2589,7 +2645,7 @@ function mobileHTML(){
   return `<div class="mb">
    <div class="mh"><img src="${IMG.logo}" alt="CVH">${hdrHTML(true)}</div>
    <div class="blk">${tituloHTML(true)}</div>${idHTML(2)}
-   ${secKV('Exame clínico','',exameTabs(),1)}${ondaHTML()}${secKV('Coleta','',coletaTabs(),1)}
+   ${nvExame(true)}${nvTriagem(true)}${nvColeta(true)}
    <div class="blk">${lesCol(112)}</div>${obsLista().length?`<div class="blk">${obsCol()}</div>`:''}
    <div class="blk" style="margin-top:18px">${assHTML()}</div>
    <div class="ft"><b>CVH - Centro Veterinário de Hemoterapia</b><br>QNB 17 Lote 15 Loja 01, Taguatinga Norte, Brasília, DF, 72115-170<br>(61) 9 8237-2772 · www.cvh.vet.br · bancodesangue@cvh.vet.br</div>
@@ -3396,10 +3452,21 @@ init();
         gel ? "Deixe no quadro só o microtubo do autocontrole (ou os microtubos), do topo até a ponta. A etiqueta escrita embaixo sai e entra uma etiqueta nova com ACD, o animal e a doação." : "Deixe só o tubo dentro do quadro, do topo do plasma até o fundo. O painel separa o plasma e monta o tubo com uma etiqueta impressa, sem a estante e sem a escrita.");
       if (!cv) return null;
       const nome = String(S.animal || (ctx.animal || {}).nome || "").toUpperCase();
-      if (gel) { const g = analisarGel(cv, 1, true), d = desenharGelProva(g, { pocos: ["ACD"], linhas: [nome, S.numero ? "Doação " + S.numero : ""].filter(Boolean) }); return { blob: await dataUrlBlob(d.url), url: d.url }; }
+      if (gel) { const g = analisarGel(aparaTinta(cv), 1, true), d = desenharGelProva(g, { pocos: ["ACD"], linhas: [nome, S.numero || ""].filter(Boolean) }); return { blob: await dataUrlBlob(d.url), url: d.url }; }
       const a = analisarTubo(cv);
       if (!a) { toast("Não consegui separar o plasma pela cor. A foto entra como foi recortada.", 6000); const u = cv.toDataURL("image/jpeg", 0.9); return { blob: await dataUrlBlob(u), url: u, cru: true }; }
       const d = desenharTubo(a, { nome, amostra: S.numero || "", data: S.data ? isoBR(S.data) : "" }); return { blob: await dataUrlBlob(d.url), url: d.url };
+    }
+    // recorte que pegou a escrita de caneta embaixo do poço (etiqueta do cartão): corta logo abaixo da ponta do microtubo
+    function aparaTinta(cv) {
+      const W = cv.width, H = cv.height, p = cv.getContext("2d").getImageData(0, 0, W, H).data, tinta = new Float32Array(H), verm = new Int32Array(H), papel = new Float32Array(H);
+      for (let y = 0; y < H; y++) { let n = 0, v = 0, pb = 0; for (let x = 0; x < W; x += 2) { const i = (y * W + x) * 4, r = p[i], g = p[i + 1], b = p[i + 2], lum = (r + g + b) / 3; if ((b > r + 20 && b > g + 6 && lum < 200) || lum < 60) n++; if (r > 140 && r > g * 1.8 && r > b * 1.8) v++; if (lum > 212 && Math.max(r, g, b) - Math.min(r, g, b) < 26) pb++; } tinta[y] = n / (W / 2); verm[y] = v; papel[y] = pb / (W / 2); }
+      let ultV = -1; for (let y = 0; y < H; y++) if (verm[y] > 2) ultV = y;
+      const ini = ultV >= 0 ? ultV + Math.round(H * 0.02) : Math.round(H * 0.35);
+      let corte = -1; for (let y = ini; y < H; y++) if (tinta[y] > 0.012 || papel[y] > 0.5) { corte = y; break; }
+      if (corte < 0 || corte < H * 0.25) return cv;
+      const fim = Math.max(ultV + Math.round(H * 0.04), corte - Math.round(H * 0.02)), o = document.createElement("canvas"); o.width = W; o.height = Math.min(H, fim);
+      o.getContext("2d").drawImage(cv, 0, 0, W, o.height, 0, 0, W, o.height); return o;
     }
     // tubo pequeno para a ficha (triagem laboratorial, no A4 e no celular)
     async function tuboPequeno(url) { const im = await carregarImg(url), k = Math.min(1, 360 / im.height), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.85); }
