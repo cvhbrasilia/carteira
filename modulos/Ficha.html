@@ -296,6 +296,23 @@ textarea:focus{border-color:var(--verm);box-shadow:0 0 0 3px rgba(168,61,61,.12)
 .pg.cp{--nvh:78px}.pg.cp .nv-kv .r{padding:3px 8px}.pg.cp .nv-pc .ln{padding:4px 10px 5px}
 .mb .nv-2{grid-template-columns:1fr!important;gap:10px}.mb .nv-tl{grid-template-columns:1fr!important;gap:8px}.mb .nv-tl .cel+.cel{border-left:0;padding-left:0;border-top:1px solid #D8C9B8;padding-top:8px}
 .mb .nv-pc .ln{flex-wrap:wrap;gap:10px 16px}.mb .nv-pc .onda{flex:1 1 100%}
+.nv-ex{align-items:stretch}.nv-ex>div:first-child{display:flex;flex-direction:column}.nv-ex>div:first-child .nv-kv{flex:1;display:flex;flex-direction:column}.nv-ex>div:first-child .nv-kv .r{flex:1}
+/* celular, conforme o modelo aprovado */
+.mb .nv-st{font-size:13.5px;padding-bottom:4px;margin-top:2px}
+.mb .nv-kv .r{grid-template-columns:44% 56%;padding:5px 8px}.mb .nv-kv .k{font-size:10.5px}.mb .nv-kv .v{font-size:12.5px}.mb .nv-kv .v .un{font-size:9.5px}
+.mb .nv-pc .ln{flex-wrap:nowrap;gap:0 22px;padding:6px 10px 7px}.mb .nv-pc .it small{font-size:9.5px}.mb .nv-pc .it b{font-size:17px}.mb .nv-pc .it b i{font-size:9.5px;margin-left:4px}.mb .nv-pc .pa b span{font-size:9.5px;margin-right:4px}.mb .nv-pc .sep{margin:0 -4px}
+.mb .nv-pc .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #E6DCD0;background:#fff;padding:7px 0 8px}
+.mb .nv-pc .g3 .it{align-items:center;text-align:center}.mb .nv-pc .g3 .it+.it{border-left:1px solid #D8C9B8}.mb .nv-pc .g3 .it b{font-size:19px}
+.mb .om{text-align:center;padding:8px 0 4px;border-bottom:1px solid #E6DCD0}.mb .om small{display:block;font-size:9.5px;color:#7A6A63;margin-bottom:4px}.mb .om .cx{margin:0 auto}
+.mb .nv-hc{margin-bottom:12px}
+.mb .nv-fot{display:grid;gap:0}.mb .nv-fot .fc{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 10px}.mb .nv-fot .fc+.fc{border-left:1px solid #D8C9B8}
+.mb .nv-fot .ft{background:#EEE5DB;border:1px solid #E0D3C3;border-radius:8px;padding:6px;margin-bottom:8px}.mb .nv-fot .ft img{height:86px;width:auto;display:block;border-radius:3px}
+.mb .nv-fot small{font-size:10px;color:#7A6A63;line-height:1.3}.mb .nv-fot b{font-size:13.5px;font-weight:700;color:#5F130F;line-height:1.25;margin-top:2px}
+.mb .idb{padding:4px 14px 6px}.mb .idb .rw{padding:8px 0 7px}.mb .idb .c3{gap:0}.mb .idb .c3>div{padding:0 10px}.mb .idb .c3>div:first-child{padding-left:0}.mb .idb .c3>div+div{border-left:1px solid #DCCDBC}
+.mb .ilb{font-size:8.5px}.mb .ivl{font-size:13px}.mb .mcbc{height:20px;margin-top:4px}
+.mb .lsm{display:flex;align-items:center;justify-content:center}.mb .lsm .figs{flex:none;gap:26px;padding:2px 22px 2px 4px}.mb .lsm .lg{flex:1;min-width:0;display:flex;justify-content:center;align-self:stretch;align-items:center;border-left:1px solid #D8C9B8;padding-left:12px}.mb .lsm .okb{margin:0;font-size:11.5px;padding:6px 16px 6px 8px}.mb .lsm .lgl{margin:0}
+.mb .sbar{padding:6px 12px;margin-bottom:8px}.mb .sbar b{font-size:15px}
+.mb .ob .tx{font-size:11.5px;padding-left:8px}
 /* faixas de seção */
 .sbar{display:flex;align-items:baseline;gap:8px;background:#EEE5DB;border-left:4px solid #A83D3D;padding:5px 12px;margin-bottom:6px}
 .sbar b{font-size:13px;font-weight:700;color:#5F130F}
@@ -355,23 +372,23 @@ table.kv{width:100%;border-collapse:collapse;table-layout:fixed}
 .pg.cp .as{padding-top:8px}
 /* versão celular do documento */
 .mb{width:430px;background:#fff;font-family:'Proza Libre',Georgia,serif;color:#5F130F;padding:22px 20px 20px}
-.mb .mh{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #EEE5DB}
-.mb .mh img{width:205px;height:auto;flex:none}
-.mb .hdr{position:static;margin-left:auto;min-width:0}
-.mb .hdr .k{font-size:6.8px}
-.mb .hdr .n{font-size:12.5px}
-.mb .hdr .n small{font-size:8.5px;margin-left:4px}
-.mb .hdr .s{font-size:7.2px}
+.mb .mh{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #DCCDBC}
+.mb .mh img{width:172px;height:auto;flex:none}
+.mb .hdr{position:static;flex:1;min-width:0;text-align:center;border-left:1px solid #DCCDBC;padding:4px 0 4px 12px}
+.mb .hdr .k{font-size:8.6px;letter-spacing:.04em}
+.mb .hdr .n{font-size:14px;margin-top:4px}
+.mb .hdr .n small{font-size:12px;margin-left:5px;color:#5F130F}
+.mb .hdr .s{font-size:8.6px;margin-top:4px}
 .mb .ttl{margin:4px 0 18px}
 .mb .ttl h1{font-size:23px;white-space:normal}
 .mb .ttl .tubo{left:-48px;top:-12px;width:calc(100% + 48px)}
 .mb .blk{margin-bottom:14px}
 .mb .as{gap:10px}
 .mb .as img{width:50px;height:50px}
-.mb .as .tx{white-space:nowrap;font-size:9.6px}
+.mb .as .tx{white-space:nowrap;font-size:9.6px;border-left:1px solid #D8C9B8;padding-left:12px}
 .mb .as .tx b{font-size:10.4px}
 .mb .as .cod{font-size:8.2px}
-.mb .ft{margin-top:18px;padding-top:10px;border-top:1px solid #C6B098;font-size:8.5px;color:#8a6a60;line-height:1.55}
+.mb .ft{margin-top:18px;padding-top:10px;border-top:1px solid #C6B098;font-size:8.5px;color:#8a6a60;line-height:1.55;text-align:center}
 .mb .ft b{color:#5F130F;font-size:10px}
 /* impressão (alternativa quando o visualizador não salva arquivos) */
 #printRoot{display:none}
@@ -1145,7 +1162,13 @@ function nvExame(mob){
   // pressão arterial já aparece nos parâmetros clínicos
   const af2=af?Object.assign({},af,{r:af.r.filter(x=>x.l!=='PS x PD')}):null,a=af2&&af2.r.length?nvKV(af2):'';
   if(!a&&!pc)return '';
-  return `<div class="blk">${barHTML('Exame clínico',mob?'':'Avaliação do doador antes da coleta')}<div class="nv-2">${a?`<div>${a}</div>`:''}${pc?`<div>${pc}</div>`:''}</div></div>`;
+  if(mob){
+    const g3=l2.length?`<div class="g3">${l2.join('')}</div>`:'',l1h=l1.length||pa?`<div class="ln">${l1.join('')}${l1.length&&pa?'<span class="sep"></span>':''}${pa}</div>`:'';
+    const om=m&&m.onda?`<div class="om"><small>Traçado do monitor</small><div class="cx" style="max-width:${Math.round(62*(m.prop||4))}px">${ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FFFFFF')}</div></div>`:'';
+    const pcm=(l1h||g3||om)?`<div class="nv-st">Parâmetros clínicos</div><div class="nv-pc">${l1h}${g3}</div>${om}`:'';
+    return `<div class="blk">${barHTML('Exame clínico','')}${a?`<div>${a}</div>`:''}${pcm?`<div style="margin-top:${a?10:0}px">${pcm}</div>`:''}</div>`;
+  }
+  return `<div class="blk">${barHTML('Exame clínico','Avaliação do doador antes da coleta')}<div class="nv-2${a&&pc?' nv-ex':''}">${a?`<div>${a}</div>`:''}${pc?`<div>${pc}</div>`:''}</div></div>`;
 }
 function nvTriagem(mob){
   const hb=nu('hb'),ht=nu('ht'),ppt=nu('ppt'),pl=fPlasma(),ac=S.clinico?'':sv('acDoa');
@@ -1153,6 +1176,12 @@ function nvTriagem(mob){
   const c1=rows.length||ppt?`<div class="nv-hc" style="min-width:0">${rows.length?`<div class="nv-st">Hemochromax</div>`:''}<div class="nv-kv">${rows.map(([k,v,u])=>`<div class="r"><span class="k">${k}</span><span class="v">${H(v)} <span class="un">${u}</span></span></div>`).join('')}${ppt?`<div class="r" style="border-top:1.2px solid #C6B098"><span class="k">PPT</span><span class="v">${H(dec(sv('ppt')))} <span class="un">g/dL</span></span></div>`:''}</div></div>`:'';
   const cel=(img,rot,v)=>(img||v)?`<div class="cel">${img?`<div class="ft"><img src="${img}" alt=""></div>`:''}<div class="tx"><small>${rot}</small><b>${H(v||'não informado')}</b></div></div>`:'';
   const c2=cel(S.clinico?'':S.plasmaImg,'Aspecto do plasma',pl),c3=S.clinico?'':cel(S.gelImg,'Autocontrole do doador',ac);
+  if(mob){
+    const fc=(img,rot,v)=>(img||v)?`<div class="fc">${img?`<div class="ft"><img src="${img}" alt=""></div>`:''}<small>${rot}</small><b>${H(v||'não informado')}</b></div>`:'';
+    const fs=[fc(S.clinico?'':S.plasmaImg,'Aspecto do plasma',pl),S.clinico?'':fc(S.gelImg,'Autocontrole do doador',ac)].filter(Boolean);
+    if(!c1&&!fs.length)return '';
+    return `<div class="blk">${barHTML('Triagem laboratorial','')}${c1}${fs.length?`<div class="nv-fot" style="grid-template-columns:repeat(${fs.length},minmax(0,1fr))">${fs.join('')}</div>`:''}</div>`;
+  }
   const cs=[c1,c2,c3].filter(Boolean);if(!cs.length)return '';
   const tpl=cs.length===3?'minmax(0,.78fr) minmax(0,1.11fr) minmax(0,1.11fr)':cs.length===2?'minmax(0,.8fr) minmax(0,1.2fr)':'1fr';
   return `<div class="blk">${barHTML('Triagem laboratorial','')}<div class="nv-tl" style="grid-template-columns:${tpl}">${cs.map((c,i)=>i===0&&c1?`<div class="cel" style="display:block">${c}</div>`:c).join('')}</div></div>`;
@@ -2641,14 +2670,28 @@ function paginasHTML(timbrado){
   const {P,cp}=paginar();
   return P.map((bl,i)=>`<div class="pg${cp?' cp':''}">${timbrado?`<img class="bg" src="${IMG.tim}" alt="">`:''}${hdrHTML()}<div class="ct">${bl.join('')}</div><div class="pn">Página ${i+1} de ${P.length}</div></div>`);
 }
+function idHTMLMob(){
+  const g=idGrupos(),todos=[...g.r2,...g.r3],pega=l=>todos.find(x=>x.l===l);
+  const cel=x=>`<div><div class="ilb">${x.l}</div><div class="ivl">${unH(x.v)}</div>${x.bc?`<img class="mcbc" src="${x.bc}" alt="">`:''}</div>`;
+  const lin=ls=>{const r=ls.map(pega).filter(Boolean);return r.length?`<div class="rw c3" style="grid-template-columns:repeat(3,minmax(0,1fr))">${r.map(cel).join('')}</div>`:'';};
+  const r1=g.nome||g.tipo?`<div class="rw r1"><div><div class="ilb">Animal</div><div class="nm">${esc(g.nome)}${g.tipo?`<span class="tp">${esc(g.tipo)}</span>`:''}</div></div></div>`:'';
+  const h=r1+lin(['Idade','Sexo','Peso'])+lin(['Raça','Responsável','Microchip']);
+  return h?`<div class="blk idb">${h}</div>`:'';
+}
+function lesColMob(){
+  let lg='';
+  if(S.lesoes.length)lg=`<ul class="lgl">${S.lesoes.map((l,i)=>`<li><b>${i+1}</b><span>${esc(l.t||'Sem descrição')} <em>(${l.v==='d'?'dorsal':'ventral'})</em></span></li>`).join('')}</ul>`;
+  else if(S.pele==='ok')lg=`<div class="okb"><svg viewBox="0 0 20 20" width="15" height="15"><circle cx="10" cy="10" r="10" fill="#C49A6C"/><path d="M5.6 10.4l3 3 5.8-6.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sem alterações</div>`;
+  return `<div class="blk">${barHTML('Lesões corporais')}<div class="lsm${lg?'':' so'}"><div class="figs">${figHTML('d',104)}${figHTML('v',104)}</div>${lg?`<div class="lg">${lg}</div>`:''}</div></div>`;
+}
 function mobileHTML(){
   return `<div class="mb">
    <div class="mh"><img src="${IMG.logo}" alt="CVH">${hdrHTML(true)}</div>
-   <div class="blk">${tituloHTML(true)}</div>${idHTML(2)}
+   <div class="blk">${tituloHTML(true)}</div>${idHTMLMob()}
    ${nvExame(true)}${nvTriagem(true)}${nvColeta(true)}
-   <div class="blk">${lesCol(112)}</div>${obsLista().length?`<div class="blk">${obsCol()}</div>`:''}
+   ${lesColMob()}${obsLista().length?`<div class="blk">${obsCol()}</div>`:''}
    <div class="blk" style="margin-top:18px">${assHTML()}</div>
-   <div class="ft"><b>CVH - Centro Veterinário de Hemoterapia</b><br>QNB 17 Lote 15 Loja 01, Taguatinga Norte, Brasília, DF, 72115-170<br>(61) 9 8237-2772 · www.cvh.vet.br · bancodesangue@cvh.vet.br</div>
+   <div class="ft"><b>CVH - Centro Veterinário de Hemoterapia</b><br>QNB 17 Lote 15 Loja 01, Taguatinga Norte, Brasília, DF, 72115-170<br>(61) 9 8237-2772 - www.cvh.vet.br - bancodesangue@cvh.vet.br</div>
   </div>`;
 }
 

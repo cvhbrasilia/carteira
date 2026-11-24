@@ -950,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124220131';
+  var VERSAO = '20261124223724';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6370,6 +6370,10 @@ function parecidosDoLab(x) {
     return pareceu ? { a, mesmoResp: !!rp && semAc((respDe(a) || {}).nome || '').split(' ')[0] === rp } : null; }).filter(Boolean);
   return L.sort((p, q) => q.mesmoResp - p.mesmoResp).slice(0, 3).map(p => p.a);
 }
+// hemograma e bioquímica do mesmo doador chegam em dois PDFs da IDEXX: a chave junta os dois (código da doação ou nome do arquivo)
+function chaveIdexx(nome) { const b = String(nome || '').replace(/\.pdf$/i, '').replace(/\s*\(\d+\)\s*$/, '').replace(/_\d{8}_\d{6}(_\d+)?$/, ''), c = b.match(/(\d{2,5})\s*[-.]\s*(\d{1,2})(?!\d)/);
+  return c ? 'c:' + c[1] + '-' + c[2] : semAc(b).replace(/[^a-z0-9]+/g, ' ').trim(); }
+const parIdexx = (x, y) => x.origem === 'idexx' && y.origem === 'idexx' && x.id !== y.id && !!chaveIdexx(x.nomeArquivo) && chaveIdexx(x.nomeArquivo) === chaveIdexx(y.nomeArquivo) && Math.abs((Date.parse(x.criadoEm) || 0) - (Date.parse(y.criadoEm) || 0)) < 4 * 864e5;
 async function pintarLaboratorios(todos) {
   const el = $('#labRec'); if (!el) return;
   let L; try { L = E.labRec = await api('laboratoriosListar', E.sessao, !!todos); } catch (e) { el.innerHTML = '<h3>Laudos dos laboratórios</h3><p class="nota">' + esc(e.message) + '</p>'; return; }
@@ -6377,6 +6381,19 @@ async function pintarLaboratorios(todos) {
   const nQc = L.filter(ehQualidade).length;
   L = L.filter(x => !ehQualidade(x) && x.situacao !== 'excluido' && (todos || x.situacao !== 'arquivado'));
   if (!todos) L = L.filter(x => { if (x.situacao === 'feito') return true; const r = laudoJaFeito(x, animalDoLab(x)); if (!r) return true; api('laboratorioMarcar', E.sessao, x.id, { situacao: 'feito', registroId: r.id }).catch(() => {}); return false; });
+  // IDEXX do doador: os dois PDFs (hemograma e bioquímica) viram um item só; com um só, o item espera o outro
+  const idx = L.filter(x => x.origem === 'idexx' && x.situacao !== 'feito' && x.situacao !== 'ignorado' && x.situacao !== 'arquivado'), pulados = new Set();
+  let todosLab = null;
+  for (const x of idx.slice().reverse()) {
+    if (pulados.has(x.id)) continue;
+    const par = idx.filter(y => !pulados.has(y.id) && parIdexx(x, y));
+    if (par.length) { x._par = par; par.forEach(y => pulados.add(y.id)); continue; }
+    if (!chaveIdexx(x.nomeArquivo)) continue;
+    if (todosLab === null) { try { todosLab = await api('laboratoriosListar', E.sessao, true); } catch (_) { todosLab = []; } }
+    if (!todosLab.some(y => y.situacao !== 'excluido' && parIdexx(x, y))) x._sozinho = true;
+  }
+  if (!$('#labRec')) return;
+  L = L.filter(x => !pulados.has(x.id));
   const novos = L.filter(x => x.situacao === 'novo').length;
   el.innerHTML = '<h3>Laudos dos laboratórios' + (novos ? ' <span class="chip critico">' + novos + (novos === 1 ? ' novo' : ' novos') + '</span>' : '') + '</h3>' +
     '<p class="nota">O robô confere o TECSA e o Citopet a cada 15 minutos, das 7h às 23h, de segunda a sábado. A pasta da IDEXX é conferida a cada 10 minutos. Os laudos chegam aqui com o PDF original; o laudo do CVH abre preenchido para conferir e assinar.</p>' +
@@ -6384,12 +6401,14 @@ async function pintarLaboratorios(todos) {
     (L.length ? L.map(x => {
       const an = animalDoLab(x), pos = x.positivo, alt = (x.resumo || []).filter(r => r.positivo || r.alterado);
       const nI = x.origem === 'idexx' ? idexxNome(x.nomeArquivo) : null, rot = an ? an.nome : (nI ? nI.animal : String(x.animal || '').replace(/\s*\(\d+\)\s*/, ' ').trim()) || 'animal não identificado';
-      return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (pos ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(rot) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + (an ? '' : ' <small class="lab-pos">· não identificado no cadastro</small>') + '</b>' +
+      const hEsp = x._sozinho ? Math.floor((Date.now() - (Date.parse(x.criadoEm) || Date.now())) / 36e5) : 0, ids = [x.id].concat((x._par || []).map(y => y.id)).join(',');
+      return '<div class="item lab-it' + (x.situacao === 'novo' || (x._par || []).some(y => y.situacao === 'novo') ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (pos ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(rot) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + (x._par ? ' <small>· hemograma e bioquímica (' + (x._par.length + 1) + ' PDFs)</small>' : '') + (an ? '' : ' <small class="lab-pos">· não identificado no cadastro</small>') + '</b>' +
+        (x._sozinho ? '<small class="' + (hEsp >= 4 ? 'lab-pos' : '') + '">Chegou 1 de 2 PDFs (hemograma e bioquímica). O laudo espera o outro' + (hEsp >= 4 ? ', que ainda não chegou depois de ' + hEsp + ' h' : '') + '.</small>' : '') +
         '<small>' + esc([br(isoLab(x)) || x.data, x.numero ? 'nº ' + x.numero : '', (an && respDe(an) ? respDe(an).nome : '') || x.responsavel || (nI ? nI.resp : ''), x.completo === 'NÃO' ? 'resultado parcial' : '', x.situacao === 'feito' ? 'laudo feito' : x.situacao === 'ignorado' ? 'ignorado' : ''].filter(Boolean).join(' · ')) + '</small>' +
         (pos ? '<small class="lab-pos">DETECTADO: ' + esc(alt.filter(r => r.positivo).map(r => r.exame + ' ' + r.resultado).join(' · ')) + '</small>' : alt.length ? '<small>Fora da referência: ' + esc(alt.slice(0, 6).map(r => r.exame).join(', ')) + '</small>' : (x.resumo || []).length ? '<small>' + esc((x.resumo || []).slice(0, 4).map(r => r.exame + ': ' + r.resultado).join(' · ')) + '</small>' : '') + '</div>' +
         (!an && x.situacao !== 'feito' ? parecidosDoLab(x).map(a => '<div class="lab-par"><span>É ' + esc(a.nome) + (respDe(a) ? ' (' + esc(respDe(a).nome) + ')' : '') + '?</span><button class="mini" data-acao="lab-ligar" data-id="' + esc(x.id) + '" data-aid="' + a.id + '">Sim, é ' + esc(a.nome) + '</button></div>').join('') : '') +
-        '<div class="mini-bts"><a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF</a>' +
-        (x.situacao !== 'feito' ? '<button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">Fazer laudo CVH</button><button class="mini" data-acao="lab-marcar" data-id="' + esc(x.id) + '" data-v="' + (x.situacao === 'ignorado' ? 'novo' : 'ignorado') + '">' + (x.situacao === 'ignorado' ? 'Voltar' : 'Ignorar') + '</button>' : '') + '</div></div>';
+        '<div class="mini-bts">' + [x].concat(x._par || []).map((y, i, a) => '<a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(y.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF' + (a.length > 1 ? ' ' + (i + 1) : '') + '</a>').join('') +
+        (x.situacao !== 'feito' ? '<button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">' + (x._sozinho ? 'Fazer sem esperar' : 'Fazer laudo CVH') + '</button><button class="mini" data-acao="lab-marcar" data-id="' + esc(ids) + '" data-v="' + (x.situacao === 'ignorado' ? 'novo' : 'ignorado') + '">' + (x.situacao === 'ignorado' ? 'Voltar' : 'Ignorar') + '</button>' : '') + '</div></div>';
     }).join('') : '<p class="vazio-p">Nenhum laudo novo dos laboratórios.</p>') +
     (nQc ? '<p class="nota">' + nQc + (nQc === 1 ? ' PDF de bolsa da IDEXX (ST, CH, CP ou PFC) foi' : ' PDFs de bolsas da IDEXX (ST, CH, CP, PFC) foram') + ' para o Controle de qualidade, onde entram pelo botão "PDFs recebidos da IDEXX".</p>' : '') +
     (todos ? '' : '<button class="lnk" data-acao="lab-todos">ver também os já feitos e ignorados</button>');
@@ -8225,7 +8244,7 @@ const ACOES = {
   'laudo-corrigir': async b => { const r = (E.d.registros || []).concat(E.d.laudosReceptor || []).find(x => x.id === b.dataset.id); if (!r) return; b.disabled = true; try { const ed = (r.dados || {}).edicao, t = ed && ed.id ? await api('laudoEdicaoLer', E.sessao, ed.id) : { texto: edicaoDeAntigo(r.dados) }; E.laudoEdicao = { regId: r.id, texto: t.texto }; if (r.animalId === 'receptor') { E.laudoReceptor = true; abrirModulo('laudos', null); } else abrirModulo('laudos', r.animalId); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'laudo-tecsa': () => { E.laudoTipo = 'tecsa'; abrirModulo('laudos', null); },
   'lab-todos': () => pintarLaboratorios(true),
-  'lab-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); pintarLaboratorios(); } catch (e) { toast(e.message, 4000); } },
+  'lab-marcar': async b => { try { for (const id of String(b.dataset.id).split(',').filter(Boolean)) await api('laboratorioMarcar', E.sessao, id, { situacao: b.dataset.v }); pintarLaboratorios(); } catch (e) { toast(e.message, 4000); } },
   'lab-laudo': async b => { const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (!x) return; const an = animalDoLab(x);
     // laudo já feito do mesmo animal (por exemplo o hemograma) com PDF da IDEXX que chegou perto deste: o laudo oferece juntar e atualizar o mesmo laudo
     let feitos = [];
@@ -8234,7 +8253,7 @@ const ACOES = {
         .map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id, regId: y.registroId || '' })); } catch (_) {} }
     api('laboratorioMarcar', E.sessao, x.id, { situacao: x.situacao === 'novo' ? 'visto' : x.situacao }).catch(() => {});
     // IDEXX: os outros PDFs do mesmo dia vão junto; o laudo junta os que forem do mesmo paciente
-    const cand = x.origem === 'idexx' ? (E.labRec || []).filter(y => y.origem === 'idexx' && !ehQualidade(y) && y.id !== x.id && y.data === x.data && y.situacao !== 'feito').map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id })) : [];
+    const cand = x.origem === 'idexx' ? (E.labRec || []).filter(y => y.origem === 'idexx' && !ehQualidade(y) && y.id !== x.id && (y.data === x.data || parIdexx(x, y)) && y.situacao !== 'feito').map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id })) : [];
     E.laudoPdfLab = { id: x.arquivoId, origem: x.origem, nome: x.nomeArquivo, labId: x.id, candidatos: cand, feitos }; E.laudoTipo = x.origem === 'tecsa' ? 'tecsa' : 'idexx'; abrirModulo('laudos', an ? an.id : null); },
   'laudo-receptor': () => { E.laudoReceptor = true; abrirModulo('laudos', null); },
   'laudo-apagar': async b => { const r = regPorId(b.dataset.id); if (!r || !confirm('Apagar este laudo?')) return; try { await api('excluirRegistro', E.sessao, r.id); E.d.registros = E.d.registros.filter(x => x.id !== r.id); telaLaudos(E.animal); toast('Laudo apagado.'); } catch (e) { toast(e.message, 6000); } },
