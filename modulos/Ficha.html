@@ -685,7 +685,7 @@ function buildForm(){
     </div>
   </section>
 
-  <section class="sec"><h2><span class="n">6</span>Observações</h2>
+  <section class="sec"><h2><span class="n">6</span><span id="secObsT">Observações</span></h2>
     <div class="grid">
       ${txa('obsIni','Observações iniciais','Achados na avaliação antes da coleta')}
       ${txa('obsDoa','Observações da doação','Intercorrências durante a coleta')}
@@ -701,14 +701,14 @@ function buildForm(){
         ${chips('plAsp','Aspecto',ASPECTOS_PLASMA.map(c=>[c,c]),{ni:false})}
         ${chips('plHem','Hemólise',GRAUS_HEMOLISE.map(c=>[c,c]),{ni:false})}
         ${chips('plLip','Lipemia',GRAUS_LIPEMIA.map(c=>[c,c]),{ni:false})}
-        ${fld('plasma','Outras observações do plasma',{ph:'Opcional',ni:false})}</div>
+        ${fld('plasma','Outras observações do plasma',{ph:'Opcional',ni:false})}
+        <div id="plaFotoBox" hidden style="margin-top:6px"><label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="acFotoPla" accept="image/*" hidden><span id="acFotoPlaTx">Foto do plasma</span></label></div></div>
       <div class="grp s6"><div class="gt">Autocontrole do doador (cartão em gel)</div><p class="hint" style="margin:0 0 8px">Uso interno do CVH: não sai no PDF nem na carteira. Entra sozinho no laudo da prova de compatibilidade das bolsas desta doação. Positivo bloqueia as bolsas.</p>
         ${chips('acDoa','Resultado',[['Negativo','Negativo'],['Positivo','Positivo']],{ni:false})}
-        <div class="f" id="acFotoBox" hidden><div class="fl"><span class="lb">Fotos do cartão de gel e do plasma</span></div>
+        <div class="f" id="acFotoBox" hidden><div class="fl"><span class="lb">Foto do cartão de gel</span></div>
           <div id="acFotoVer" style="margin:4px 0 8px"></div>
           <label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="acFotoGel" accept="image/*" hidden><span id="acFotoGelTx">Foto do cartão de gel</span></label>
-          <label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="acFotoPla" accept="image/*" hidden><span id="acFotoPlaTx">Foto do plasma</span></label>
-          <p class="hint" style="margin:6px 0 0">As duas fotos saem numa folha só, com uma etiqueta embaixo: ACD, o número da doação e o nome do animal. Preencha esses dois antes das fotos.</p></div></div>
+          <p class="hint" style="margin:6px 0 0">A foto do cartão e a foto do plasma (botão no quadro do plasma, ao lado) saem numa folha só, com uma etiqueta embaixo: ACD, o número da doação e o nome do animal. Preencha esses dois antes das fotos.</p></div></div>
       <div class="s6"><button type="button" class="btn pri" id="bSalvarDepois">Salvar para continuar depois</button></div>
     </div>
   </section>
@@ -742,11 +742,17 @@ const dogURL={};
 function dogImg(v){return v==='d'?IMG.dogd:IMG.dogv}
 
 /* ================= sincronização formulário ⇄ estado ================= */
-const TEXT_KEYS=['auscObs','numero','data','etq','animal','idade','peso','raca','responsavel','microchip','ps','pd','hb','ht','ppt','plasma','fc','fr','temp','inicio','fim','tempo','volume','lote','validade','seguimento','obsIni','obsDoa','obsDemais'];
+const TEXT_KEYS=['auscObs','numero','data','etq','animal','idade','peso','raca','responsavel','microchip','ps','pd','hb','ht','ppt','plasma','fc','fr','temp','spo2','inicio','fim','tempo','volume','lote','validade','seguimento','obsIni','obsDoa','obsDemais'];
 const CHIP_KEYS=['ausc','sexo','mucosas','tpc','dea1','dal','pele','plCor','plAsp','plHem','plLip','acDoa'];
 const NC_DEP=['volume','lote','validade','seguimento'];
 function pintarClinico(){const c=!!S.clinico,b=document.getElementById('bClinico');if(!b)return;b.setAttribute('aria-pressed',c);
   const n=document.querySelector('[data-wrap="numero"]');if(n)n.hidden=c;const nt=document.getElementById('clinicoNota');if(nt)nt.hidden=!c;
+  const so=document.getElementById('secObsT');if(so)so.textContent=c?'Observações clínicas':'Observações';
+  const lab=(k,a,b,ph)=>{const l=document.querySelector('[data-wrap="'+k+'"] label');if(l)l.textContent=c?a:b;const i=document.getElementById('i_'+k);if(i&&ph)i.placeholder=c?ph[0]:ph[1];};
+  lab('obsIni','Observações clínicas','Observações iniciais',['Queixa, histórico e achados do exame','Achados na avaliação antes da coleta']);
+  lab('obsDemais','Conduta e orientações','Demais observações',['Conduta, orientações e retorno','Orientações, retorno, próxima doação']);
+  const od=document.querySelector('[data-wrap="obsDoa"]');if(od)od.hidden=c&&!S.obsDoa;
+  const ac=document.querySelector('[data-wrap="acDoa"]');if(ac&&ac.closest('.grp'))ac.closest('.grp').hidden=c;
   const st=document.getElementById('secDoaT');if(st)st.textContent=c?'Atendimento':'Doação';const ld=document.querySelector('label[for="i_data"]');if(ld)ld.textContent=c?'Data do atendimento':'Data da doação';
   document.querySelectorAll('.sec').forEach(s=>{const h=s.querySelector('h2');if(h&&/Coleta$/.test(h.textContent.trim()))s.hidden=c;});
   const t1=document.querySelector('.tt .t1');if(t1)t1.textContent=c?'Ficha de atendimento clínico':'Ficha de doação';const it=document.getElementById('introT');if(it)it.textContent=c?'Ficha de atendimento clínico':'Ficha de doação de sangue canina';}
@@ -1042,7 +1048,7 @@ function coletaTabs(){
   return [{t:'Horário e volume',r:[lin('Início e fim da triagem',fTriagem()),nc?{l:'Tempo de coleta',v:'Não coletado',h:'<i>Não coletado</i>'}:lin('Tempo de coleta',nu('tempo'),'min'),nc?{l:'Volume coletado',v:'-'}:lin('Volume coletado',nu('volume'),'mL')].filter(Boolean)},
           {t:'Bolsa',r:(nc?[{l:'Lote',v:'-'},{l:'Validade',v:'-'},{l:'Seguimento',v:'-'}]:[lin('Lote',sv('lote')),lin('Validade',fVal()),lin('Seguimento',sv('seguimento'))]).filter(Boolean)}].filter(t=>t.r.length);
 }
-function obsLista(){return [['obsIni','Observações iniciais'],['obsDoa','Observações da doação'],['obsDemais','Demais observações']].filter(([k])=>sv(k)).map(([k,t])=>({t,v:sv(k)}));}
+function obsLista(){return (S.clinico?[['obsIni','Observações clínicas'],['obsDoa','Observações da doação'],['obsDemais','Conduta e orientações']]:[['obsIni','Observações iniciais'],['obsDoa','Observações da doação'],['obsDemais','Demais observações']]).filter(([k])=>sv(k)).map(([k,t])=>({t,v:sv(k)}));}
 
 /* ================= assinatura ================= */
 function canon(){const o={};for(const k of Object.keys(S).sort())if(!['ass','lidos','duvidas','id','atualizadoEm','criadoEm'].includes(k))o[k]=S[k];return JSON.stringify(o);}
@@ -3163,7 +3169,7 @@ init();
     // fotos do autocontrole do doador (cartão em gel) e do plasma: uma folha só, com a etiqueta ACD, a doação e o animal (uso interno, Drive do CVH)
     const acLocal = { gel: null, pla: null, folha: "" };
     function acFotoPintar() {
-      const box = $("#acFotoBox"); if (!box) return; box.hidden = false;
+      const box = $("#acFotoBox"); if (!box) return; box.hidden = false; const pb = $("#plaFotoBox"); if (pb) pb.hidden = false;
       const v = $("#acFotoVer"), f = S.acFoto, fs = S.acFotos || {};
       v.innerHTML = acLocal.folha ? `<img src="${acLocal.folha}" alt="Folha do autocontrole do doador" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid #EADFD3">` : f && f.id ? `<button type="button" class="btn" id="acFotoAbrir">Ver a folha guardada</button>` : "";
       $("#acFotoGelTx").textContent = fs.gel ? "Trocar a foto do gel" : "Foto do cartão de gel";
