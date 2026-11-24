@@ -499,7 +499,7 @@ function busy(on,t){$('#busy').classList.toggle('show',!!on);if(t)$('#busyTx').t
 const LS_DRAFT='cvh_ficha_rascunho_v1', LS_SIGN='cvh_ficha_assinante_v1', LS_FICHAS='cvh_fichas_andamento_v1', LS_ATUAL='cvh_ficha_atual_v1', DIAS_GUARDA=30;
 function blank(){return{
   id:null,numero:'',etq:'',animal:'',idade:'',sexo:'',raca:'',peso:'',responsavel:'',microchip:'',data:todayISO(),
-  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,hemoFoto:null,clinico:false,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
+  dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,hemoFoto:null,clinico:false,gelImg:'',ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
   ps:'',pd:'',hb:'',ht:'',fc:'',fr:'',temp:'',tpc:'',spo2:'',
   inicio:'',fim:'',tempo:'',volume:'',lote:'',validade:'',seguimento:'',
   obsIni:'',lesoes:[],plasmaImg:'',obsDoa:'',obsDemais:'',
@@ -703,7 +703,7 @@ function buildForm(){
         ${chips('plLip','Lipemia',GRAUS_LIPEMIA.map(c=>[c,c]),{ni:false})}
         ${fld('plasma','Outras observações do plasma',{ph:'Opcional',ni:false})}
         <div id="plaFotoBox" hidden style="margin-top:6px"><div id="plaFotoVer" style="margin:4px 0 8px"></div><label class="btn" style="display:inline-block;cursor:pointer;margin:0 6px 6px 0"><input type="file" id="acFotoPla" accept="image/*" hidden><span id="acFotoPlaTx">Foto do plasma</span></label></div></div>
-      <div class="grp s6"><div class="gt">Autocontrole do doador (cartão em gel)</div><p class="hint" style="margin:0 0 8px">Uso interno do CVH: não sai no PDF nem na carteira. Entra sozinho no laudo da prova de compatibilidade das bolsas desta doação. Positivo bloqueia as bolsas.</p>
+      <div class="grp s6"><div class="gt">Autocontrole do doador (cartão em gel)</div><p class="hint" style="margin:0 0 8px">O resultado e a foto do microtubo saem na ficha, na triagem laboratorial, ao lado do tubo do plasma. Entra sozinho no laudo da prova de compatibilidade das bolsas desta doação. Positivo bloqueia as bolsas.</p>
         ${chips('acDoa','Resultado',[['Negativo','Negativo'],['Positivo','Positivo']],{ni:false})}
         <div class="f" id="acFotoBox" hidden><div class="fl"><span class="lb">Foto do cartão de gel</span></div>
           <div id="acFotoVer" style="margin:4px 0 8px"></div>
@@ -1171,12 +1171,13 @@ function ondaHTML(){const m=S.monitor;if(!m||!m.onda)return '';
 function exameTabs(a4){
   const T=exameTabsBase(),m=S.monitor;
   if(a4&&m&&m.onda){const sv=T.find(x=>x.t==='Sinais vitais');if(sv)sv.onda=ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FBF8F4');}
+  if(a4){const tr=T.find(x=>x.t==='Triagem laboratorial');if(tr)tr.imgH=88;}
   return T;
 }
 function exameTabsBase(){
   return [{t:'Avaliação física',r:[lin('Mucosas',fMuc()),lin('Linfonodos',fLinf()),lin('PS x PD',fPres(),'mmHg'),lin('Ausculta cardíaca',fAusc())].filter(Boolean)},
           {t:'Sinais vitais',r:[lin('FC',nu('fc'),'bpm'),lin('FR',fFr(),'mpm'),lin('Temperatura',nu('temp'),'°C'),lin('TPC',fTpc()),lin('SpO₂',nu('spo2'),'%')].filter(Boolean)},
-          {t:'Triagem laboratorial',img:S.plasmaImg||'',r:[hemoLin(),lin('PPT',nu('ppt'),'g/dL'),lin('Plasma',fPlasma())].filter(Boolean)}].filter(t=>t.r.length||t.img);
+          {t:'Triagem laboratorial',imgs:S.clinico?[]:[[S.plasmaImg,'Plasma'],[S.gelImg,'Autocontrole']].filter(x=>x[0]),r:[hemoLin(),lin('PPT',nu('ppt'),'g/dL'),lin('Plasma',fPlasma()),S.clinico?null:lin('Autocontrole do doador',sv('acDoa'))].filter(Boolean)}].filter(t=>t.r.length||(t.imgs&&t.imgs.length));
 }
 function fAusc(){const p=[];const a=sv('ausc'),o=sv('auscObs');if(a)p.push(a);if(o)p.push(p.length?o.charAt(0).toLowerCase()+o.slice(1):o);return p.join(', ');}
 function fTriagem(){const a=sv('inicio'),b=sv('fim');return a&&b?`${a} às ${b}`:a?`Início ${a}`:b?`Fim ${b}`:'';}
@@ -1230,6 +1231,13 @@ function renderSign(){
 /* ================= documento A4 ================= */
 const H=v=>esc(v).replace(/\n/g,'<br>');
 function unH(v){return H(v).replace(/ (kg|g\/dL|%|bpm|mpm|°C|mmHg|min|mL)$/,' <span class="un">$1</span>');}
+function idHTMLA4(){
+  const g=idGrupos(),c=x=>`<div><div class="ilb">${x.l}</div><div class="ivl">${unH(x.v)}</div></div>`;
+  const r1=`<div class="rw" style="grid-template-columns:minmax(0,1.6fr) ${g.r2.map(()=>'minmax(0,1fr)').join(' ')}"><div><div class="ilb">Animal</div><div class="nm" style="font-size:16px;gap:8px">${esc(g.nome)}${g.tipo?`<span class="tp" style="font-size:9.5px;padding:2px 8px">${esc(g.tipo)}</span>`:''}</div></div>${g.r2.map(c).join('')}</div>`;
+  const rp=g.r3.find(x=>x.l==='Responsável'),mc=g.r3.find(x=>x.l==='Microchip');
+  const r2=rp||mc?`<div class="rw" style="grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)">${rp?c(rp):'<div></div>'}${mc?`<div><div class="ilb">Microchip</div><div style="display:flex;align-items:center;gap:10px"><div class="ivl">${unH(mc.v)}</div>${mc.bc?`<img class="mcbc" src="${mc.bc}" alt="" style="height:20px;margin-top:0">`:''}</div></div>`:''}</div>`:'';
+  return `<div class="blk idb">${r1}${r2}</div>`;
+}
 function idHTML(cols=4){
   const g=idGrupos();const rows=[];
   if(g.nome||g.tipo)rows.push(`<div class="rw r1"><div><div class="ilb">Animal</div><div class="nm">${esc(g.nome)}${g.tipo?`<span class="tp">${esc(g.tipo)}</span>`:''}</div></div></div>`);
@@ -1239,7 +1247,7 @@ function idHTML(cols=4){
   return rows.length?`<div class="blk idb">${rows.join('')}</div>`:'';
 }
 function barHTML(t,s){return `<div class="sbar"><b>${t}</b>${s?`<span>${s}</span>`:''}</div>`;}
-function kvHTML(tab){return `<table class="kv"><colgroup><col class="ck"><col></colgroup><thead><tr><th colspan="2">${tab.t}</th></tr></thead><tbody>${tab.r.map(x=>`<tr><td class="k">${x.l}</td><td class="v">${x.h||H(x.v)}</td></tr>`).join('')}${tab.img?`<tr><td colspan="2" style="padding:6px 0 2px;text-align:center"><img src="${tab.img}" alt="Tubo do plasma" style="height:118px;width:auto;border-radius:6px"></td></tr>`:''}${tab.onda?`<tr><td colspan="2" style="padding:4px 0 2px"><div style="font-size:9px;color:#8A6A63;margin:0 0 2px 6px">Onda do SpO₂ (traçado do monitor)</div><div style="border:1px solid #EADFD3;border-radius:6px;overflow:hidden">${tab.onda}</div></td></tr>`:''}</tbody></table>`;}
+function kvHTML(tab){return `<table class="kv"><colgroup><col class="ck"><col></colgroup><thead><tr><th colspan="2">${tab.t}</th></tr></thead><tbody>${tab.r.map(x=>`<tr><td class="k">${x.l}</td><td class="v">${x.h||H(x.v)}</td></tr>`).join('')}${tab.imgs&&tab.imgs.length?`<tr><td colspan="2" style="padding:6px 0 0;background:#fff"><div style="display:flex;justify-content:center;align-items:flex-end;gap:12px;background:#F7F2EC;border:1px solid #EADFD3;border-radius:8px;padding:8px 10px 6px">${tab.imgs.map(([u,c])=>`<figure style="margin:0;text-align:center"><img src="${u}" alt="${c}" style="height:${tab.imgH||118}px;width:auto;border-radius:5px;display:block;background:#fff;box-shadow:0 1px 3px rgba(60,40,30,.18)"><figcaption style="font-size:7.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D;margin-top:4px">${c}</figcaption></figure>`).join('')}</div></td></tr>`:''}${tab.onda?`<tr><td colspan="2" style="padding:4px 0 2px"><div style="font-size:9px;color:#8A6A63;margin:0 0 2px 6px">Onda do SpO₂ (traçado do monitor)</div><div style="border:1px solid #EADFD3;border-radius:6px;overflow:hidden">${tab.onda}</div></td></tr>`:''}</tbody></table>`;}
 function secKV(t,s,tabs,cols=2,tpl){if(!tabs.length)return '';const gc=tpl&&tabs.length===3&&cols>=3?tpl:`repeat(${Math.min(cols,tabs.length)},minmax(0,1fr))`;return `<div class="blk">${barHTML(t,s)}<div class="kvg${gc===tpl?' k3':''}" style="grid-template-columns:${gc}">${tabs.map(kvHTML).join('')}</div></div>`;}
 function figHTML(v,h){return `<figure><img src="${dogImg(v)}" alt="" style="height:${h}px;width:${(h*60/134).toFixed(1)}px">${S.lesoes.map((l,i)=>l.v===v?`<span class="m" style="left:${(l.x*100).toFixed(1)}%;top:${(l.y*h).toFixed(1)}px">${i+1}</span>`:'').join('')}<figcaption>${v==='d'?'Dorsal':'Ventral'}</figcaption></figure>`;}
 function lesCol(h=112){
@@ -2528,7 +2536,7 @@ function assHTML(){
   return `<div class="as"><img src="${IMG.selo}" alt=""><div class="tx"><small class="as-lbl">ASSINADO ELETRONICAMENTE</small><div class="as-top"><div class="as-nm"><b>${esc(S.ass.nome)}</b></div><span class="as-rub">${rubSvg}</span></div><div>Médico veterinário · CRMV-${esc(S.ass.uf)} ${esc(S.ass.crmv)}</div><div>${esc(t.l3.replace(/^em /,''))}</div><div class="cod">${esc(t.cod)}</div></div>${qrFicha(url)}</div>${t.lib?`<div class="as-lib">${esc(t.lib)}${t.l3?' '+esc(t.l3):''}</div>`:''}`;
 }
 function blocos(){
-  return [`<div class="blk">${tituloHTML()}</div>`,idHTML(),
+  return [`<div class="blk">${tituloHTML()}</div>`,idHTMLA4(),
     secKV('Exame clínico','Avaliação do doador antes da coleta',exameTabs(true),3,'minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.3fr)'),
     secKV('Coleta','Horários, volume e bolsa',coletaTabs()),
     lesObsHTML(104),`<div class="blk" style="margin-top:12px">${assHTML()}</div>`].filter(Boolean);
@@ -3413,6 +3421,7 @@ init();
         const bl = tr.blob; acLocal[k] = bl; acLocal["u" + k] = tr.url;
         // o tubo do plasma entra na ficha (triagem laboratorial); ficha assinada pede assinatura de novo
         if (k === "pla") { S.plasmaImg = await tuboPequeno(tr.url); touched("plasmaImg"); syncAll(); }
+        if (k === "gel") { S.gelImg = await tuboPequeno(tr.url); touched("gelImg"); syncAll(); }
         const r1 = await ponte("acFoto", { nome: (k === "gel" ? "ACD gel " : "ACD plasma ") + S.numero + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await bl.arrayBuffer())) });
         S.acFotos = Object.assign({}, S.acFotos || {}, { [k]: { id: r1.id } });
         const folha = await montarFolha();
