@@ -552,7 +552,7 @@ a.btn{text-decoration:none}
 /* avisos */
 .av-bt{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:0 12px}.av-bt svg{width:20px;height:20px}.av-bt i{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#A83D3D;color:#fff;font-size:11px;font-style:normal;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .av-h{margin:14px 0 6px;color:var(--vinho)}.av{list-style:none;margin:0;padding:0}.av-i{background:#fff;border:1px solid rgba(110,30,30,.12);border-left:4px solid #A83D3D;border-radius:12px;padding:10px 12px;margin:0 0 8px}
-.av-i b{display:block;font-size:14.5px}.av-i small{display:block;font-size:13px;color:#7A6A62;margin-top:2px}.av-i.obrig{border-left-color:#A83D3D}.av-i.prev{border-left-color:#2F7D4F}.av-i.comp{border-left-color:#5F130F}.av-i.novo{border-left-color:#C49A6C}
+.av-i b{display:block;font-size:14.5px}.av-i small{display:block;font-size:13px;color:#7A6A62;margin-top:2px}.av-i.obrig{border-left-color:#A83D3D}.av-i.prev{border-left-color:#2F7D4F}.av-i.ok{border-left-color:#2F7D4F}.av-i b,.av-i small{display:block}.av-i.comp{border-left-color:#5F130F}.av-i.novo{border-left-color:#C49A6C}
 .av-rot{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:99px;padding:2px 8px;margin-bottom:4px;background:#F5E3E0;color:#A83D3D}.av-i.prev .av-rot{background:#E3F1E7;color:#2F6B45}.av-i.comp .av-rot{background:#F3E6E4;color:#5F130F}
 /* central de inteligência */
 .ci-ks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 14px}@media (max-width:700px){.ci-ks{grid-template-columns:1fr 1fr}}
@@ -949,7 +949,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124150310';
+  var VERSAO = '20261124153604';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2694,7 +2694,7 @@ function cartaoFisicoHtml(an) {
   } else if (c.onde === 'responsavel') {
     if (equipe) {
       txt = 'Entregue ao responsável em ' + br(String(c.ondeEm || '').slice(0, 10)) + '. <b>Aguardando a confirmação do recebimento.</b>' +
-        (c.aviso ? ' <small>' + (c.aviso.semEmail ? 'Responsável sem e-mail cadastrado: peça a confirmação pelo link da carteira.' : 'Aviso enviado para ' + esc(c.aviso.para) + ' em ' + brHora(c.aviso.em) + '.') + '</small>' : '');
+        (c.aviso ? ' <small>' + (c.aviso.semEmail ? 'Responsável sem e-mail cadastrado: peça a confirmação pelo link da carteira.' : c.aviso.naoLiberado ? 'E-mails ainda não liberados para este responsável: libere em Responsável, ou peça a confirmação pelo link da carteira.' : 'Aviso enviado para ' + esc(c.aviso.para) + ' em ' + brHora(c.aviso.em) + '.') + '</small>' : '');
       bts = bt('reenviar', 'Reenviar o aviso') + bt('cvh', 'Ficou no CVH') + bt('voltar', 'Desfazer');
     } else if (E.modo === 'responsavel' && !E.previa && E.token && !(E.d && E.d.temporario)) {
       const rp = (E.d && E.d.responsavel) || {};
@@ -6554,8 +6554,11 @@ function telaResp(id) {
       (contatosDe(r).length ? '<div class="ct-sec" style="margin-top:12px"><h4>Contatos secundários</h4>' + contatosDe(r).map(c => '<div class="ct-v"><div><b>' + esc(c.nome || 'Sem nome') + '</b><small>' + esc([c.relacao, c.telefone].filter(Boolean).join(' · ')) + '</small></div>' + (zapTel(c.telefone) ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(zapTel(c.telefone)) + '">WhatsApp</a>' : '') + '</div>').join('') + '</div>' : '') + '</section>' +
     (cad ? '<section class="cartao"><h3>Link da carteira</h3><p class="nota">O responsável abre por este link e só consegue ver. Ele mostra todos os animais cadastrados aqui.</p>' +
     '<div class="link-box"><input id="link" readonly value="' + esc(link) + '" aria-label="Link da carteira"><button class="btn peq" data-acao="copiar-link">Copiar</button></div>' +
-    '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="copiar-zap" data-href="' + esc(linkWhats(r, ans, link)) + '">Copiar mensagem</button>' + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button><button class="btn sec2 peq" data-acao="trocar-link">Trocar o link</button></div>' +
-    '<p class="nota">Use Trocar o link se o link foi parar com quem não deve. O link antigo para de abrir na hora, e o responsável precisa receber o link novo.</p></section>' : '') +
+    '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" data-libera="' + r.id + '" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="copiar-zap" data-libera="' + r.id + '" data-href="' + esc(linkWhats(r, ans, link)) + '">Copiar mensagem</button>' + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button><button class="btn sec2 peq" data-acao="trocar-link">Trocar o link</button></div>' +
+    '<p class="nota">Use Trocar o link se o link foi parar com quem não deve. O link antigo para de abrir na hora, e o responsável precisa receber o link novo.</p>' +
+    (r.emailsLiberados ? '<div class="av-i ok" style="margin-top:10px"><b>E-mails automáticos liberados</b><small>Lembretes e avisos da carteira vão para ' + esc(r.email || 'o e-mail do responsável (sem e-mail cadastrado)') + (/^\d{4}-/.test(r.emailsLiberados) ? ', desde ' + esc(brHora(r.emailsLiberados)) : '') + '.</small><button class="btn sec2 peq" data-acao="emails-resp" data-v="0" style="margin-top:6px">Pausar os e-mails</button></div>'
+      : '<div class="av-i novo" style="margin-top:10px"><b>E-mails automáticos aguardando a carteira ficar pronta</b><small>Lembretes e avisos ainda não vão para o responsável, só para o CVH. Libere quando terminar de lançar tudo. Enviar o link pelo WhatsApp ou copiar a mensagem também libera.</small><button class="btn peq" data-acao="emails-resp" data-v="1" style="margin-top:6px">Carteira pronta: liberar os e-mails</button></div>') +
+    '</section>' : '') +
     '<section class="cartao" id="respAnimais"><h3>Animais</h3>' + (ans.length ? ans.map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + (a.ativo === '0' ? ' <small style="display:inline">(arquivado)</small>' : '') + (pode('admin') && revSit(a.id) ? ' <span class="rev-tag rev-' + revSit(a.id) + '">' + ((E.rev[a.id] || {}).nota ? '<i class="rev-n"></i>' : '') + REV_NOME[revSit(a.id)] + '</span>' : pode('admin') && (E.rev && E.rev[a.id] || {}).nota ? ' <span class="rev-tag"><i class="rev-n"></i>nota</span>' : '') + '</b><small>' + esc([a.especie, a.raca, tipoTxt(a), a.doador === '1' ? (a.aposentadoEm ? 'Doador aposentado' + (a.aposentadoMotivo ? ' (' + a.aposentadoMotivo.toLowerCase() + ')' : '') : 'Clube do Doador') : ''].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Nenhum animal ainda.</p>') +
     (cad ? '<button class="btn sec2" data-acao="novo-animal">+ Novo animal</button>' : '') + '</section>' +
     (pode('admin') ? '<button class="btn perigo peq" data-acao="excluir-resp">Excluir responsável</button>' : '') +
@@ -6570,6 +6573,9 @@ function linkWhats(r, ans, link) {
     '\n\nPara deixar o ícone no celular: no iPhone, abra o link no Safari, toque em Compartilhar e depois em "Adicionar à Tela de Início". No Android, abra no Chrome, toque nos três pontinhos e em "Adicionar à tela inicial".';
   return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(msg);
 }
+// mandar o link (WhatsApp ou copiar a mensagem) é sinal de carteira pronta: libera os e-mails automáticos desse responsável
+document.addEventListener('click', ev => { const el = ev.target.closest && ev.target.closest('[data-libera]'); if (!el) return; const r = (E.d && E.d.responsaveis || []).find(x => x.id === el.dataset.libera);
+  if (r && !r.emailsLiberados) api('liberarEmailsResp', E.sessao, r.id, true).then(x => { Object.assign(r, x); if (E.resp === r.id && $('[data-acao=emails-resp]')) telaResp(r.id); }).catch(() => {}); }, true);
 async function copiar(txt) {
   try { await navigator.clipboard.writeText(txt); return true; } catch (_) {}
   const t = document.createElement('textarea'); t.value = txt; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select();
@@ -8319,6 +8325,10 @@ const ACOES = {
   },
   // a mesma mensagem do botão do WhatsApp, só copiada (para colar em outro WhatsApp, por exemplo o do CVH)
   'copiar-zap': async b => { let m = ''; try { m = new URL(b.dataset.href).searchParams.get('text') || ''; } catch (_) {} toast(m && await copiar(m) ? 'Mensagem copiada.' : 'Não consegui copiar a mensagem.'); },
+  'emails-resp': async b => {
+    const r = (E.d.responsaveis || []).find(x => x.id === E.resp); if (!r) return;
+    try { Object.assign(r, await api('liberarEmailsResp', E.sessao, r.id, b.dataset.v === '1')); toast(b.dataset.v === '1' ? 'E-mails liberados para ' + r.nome.split(' ')[0] + '.' : 'E-mails pausados.'); telaResp(r.id); } catch (e) { toast(e.message, 6000); }
+  },
   'copiar-link': async () => { toast(await copiar($('#link').value) ? 'Link copiado.' : 'Selecione o link e copie manualmente.'); },
   ajustes: () => { if (pode('admin')) telaAjustes(); },
   'editar-vet': b => abrirFormVet(b.dataset.id ? E.d.vets.find(v => v.id === b.dataset.id) : null),
