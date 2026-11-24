@@ -686,7 +686,7 @@ function buildForm(){
   </section>
 
   <section class="sec" id="secPPT"><h2><span class="n">7</span>PPT e plasma</h2>
-    <p class="hint" style="margin:-4px 0 12px">Pode ficar para depois. Salve a ficha agora e volte por “Fichas” quando a PPT ficar pronta.</p>
+    <p class="hint" style="margin:-4px 0 12px">Pode ficar para depois. A ficha pode ir para a carteira sem a PPT: a coleta já vale para a produção e fica uma pendência para lançar a PPT por “Completar ou corrigir a ficha”.</p>
     <div class="grid">
       <div class="grp s6"><div class="gt">Proteína plasmática total e plasma</div><div class="gg">${fld('ppt','PPT (refratômetro)',{unit:'g/dL',im:'decimal',ph:'6,9'})}<div></div></div>
         ${chips('plCor','Cor do plasma',CORES_PLASMA.map(c=>[c,c]),{ni:false})}
@@ -2963,6 +2963,7 @@ init();
       ${graves.length && ctx.admin ? `<label style="display:block;margin:8px 0 4px;font-size:13px">Justificativa para salvar mesmo assim</label><input type="text" id="cfJus" style="width:100%;padding:8px;border:1px solid #C6B098;border-radius:8px" placeholder="Ex.: analisei, doação autorizada por mim">` : ""}
       ${precisaAnalise ? `<p style="margin:0;color:#8A1D14">Esta ficha só vai para a carteira depois da análise do administrador. Ela fica guardada como rascunho e o administrador recebe o aviso agora.</p>` : ""}
       ${ja ? `<div class="av" style="color:#7A6A63;background:#F5EFE7;border-color:#EADFD3">Já existe na carteira uma ficha com este número. Ela será atualizada.</div>` : ""}
+      ${!String(S.ppt || "").trim() && S.tempo !== "NC" ? `<div class="av" style="color:#7A6A63;background:#F5EFE7;border-color:#EADFD3">Sem a PPT por enquanto. A coleta já fica registrada e pronta para a produção, e entra uma pendência para lançar a PPT depois.</div>` : ""}
       <p style="margin:0">Vão para o Drive o PDF digital (A4 com timbrado), o PDF smartphone${fotoAtual ? " e a imagem da ficha original" : ""}. Na carteira entram o exame físico, os sinais vitais e a triagem, sem número da bolsa, lote ou tempo de coleta.</p>
       <p class="st" id="cfSt" aria-live="polite"></p>
       <div class="bts"><button class="btn" type="button" id="cfNao">Cancelar</button><button class="btn carteira" type="button" id="cfSim">${precisaAnalise ? "Enviar para análise" : "Salvar na carteira"}</button></div></div>`;
