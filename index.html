@@ -505,8 +505,8 @@ a.btn{text-decoration:none}
 .ct-ano{position:relative;display:block;width:124px;height:124px;flex:none}.ct-ano svg{position:absolute;inset:0;width:100%;height:100%}.ct-ano-s{position:absolute;left:50%;top:27%;width:24%;aspect-ratio:160/176;transform:translateX(-50%);background:var(--img-simb) center/contain no-repeat;z-index:1}
 .ct-ass{display:flex;flex-direction:column;align-items:stretch;width:max-content;position:relative;padding-top:1.6em}
 .ct-as-top{display:flex;align-items:stretch;font-size:15px}.ct-as-top b{flex:none;font-size:1em!important}.ct-feed .ct-as-top{font-size:22px}.ct-story .ct-as-top{font-size:25px}
-.ct-as-rub{flex:1 1 auto;min-width:4.6em;position:relative;margin-left:.5em}
-.ct-as-rub svg{position:absolute;right:0;top:-1.45em;height:calc(100% + 2em);width:100%;overflow:visible}
+.ct-cr{position:relative;display:inline-block}
+.ct-rb{position:absolute;left:50%;bottom:.75em;transform:translateX(-50%);width:10em;height:4em;pointer-events:none}.ct-rb svg{display:block;width:100%;height:100%;overflow:visible}
 .ct-carimbo{position:relative;width:200px;height:66px;margin-bottom:-2px}.ct-carimbo>svg{display:block;width:100%;height:100%}.ct-rub{position:absolute;inset:-26px 10px auto;height:70px;width:auto}
 .ct-linha{display:block;width:260px;height:1px;background:#5F130F;opacity:.5;margin:4px 0 6px}
 .ct-ass b{font-size:15px;color:#5F130F;font-weight:600}.ct-ass small{font-size:12px;color:#6B5850;margin-top:2px}
@@ -678,8 +678,8 @@ a.mini{text-decoration:none;display:inline-block}
 .asd-t{position:relative;width:max-content;max-width:100%}
 .asd-top{display:flex;align-items:stretch}
 .asd-nm{display:flex;flex-direction:column;flex:none}
-.asd-rub{flex:1 1 auto;min-width:5.5em;position:relative;margin-left:.4em}
-.asd-rub svg{position:absolute;right:0;top:-1.3em;height:calc(100% + 1.75em);width:100%;overflow:visible}
+.asd-cr{position:relative;display:inline-block}
+.asd-rb{position:absolute;left:50%;bottom:.87em;transform:translateX(-50%);width:9em;height:3.3em;pointer-events:none}.asd-rb svg{display:block;width:100%;height:100%;overflow:visible}
 .asd .qr{width:2.5em;height:2.5em;margin-left:auto;flex:none}
 .asl{display:flex;align-items:center;gap:.55em;border-top:1px dashed var(--linha);padding-top:.45em;margin-top:.4em}.asl i{width:1.9em;aspect-ratio:1;background:var(--img-selo) center/contain no-repeat;flex:none}.asl p{font-size:.48em;line-height:1.4;color:var(--tinta2);margin:0}.asl b{display:block;color:var(--vinho);font-size:1.12em}.asd-c{font-size:.42em;color:var(--tinta2);margin:.25em 0 0 .1em}
 
@@ -950,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124224325';
+  var VERSAO = '20261124234000';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2425,7 +2425,7 @@ const rubSvg = (d, cls) => d ? '<svg class="' + (cls || 'rub') + '" viewBox="' +
 /* ═════════════ peças da página ═════════════ */
 // prévia da assinatura eletrônica no cadastro do médico veterinário (o mesmo bloco dos laudos)
 function previaAssinaturaVet(v) {
-  v = v || {}; return '<div class="asd" style="font-size:1em;width:100%"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(v.crmv || '') + '</span><span>data e hora da assinatura</span></div></div>';
+  v = v || {}; return '<div class="asd" style="font-size:1em;width:100%"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(v.nome || '') + '</b></div></div><span>Médico veterinário · <span class="asd-cr">' + esc(v.crmv || '') + (v.rubrica ? '<span class="asd-rb">' + rubSvgDir(v.rubrica) + '</span>' : '') + '</span></span><span>data e hora da assinatura</span></div></div>';
 }
 // carimbo azul com a rubrica, usado nas vacinas, vermífugos e ectoparasitas
 function carimbo(v, rot) {
@@ -2442,7 +2442,7 @@ function carimbo(v, rot) {
 function assinatura(r) {
   const v = vetDe(r), lib = r.dados && r.dados.liberadoPor && r.dados.liberadoPor.nome;
   // mesmo modelo dos laudos: a rubrica fica à direita do nome, terminando junto com a linha do CRMV
-  return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(r.vetNome || v.nome || '') + '</b></div><span class="asd-rub">' + rubSvgDir(v.rubrica) + '</span></div><span>Médico veterinário · ' + esc(r.vetCrmv || v.crmv || '') + '</span><span>' + quandoAss(r) + '</span></div>' +
+  return '<div class="asd"><i></i><div class="asd-t"><small>ASSINADO ELETRONICAMENTE</small><div class="asd-top"><div class="asd-nm"><b>' + esc(r.vetNome || v.nome || '') + '</b></div></div><span>Médico veterinário · <span class="asd-cr">' + esc(r.vetCrmv || v.crmv || '') + (v.rubrica ? '<span class="asd-rb">' + rubSvgDir(v.rubrica) + '</span>' : '') + '</span></span><span>' + quandoAss(r) + '</span></div>' +
     (r.codigo ? qrSvg(urlVerifCarteira(r.codigo)) : '') + '</div>' +
     (r.codigo || lib ? '<p class="asd-c">' + (r.codigo ? 'Código ' + esc(r.codigo) : '') + (lib ? (r.codigo ? ' · ' : '') + 'Liberado por ' + esc(lib) : '') + '</p>' : '');
 }
@@ -3618,7 +3618,7 @@ function certHtml(c, fmt) {
     '<h1 class="ct-tit">' + (apos ? 'Certificado de Aposentadoria' : 'Certificado de Doação') + '</h1></div>' +
     '<div class="ct-g"><p class="ct-sub">' + (apos ? 'O Centro Veterinário de Hemoterapia homenageia' : 'O Centro Veterinário de Hemoterapia certifica e agradece a') + '</p>' +
     '<h2 class="ct-nome">' + esc(an.nome) + '</h2><p class="ct-quando">' + quando + '</p><p class="ct-txt">' + texto + '</p></div>' +
-    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b><span class="ct-as-rub">' + (v.rubrica ? '<svg viewBox="' + rubVB(d) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg>' : '') + '</span></div><small>Médico veterinário · ' + esc(v.crmv || '') + '</small></div>' + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
+    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b></div><small>Médico veterinário · <span class="ct-cr">' + esc(v.crmv || '') + (v.rubrica ? '<span class="ct-rb"><svg viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg></span>' : '') + '</span></small></div>' + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
     '<p class="ct-rod">Brasília, DF · ' + br(c.data) + ' · Certificado ' + codCert(c) + ' · cvh.vet.br</p></div></div></div>';
 }
 async function certImagem(c, fmt, tipoImg) {

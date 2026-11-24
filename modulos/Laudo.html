@@ -2803,8 +2803,8 @@ function blocoAssinatura(x, w, y, celular) {
   el.push(T(tx, by + 12, estado.tipo === "requisicao" ? "REGISTRADA PELO CVH" : "ASSINADO ELETRONICAMENTE", 4.6, { b: true, c: COR.VERMELHO }));
   el.push(T(tx, by + 23, v.nome || "", 9, { b: true, c: COR.BORDO }));
   el.push(T(tx, by + 32.5, "Médico veterinário  ·  " + (v.crmv || ""), 7.2, { c: COR.TXT2 }));
-  // rubrica alinhada à direita com o fim da linha do CRMV, logo depois do nome
-  { const fim = tx + largura("Médico veterinário  ·  " + (v.crmv || ""), 7.2), ini = Math.max(tx + largura(v.nome || "", 9, true) + 4, fim - 60); el.push(...rubricaEls(v.rubrica, ini, by + 5, fim - ini, 24)); }
+  // rubrica centralizada em cima do CRMV inteiro (CRMV-DF 2703), sem encostar no nome nem no QR Code
+  { const c0 = tx + largura("Médico veterinário  ·  ", 7.2), c1 = tx + largura("Médico veterinário  ·  " + (v.crmv || ""), 7.2), cx = (c0 + c1) / 2, meia = Math.max(8, Math.min(30, cx - (tx + largura(v.nome || "", 9, true) + 4), qx - 4 - cx)); el.push(...rubricaEls(v.rubrica, cx - meia, by + 5, 2 * meia, 24)); }
   const lib = estado.liberador ? (q) => quebrar("Liberado por " + estado.liberador.nome + (q ? " em " + q.data + (q.hora ? " às " + q.hora : "") : ""), 6.2, false, w).forEach((l) => { el.push(T(x, y + hh + 7, l, 6.2, { c: COR.MARROM2 })); hh += 8; }) : null;
   let hh = 0;
   el.push(T(tx, by + 41, quando ? quando.data + (quando.hora ? " às " + quando.hora : "") : libLab() ? br(libLab().iso) + (libLab().hora ? " às " + libLab().hora : "") : "data e hora ao salvar", 6.6, { c: COR.MARROM2 }));

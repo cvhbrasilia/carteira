@@ -1773,7 +1773,8 @@ function blocoAssinatura(tipo, x, w, y, celular) {
   el.push(T(tx, by + 17, "ASSINADO ELETRONICAMENTE", pq ? 5.2 : 5.6, { b: true, c: COR.VERMELHO }));
   el.push(T(tx, by + 32, v.nome || "", celular ? 10.5 : pq ? 10.5 : 11.5, { b: true, c: COR.BORDO }));
   el.push(T(tx, by + 45, (pq ? "" : "Médico veterinário  ·  ") + (v.crmv || ""), 8.5, { c: COR.TXT2 }));
-  { const tn = celular ? 10.5 : pq ? 10.5 : 11.5, fim = tx + largura((pq ? "" : "Médico veterinário  ·  ") + (v.crmv || ""), 8.5), ini = Math.max(tx + largura(v.nome || "", tn, true) + 5, fim - 80); el.push(...rubricaEls(v.rubrica, ini, by + 7, fim - ini, 31)); }
+  // rubrica centralizada em cima do CRMV inteiro (CRMV-DF 2703), sem encostar no nome nem no QR Code
+  { const tn = celular ? 10.5 : pq ? 10.5 : 11.5, pre = pq ? "" : "Médico veterinário  ·  ", c0 = tx + largura(pre, 8.5), c1 = tx + largura(pre + (v.crmv || ""), 8.5), cx = (c0 + c1) / 2, meia = Math.max(8, Math.min(40, cx - (tx + largura(v.nome || "", tn, true) + 5), qx - 6 - cx)); el.push(...rubricaEls(v.rubrica, cx - meia, by + 7, 2 * meia, 31)); }
   const l4 = quando ? quando.data + " às " + quando.hora : "data e hora ao salvar", l5 = salvo ? (pq ? "" : "Código ") + salvo.codigo : "código ao salvar";
   el.push(T(tx, by + 57, l4, 8, { c: COR.MARROM2 })); el.push(T(tx, by + 68, l5, 8, { b: true, c: COR.MARROM2 }));
   if (salvo && CTX.urlVerificacao) el.push(...qrEls(urlVerif(salvo.codigo), qx, by + (h - sz) / 2, sz));
