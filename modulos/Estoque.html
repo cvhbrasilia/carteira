@@ -172,7 +172,7 @@ function qcColetaHtml(coleta, D) {
   const c = sag(D), us = S.uni.filter((u) => u.coleta === coleta), linha = (t, v) => v ? "<dt>" + t + "</dt><dd>" + v + "</dd>" : "";
   const cor = (comp) => { const u = us.find((x) => x.componente === comp), L = ((u || {}).dados || {}).coloracoes || []; return L.length ? (L[L.length - 1].resultado === "normal" ? "coloração dentro do padrão" : "coloração fora do padrão") : ""; };
   const pfc = us.find((x) => x.componente === "PFC"), cong = ((pfc || {}).dados || {}).congelamento, crio = us.find((x) => x.componente === "CRIO");
-  const nomes = [["ST", "ST_BOLSA " + coleta], ["CH sem SAG", "CH-S-SG_BOLSA " + coleta], ["CH com SAG", "CH_BOLSA " + coleta], ["PFC", "PF_BOLSA " + coleta]];
+  const nomes = [["ST", "ST_BOLSA " + coleta], ["CH com SAG", "CH_BOLSA " + coleta], ["PFC", "PF_BOLSA " + coleta]];
   return '<h2 style="margin-top:14px">Controle de qualidade da coleta</h2><dl class="dl">' +
     linha("ST", [D.pesoST != null ? "peso bruto " + fmt(D.pesoST, 1) + " g" : "", D.htST != null ? "micro-Ht " + fmt(D.htST, 1) + "%" : ""].filter(Boolean).join(" · ")) +
     linha("CH sem SAG", [D.pesoCHsem != null ? "peso " + fmt(D.pesoCHsem, 1) + " g" : "", D.htCHsem != null ? "micro-Ht " + fmt(D.htCHsem, 1) + "%" : "", c ? "volume " + fmt(c.vol) + " mL · Ht " + (c.medido ? "medido " : "pela média do CVH ") + fmt(c.ht, 1) + "%" : ""].filter(Boolean).join(" · ")) +
@@ -186,10 +186,11 @@ function qcColetaHtml(coleta, D) {
 const LEMBRADO = new Set();
 function lembrarAmostra(coleta, k) {
   const ch = coleta + "|" + k; if (LEMBRADO.has(ch)) return; LEMBRADO.add(ch);
-  const E2 = { ST: ["do ST", "ST_BOLSA "], CHS: ["do CH sem SAG", "CH-S-SG_BOLSA "], CH: ["do CH com SAG", "CH_BOLSA "] }[k]; if (!E2) return;
-  const nome = E2[1] + coleta, ov = document.createElement("div"); ov.className = "lembrete-ov";
-  ov.innerHTML = '<div class="lembrete-cx" role="dialog" aria-modal="true"><b>Amostra ' + E2[0] + '</b><p>Colha a amostra ' + E2[0] + ' para o micro-hematócrito e a IDEXX.</p><p class="nota">Na IDEXX, identifique como <b>' + esc(nome) + '</b>.</p>' +
-    '<div class="bts"><button type="button" class="btn sec" data-a="copiar" data-v="' + esc(nome) + '">Copiar o nome</button><button type="button" class="btn" data-ok>OK</button></div></div>';
+  // CH sem SAG não roda na IDEXX: a amostra é só para o micro-hematócrito
+  const E2 = { ST: ["do ST", "ST_BOLSA "], CHS: ["do CH sem SAG", ""], CH: ["do CH com SAG", "CH_BOLSA "] }[k]; if (!E2) return;
+  const nome = E2[1] ? E2[1] + coleta : "", ov = document.createElement("div"); ov.className = "lembrete-ov";
+  ov.innerHTML = '<div class="lembrete-cx" role="dialog" aria-modal="true"><b>Amostra ' + E2[0] + '</b><p>Colha a amostra ' + E2[0] + (nome ? ' para o micro-hematócrito e a IDEXX.' : ' para o micro-hematócrito.') + '</p>' + (nome ? '<p class="nota">Na IDEXX, identifique como <b>' + esc(nome) + '</b>.</p>' : '') +
+    '<div class="bts">' + (nome ? '<button type="button" class="btn sec" data-a="copiar" data-v="' + esc(nome) + '">Copiar o nome</button>' : '') + '<button type="button" class="btn" data-ok>OK</button></div></div>';
   document.body.appendChild(ov); ov.querySelector("[data-ok]").onclick = () => ov.remove();
 }
 function abrirProducao(coleta) {
@@ -209,7 +210,6 @@ function abrirProducao(coleta) {
   else if (et === "ch_sem_sag" || et === "ch_com_sag") {
     const c = sag(D);
     corpo = '<h2>SAGcalculadora</h2><div class="grade"><div><label>Peso do CH sem SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCH" value="' + esc(D.pesoCHsem ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCH">Foto</button></div></div><div><label>Micro-Ht do CH sem SAG (%) <small>opcional</small></label><input type="number" inputmode="decimal" id="pHtCH" value="' + esc(D.htCHsem ?? "") + '"></div></div>' +
-      '<p class="nota">Amostra do CH sem SAG na IDEXX: <b>CH-S-SG_BOLSA ' + esc(coleta) + '</b> <button type="button" class="btn sec peq" data-a="copiar" data-v="CH-S-SG_BOLSA ' + esc(coleta) + '">Copiar</button></p>' +
       (c ? '<div class="calc"><small>Volume de SAG a acrescentar</small><br><b class="big">' + fmt(c.calc) + ' mL</b><br><small>CH sem SAG com ' + fmt(c.vol) + " mL · hematócrito " + (c.medido ? "medido " : "pela média do CVH, ") + fmt(c.ht, 1) + "% · alvo " + fmt(S.P.sag.htAlvo) + "%" + (c.suficiente ? "" : " · <b>passa da bolsa de SAG (" + fmt(S.P.sag.sagBolsa) + " mL)</b>") + "</small></div>" : '<p class="nota">Informe o peso para calcular o SAG. Sem micro-Ht, o cálculo usa a média do CVH (' + fmt(S.P.sag.htMedioCH, 1) + "%), e isso fica identificado no histórico.</p>") +
       '<div class="grade"><div><label>SAG acrescentado (mL)</label><input type="number" inputmode="decimal" id="pSagAd" value="' + esc(D.sagAdicionado ?? (c ? Math.round(c.calc) : "")) + '"></div><div><label>Peso final do CH com SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoFinal" value="' + esc(D.pesoCHfinal ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoFinal">Foto</button></div></div></div>' +
       '<label>Micro-Ht do CH com SAG (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtFinal" value="' + esc(D.htCHfinal ?? "") + '">' +
