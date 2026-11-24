@@ -275,6 +275,7 @@ function avaliar(r) { return ITENS.filter((i) => i.comp.includes(r.componente)).
 /* ── período ── */
 function noPeriodo(d) {
   if (S.periodo === "tudo") return true;
+  if (S.periodo === "hoje") return d === hojeISO();
   if (S.periodo === "mes") return d.slice(0, 7) === (S.mes || hojeISO().slice(0, 7));
   const n = S.periodo === "3m" ? 3 : 12, h = new Date(); h.setDate(1); h.setMonth(h.getMonth() - n + 1);
   return d >= h.toISOString().slice(0, 7) + "-01";
@@ -392,7 +393,7 @@ function pintar() {
   const ms = meses();
   $("#app").innerHTML = `<div class="topo"><h1>Controle de qualidade<small>Hemocomponentes conferidos com a Tabela 4 da ABVHMT · ${S.regs.length} análises em ${new Set(S.regs.map((r) => r.bolsa)).size} bolsas</small></h1>
     <div class="bts"><button class="btn" data-a="pdfsRecebidos">PDFs recebidos da IDEXX</button><button class="btn sec" data-a="pdfs">Ler PDFs do ProCyte</button><button class="btn sec" data-a="novo">Lançar à mão</button>${S.admin ? '<button class="btn sec" data-a="params">Parâmetros</button>' : ""}<button class="btn sec" data-a="imprimir">Imprimir</button></div></div>
-    <div class="periodo">${[["tudo", "Tudo"], ["mes", "Mês"], ["3m", "Últimos 3 meses"], ["12m", "Últimos 12 meses"]].map(([k, t]) => `<button data-a="per" data-v="${k}" class="${S.periodo === k ? "on" : ""}">${t}</button>`).join("")}
+    <div class="periodo">${[["tudo", "Tudo"], ["hoje", "Hoje"], ["mes", "Mês"], ["3m", "Últimos 3 meses"], ["12m", "Últimos 12 meses"]].map(([k, t]) => `<button data-a="per" data-v="${k}" class="${S.periodo === k ? "on" : ""}">${t}</button>`).join("")}
     ${S.periodo === "mes" ? `<select id="selMes">${ms.slice().reverse().map((m) => `<option value="${m}"${m === (S.mes || ms[ms.length - 1]) ? " selected" : ""}>${mesTxt(m)}</option>`).join("")}</select>` : ""}</div>
     <nav class="abas">${ABAS.map(([k, t]) => `<button data-a="aba" data-v="${k}" class="${S.aba === k ? "on" : ""}">${t}</button>`).join("")}</nav><div id="conteudo"></div>`;
   const sm = $("#selMes"); if (sm) { if (!S.mes) S.mes = sm.value; sm.onchange = () => { S.mes = sm.value; pintarAba(); }; }
@@ -553,10 +554,10 @@ function explicar(id, mes) {
 }
 const CAMPOS = {
   comum: [["peso", "Peso da bolsa (g)", "num"], ["volume", "Volume (mL), se medido direto", "num"]],
-  CH: [["solucao", "Solução", ["SAG", "CPDA-1"]], ["pesoAntesSag", "Peso antes do SAG (g)", "num"], ["microHt", "Micro-hematócrito (%)", "num"], ["hbLivre", "Hb livre no sobrenadante (g/dL)", "num"], ["micro", "Microbiológico", ["", "Negativo", "Positivo"]]],
+  CH: [["solucao", "Solução", ["SAG", "CPDA-1"]], ["pesoAntesSag", "Peso antes do SAG (g)", "num"], ["microHt", "Micro-Ht do CH com SAG (%)", "num"], ["microHtSem", "Micro-Ht do CH sem SAG (%)", "num"], ["hbLivre", "Hb livre no sobrenadante (g/dL)", "num"], ["micro", "Microbiológico", ["", "Negativo", "Positivo"]]],
   CP: [["ph", "pH", "num"], ["swirling", "Swirling (escore)", ["", "3", "2", "1", "0"]], ["overnight", "Overnight antes de separar", ["", "sim", "não"]], ["agitador", "Horas no agitador", "num"], ["validade", "Validade", "date"], ["micro", "Microbiológico", ["", "Negativo", "Positivo"]]],
   PL: [["aspecto", "Aspecto", ["", "Límpido", "Lipêmico", "Turvo", "Avermelhado"]]],
-  ST: [["volumeColetado", "Volume coletado (mL)", "num"], ["htColeta", "Ht do doador na coleta (%)", "num"], ["duracao", "Tempo de coleta (min)", "num"]]
+  ST: [["volumeColetado", "Volume coletado (mL)", "num"], ["htColeta", "Ht Hemochromax (%)", "num"], ["duracao", "Tempo de coleta (min)", "num"]]
 };
 CAMPOS.CHD = CAMPOS.CH;
 const camposDe = (c) => (c === "ST" ? [] : CAMPOS.comum).concat(CAMPOS[c] || (["PFC", "PC", "PIC", "CRIO"].includes(c) ? CAMPOS.PL : [])).concat([["obs", "Observações", "txt"]]);
@@ -579,11 +580,28 @@ function abrirBolsa(b) {
     const hv = VALS.filter(([k]) => d.hemo && d.hemo[k] != null);
     if (hv.length) h += `<p class="nota">${esc(d.equip || "Hemograma")}${d.origem ? " · " + esc(d.origem) : ""}${al.length ? " · em vermelho os valores marcados com asterisco" : ""}</p><div class="vals">` + hv.map(([k, n, u, c]) => `<span class="${al.includes(k) ? "al1" : ""}">${n}<b>${fmt(d.hemo[k], c)} ${u}</b></span>`).join("") + "</div>";
     if (num(d.plqFormulario) != null) h += `<p class="nota">No formulário de validação a contagem anotada foi ${fmt(num(d.plqFormulario), 0)} mil/µL.</p>`;
-    h += `<div class="grade" style="margin-top:10px"><label>Hemocomponente<select id="${pre}comp">${Object.keys(COMP).map((c) => `<option value="${c}"${c === r.componente ? " selected" : ""}>${c === "DOA" ? "Hemograma do doador" : c + " · " + COMP[c].n}</option>`).join("")}</select></label>${campoH("data", "Data da análise", "date", r.data, pre)}${camposDe(r.componente).map(([k, rot, tp]) => campoH(k, rot, tp, d[k], pre)).join("")}</div>
+    h += `<div class="grade" style="margin-top:10px"><label>Hemocomponente<select id="${pre}comp">${Object.keys(COMP).map((c) => `<option value="${c}"${c === r.componente ? " selected" : ""}>${c === "DOA" ? "Hemograma do doador" : c + " · " + COMP[c].n}</option>`).join("")}</select></label>${campoH("data", "Data da análise", "date", r.data, pre)}${camposDe(r.componente).map(([k, rot, tp]) => campoH(k, rot, tp, d[k] != null && d[k] !== "" ? d[k] : padraoDe(r, k), pre)).join("")}</div>
       <div class="bts" style="margin-top:8px"><button class="btn peq" data-a="salvar" data-v="${r.id}">Salvar</button>${d.pdf ? `<button class="btn sec peq" data-a="verpdf" data-v="${esc(d.pdf.id)}">PDF do ProCyte</button>` : ""}<button class="btn sec peq" data-a="apagar" data-v="${r.id}">Apagar</button></div>`;
   });
   h += `<h3>Adicionar</h3><div class="bts"><button class="btn sec peq" data-a="novo" data-v="${esc(b)}">Lançar outro hemocomponente desta bolsa</button></div>`;
   abrirGaveta("Bolsa " + b, h);
+}
+// o que já está na ficha de doação, na produção ou no estudo de SAG aparece preenchido (é o mesmo dado; salvar aqui corrige lá também)
+function padraoDe(r, k) {
+  const doa = doacaoDe(r.bolsa), s = sagDe(r.bolsa) || {}, n = (v) => (num(v) != null ? num(v) : null);
+  if (r.componente === "ST") {
+    if (k === "volumeColetado") return doa ? n(doa.volume) : null;
+    if (k === "htColeta") return doa ? n(doa.ht) : null;
+    if (k === "duracao") return doa && doa.tempo !== "NC" ? n(doa.tempo) : null;
+  }
+  if (r.componente === "CH" || r.componente === "CHD") {
+    if (k === "microHt") return n(s.htFinalMicro);
+    if (k === "pesoAntesSag") return n(s.pesoCH);
+    if (k === "peso") return n(s.pesoFinal);
+    // sem SAG: só quando foi medido; com a média do CVH fica em branco
+    if (k === "microHtSem") return s.metodoHtCH === "micro" || (n(s.htCH) != null && n(s.htCH) !== n((S.sagP || {}).htMedioCH)) ? n(s.htCH) : null;
+  }
+  return null;
 }
 function lerForm(pre, comp, base) {
   const d = Object.assign({}, base || {});
