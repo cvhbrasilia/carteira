@@ -951,7 +951,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124193316';
+  var VERSAO = '20261124194034';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6378,7 +6378,8 @@ async function pintarLaboratorios(todos) {
   if (!todos) L = L.filter(x => { if (x.situacao === 'feito') return true; const r = laudoJaFeito(x, animalDoLab(x)); if (!r) return true; api('laboratorioMarcar', E.sessao, x.id, { situacao: 'feito', registroId: r.id }).catch(() => {}); return false; });
   const novos = L.filter(x => x.situacao === 'novo').length;
   el.innerHTML = '<h3>Laudos dos laboratórios' + (novos ? ' <span class="chip critico">' + novos + (novos === 1 ? ' novo' : ' novos') + '</span>' : '') + '</h3>' +
-    '<p class="nota">O robô confere o TECSA e o Citopet a cada 15 minutos, das 7h às 23h, de segunda a sábado. Os laudos chegam aqui com o PDF original; o laudo do CVH abre preenchido para conferir e assinar.</p>' +
+    '<p class="nota">O robô confere o TECSA e o Citopet a cada 15 minutos, das 7h às 23h, de segunda a sábado. A pasta da IDEXX é conferida a cada 10 minutos. Os laudos chegam aqui com o PDF original; o laudo do CVH abre preenchido para conferir e assinar.</p>' +
+    '<div class="mini-bts" style="margin:0 0 10px"><button class="mini" data-acao="idexx-agora">Ler a pasta da IDEXX agora</button></div>' +
     (L.length ? L.map(x => {
       const an = animalDoLab(x), pos = x.positivo, alt = (x.resumo || []).filter(r => r.positivo || r.alterado);
       const nI = x.origem === 'idexx' ? idexxNome(x.nomeArquivo) : null, rot = an ? an.nome : (nI ? nI.animal : String(x.animal || '').replace(/\s*\(\d+\)\s*/, ' ').trim()) || 'animal não identificado';
@@ -8170,6 +8171,15 @@ const ACOES = {
   'pd-animal': async () => { fecharFolha(); if (!E.pd) { try { E.pd = await api('pendenciasListar', E.sessao); } catch (e) { return toast(e.message, 6000); } } formPendencia(null, E.animal); },
   'pd-editar': b => formPendencia(E.pd.lista.find(p => p.id === b.dataset.id)),
   'pd-feito': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; try { Object.assign(p, await api('pendenciaConcluir', E.sessao, p.id, !p.feitoEm)); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast(p.feitoEm ? 'Pendência concluída.' : 'Pendência reaberta.'); } catch (e) { toast(e.message, 6000); } },
+  'idexx-agora': async b => { b.disabled = true; const t0 = b.textContent; b.textContent = 'Lendo a pasta da IDEXX...';
+    try {
+      const r = await api('idexxAgora', E.sessao);
+      const quando = r.ultimoEm ? new Date(r.ultimoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às') : '';
+      toast(r.ocupado ? 'A pasta acabou de ser lida. Espere alguns segundos.' : r.semPasta ? 'A pasta "exames idexx" não foi encontrada no Drive do CVH.' :
+        (r.enviados ? r.enviados + (r.enviados === 1 ? ' PDF novo chegou.' : ' PDFs novos chegaram.') : 'Nenhum PDF novo na pasta da IDEXX.') + (r.ultimo ? ' O mais novo da pasta é ' + r.ultimo.replace(/_\d{8}_\d{6}_\d+\.pdf$/i, '') + (quando ? ', de ' + quando : '') + '.' : ''), 9000);
+      if (r.enviados) pintarLaboratorios();
+    } catch (e) { toast(e.message, 9000); }
+    b.disabled = false; b.textContent = t0; },
   'pd-prioridade': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; b.disabled = true;
     try { Object.assign(p, await api('pendenciaPrioridade', E.sessao, p.id, !p.prioridade)); toast(p.prioridade ? 'Pendência na frente de todas.' : 'Prioridade retirada.'); pintarPendencias(); } catch (e) { b.disabled = false; toast(e.message, 6000); } },
   'pd-apagar': async b => { if (!confirm('Apagar esta pendência?')) return; try { await api('pendenciaExcluir', E.sessao, b.dataset.id); E.pd.lista = E.pd.lista.filter(p => p.id !== b.dataset.id); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast('Pendência apagada.'); } catch (e) { toast(e.message, 6000); } },
