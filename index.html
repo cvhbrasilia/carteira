@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124153604';
+  var VERSAO = '20261124161846';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5675,6 +5675,29 @@ async function escolherAtTx(id, abrir) {
   const fr = $('#modulo'), w = fr && fr.contentWindow; if (!w || typeof w.lidoLeitor !== 'function') return;
   const t = performance.now(); if (e.key === 'Enter') { const c = L.buf; L.buf = ''; if (c.length >= 3 && t - L.t0 < 45 * c.length + 150) { e.preventDefault(); w.lidoLeitor(c.trim()); } return; }
   if (e.key.length !== 1) return; if (t - L.ult > 60) { L.buf = ''; L.t0 = t; } L.ult = t; L.buf += e.key; }, true); })();
+// Compartilhar do Android: o service worker guardou o arquivo no aparelho; com o login feito, vai para a caixa "Enviar ao CVH"
+(() => { let ocupado = false;
+  const enviar = async () => {
+    if (ocupado || !E.sessao || !('caches' in window)) return;
+    let c, ks; try { c = await caches.open('cvh-compartilhar'); ks = await c.keys(); } catch (_) { return; } if (!ks.length) return;
+    ocupado = true;
+    try {
+      const chave = await api('caixaChave', E.sessao); let n = 0, nome = '';
+      for (const k of ks) {
+        const r = await c.match(k); if (!r) continue;
+        nome = decodeURIComponent(r.headers.get('x-nome') || 'Exame');
+        // o mesmo endereço do Atalho do iPhone, com o arquivo puro no corpo
+        try { const resp = await fetch(window.CVH_SERVIDOR.api + '?caixa=' + encodeURIComponent(chave) + '&nome=' + encodeURIComponent(nome), { method: 'POST', headers: { 'Content-Type': r.headers.get('content-type') || 'application/octet-stream' }, body: await r.blob() });
+          if (!resp.ok) throw new Error(await resp.text()); n++; } catch (e) { toast('Não consegui receber ' + nome + '. ' + e.message, 7000); }
+        await c.delete(k);
+      }
+      if (n) toast((n === 1 ? nome + ' chegou' : n + ' arquivos chegaram') + ' pelo Compartilhar. Abra a tela que vai usar o arquivo (laudos, histórico, ficha ou HemoCalculadora) e ele entra sozinho.', 9000);
+    } catch (e) { toast('Não consegui receber o arquivo do Compartilhar. ' + e.message, 7000); }
+    ocupado = false;
+    try { if (/[?&]compartilhado=1/.test(location.search)) history.replaceState(null, '', location.pathname); } catch (_) {}
+  };
+  if (window.CVH_PAINEL) { setInterval(enviar, 1500); document.addEventListener('visibilitychange', () => { if (!document.hidden) enviar(); }); }
+})();
 // "Enviar ao CVH" em qualquer módulo com escolha de arquivo (laudos, histórico, qualidade, ficha): o PDF do Compartilhar
 // entra no campo de arquivo da tela aberta, como se tivesse sido escolhido
 function alvoArquivo(w, mime) {

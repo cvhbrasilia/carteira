@@ -31,3 +31,21 @@ self.addEventListener('notificationclick', (e) => {
     await self.clients.openWindow(url);
   })());
 });
+
+// Compartilhar do Android (painel instalado pelo Chrome): o PDF ou a foto do WhatsApp chega aqui, fica guardado no aparelho
+// e o painel abre e manda para a caixa "Enviar ao CVH" da pessoa, a mesma do Atalho do iPhone
+self.addEventListener('fetch', (e) => {
+  const u = new URL(e.request.url);
+  if (e.request.method !== 'POST' || !/\/compartilhar$/.test(u.pathname)) return;
+  e.respondWith((async () => {
+    try {
+      const f = await e.request.formData(), arqs = f.getAll('arquivo').filter((x) => x && typeof x === 'object' && x.size);
+      const c = await caches.open('cvh-compartilhar');
+      for (let i = 0; i < arqs.length; i++) {
+        const a = arqs[i];
+        await c.put('/compartilhado/' + Date.now() + '-' + i, new Response(a, { headers: { 'content-type': a.type || 'application/octet-stream', 'x-nome': encodeURIComponent(a.name || 'Exame') } }));
+      }
+    } catch (_) { /* segue para o painel, que avisa se nada chegou */ }
+    return Response.redirect(new URL((u.searchParams.get('app') === 'dea' ? 'painel-dea.html' : 'painel.html') + '?compartilhado=1', self.registration.scope).href, 303);
+  })());
+});
