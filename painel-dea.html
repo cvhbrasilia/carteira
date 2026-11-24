@@ -297,7 +297,7 @@ button{cursor:pointer}
 .venc.prep{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px;border-radius:12px;margin:8px 0}.venc.prep .t{width:100%}.venc.prep .t small{display:block;white-space:normal;overflow:visible;text-overflow:clip;margin-top:4px;line-height:1.7}.venc.prep .mini-bts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
 .prep-ok{box-shadow:0 0 0 2px #3f8b4a inset;background:#F4FAF4}
 .ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}.ped-home.vazio{border-left-color:var(--areia2,#C6B098)}.ped-home.vazio .ped-cab{margin:0}
-.ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
+.pd-home{border-left-color:#C49A6C}.pd-home .ped-cab{cursor:pointer}.pd-hl{display:flex;justify-content:space-between;gap:10px;width:100%;background:none;border:0;border-top:1px solid #EEE5DB;padding:8px 0;text-align:left;font:inherit;font-size:14px;color:#3a2a26;cursor:pointer}.pd-hl em{font-style:normal;font-size:12px;color:#8a7a72;white-space:nowrap}.pd-hl.atr em{color:#A83D3D;font-weight:700}.pd-hl.hj em{color:#C49A6C;font-weight:700}.pd-hl.mais{color:#8a7a72;font-size:13px}.ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
 .ped-l{width:100%;display:flex;gap:10px;align-items:center;border:0;border-top:1px solid #EEE5DB;background:none;padding:10px 0;font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
 .ped-x{display:flex;flex-direction:column;gap:2px}.ped-rel{font-weight:700;color:#8a5a12}.ped-rel.al{color:#A83D3D}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
 .ped-t{flex:none;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--areia);color:var(--vinho)}
@@ -949,7 +949,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124120159';
+  var VERSAO = '20261124120920';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5139,6 +5139,7 @@ function telaHome() {
     c.innerHTML = a.length ? (n('super') ? '<i class="b super">' + n('super') + ' super</i>' : '') + (n('urgente') ? '<i class="b urgente">' + n('urgente') + ' urgentes</i>' : '') + '<i class="b">' + a.length + ' no total</i>' : 'Nenhum alerta';
   }).catch(e => { const c = $('#alCont'); if (c) c.textContent = /Código\.gs/.test(e.message) ? 'servidor desatualizado' : 'Abrir'; }), 50);
   if (pode('estoque') || pode('producao') || pode('admin')) setTimeout(pedidosHome, 40);
+  if (pode('pendencias') && !E.d.externo) setTimeout(pendenciasHome, 30);
   if (pode('laudos')) setTimeout(novosResultadosHome, 60);
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
@@ -5149,6 +5150,7 @@ function telaHome() {
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
+    (pode('pendencias') && !E.d.externo ? '<section class="ped-home pd-home" id="pdHome" hidden></section>' : '') +
     ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +
     (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span class="al-dir"><span id="labNovos"></span><span id="alCont">calculando…</span></span></button>' : pode('laudos') ? '<button class="al-home" data-acao="laudos-painel" id="labHome" hidden><b>Laudos dos laboratórios</b><span id="labNovos"></span></button>' : '') +
     (E.d.externo ? '' : '<div class="busca busca-g"><input id="buscaG" type="search" placeholder="Módulo (nome ou nº), animal, bolsa, exame…" aria-label="Busca global" autocomplete="off"></div><section class="cartao" id="resG" hidden></section>') +
@@ -5158,6 +5160,23 @@ function telaHome() {
     '</div></main>';
   const bg = $('#buscaG'); if (bg) bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
   if (bg) bg.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; const ms = modulosBusca(bg.value); if (ms.length === 1) { ev.preventDefault(); abrirModPorK(ms[0].k); } });
+}
+/* ── Pendências da equipe na tela inicial, acima dos pedidos: as minhas primeiro, atrasadas e de hoje em destaque ── */
+async function pendenciasHome() {
+  let R; try { R = await api('pendenciasListar', E.sessao); } catch (_) { return; }
+  const box = $('#pdHome'); if (!box || !R) return;
+  clearTimeout(E.tPdH); E.tPdH = setTimeout(() => { if ($('#pdHome')) pendenciasHome(); }, 120000);
+  E.pd = R; const h = hoje(), ab = R.lista.filter(p => !p.feitoEm), minhas = ab.filter(p => p.paraId === E.u.id);
+  E.d.pendencias = minhas.length; const mb = document.querySelector('.mod[data-k="pendencias"] .conta'); if (mb) mb.textContent = minhas.length || '';
+  const atr = minhas.filter(p => p.prazo && p.prazo < h).length, hj = minhas.filter(p => p.prazo === h).length;
+  const eq = pode('admin') ? ab.filter(p => p.paraId !== E.u.id).length : 0;
+  box.hidden = false; box.classList.toggle('vazio', !minhas.length && !eq);
+  const resumo = minhas.length ? minhas.length + (minhas.length === 1 ? ' para você' : ' para você') + (atr ? ' · ' + atr + (atr === 1 ? ' atrasada' : ' atrasadas') : '') + (hj ? ' · ' + hj + ' vence' + (hj === 1 ? '' : 'm') + ' hoje' : '') : 'nenhuma para você';
+  const L = minhas.slice().sort((a, b) => (a.prazo || '9999').localeCompare(b.prazo || '9999') || String(a.criadoEm).localeCompare(String(b.criadoEm))).slice(0, 3);
+  box.innerHTML = '<div class="ped-cab" data-acao="modulo" data-k="pendencias" role="button"><b>Pendências</b><span>' + esc(resumo + (eq ? ' · ' + eq + ' com a equipe' : '')) + '</span></div>' +
+    L.map(p => { const an = p.animalId ? animalDe(p.animalId) : null, at = p.prazo && p.prazo < h, hoje_ = p.prazo === h;
+      return '<button class="pd-hl' + (at ? ' atr' : hoje_ ? ' hj' : '') + '" data-acao="modulo" data-k="pendencias"><span>' + esc(p.texto) + (an ? ' <small>(' + esc(an.nome) + ')</small>' : '') + '</span>' + (p.prazo ? '<em>' + (at ? 'atrasada · ' : hoje_ ? 'hoje' : '') + (hoje_ ? '' : br(p.prazo).slice(0, 5)) + '</em>' : '') + '</button>'; }).join('') +
+    (minhas.length > 3 ? '<button class="pd-hl mais" data-acao="modulo" data-k="pendencias">e mais ' + (minhas.length - 3) + '</button>' : '');
 }
 /* ── Pedidos da Intensivet que esperam o CVH (acima dos alertas laboratoriais) ──
    Fora do horário o pedido aparece aqui na hora, em silêncio; o alerta com som toca na abertura do CVH. */
