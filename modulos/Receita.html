@@ -1997,7 +1997,7 @@ async function salvar() {
       arquivos.push(arq);
     }
     st.textContent = "Enviando para o Drive e para o painel…";
-    const res = await ponte("salvarReceita", { data: estado.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora: fora.map((i) => ({ med: i.med, conc: i.conc, controle: i.controle })) }, arquivos });
+    const res = await ponte("salvarReceita", { autoAid: CTX.autoAid || undefined, data: estado.data, dados: { ...dados, codigo: salvo.codigo, assinadoEm: quando, fora: fora.map((i) => ({ med: i.med, conc: i.conc, controle: i.controle })) }, arquivos });
     salvo.docs = res.docs; marcarSujo(false);
     renderPrevia(); mostrarSalvo(res);
     st.textContent = "";
@@ -2076,6 +2076,16 @@ function refazerItem(card) {
 function renumerar() { document.querySelectorAll(".item").forEach((c, i) => { const b = c.querySelector(".it-top b"); if (b) b.textContent = "Medicamento " + (i + 1); }); }
 
 montarForm(); pintarCalc(); ligar(); renderPrevia();
+// receita feita sozinha pelo painel (vermífugo lançado na carteira): salva assim que a prévia fica pronta e avisa o painel
+if (CTX.autoSalvar) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(CTX.dataReceita || "")) estado.data = CTX.dataReceita;
+  setTimeout(async () => {
+    try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
+    renderPrevia(); await salvar();
+    const ok = !!(salvo && salvo.docs);
+    ponte("autoReceita", { ok, erro: ok ? "" : ($("#st") ? $("#st").textContent : "") }).catch(() => {});
+  }, 400);
+}
 
 </script>
 <!--CVH-RECEITA-COMPLETO-->
