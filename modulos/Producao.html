@@ -28,6 +28,8 @@ button{cursor:pointer}
 .nota{font-size:13px;color:var(--tinta2);margin:4px 0 10px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:12px}
 .kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
+.kpi{position:relative}.kpi span.kco{position:absolute;top:10px;right:10px;width:38px;height:24px;border-radius:7px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:#5F130F}.kpi span.kco.PFC,.kpi span.kco.CRIO{background:#A83D3D}.kpi span.kco.CP{background:#C49A6C}
+.ag-abas button{border:1px solid #E5D8CB;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--vinho)}.ag-abas button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}
 .kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
 .kpi span{font-size:12.5px;color:var(--tinta2)}
 .lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
@@ -172,7 +174,7 @@ function qcColetaHtml(coleta, D) {
   const c = sag(D), us = S.uni.filter((u) => u.coleta === coleta), linha = (t, v) => v ? "<dt>" + t + "</dt><dd>" + v + "</dd>" : "";
   const cor = (comp) => { const u = us.find((x) => x.componente === comp), L = ((u || {}).dados || {}).coloracoes || []; return L.length ? (L[L.length - 1].resultado === "normal" ? "coloração dentro do padrão" : "coloração fora do padrão") : ""; };
   const pfc = us.find((x) => x.componente === "PFC"), cong = ((pfc || {}).dados || {}).congelamento, crio = us.find((x) => x.componente === "CRIO");
-  const nomes = [["ST", "ST_BOLSA " + coleta], ["CH com SAG", "CH_BOLSA " + coleta], ["PFC", "PF_BOLSA " + coleta]];
+  const nomes = [["ST", "ST_BOLSA " + coleta], ["CH com SAG", "CH_BOLSA " + coleta], ["CP", "CP_BOLSA " + coleta], ["PFC", "PF_BOLSA " + coleta]];
   return '<h2 style="margin-top:14px">Controle de qualidade da coleta</h2><dl class="dl">' +
     linha("ST", [D.pesoST != null ? "peso bruto " + fmt(D.pesoST, 1) + " g" : "", D.htST != null ? "micro-Ht " + fmt(D.htST, 1) + "%" : ""].filter(Boolean).join(" · ")) +
     linha("CH sem SAG", [D.pesoCHsem != null ? "peso " + fmt(D.pesoCHsem, 1) + " g" : "", D.htCHsem != null ? "micro-Ht " + fmt(D.htCHsem, 1) + "%" : "", c ? "volume " + fmt(c.vol) + " mL · Ht " + (c.medido ? "medido " : "pela média do CVH ") + fmt(c.ht, 1) + "%" : ""].filter(Boolean).join(" · ")) +
@@ -308,8 +310,9 @@ function porComponente(L) {
   return ORDEM_COMP.concat([...new Set(L.map((u) => u.componente))].filter((c) => !ORDEM_COMP.includes(c))).map((c) => { const G = L.filter((u) => u.componente === c).sort((a, b) => String(a.validade || "9").localeCompare(String(b.validade || "9"))); return G.length ? '<div class="grupo-t">' + esc(NOME_COMP[c] || c) + " · " + G.length + (G.length === 1 ? " bolsa" : " bolsas") + "</div>" + listaAninhada(G) : ""; }).join("");
 }
 function kpisProd() {
-  const k = (n, t, a, v) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '"><b>' + n + "</b><span>" + t + "</span></button>";
-  return '<div class="kpis">' + k(aguardando().length, "Coletas para produzir", "aba", "prod") + k(S.prod.filter((p) => p.etapa !== "concluida").length, "Produções em andamento", "aba", "prod") + k(S.uni.filter(congPendente).length, "Congelamento a conferir", "aba", "hoje") + k(S.uni.filter((u) => u.situacao === "producao_crio").length, "CRIO em produção", "aba", "hoje") + k(S.uni.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "aba", "hoje") + "</div>";
+  // etiquetinha do hemocomponente no canto do quadro (ST, PFC, CRIO), como nas bolsas
+  const k = (n, t, a, v, c) => '<button class="kpi" data-a="' + a + '" data-v="' + (v || "") + '">' + (c ? '<span class="co kco ' + c + '">' + c + "</span>" : "") + "<b>" + n + "</b><span>" + t + "</span></button>";
+  return '<div class="kpis">' + k(aguardando().length, "Coletas para produzir", "aba", "prod", "ST") + k(S.prod.filter((p) => p.etapa !== "concluida").length, "Produções em andamento", "aba", "prod") + k(S.uni.filter(congPendente).length, "Congelamento a conferir", "aba", "hoje", "PFC") + k(S.uni.filter((u) => u.situacao === "producao_crio").length, "CRIO em produção", "aba", "hoje", "CRIO") + k(S.uni.filter((u) => u.situacao === "quarentena").length, "Aguardando liberação", "aba", "hoje") + "</div>";
 }
 function kpis() {
   if (PROD) return kpisProd();
@@ -512,7 +515,12 @@ function telaHojeProd() {
   return '<div class="cx"><h2>Para fazer hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente na bancada.</p>') + "</div>" +
     '<div class="duas"><div class="cx"><h2>Congelando · ' + congel.length + "</h2>" + (congel.length ? listaAninhada(congel) : '<p class="vazio">Nenhum plasma ou CRIO congelando.</p>') + "</div>" +
     '<div class="cx"><h2>Produções concluídas hoje · ' + feitasHoje.length + "</h2>" + (feitasHoje.length ? feitasHoje.map((p) => '<div class="lin"><div class="t"><b>Coleta ' + esc(p.coleta) + "</b><small>" + esc(S.uni.filter((u) => u.coleta === p.coleta).map((u) => u.componente).join(", ")) + '</small></div><button class="btn sec peq" data-a="prod" data-v="' + esc(p.coleta) + '">Ver</button></div>').join("") : '<p class="vazio">Nenhuma ainda.</p>') + "</div></div>" +
-    '<div class="cx"><h2>Aguardando liberação · ' + S.uni.filter((u) => u.situacao === "quarentena").length + '</h2><p class="nota">As bolsas produzidas ficam aqui até os exames do CVH. A liberação acontece sozinha quando o TECSA sai negativo e completo, ou no Estoque.</p>' + listaAninhada(S.uni.filter((u) => u.situacao === "quarentena")) + "</div>";
+    (() => { const Q = S.uni.filter((u) => u.situacao === "quarentena"), ab = S.agTab || "", n = (c) => Q.filter((u) => u.componente === c).length;
+      // abas como as da carteira: todas, ou só CH, CP, PFC ou CRIO
+      const tab = (c, t) => '<button class="' + (ab === c ? "on" : "") + '" data-a="agTab" data-v="' + c + '">' + t + (c ? " · " + n(c) : " · " + Q.length) + "</button>";
+      const L = ab ? Q.filter((u) => u.componente === ab) : Q;
+      return '<div class="cx"><h2>Aguardando liberação · ' + Q.length + '</h2><p class="nota">As bolsas produzidas ficam aqui até os exames do CVH. A liberação acontece sozinha quando o TECSA sai negativo e completo, ou no Estoque.</p>' +
+        '<div class="filtros ag-abas">' + tab("", "Todas") + tab("CH", "CH") + tab("CP", "CP") + tab("PFC", "PFC") + tab("CRIO", "CRIO") + "</div>" + (L.length ? listaAninhada(L) : '<p class="vazio">Nenhuma bolsa ' + esc(ab) + " aguardando.</p>") + "</div>"; })();
 }
 function telaHoje() {
   const P = pendencias(), vivas = ["disponivel", "reservada"];
@@ -1186,6 +1194,7 @@ document.addEventListener("click", async (ev) => {
   }
   if (a === "remMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
+  if (a === "agTab") { S.agTab = v; pintar(); return; }
   if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast(/^https?:\/\//.test(v) ? "Link copiado." : "Copiado: " + v); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
   if (a === "cfAdd") { const i = $("#cfCod"); if (i && i.value.trim()) lidoConf(i.value.trim().toUpperCase().replace(/\s+/g, " ")); return; }
