@@ -3223,8 +3223,12 @@ init();
         const [foto, lido] = await Promise.all([
           ponte("acFoto", { nome: "Monitor " + [S.numero, S.animal].filter(Boolean).join(" ") + ".jpg", b64 }),
           ponte("iaRapida", "monitor", "image/jpeg", b64).catch(() => null)]);
-        const L = lido || {}, num = (v) => (v == null || v === "" || isNaN(+v) ? null : +v);
+        // chaves com outra grafia (SpO2, sp02, PR(bpm)...) valem também
+        const L = {}; for (const [k, v] of Object.entries(lido || {})) { const kk = k.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^sp0/, "spo"); L[/^spo2|^saturac|^spo$/.test(kk) ? "spo2" : /^pr|^puls|^fc|^hr/.test(kk) ? "pr" : /^sys|^sist|^ps$/.test(kk) ? "sys" : /^dia|^pd$/.test(kk) ? "dia" : /^resp|^fr$|^rr/.test(kk) ? "resp" : /^temp/.test(kk) ? "temp" : kk] = v; }
+        const num = (v) => { const x = parseFloat(String(v ?? "").replace(",", ".")); return isFinite(x) ? x : null; };
         const val = { spo2: num(L.spo2), pr: num(L.pr), sys: num(L.sys), dia: num(L.dia), resp: num(L.resp), temp: num(L.temp) };
+        // SpO2 vazio com os outros números lidos: segunda leitura só da saturação
+        if (val.spo2 == null && (val.pr != null || val.sys != null)) { try { const s2 = await ponte("iaRapida", "monitorSpo2", "image/jpeg", b64); const v2 = num(s2 && (s2.spo2 ?? s2.SpO2)); if (v2 != null && v2 >= 50 && v2 <= 100) val.spo2 = v2; } catch (_) {} }
         S.monitor = { foto: { id: foto.id }, onda: o ? o.tracado : "", prop: o ? o.proporcao : null, lido: val, em: new Date().toISOString() };
         const campos = [["spo2", "spo2", "SpO₂", "%"], ["fc", "pr", "FC", "bpm"], ["ps", "sys", "PS", "mmHg"], ["pd", "dia", "PD", "mmHg"], ["fr", "resp", "FR", "mpm"], ["temp", "temp", "temperatura", "°C"]], feitos = [];
         for (const [k, l, rot, un] of campos) if (val[l] != null) { S[k] = String(val[l]).replace(".", ","); S.lidos = Object.assign({}, S.lidos || {}, { [k]: true }); feitos.push(rot + " " + S[k] + " " + un); }
