@@ -321,11 +321,11 @@ table.kv{width:100%;border-collapse:collapse;table-layout:fixed}
 .mb .as .qr{width:50px;height:50px}
 .nas{border:1.5px dashed #C6B098;border-radius:6px;padding:12px;text-align:center;font-size:10px;color:#9b7f6e}
 .pg.cp .blk{margin-bottom:8px}
-.pg.cp{--fxh:54px}.pg.cp .fxs{padding:7px 10px 5px!important;gap:10px!important}
+.pg.cp{--fxh:110px}.pg.cp .fxs{padding:7px 10px 5px!important;gap:10px!important}
 .pg.cp .ttl{margin:0 0 12px}
 .pg.cp .idb .rw{padding:4px 0 3px}
 .pg.cp .sbar{padding:4px 12px;margin-bottom:5px}
-.pg.cp .kv td{padding:3px 10px}
+.pg.cp .kv td{padding:2px 10px}
 .pg.cp .kv th{padding:4px 10px}
 .pg.cp .ocol .ob+.ob{margin-top:6px}
 .pg.cp .as{padding-top:8px}
@@ -1166,6 +1166,17 @@ function ondaSvg(o, cor, fundo) {
   return '<svg viewBox="-10 -10 1020 ' + (h + 20) + '" preserveAspectRatio="none" style="width:100%;height:auto;display:block' + (fundo ? ";background:" + fundo : "") + '"><path d="' + d + '" fill="none" stroke="' + (cor || "#A83D3D") + '" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
 }
 
+// exame clínico do A4: avaliação física com a triagem laboratorial embaixo, sinais vitais com a onda do SpO₂, e as fotos do plasma e do autocontrole na terceira coluna
+function exameA4(){
+  const T=exameTabs(true);if(!T.length)return '';
+  const de=n=>T.find(x=>x.t===n),af=de('Avaliação física'),sv=de('Sinais vitais'),tr=de('Triagem laboratorial');
+  const fotos=S.clinico?[]:[[S.plasmaImg,'Plasma'],[S.gelImg,'Autocontrole']].filter(x=>x[0]);
+  const col1=[af,tr].filter(Boolean).map(kvHTML).join('<div style="height:10px"></div>');
+  const col2=sv?kvHTML(sv):'';
+  const col3=fotos.length?`<div><table class="kv"><thead><tr><th>Plasma e autocontrole</th></tr></thead></table><div class="fxs" style="display:flex;justify-content:center;align-items:flex-end;gap:12px;background:#F7F2EC;border:1px solid #EADFD3;border-radius:0 0 8px 8px;border-top:0;padding:10px 8px 6px">${fotos.map(([u,c])=>`<figure style="margin:0;text-align:center"><img src="${u}" alt="${c}" style="height:var(--fxh,132px);width:auto;border-radius:5px;display:block;background:#fff;box-shadow:0 1px 3px rgba(60,40,30,.18)"><figcaption style="font-size:7.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D;margin-top:4px">${c}</figcaption></figure>`).join('')}</div></div>`:'';
+  const cols=[col1,col2,col3].filter(Boolean),tpl=cols.length===3?'minmax(0,1.3fr) minmax(0,.85fr) minmax(0,.75fr)':'repeat('+cols.length+',minmax(0,1fr))';
+  return `<div class="blk">${barHTML('Exame clínico','Avaliação do doador antes da coleta')}<div style="display:grid;gap:12px;align-items:start;grid-template-columns:${tpl}">${cols.map(c=>c.startsWith('<div>')?c:`<div>${c}</div>`).join('')}</div></div>`;
+}
 // faixa do A4 no estilo dos laudos: onda do SpO₂ à esquerda, tubo do plasma e microtubo do autocontrole à direita, mesma altura
 function faixaFotosA4(){
   const m=S.monitor,H='var(--fxh,74px)',L=(m&&m.lido)||{},fig=(u,c)=>`<figure style="margin:0;text-align:center;flex:none"><img src="${u}" alt="${c}" style="height:${H};width:auto;border-radius:5px;display:block;background:#fff;box-shadow:0 1px 3px rgba(60,40,30,.18)"><figcaption style="font-size:7.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D;margin-top:4px">${c}</figcaption></figure>`;
@@ -1179,7 +1190,8 @@ function ondaHTML(){const m=S.monitor;if(!m||!m.onda)return '';
   return `<div class="blk">${barHTML('Onda do SpO₂',it?'Traçado do monitor na avaliação · '+it:'Traçado do monitor na avaliação')}<div style="margin-top:8px;border:1px solid #EADFD3;border-radius:8px;overflow:hidden">${ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FBF8F4')}</div></div>`;}
 function exameTabs(a4){
   const T=exameTabsBase(),m=S.monitor;
-  // A4: as tabelas ficam só com os dados (alturas parecidas); onda e fotos vão numa faixa própria logo abaixo
+  // A4: onda pequena embaixo do SpO₂ (sem distorcer: altura acompanha a largura); as fotos vão para a coluna própria
+  if(a4&&m&&m.onda){const sv=T.find(x=>x.t==='Sinais vitais');if(sv)sv.onda=ondaSvg({tracado:m.onda,proporcao:m.prop},'#A83D3D','#FFFFFF');}
   if(a4){const tr=T.find(x=>x.t==='Triagem laboratorial');if(tr)tr.imgs=[];}
   return T;
 }
@@ -2546,8 +2558,7 @@ function assHTML(){
 }
 function blocos(){
   return [`<div class="blk">${tituloHTML()}</div>`,idHTMLA4(),
-    secKV('Exame clínico','Avaliação do doador antes da coleta',exameTabs(true),3,'minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.3fr)'),
-    faixaFotosA4(),
+    exameA4(),
     secKV('Coleta','Horários, volume e bolsa',coletaTabs()),
     lesObsHTML(S.monitor||S.plasmaImg||S.gelImg?88:104),`<div class="blk" style="margin-top:12px">${assHTML()}</div>`].filter(Boolean);
 }
