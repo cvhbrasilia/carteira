@@ -948,7 +948,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124001604';
+  var VERSAO = '20261124120159';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6381,11 +6381,14 @@ function alertaCritico(m) {
   somDesbloquear();
   let ov = $('#alertaCrit'); if (!ov) { ov = document.createElement('div'); ov.id = 'alertaCrit'; document.body.appendChild(ov); }
   const temDestino = /[?&]abrir=/.test(m.url || '');
-  ov.innerHTML = '<div class="ac-cx" role="alertdialog" aria-modal="true"><b>ALERTA URGENTE</b><h2>' + esc(m.titulo || '') + '</h2><p>' + esc(m.corpo || '') + '</p><button class="btn" id="acOk">' + (temDestino ? 'Entendi e abrir' : 'Entendi') + '</button>' + (temDestino ? '<button class="btn sec2" id="acSo" style="margin-top:8px">Só entendi</button>' : '') + '</div>';
+  // aviso antigo (o app estava fechado quando chegou): mostra quando aconteceu e toca uma vez só
+  const t0 = Date.parse(m.quando || ''), velho = t0 && Date.now() - t0 > 30 * 60000;
+  const quandoTx = velho ? (d => (d.toDateString() === new Date().toDateString() ? 'Hoje' : br(d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()))) + ' às ' + p2(d.getHours()) + 'h' + p2(d.getMinutes()))(new Date(t0)) : '';
+  ov.innerHTML = '<div class="ac-cx" role="alertdialog" aria-modal="true"><b>ALERTA URGENTE</b><h2>' + esc(m.titulo || '') + '</h2>' + (quandoTx ? '<p><small>' + esc(quandoTx) + '</small></p>' : '') + '<p>' + esc(m.corpo || '') + '</p><button class="btn" id="acOk">' + (temDestino ? 'Entendi e abrir' : 'Entendi') + '</button>' + (temDestino ? '<button class="btn sec2" id="acSo" style="margin-top:8px">Só entendi</button>' : '') + '</div>';
   const parar = () => { clearInterval(ALARME); ALARME = null; ov.remove(); if (navigator.vibrate) navigator.vibrate(0); };
   $('#acOk').onclick = () => { parar(); if (temDestino) abrirDestinoUrl(m.url); }; if ($('#acSo')) $('#acSo').onclick = parar;
   const ciclo = () => { if (!AUD) return; for (let i = 0; i < 4; i++) { tom(853, i * 0.5, 0.24, 0.35, 'square'); tom(960, i * 0.5 + 0.25, 0.24, 0.35, 'square'); } if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600]); };
-  clearInterval(ALARME); ciclo(); ALARME = setInterval(ciclo, 2600);
+  clearInterval(ALARME); ciclo(); if (!velho) ALARME = setInterval(ciclo, 2600);
 }
 function receberAviso(m) {
   if (!m || !m.id) return; let ult = 0; try { ult = +localStorage.getItem('cvh_aviso_ult') || 0; } catch (_) {}
@@ -6401,6 +6404,9 @@ if (window.CVH_PAINEL) {
   document.addEventListener('pointerdown', somDesbloquear, { once: true });
   try { navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.tipo === 'cvh-notificacao') receberAviso(ev.data.m); if (ev.data && ev.data.tipo === 'cvh-abrir') abrirDestinoUrl(ev.data.url); }); } catch (_) {}
   setInterval(checarAvisos, 60000); setTimeout(checarAvisos, 8000);
+  // logo depois de entrar e sempre que o app volta para a frente, sem esperar o próximo minuto
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && E.sessao) checarAvisos(); });
+  setInterval(() => { if (E.sessao && E.sessaoAvisos !== E.sessao) { E.sessaoAvisos = E.sessao; checarAvisos(); } }, 1500);
 }
 function notifEstado() {
   if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone ? 'No iPhone, as notificações funcionam com o app instalado na tela inicial. Instale o painel e abra por ele.' : 'Este navegador não recebe notificações.';
