@@ -502,7 +502,7 @@ function blank(){return{
   dea1:'',dal:'',mucosas:'',pele:'',ppt:'',plasma:'',acDoa:'',acFoto:null,acFotos:null,monitor:null,hemoFoto:null,clinico:false,ausc:'',auscObs:'',plCor:'',plAsp:'',plHem:'',plLip:'',linf:{modo:'',itens:{}},
   ps:'',pd:'',hb:'',ht:'',fc:'',fr:'',temp:'',tpc:'',spo2:'',
   inicio:'',fim:'',tempo:'',volume:'',lote:'',validade:'',seguimento:'',
-  obsIni:'',lesoes:[],obsDoa:'',obsDemais:'',
+  obsIni:'',lesoes:[],plasmaImg:'',obsDoa:'',obsDemais:'',
   ass:null,lidos:{},duvidas:{},criadoEm:new Date().toISOString(),atualizadoEm:null}}
 function locais(){const o=lsGet(LS_FICHAS)||{};const lim=Date.now()-DIAS_GUARDA*864e5;let m=false;for(const k of Object.keys(o))if(!o[k]||!o[k].d||o[k].t<lim){delete o[k];m=true;}if(m)lsSet(LS_FICHAS,o);return o;}
 function temConteudo(x){return !!(x.numero||x.animal||x.responsavel||x.microchip);}
@@ -969,6 +969,142 @@ function lin(l,v,u){if(!v)return null;const nb=u&&isNum(v.replace(',','.'));retu
 function hemoLin(){const hb=nu('hb'),ht=nu('ht');if(!hb&&!ht)return null;
   const p=[];if(hb)p.push(`<span class="sl">HB</span> ${esc(hb)} <span class="un">g/dL</span>`);if(ht)p.push(`<span class="sl">HT</span> ${esc(ht)} <span class="un">%</span>`);
   return {l:'Hemochromax',v:[hb&&`HB ${hb} g/dL`,ht&&`HT ${ht} %`].filter(Boolean).join('\n'),h:p.join('<br>')};}
+/* ================= fotos tratadas como no laudo (tubo do plasma e microtubos do cartão de gel) ================= */
+const COR = { BORDO: "#5F130F", TEXTO: "#3A2420", TXT2: "#5B4038" };
+function balanco(c, alvo) {
+  const x = c.getContext("2d"), d = x.getImageData(0, 0, c.width, c.height), p = d.data, n = p.length / 4;
+  const wb = [0, 1, 2].map((k) => { const h = new Uint32Array(256); for (let i = 0; i < n; i += 3) h[p[i * 4 + k]]++; let acc = 0; const lim = (n / 3) * 0.97; for (let v = 0; v < 256; v++) { acc += h[v]; if (acc >= lim) return Math.max(60, v); } return 255; });
+  for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) p[i * 4 + k] = Math.min(255, p[i * 4 + k] * (alvo || 248) / wb[k]);
+  x.putImageData(d, 0, 0); return c;
+}
+function canvasDe(fonte, max) {
+  const w0 = fonte.naturalWidth || fonte.width, h0 = fonte.naturalHeight || fonte.height, k = Math.min(1, max / Math.max(w0, h0));
+  const c = document.createElement("canvas"); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k); c.getContext("2d").drawImage(fonte, 0, 0, c.width, c.height); return c;
+}
+function analisarTubo(fonte) { for (const lim of [42, 28, 18]) { const a = analisarTubo0(fonte, lim); if (a) return a; } return null; }
+function analisarTubo0(fonte, lim) {
+  const c = balanco(canvasDe(fonte, 900), 246), W = c.width, H = c.height, p = c.getContext("2d").getImageData(0, 0, W, H).data;
+  const col = (i) => { const r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx - mn > lim && mx > 90 && !(r > g + 60 && g < 120 && b < 120 && mx - mn > 120 && false); };
+  const cnt = new Array(H).fill(0), xl = new Array(H).fill(-1), xr = new Array(H).fill(-1);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (col(y * W + x)) { cnt[y]++; if (xl[y] < 0) xl[y] = x; xr[y] = x; }
+  const mx = Math.max(...cnt); if (mx < W * 0.08) return null;
+  let fim = H - 1; while (fim > 0 && cnt[fim] < mx * 0.2) fim--;
+  // fundo redondo do tubo (plasma até o fim): a subida começa na última linha larga, não no estreitamento do fundo
+  let larga = fim; while (larga > 0 && cnt[larga] < mx * 0.4) larga--;
+  let ini = larga, falha = 0; for (let y = larga; y >= 0; y--) { if (cnt[y] >= mx * 0.4) { ini = y; falha = 0; } else if (++falha > 5) break; }
+  if (fim - ini < 20) return null;
+  // largura do tubo pelas linhas do meio do plasma
+  const meio = []; for (let y = ini + Math.round((fim - ini) * 0.15); y < ini + (fim - ini) * 0.6; y++) if (xl[y] >= 0) meio.push([xl[y], xr[y]]);
+  const med = (a) => a.sort((u, v) => u - v)[Math.floor(a.length / 2)] || 0, L = med(meio.map((m) => m[0])), Rr = med(meio.map((m) => m[1]));
+  // cor média do plasma (para a leitura automática e para o fundo do tubo)
+  let sr = 0, sg = 0, sb = 0, n = 0; for (let y = ini + Math.round((fim - ini) * 0.2); y < ini + (fim - ini) * 0.7; y += 2) for (let x = L + (Rr - L) * 0.25; x < Rr - (Rr - L) * 0.25; x += 2) { const i = (y * W + Math.round(x)) * 4; sr += p[i]; sg += p[i + 1]; sb += p[i + 2]; n++; }
+  return { c, W, H, ini, fim, xl, xr, L, R: Rr, cor: n ? [sr / n, sg / n, sb / n].map(Math.round) : [220, 190, 80] };
+}
+function desenharTubo(a, rot) {
+  // largura do tubo inteiro na foto (plasma mais as paredes do vidro)
+  const larg0 = Math.max(10, a.R - a.L), extra = larg0 * 0.07, IW = 150, k = IW / (larg0 + extra * 2), LH = Math.round((a.fim - a.ini) * k), vazio = Math.max(320, Math.round(LH * 0.85));
+  const mg = 44, CW = IW + mg * 2, topo = 22, CH = topo + vazio + LH + 40, x0 = mg, yL = topo + vazio, yB = yL + LH, r = IW / 2;
+  const cv = document.createElement("canvas"); cv.width = CW; cv.height = CH; const x = cv.getContext("2d");
+  x.fillStyle = "#F3F1EE"; x.fillRect(0, 0, CW, CH);
+  const forma = (ctx, pad) => { ctx.beginPath(); ctx.moveTo(x0 - pad, topo); ctx.lineTo(x0 - pad, yB - r); ctx.arc(x0 + r, yB - r, r + pad, Math.PI, 0, true); ctx.lineTo(x0 + IW + pad, topo); ctx.closePath(); };
+  // sombra suave no fundo
+  x.save(); x.filter = "blur(9px)"; x.globalAlpha = 0.16; x.translate(5, 6); forma(x, 0); x.fillStyle = "#3c2a20"; x.fill(); x.restore();
+  // plasma com as paredes do vidro, linha a linha da própria foto
+  const src = a.c.getContext("2d").getImageData(0, 0, a.W, a.H).data, img = x.createImageData(IW, LH), D = img.data;
+  const span = (ys) => { const y = Math.max(a.ini, Math.min(a.fim, Math.round(ys))); let l = a.xl[y], rr = a.xr[y]; const full = rr - l >= larg0 * 0.85; if (l < 0 || !full) { const cx = (a.L + a.R) / 2, meia = l < 0 ? larg0 / 2 : (rr - l) / 2; l = cx - meia; rr = cx + meia; } return [l - extra, rr + extra]; };
+  for (let v = 0; v < LH; v++) {
+    const yo = yL + v, dy = yo - (yB - r), meia = yo > yB - r ? Math.sqrt(Math.max(0, r * r - dy * dy)) : r, ys = a.ini + v / k, [l, rr] = span(ys);
+    const ly = Math.max(0, Math.min(a.H - 1, Math.floor(ys))), fy = ys - ly, y1 = Math.min(a.H - 1, ly + 1);
+    for (let u = 0; u < IW; u++) {
+      const o = (v * IW + u) * 4, du = u + 0.5 - r; if (Math.abs(du) > meia) { D[o + 3] = 0; continue; }
+      const t = (du + meia) / (2 * meia), xs = Math.max(0, Math.min(a.W - 2, l + t * (rr - l))), lx = Math.floor(xs), fx = xs - lx, x1 = lx + 1;
+      for (let ch = 0; ch < 3; ch++) { const g = (yy, xx) => src[(yy * a.W + xx) * 4 + ch]; D[o + ch] = (g(ly, lx) * (1 - fx) + g(ly, x1) * fx) * (1 - fy) + (g(y1, lx) * (1 - fx) + g(y1, x1) * fx) * fy; }
+      D[o + 3] = 255;
+    }
+  }
+  const tmp = document.createElement("canvas"); tmp.width = IW; tmp.height = LH; tmp.getContext("2d").putImageData(img, 0, 0);
+  x.save(); forma(x, 0); x.clip();
+  // vidro vazio: quase transparente, só as bordas um pouco mais escuras
+  const gv = x.createLinearGradient(x0, 0, x0 + IW, 0); gv.addColorStop(0, "rgba(150,155,160,.32)"); gv.addColorStop(0.07, "rgba(235,237,238,.18)"); gv.addColorStop(0.2, "rgba(255,255,255,.28)"); gv.addColorStop(0.26, "rgba(250,250,250,.08)"); gv.addColorStop(0.9, "rgba(225,228,230,.12)"); gv.addColorStop(1, "rgba(150,155,160,.34)");
+  x.fillStyle = gv; x.fillRect(x0, topo, IW, yL - topo + 2);
+  x.drawImage(tmp, x0, yL); x.restore();
+  forma(x, 0); x.strokeStyle = "rgba(120,124,128,.38)"; x.lineWidth = 1.2; x.stroke();
+  x.fillStyle = "rgba(170,174,178,.35)"; x.fillRect(x0 - 1, topo, IW + 2, 4);
+  // etiqueta impressa (como as do laboratório), curvada no tubo
+  const ey = topo + 40, eh = Math.min(vazio - 70, 210), ex = x0 - 2, ew = IW + 4;
+  if (eh > 90) {
+    x.fillStyle = "#FBFBF9"; x.fillRect(ex, ey, ew, eh);
+    const gs = x.createLinearGradient(ex, 0, ex + ew, 0); gs.addColorStop(0, "rgba(0,0,0,.14)"); gs.addColorStop(0.12, "rgba(0,0,0,0)"); gs.addColorStop(0.85, "rgba(0,0,0,0)"); gs.addColorStop(1, "rgba(0,0,0,.16)");
+    x.textAlign = "left"; const tx = ex + 12; let yy = ey + 22;
+    x.fillStyle = "#1d1d1d"; x.font = "bold 11px Helvetica, Arial, sans-serif"; x.fillText("CVH", tx, yy);
+    x.font = "bold 12px Helvetica, Arial, sans-serif"; x.textAlign = "right"; x.fillText(rot.amostra || "", ex + ew - 10, yy); x.textAlign = "left";
+    // código de barras feito a partir do número da amostra
+    yy += 8; let bx = tx, sem = 0; const txt = (rot.amostra || rot.nome || "CVH") + "CVH"; for (let i = 0; i < txt.length; i++) sem = (sem * 31 + txt.charCodeAt(i)) >>> 0;
+    while (bx < ex + ew - 14) { sem = (sem * 1103515245 + 12345) >>> 0; const w1 = 1 + (sem >> 16) % 3; x.fillRect(bx, yy, w1, 26); bx += w1 + 1 + ((sem >> 8) % 3); }
+    yy += 42; x.font = "bold 15px Helvetica, Arial, sans-serif"; let nm = String(rot.nome || "").toUpperCase(); while (x.measureText(nm).width > ew - 22 && nm.length > 3) nm = nm.slice(0, -2) + "…"; x.fillText(nm, tx, yy);
+    yy += 19; x.font = "11px Helvetica, Arial, sans-serif"; x.fillStyle = "#333"; if (rot.data) { x.fillText("Coleta " + rot.data, tx, yy); yy += 15; }
+    x.fillText("PLASMA", tx, yy);
+    x.fillStyle = gs; x.fillRect(ex, ey, ew, eh);
+    x.strokeStyle = "rgba(0,0,0,.10)"; x.lineWidth = 1; x.strokeRect(ex + 0.5, ey + 0.5, ew - 1, eh - 1);
+  }
+  return { url: cv.toDataURL("image/jpeg", 0.93), w: CW, h: CH, desenhada: true };
+}
+function semEtiquetaGel(fonte) {
+  const c = balanco(canvasDe(fonte, 700), 246), W = c.width, H = c.height, p = c.getContext("2d").getImageData(0, 0, W, H).data;
+  const papel = [], verm = []; for (let y = 0; y < H; y++) { let cl = 0, vm = 0; for (let x = 0; x < W; x++) { const i = (y * W + x) * 4, r = p[i], g = p[i + 1], b = p[i + 2]; if (Math.min(r, g, b) > 196 && Math.max(r, g, b) - Math.min(r, g, b) < 34) cl++; if (r > 110 && r - g > 60 && r - b > 45) vm++; } papel.push(cl / W >= 0.45); verm.push(vm >= 3); }
+  let topoPapel = H, falhas = 0; const tol = Math.max(6, Math.round(H * 0.07));
+  for (let y = H - 1; y >= 0; y--) { if (papel[y]) { topoPapel = y; falhas = 0; } else if (++falhas > tol) break; }
+  if (H - topoPapel < H * 0.07) return fonte;
+  let ultVerm = -1; for (let y = 0; y < topoPapel; y++) if (verm[y]) ultVerm = y; else if (ultVerm >= 0 && y - ultVerm > H * 0.2) break;
+  if (ultVerm < 0) return fonte;
+  // vermelho mais baixo antes do papel é o botão de hemácias (ou o topo do gel, se aglutinou): a ponta do microtubo fica logo abaixo
+  let ult = -1; for (let y = topoPapel - 1; y >= 0; y--) if (verm[y]) { ult = y; break; }
+  const corte = Math.min(H, Math.max(topoPapel - Math.round(W * 0.01), 0)), minimo = ult + Math.round(W * 0.045);
+  const yc = Math.max(Math.min(corte, H), Math.min(minimo, corte)), fim = Math.min(corte, Math.max(yc, minimo));
+  const h0 = fonte.naturalHeight || fonte.height, w0 = fonte.naturalWidth || fonte.width, hc = Math.max(20, Math.round(fim * h0 / H));
+  if (hc >= h0 * 0.97) return fonte;
+  const o = document.createElement("canvas"); o.width = w0; o.height = hc; o.getContext("2d").drawImage(fonte, 0, 0); return o;
+}
+function analisarGel(fonte, n, neutro) {
+  if (!fonte._semEtq) { fonte = semEtiquetaGel(fonte); fonte._semEtq = true; }
+  if (!neutro) return { c: balanco(canvasDe(fonte, 1000), 246), n, orig: fonte, neutro: false };
+  const c = canvasDe(fonte, 1000), W = c.width, H = c.height, x = c.getContext("2d"), d = x.getImageData(0, 0, W, H), p = d.data;
+  // faixas de fundo: as bordas e o espaço entre os microtubos
+  const faixas = [[0, 0.035], [0.965, 1]]; for (let i = 1; i < n; i++) faixas.push([i / n - 0.025, i / n + 0.025]);
+  const cols = []; faixas.forEach(([a, b]) => { for (let xx = Math.floor(a * W); xx < Math.min(W, Math.ceil(b * W)); xx++) cols.push(xx); });
+  const fundo = []; for (let y = 0; y < H; y++) { const v = [[], [], []]; cols.forEach((xx) => { const i = (y * W + xx) * 4; for (let k = 0; k < 3; k++) v[k].push(p[i + k]); }); fundo.push(v.map((a) => { a.sort((u, w) => u - w); return a[Math.floor(a.length * 0.6)] || 200; })); }
+  const liso = fundo.map((_, y) => [0, 1, 2].map((k) => { let s = 0, m = 0; for (let j = Math.max(0, y - 6); j <= Math.min(H - 1, y + 6); j++) { s += fundo[j][k]; m++; } return Math.max(40, s / m); }));
+  // só o fundo é clareado: o que tem cor (hemácias, gel, plasma) fica com os pixels da foto, apenas com o ganho geral de luz
+  const topo = liso.slice(0, Math.max(1, Math.round(H * 0.4))).map((v) => Math.max(v[0], v[1], v[2])).sort((u, w) => u - w), ganho = Math.min(1.12, Math.max(1, 236 / (topo[Math.floor(topo.length / 2)] || 236)));
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
+    const i = (y * W + xx) * 4, r = p[i], g = p[i + 1], b = p[i + 2], sat = Math.max(r, g, b) - Math.min(r, g, b);
+    let w = (sat - 9) / 22; w = w < 0 ? 0 : w > 1 ? 1 : w; w = w * w * (3 - 2 * w);
+    for (let k = 0; k < 3; k++) { const orig = Math.min(255, p[i + k] * ganho), fundoC = 236 * Math.min(1.045, Math.pow(p[i + k] / liso[y][k], Math.min(1, liso[y][k] / 236))); p[i + k] = orig * w + fundoC * (1 - w); }
+  }
+  x.putImageData(d, 0, 0); return { c, n, orig: fonte, neutro: true };
+}
+function desenharGelProva(g, rot) {
+  const c = g.c, gw = c.width, gh = c.height, n = rot.pocos.length, cw = gw / n, base = Math.max(14, Math.min(cw * 0.15, 30));
+  const mg = Math.round(base * 0.9), hHead = Math.round(base * 1.9), hLin = Math.round(base * 1.5), hEtq = hHead + rot.linhas.length * hLin + Math.round(base * 0.9);
+  const CW = gw + mg * 2, CH = mg + gh + Math.round(base * 0.7) + hEtq + mg, cv = document.createElement("canvas"); cv.width = CW; cv.height = CH; const x = cv.getContext("2d");
+  x.fillStyle = "#F3F1EE"; x.fillRect(0, 0, CW, CH); x.drawImage(c, mg, mg);
+  // borda suave da foto para o fundo neutro
+  const fx = x.createLinearGradient(0, 0, 0, 1); x.strokeStyle = "rgba(0,0,0,0)"; void fx;
+  const ex = mg, ey = mg + gh + Math.round(base * 0.7), ew = gw, rr = Math.round(base * 0.45);
+  const caixa = (ctx) => { ctx.beginPath(); ctx.moveTo(ex + rr, ey); ctx.lineTo(ex + ew - rr, ey); ctx.quadraticCurveTo(ex + ew, ey, ex + ew, ey + rr); ctx.lineTo(ex + ew, ey + hEtq - rr); ctx.quadraticCurveTo(ex + ew, ey + hEtq, ex + ew - rr, ey + hEtq); ctx.lineTo(ex + rr, ey + hEtq); ctx.quadraticCurveTo(ex, ey + hEtq, ex, ey + hEtq - rr); ctx.lineTo(ex, ey + rr); ctx.quadraticCurveTo(ex, ey, ex + rr, ey); ctx.closePath(); };
+  x.save(); x.shadowColor = "rgba(60,40,30,.16)"; x.shadowBlur = base * 0.5; x.shadowOffsetY = 2; caixa(x); x.fillStyle = "#FFFFFF"; x.fill(); x.restore();
+  x.save(); caixa(x); x.clip(); x.fillStyle = COR.BORDO; x.fillRect(ex, ey, ew, hHead); x.restore();
+  x.textAlign = "center"; x.textBaseline = "middle";
+  x.strokeStyle = "rgba(255,255,255,.35)"; x.lineWidth = Math.max(1, base / 14);
+  rot.pocos.forEach((s, i) => { const cx = ex + (i + 0.5) * cw; x.fillStyle = "#FFFFFF"; x.font = "bold " + Math.round(base * 0.95) + "px Helvetica, Arial, sans-serif"; x.fillText(s, cx, ey + hHead / 2 + 1); if (i) { x.beginPath(); x.moveTo(ex + i * cw, ey + hHead * 0.2); x.lineTo(ex + i * cw, ey + hHead * 0.8); x.stroke(); } });
+  rot.linhas.forEach((l, k) => {
+    const yy = ey + hHead + Math.round(base * 0.45) + k * hLin + hLin / 2;
+    x.font = (k === 0 ? "bold " : k === 1 ? "bold " : "") + Math.round(k === 0 ? base * 1.05 : base * 0.92) + "px Helvetica, Arial, sans-serif";
+    x.fillStyle = k === 0 ? COR.BORDO : k === 1 ? COR.TEXTO : COR.TXT2; let t = l; while (x.measureText(t).width > ew - base && t.length > 3) t = t.slice(0, -2) + "…"; x.fillText(t, ex + ew / 2, yy);
+  });
+  caixa(x); x.strokeStyle = "rgba(95,19,15,.28)"; x.lineWidth = 1.2; x.stroke();
+  return { url: cv.toDataURL("image/jpeg", 0.92), w: CW, h: CH };
+}
 /* ================= onda do SpO₂ (foto do monitor) ================= */
 // extrai o traçado vermelho da pletismografia (SpO2) da foto do monitor: coluna a coluna, os pixels vermelhos viram uma linha
 function extrairOnda(img) {
@@ -1040,7 +1176,7 @@ function exameTabs(a4){
 function exameTabsBase(){
   return [{t:'Avaliação física',r:[lin('Mucosas',fMuc()),lin('Linfonodos',fLinf()),lin('PS x PD',fPres(),'mmHg'),lin('Ausculta cardíaca',fAusc())].filter(Boolean)},
           {t:'Sinais vitais',r:[lin('FC',nu('fc'),'bpm'),lin('FR',fFr(),'mpm'),lin('Temperatura',nu('temp'),'°C'),lin('TPC',fTpc()),lin('SpO₂',nu('spo2'),'%')].filter(Boolean)},
-          {t:'Triagem laboratorial',r:[hemoLin(),lin('PPT',nu('ppt'),'g/dL'),lin('Plasma',fPlasma())].filter(Boolean)}].filter(t=>t.r.length);
+          {t:'Triagem laboratorial',img:S.plasmaImg||'',r:[hemoLin(),lin('PPT',nu('ppt'),'g/dL'),lin('Plasma',fPlasma())].filter(Boolean)}].filter(t=>t.r.length||t.img);
 }
 function fAusc(){const p=[];const a=sv('ausc'),o=sv('auscObs');if(a)p.push(a);if(o)p.push(p.length?o.charAt(0).toLowerCase()+o.slice(1):o);return p.join(', ');}
 function fTriagem(){const a=sv('inicio'),b=sv('fim');return a&&b?`${a} às ${b}`:a?`Início ${a}`:b?`Fim ${b}`:'';}
@@ -1103,7 +1239,7 @@ function idHTML(cols=4){
   return rows.length?`<div class="blk idb">${rows.join('')}</div>`:'';
 }
 function barHTML(t,s){return `<div class="sbar"><b>${t}</b>${s?`<span>${s}</span>`:''}</div>`;}
-function kvHTML(tab){return `<table class="kv"><colgroup><col class="ck"><col></colgroup><thead><tr><th colspan="2">${tab.t}</th></tr></thead><tbody>${tab.r.map(x=>`<tr><td class="k">${x.l}</td><td class="v">${x.h||H(x.v)}</td></tr>`).join('')}${tab.onda?`<tr><td colspan="2" style="padding:4px 0 2px"><div style="font-size:9px;color:#8A6A63;margin:0 0 2px 6px">Onda do SpO₂ (traçado do monitor)</div><div style="border:1px solid #EADFD3;border-radius:6px;overflow:hidden">${tab.onda}</div></td></tr>`:''}</tbody></table>`;}
+function kvHTML(tab){return `<table class="kv"><colgroup><col class="ck"><col></colgroup><thead><tr><th colspan="2">${tab.t}</th></tr></thead><tbody>${tab.r.map(x=>`<tr><td class="k">${x.l}</td><td class="v">${x.h||H(x.v)}</td></tr>`).join('')}${tab.img?`<tr><td colspan="2" style="padding:6px 0 2px;text-align:center"><img src="${tab.img}" alt="Tubo do plasma" style="height:118px;width:auto;border-radius:6px"></td></tr>`:''}${tab.onda?`<tr><td colspan="2" style="padding:4px 0 2px"><div style="font-size:9px;color:#8A6A63;margin:0 0 2px 6px">Onda do SpO₂ (traçado do monitor)</div><div style="border:1px solid #EADFD3;border-radius:6px;overflow:hidden">${tab.onda}</div></td></tr>`:''}</tbody></table>`;}
 function secKV(t,s,tabs,cols=2,tpl){if(!tabs.length)return '';const gc=tpl&&tabs.length===3&&cols>=3?tpl:`repeat(${Math.min(cols,tabs.length)},minmax(0,1fr))`;return `<div class="blk">${barHTML(t,s)}<div class="kvg${gc===tpl?' k3':''}" style="grid-template-columns:${gc}">${tabs.map(kvHTML).join('')}</div></div>`;}
 function figHTML(v,h){return `<figure><img src="${dogImg(v)}" alt="" style="height:${h}px;width:${(h*60/134).toFixed(1)}px">${S.lesoes.map((l,i)=>l.v===v?`<span class="m" style="left:${(l.x*100).toFixed(1)}%;top:${(l.y*h).toFixed(1)}px">${i+1}</span>`:'').join('')}<figcaption>${v==='d'?'Dorsal':'Ventral'}</figcaption></figure>`;}
 function lesCol(h=112){
@@ -3186,31 +3322,58 @@ init();
     }
     const carregarImg = (src) => new Promise((ok, erro) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = erro; i.src = src; });
     const blobJpg = (cv, q) => new Promise((ok) => cv.toBlob(ok, "image/jpeg", q || 0.88));
-    // escolher a área da foto: arrastar o dedo marca o retângulo; "Usar a foto inteira" pula o recorte
-    function recortar(file) {
+    // escolher a área como no laudo: quadro que se arrasta, cantos para ajustar e Girar; devolve o recorte em canvas (null se cancelar)
+    function cortarFoto(file, titulo, nota) {
       return new Promise(async (fim) => {
-        let img; try { img = await carregarImg(URL.createObjectURL(file)); } catch (e) { return fim(file); }
-        const ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(20,10,8,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:10px";
-        ov.innerHTML = `<div style="color:#fff;font-size:15px;text-align:center">Arraste o dedo sobre a foto para marcar a área</div><canvas style="max-width:100%;max-height:70vh;touch-action:none;border-radius:8px;background:#000"></canvas>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button type="button" class="btn pri" data-r="ok">Usar a área marcada</button><button type="button" class="btn" data-r="tudo">Usar a foto inteira</button><button type="button" class="btn" data-r="nao">Cancelar</button></div>`;
+        let img; try { img = await carregarImg(URL.createObjectURL(file)); } catch (e) { return fim(null); }
+        const ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(20,10,8,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:8px";
+        ov.innerHTML = `<div style="color:#fff;font-size:16px;font-weight:700;text-align:center">${titulo}</div><div style="color:#E8DCCF;font-size:13px;text-align:center;max-width:520px">${nota}</div>
+          <div class="cf-area" style="position:relative;touch-action:none;user-select:none"><canvas style="display:block;border-radius:6px"></canvas><div class="cf-m" style="position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);touch-action:none">${["nw", "ne", "sw", "se"].map((c) => `<span data-c="${c}" style="position:absolute;width:26px;height:26px;background:#C49A6C;border:2px solid #fff;border-radius:50%;${c[0] === "n" ? "top:-13px" : "bottom:-13px"};${c[1] === "w" ? "left:-13px" : "right:-13px"}"></span>`).join("")}</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button type="button" class="btn" data-r="girar">Girar</button><button type="button" class="btn" data-r="tudo">Usar a foto inteira</button><button type="button" class="btn" data-r="nao">Cancelar</button><button type="button" class="btn pri" data-r="ok">Usar este recorte</button></div>`;
         document.body.appendChild(ov);
-        const cv = ov.querySelector("canvas"), k = Math.min(1, 1400 / Math.max(img.width, img.height)); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
-        const cx = cv.getContext("2d"); let r = null, ini = null;
-        const pinta = () => { cx.drawImage(img, 0, 0, cv.width, cv.height); if (!r) return; cx.fillStyle = "rgba(0,0,0,.55)"; cx.beginPath(); cx.rect(0, 0, cv.width, cv.height); cx.rect(r.x, r.y, r.w, r.h); cx.fill("evenodd"); cx.strokeStyle = "#C49A6C"; cx.lineWidth = Math.max(3, cv.width / 250); cx.strokeRect(r.x, r.y, r.w, r.h); };
-        const pos = (ev) => { const b = cv.getBoundingClientRect(); return { x: Math.max(0, Math.min(cv.width, (ev.clientX - b.left) * cv.width / b.width)), y: Math.max(0, Math.min(cv.height, (ev.clientY - b.top) * cv.height / b.height)) }; };
-        cv.addEventListener("pointerdown", (ev) => { ini = pos(ev); r = null; cv.setPointerCapture(ev.pointerId); });
-        cv.addEventListener("pointermove", (ev) => { if (!ini) return; const p = pos(ev); r = { x: Math.min(ini.x, p.x), y: Math.min(ini.y, p.y), w: Math.abs(p.x - ini.x), h: Math.abs(p.y - ini.y) }; pinta(); });
-        cv.addEventListener("pointerup", () => { ini = null; if (r && (r.w < 20 || r.h < 20)) { r = null; pinta(); } });
-        pinta();
-        ov.addEventListener("click", async (ev) => {
-          const b = ev.target.closest("[data-r]"); if (!b) return; const q = b.dataset.r;
-          if (q === "ok" && !r) { toast("Marque a área arrastando o dedo sobre a foto, ou use a foto inteira."); return; }
-          ov.remove(); if (q === "nao") return fim(null); if (q === "tudo") return fim(file);
-          const s = 1 / k, out = document.createElement("canvas"); out.width = Math.round(r.w * s); out.height = Math.round(r.h * s);
-          out.getContext("2d").drawImage(img, r.x * s, r.y * s, r.w * s, r.h * s, 0, 0, out.width, out.height); fim(await blobJpg(out, 0.92));
+        const cv = ov.querySelector("canvas"), area = ov.querySelector(".cf-area"), m = ov.querySelector(".cf-m"); let rot = 0, src = null, esc = 1, q = null, arr = null;
+        const girada = () => { const c = document.createElement("canvas"), lado = rot === 90 || rot === 270; c.width = lado ? img.naturalHeight : img.naturalWidth; c.height = lado ? img.naturalWidth : img.naturalHeight; const x = c.getContext("2d"); x.translate(c.width / 2, c.height / 2); x.rotate(rot * Math.PI / 180); x.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2); return c; };
+        const posM = () => { m.style.left = q.x + "px"; m.style.top = q.y + "px"; m.style.width = q.w + "px"; m.style.height = q.h + "px"; };
+        const desenha = () => { src = girada(); const maxW = Math.min(620, innerWidth - 30), maxH = Math.max(220, innerHeight - 250); esc = Math.min(maxW / src.width, maxH / src.height, 1); cv.width = Math.round(src.width * esc); cv.height = Math.round(src.height * esc); cv.getContext("2d").drawImage(src, 0, 0, cv.width, cv.height); area.style.width = cv.width + "px"; area.style.height = cv.height + "px"; q = { x: cv.width * 0.12, y: cv.height * 0.12, w: cv.width * 0.76, h: cv.height * 0.76 }; posM(); };
+        desenha();
+        m.addEventListener("pointerdown", (ev) => { ev.preventDefault(); arr = { c: ev.target.dataset.c || "mover", x: ev.clientX, y: ev.clientY, q: Object.assign({}, q) }; try { m.setPointerCapture(ev.pointerId); } catch (_) {} });
+        m.addEventListener("pointermove", (ev) => {
+          if (!arr) return; const dx = ev.clientX - arr.x, dy = ev.clientY - arr.y, W = cv.width, H = cv.height, n = Object.assign({}, arr.q), min = 30;
+          if (arr.c === "mover") { n.x = Math.max(0, Math.min(W - n.w, n.x + dx)); n.y = Math.max(0, Math.min(H - n.h, n.y + dy)); }
+          else {
+            if (/w/.test(arr.c)) { const nx = Math.max(0, Math.min(n.x + n.w - min, n.x + dx)); n.w += n.x - nx; n.x = nx; }
+            if (/e/.test(arr.c)) n.w = Math.max(min, Math.min(W - n.x, n.w + dx));
+            if (/n/.test(arr.c)) { const ny = Math.max(0, Math.min(n.y + n.h - min, n.y + dy)); n.h += n.y - ny; n.y = ny; }
+            if (/s/.test(arr.c)) n.h = Math.max(min, Math.min(H - n.y, n.h + dy));
+          }
+          q = n; posM();
+        });
+        const solta = () => { arr = null; }; m.addEventListener("pointerup", solta); m.addEventListener("pointercancel", solta);
+        ov.addEventListener("click", (ev) => {
+          const b = ev.target.closest("[data-r]"); if (!b) return; const r = b.dataset.r;
+          if (r === "girar") { rot = (rot + 90) % 360; desenha(); return; }
+          ov.remove(); if (r === "nao") return fim(null);
+          const z = r === "tudo" ? { x: 0, y: 0, w: cv.width, h: cv.height } : q, sx = z.x / esc, sy = z.y / esc, sw = z.w / esc, sh = z.h / esc, k = Math.min(1, 1300 / Math.max(sw, sh));
+          const out = document.createElement("canvas"); out.width = Math.max(1, Math.round(sw * k)); out.height = Math.max(1, Math.round(sh * k));
+          const o = out.getContext("2d"); o.fillStyle = "#fff"; o.fillRect(0, 0, out.width, out.height); o.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height); fim(out);
         });
       });
     }
+    // depois do recorte, o mesmo tratamento do laudo: microtubos sem a etiqueta escrita, fundo neutro e etiqueta nova; tubo redesenhado com etiqueta impressa
+    const dataUrlBlob = async (u) => (await fetch(u)).blob();
+    async function tratarFoto(k, file) {
+      const gel = k === "gel";
+      const cv = await cortarFoto(file, gel ? "Recortar o microtubo do autocontrole" : "Recortar o tubo do plasma",
+        gel ? "Deixe no quadro só o microtubo do autocontrole (ou os microtubos), do topo até a ponta. A etiqueta escrita embaixo sai e entra uma etiqueta nova com ACD, o animal e a doação." : "Deixe só o tubo dentro do quadro, do topo do plasma até o fundo. O painel separa o plasma e monta o tubo com uma etiqueta impressa, sem a estante e sem a escrita.");
+      if (!cv) return null;
+      const nome = String(S.animal || (ctx.animal || {}).nome || "").toUpperCase();
+      if (gel) { const g = analisarGel(cv, 1, true), d = desenharGelProva(g, { pocos: ["ACD"], linhas: [nome, S.numero ? "Doação " + S.numero : ""].filter(Boolean) }); return { blob: await dataUrlBlob(d.url), url: d.url }; }
+      const a = analisarTubo(cv);
+      if (!a) { toast("Não consegui separar o plasma pela cor. A foto entra como foi recortada.", 6000); const u = cv.toDataURL("image/jpeg", 0.9); return { blob: await dataUrlBlob(u), url: u, cru: true }; }
+      const d = desenharTubo(a, { nome, amostra: S.numero || "", data: S.data ? isoBR(S.data) : "" }); return { blob: await dataUrlBlob(d.url), url: d.url };
+    }
+    // tubo pequeno para a ficha (triagem laboratorial, no A4 e no celular)
+    async function tuboPequeno(url) { const im = await carregarImg(url), k = Math.min(1, 360 / im.height), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.85); }
     async function reduzir(file) {
       const img = await carregarImg(URL.createObjectURL(file)), k = Math.min(1, 1400 / Math.max(img.width, img.height));
       const cv = document.createElement("canvas"); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); return blobJpg(cv);
@@ -3246,8 +3409,10 @@ init();
       if (!S.numero || !S.animal) { toast("Preencha o número da doação e o nome do animal antes das fotos, para a etiqueta sair completa."); return; }
       const tx = $(k === "gel" ? "#acFotoGelTx" : "#acFotoPlaTx"); tx.textContent = "Guardando...";
       try {
-        const rec = await recortar(file); if (!rec) { acFotoPintar(); return; }
-        const bl = await reduzir(rec); acLocal[k] = bl; acLocal["u" + k] = URL.createObjectURL(bl);
+        const tr = await tratarFoto(k, file); if (!tr) { acFotoPintar(); return; }
+        const bl = tr.blob; acLocal[k] = bl; acLocal["u" + k] = tr.url;
+        // o tubo do plasma entra na ficha (triagem laboratorial); ficha assinada pede assinatura de novo
+        if (k === "pla") { S.plasmaImg = await tuboPequeno(tr.url); touched("plasmaImg"); syncAll(); }
         const r1 = await ponte("acFoto", { nome: (k === "gel" ? "ACD gel " : "ACD plasma ") + S.numero + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await bl.arrayBuffer())) });
         S.acFotos = Object.assign({}, S.acFotos || {}, { [k]: { id: r1.id } });
         const folha = await montarFolha();
