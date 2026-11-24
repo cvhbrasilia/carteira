@@ -949,7 +949,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261124163504';
+  var VERSAO = '20261124163852';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6069,11 +6069,19 @@ function telaHemoIA() {
     H.arq = { nome, mime: f.type || (/\.pdf$/i.test(f.name || '') ? 'application/pdf' : 'image/jpeg'), b64: btoa(s) }; const lb = $('.hi-arq b'); if (lb) lb.textContent = nome;
     // PDF com texto (a maioria dos laboratórios): manda só o texto, bem mais rápido que o arquivo inteiro
     if (H.arq.mime === 'application/pdf') { try { const tx = await textoDoPdfIdx(u8); if (tx.trim().length > 80) H.arq.texto = tx; } catch (_) { } }
-    if (H.arq.texto) { const T = E.tx = E.tx || {}, P = H.pac = pacienteDoTexto(H.arq.texto), V = valoresDoTexto(H.arq.texto);
+    let P = null, V = null; const T = E.tx = E.tx || {};
+    if (H.arq.texto) { P = H.pac = pacienteDoTexto(H.arq.texto); V = valoresDoTexto(H.arq.texto); }
+    // foto ou PDF escaneado (por exemplo, o que chega pelo Compartilhar): a IA lê os números na hora, como o PDF com texto
+    else if (E.d.config.temGemini) {
+      const st = $('#hiSt'); if (st) { st.textContent = 'Lendo os números da foto…'; st.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      try { const r = await iaHemo({ soLer: true, especie: T.esp || 'Cão', mime: H.arq.mime, b64: H.arq.b64 }); V = r.valores || {}; P = H.pac = pacDaIA(r); H.arq.valoresIA = V; if (st) st.textContent = ''; }
+      catch (e) { if (st) st.textContent = 'Não consegui ler a foto agora (' + e.message + '). Toque em Analisar com IA ou digite os valores.'; }
+    }
+    if (P && V) {
       aplicarPacTx(T, P); if (P.esp) pEsp(); const pc = $('#hiPeso'); if (pc && !pc.value && T.peso) pc.value = T.peso;
       HC_VALS.forEach(([k]) => { const el = $('#hiV_' + k); if (el && V[k] != null && !el.value) el.value = String(V[k]).replace('.', ','); });
       const n = Object.keys(V).length, ln = $('#hiLido'); if (ln) ln.innerHTML = '<div class="av-i novo"><b>Lido do laudo' + (P.nome ? ' · ' + esc(P.nome) : '') + '</b><small>' + esc([P.especie, P.raca, P.sexo, P.idade, P.peso ? P.peso + ' kg' : '', P.responsavel ? 'resp. ' + P.responsavel : '', n ? n + (n === 1 ? ' valor do hemograma' : ' valores do hemograma') : ''].filter(Boolean).join(' · ')) + '. Complete o que faltar.</small></div>';
-      if (n) { const dt = $('.tela details.tx-av'); if (dt) dt.open = true; } } };
+      if (n) { const dt = $('.tela details.tx-av'); if (dt) dt.open = true; } if (ln) ln.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
   $('#hiArq').onchange = ev => usarArq(ev.target.files[0]);
   vigiarCaixa(f => usarArq(f));
   // colar uma imagem ou um PDF copiado (Cmd+V no computador, Colar no celular)
@@ -6100,6 +6108,7 @@ function telaHemoIA() {
     const T = E.tx = E.tx || {}; T.peso = $('#hiPeso').value; const dig = {}; HC_VALS.forEach(([k]) => { const v = numTx($('#hiV_' + k).value); if (v != null) dig[k] = v; });
     let V = {}, como = 'digitados';
     if (H.arq && H.arq.texto) { V = valoresDoTexto(H.arq.texto); como = 'lidos do PDF sem IA'; aplicarPacTx(T, H.pac || pacienteDoTexto(H.arq.texto)); }
+    else if (H.arq && H.arq.valoresIA) { V = H.arq.valoresIA; como = 'lidos pela IA, sem análise'; if (H.pac) aplicarPacTx(T, H.pac); }
     if (H.arq && V.ht == null && V.hb == null) {
       if (!E.d.config.temGemini) return toast('Este arquivo é foto ou PDF escaneado e só a IA consegue ler os números. Digite os valores.', 7000);
       if (!confirm((H.arq.texto ? 'Não achei o Ht nem a Hb no texto do PDF.' : 'Foto ou PDF escaneado só é lido com a IA.') + ' Usar a IA só para ler os números, sem análise?')) return;
