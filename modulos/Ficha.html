@@ -2423,7 +2423,18 @@ function mobileHTML(){
 
 /* ================= prévia ================= */
 let _t=null;
-function schedule(){clearTimeout(_t);_t=setTimeout(()=>{renderPreview();guardarLocal();updateCtx();},140);}
+function schedule(){clearTimeout(_t);_t=setTimeout(()=>{renderPreview();renderPrevFim();guardarLocal();updateCtx();},140);}
+// celular: prévia da ficha no fim da página, como nos laudos (versão para celular, a mesma do PDF do celular)
+function renderPrevFim(){
+  const f=$('#form');if(!f)return;let box=$('#pvFim');
+  if(!matchMedia('(max-width:980px)').matches){if(box)box.remove();return;}
+  if(!box){box=document.createElement('section');box.id='pvFim';box.className='sec';box.innerHTML='<h2><span class="n">✓</span>Prévia da ficha</h2><div class="pvf-c" style="position:relative;width:100%;max-width:100%;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:#fff"><div class="pvf-in" style="position:absolute;left:0;top:0;width:430px;transform-origin:0 0"></div></div>';f.appendChild(box);}
+  else if(box!==f.lastElementChild)f.appendChild(box);
+  const c=box.querySelector('.pvf-c'),inn=box.querySelector('.pvf-in');inn.innerHTML=mobileHTML();
+  const sc=Math.min(1,(c.clientWidth||400)/430);inn.style.transform=`scale(${sc})`;
+  requestAnimationFrame(()=>{const m=inn.firstElementChild;c.style.height=Math.ceil((m?m.offsetHeight:0)*sc)+'px';});
+}
+addEventListener('resize',()=>{clearTimeout(renderPrevFim._r);renderPrevFim._r=setTimeout(renderPrevFim,200);});
 function renderPreview(){
   const pv=$('#pv');const col=$('#pvscroll');if(!col.clientWidth)return;
   const w=Math.min(col.clientWidth-44,900);const sc=w/794;
