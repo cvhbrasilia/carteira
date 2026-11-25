@@ -365,6 +365,7 @@ function idadeEm(nasc, iso) {
   if (meses < 0) return ""; if (meses < 12) return meses <= 1 ? (meses === 1 ? "1 mês" : "menos de 1 mês") : meses + " meses";
   const a = Math.floor(meses / 12); return a === 1 ? "1 ano" : a + " anos";
 }
+const INICIO_REQ = "2026-11-25";
 const ANIMAIS = CTX.animais || [], DOACOES = CTX.doacoes || [], VETS = CTX.vets || [];
 const animalDe = (id) => ANIMAIS.find((a) => a.id === id);
 const vetPadrao = () => VETS.find((v) => v.padrao === "1") || VETS[0] || null;
@@ -520,7 +521,8 @@ function emCinza(pags) {
 // ---------- telas ----------
 function telaLista() {
   estado.tela = "lista"; estado.r = null; marcarSujo(false);
-  const dias = [...new Set(DOACOES.map((d) => d.data))].sort().reverse();
+  // as coletas entram na lista a partir do início do módulo (25/11/2026); as anteriores não aparecem
+  const dias = [...new Set(DOACOES.map((d) => d.data).filter((d) => d >= INICIO_REQ))].sort().reverse();
   const outras = estado.lista.filter((r) => !/^doacao:/.test(r.origem || "")).sort((a, b) => (b.data + b.atualizadoEm).localeCompare(a.data + a.atualizadoEm));
   const situ = (s, nNovos) => s ? (s.impressoEm ? `<span class="ok">Impressa${s.impressoPor ? " por " + esc(String(s.impressoPor).split(" ")[0]) : ""} em ${br(s.impressoEm)} às ${s.impressoEm.slice(11, 16)}</span>` : `<span class="pend">Salva, ainda não impressa</span>`) + (nNovos ? ` <span class="novo">${nNovos === 1 ? "1 coleta nova" : nNovos + " coletas novas"} depois disso</span>` : "") : `<span class="pend">Pronta para imprimir</span>`;
   $("#app").innerHTML = `<div class="lista">
@@ -529,7 +531,7 @@ function telaLista() {
     ${estado.carregou ? "" : `<p class="nota">Carregando as requisições salvas…</p>`}
     <h2>Coletas</h2>
     ${dias.length ? dias.map((d) => { const L = doacoesDoDia(d), s = estado.lista.find((r) => r.origem === "doacao:" + d), novos = s ? L.filter((x) => !(s.animais || []).some((a) => a.animalId === x.animalId)).length : 0;
-      return `<button type="button" class="dia" data-a="dia" data-v="${d}"><span class="dt"><b>${br(d).slice(0, 5)}</b><small>${diaSem(d)}</small></span><span class="dd"><b>${L.length} ${L.length === 1 ? "doador" : "doadores"}</b><small>${esc(L.map((x) => (animalDe(x.animalId) || {}).nome || "").filter(Boolean).join(", "))}</small>${situ(s, novos)}</span><span class="vai">›</span></button>`; }).join("") : `<p class="vazio-p">Nenhuma coleta nos últimos 90 dias.</p>`}
+      return `<button type="button" class="dia" data-a="dia" data-v="${d}"><span class="dt"><b>${br(d).slice(0, 5)}</b><small>${diaSem(d)}</small></span><span class="dd"><b>${L.length} ${L.length === 1 ? "doador" : "doadores"}</b><small>${esc(L.map((x) => (animalDe(x.animalId) || {}).nome || "").filter(Boolean).join(", "))}</small>${situ(s, novos)}</span><span class="vai">›</span></button>`; }).join("") : `<p class="vazio-p">Nenhuma coleta ainda. Assim que a ficha de doação for feita, a requisição do dia aparece aqui pronta.</p>`}
     <h2>Outras requisições</h2>
     ${outras.length ? outras.map((r) => `<button type="button" class="dia" data-a="abrir" data-v="${esc(r.id)}"><span class="dt"><b>${br(r.data).slice(0, 5)}</b><small>${br(r.data).slice(6)}</small></span><span class="dd"><b>${esc((r.animais || []).map((a) => a.nome).join(", ") || "Sem animal")}</b><small>${esc(r.exames.map((x) => exNome(r.lab, x).replace(/ \(.*\)$/, "")).join(", "))}</small>${situ(r)}</span><span class="vai">›</span></button>`).join("") : `<p class="vazio-p">Nenhuma ainda. Use + Nova requisição para pedir outros exames.</p>`}
   </div>`;
