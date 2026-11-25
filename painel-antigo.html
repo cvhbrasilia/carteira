@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125175552">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125180438">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1042,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125175552';
+  var VERSAO = '20261125180438';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -8051,6 +8051,10 @@ function abrirFormRegistro(r, pre) {
           return o2;
         }).filter(e => e.produto);
         if (!o.dados.etiquetas.length) throw new Error('Adicione pelo menos uma etiqueta.');
+        // uma vacina por registro: a múltipla (as duas etiquetas) num registro e cada outra vacina (raiva etc.) em outro, cada um com a assinatura
+        const grupos = separarEtiquetas(o.dados.etiquetas).map(g => g.map(e => Object.assign({}, e, { produto: (o.dados.etiquetas.find(x => normProduto(x.produto) === e.produto) || e).produto })));
+        o.extras = grupos.slice(1);
+        o.dados.etiquetas = grupos.length ? grupos[0] : o.dados.etiquetas;
         o.dados.doencas = juntaDoencas(o.dados.etiquetas.map(e => e.doencas));
         o.dados.etiquetas.forEach(e => delete e.doencas);
         o.grupo = o.dados.etiquetas.map(e => e.produto).sort().join(' + ');
@@ -8083,9 +8087,17 @@ function abrirFormRegistro(r, pre) {
         if (!o.dados.texto) throw new Error('Escreva a observação.');
       }
       if (!vetLogado() && $('#fVetAss')) o.vetId = $('#fVetAss').value;
+      const extras = o.extras || []; delete o.extras;
       const salvo = await api('salvarRegistro', E.sessao, o);
       const i = E.d.registros.findIndex(x => x.id === salvo.id);
       if (i >= 0) E.d.registros[i] = salvo; else E.d.registros.push(salvo);
+      // as outras vacinas da mesma linha viram registros próprios, com a mesma data, a mesma revacinação e a mesma assinatura
+      for (const g of extras) {
+        const d2 = { etiquetas: g.map(e => { const x = Object.assign({}, e); delete x.doencas; return x; }), doencas: juntaDoencas(g.map(e => e.doencas)) };
+        const s2 = await api('salvarRegistro', E.sessao, Object.assign({}, o, { id: '', dados: d2, grupo: d2.etiquetas.map(e => e.produto).sort().join(' + ') }));
+        E.d.registros.push(s2);
+      }
+      if (extras.length) toast('Cada vacina ficou num registro separado (' + (extras.length + 1) + ' registros), cada um com a assinatura.', 5000);
       if (!(r && r.id) && salvo.tipo === 'vermifugo') receitaVermSozinha(salvo);
       if (pre && pre.aoSalvar) { pre.aoSalvar(); return; }
       fecharFolha(); reabrir(salvo.id); toast('Registro salvo e assinado.');
@@ -8780,7 +8792,7 @@ const ACOES = {
     if (m.k === 'estoque') { E.modulo = m.k; return abrirModulo('estoque'); }
     if (m.k === 'producao') { E.modulo = m.k; return abrirModulo('producao'); }
     if (m.k === 'transporte') { E.modulo = m.k; return abrirModulo('transporte'); }
-    if (m.k === 'camaras' || m.k === 'clinicas' || m.k === 'requisicoes') { E.modulo = m.k; return abrirModulo(m.k); }
+    if (m.k === 'camaras' || m.k === 'clinicas' || m.k === 'requisicoes' || m.k === 'cartaovacina') { E.modulo = m.k; return abrirModulo(m.k); }
     if (m.breve) return toast(m.t + ' entra no painel na ' + m.breve.toLowerCase() + '. Por enquanto continue usando o app separado.', 5000);
     E.modulo = m.k; if (m.k === 'sag') return telaSag(); if (m.k === 'agenda') return telaAgenda(hoje()); telaInicio();
   },

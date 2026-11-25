@@ -454,7 +454,7 @@ function paginas(a, pedido, fv) {
 }
 
 // ---------- telas ----------
-const estado = { aid: CTX.animalId || "", pedido: { vacina: 1, vermifugo: 1, ecto: 1, obs: 1 }, fv: true, modo: "imp", busca: "" };
+const estado = { aid: CTX.animalId || "", pedido: { vacina: 1, vermifugo: 1, ecto: 1, obs: 1 }, fv: false, modo: "imp", busca: "" };
 function telaLista() {
   estado.aid = "";
   const q = semAc(estado.busca), L = ANIMAIS.filter((a) => !q || semAc([a.nome, a.resp, a.microchip].join(" ")).includes(q)).sort((x, y) => semAc(x.nome).localeCompare(semAc(y.nome))).slice(0, 80);
@@ -471,9 +471,8 @@ function telaAnimal() {
   $("#app").innerHTML = `<div class="wrap"><div>
     <div class="topo-ed"><button type="button" class="btn sec mini" data-a="voltar">‹ Animais</button></div>
     <div class="cx"><h3>${esc(a.nome)}</h3><p class="nota">${esc([a.especie, a.raca, a.sexo, a.resp].filter(Boolean).join(" · "))}${tipagemTxt(a) ? "<br>" + esc(tipagemTxt(a)) : ""}${a.microchip ? "<br>Microchip " + esc(a.microchip) : ""}</p></div>
-    <div class="cx"><h3>Imprimir folhas do cartão</h3><p class="nota">O papel já é timbrado: a impressão sai só com o cabeçalho e as linhas. Cada folha sai frente e verso com a mesma página.</p>
+    <div class="cx"><h3>Imprimir folhas do cartão</h3><p class="nota">O papel já é timbrado: a impressão sai só com o cabeçalho e as linhas. Para o verso, imprima o mesmo arquivo de novo com as folhas viradas na bandeja.</p>
       ${FOLHAS.map((f) => `<div class="fl"><span><b>${esc(f.t)}</b>${f.sub ? `<small> (${esc(f.sub)})</small>` : ""}</span><span class="qt"><button type="button" data-a="menos" data-v="${f.k}" aria-label="Menos">−</button><b>${+estado.pedido[f.k] || 0}</b><button type="button" data-a="mais" data-v="${f.k}" aria-label="Mais">+</button></span></div>`).join("")}
-      <label class="ck"><input type="checkbox" id="fv"${estado.fv ? " checked" : ""}> Frente e verso (a mesma página no verso)</label>
       <div class="acoes-fim"><button type="button" class="btn" data-a="imprimir"${n ? "" : " disabled"}>Imprimir no papel timbrado (${n} ${n === 1 ? "folha" : "folhas"})</button>
       <button type="button" class="btn sec" data-a="digital"${n ? "" : " disabled"}>PDF digital (com o timbrado)</button><p class="st" id="st"></p></div></div>
     <div class="cx"><h3>Digitalizar o cartão</h3><p class="nota">Foto de uma folha do cartão preenchido. A leitura separa cada linha em um registro (a múltipla e a antirrábica do mesmo dia viram registros separados), e você confere cada um antes de salvar na carteira.</p>
@@ -481,7 +480,6 @@ function telaAnimal() {
     </div>
     <div class="lado"><div class="barra-prev"><span class="nota">Prévia</span></div><div id="previa"></div></div></div>`;
   renderPrevia();
-  $("#fv").onchange = (e) => { estado.fv = e.target.checked; };
   $("#fotoCartao").onchange = async (e) => {
     const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
     try { toast("Enviando a foto para a leitura…"); const j = await jpegReduzido(f); await ponte("lerCartaoFoto", a.id, { mime: "image/jpeg", b64: j }); }
@@ -505,7 +503,7 @@ async function baixar(digital) {
     const P = digital ? FOLHAS.filter((f) => +estado.pedido[f.k] > 0).map((f) => paginaFolha(a, f)) : paginas(a, estado.pedido, estado.fv);
     const bytes = await gerarPDF(P, !!digital, "Cartão de vacina " + a.nome, { W: PG.W, H: PG.H });
     await ponte("baixar", "Cartão de vacina " + a.nome + (digital ? "" : " impressão") + ".pdf", b64De(bytes));
-    st.textContent = digital ? "PDF digital pronto." : "Pronto. Imprima no papel timbrado, frente e verso, em tamanho real (100%).";
+    st.textContent = digital ? "PDF digital pronto." : "Pronto. Imprima no papel timbrado em tamanho real (100%). Depois vire as folhas na bandeja e imprima o mesmo arquivo de novo para o verso.";
   } catch (e) { st.className = "st erro"; st.textContent = "Não consegui gerar. " + (e.message || e); }
 }
 document.addEventListener("click", (ev) => {
