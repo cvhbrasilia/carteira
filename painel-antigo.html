@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125183726">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125184645">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1042,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125183726';
+  var VERSAO = '20261125184645';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -7545,6 +7545,7 @@ const PONTE = {
     E.ponte = null; E.modSujo = false; E.modAberto = null; E.modulo = 'carteiras'; E.animal = aid; abrirCarteira(aid);
     toast('Lendo o cartão… pode levar até 2 min.', 8000);
     const j = await leituraIA('cartao', null, null, a); if (!j) return false;
+    toast('Leitura pronta. Revise e salve cada registro.', 2500);
     E.animal = aid; E.imp = { itens: organizarCartao(j.registros), feitos: new Set() }; telaImportacao(); return true;
   },
   req: (fn, ...a) => { if (!/^req[A-Z]\w+$/.test(String(fn))) throw new Error('Função não permitida.'); return api(fn, E.sessao, ...JSON.parse(JSON.stringify(a))); },
@@ -8514,7 +8515,9 @@ function telaImportacao() {
   abrirFolha('Registros encontrados', (im.itens.length ? '<p class="nota">Revise cada item. Ele abre preenchido, você confere e salva.</p>' + im.itens.map((x, i) =>
     '<div class="imp' + (im.feitos.has(i) ? ' feito' : '') + '"><div class="t"><b>' + rot(x) + ' · ' + (br(x.data) || 'sem data') + '</b>' + esc(det(x)) + '</div>' +
     (im.feitos.has(i) ? '<span class="chip ok">Salvo</span>' : '<button class="btn peq" data-acao="imp-item" data-i="' + i + '">Revisar</button>') + '</div>').join('') : '<p class="nota">Não encontrei registros legíveis nesta foto. Tente uma foto mais nítida, de frente e com boa luz.</p>') +
-    '<button class="btn sec2" data-acao="imp-fim">Concluir</button>');
+    (() => { const falta = im.itens.length - im.feitos.size; return falta > 0 && im.itens.length
+      ? '<p class="nota"><b>' + (falta === 1 ? 'Falta 1 registro' : 'Faltam ' + falta + ' registros') + ' para salvar.</b> Toque em Revisar, confira e salve cada um.</p><button class="btn sec2" data-acao="imp-fim" data-falta="' + falta + '">Fechar sem salvar ' + (falta === 1 ? 'o que falta' : 'os que faltam') + '</button>'
+      : '<button class="btn" data-acao="imp-fim">Concluir</button>'; })());
 }
 // nome do produto lido pelo Gemini para o nome do catálogo (o topo da etiqueta às vezes sai cortado)
 function normProduto(p) {
@@ -9138,7 +9141,7 @@ const ACOES = {
     toast('Dados preenchidos. Confira antes de salvar.');
   },
   'imp-item': b => importarItem(+b.dataset.i),
-  'imp-fim': () => { fecharFolha(); reabrir(); },
+  'imp-fim': b => { if (+b.dataset.falta && !b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Toque de novo para fechar sem salvar'; return; } fecharFolha(); reabrir(); },
   'teste-email': async b => { try { b.disabled = true; const para = await api('testarEmail', E.sessao); toast('E-mail de teste enviado para ' + para + '.', 4000); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; } },
   'rodar-lembretes': async b => { try { b.disabled = true; const n = await api('verificarLembretes', E.sessao); toast(n ? n + ' e-mail(s) enviados.' : 'Nenhum lembrete pendente hoje.', 4000); } catch (e) { toast(e.message, 4000); } finally { b.disabled = false; } },
   sair: () => { E.u = null; E.d = null; E.modHtml = {}; try { sessionStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_s'); localStorage.removeItem('cvh_fs'); } catch (_) {} if (E.sessao) api('painelSair', E.sessao).catch(() => {}); E.sessao = null; fecharFolha(); telaLogin(); },

@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125184645">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125185301">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1042,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125184645';
+  var VERSAO = '20261125185301';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4279,7 +4279,7 @@ function statusDoador(an) {
   const pv = pendencias(regs).filter(p => p.data < h);
   pv.forEach(p => { pend.push(p.rot + ' vencido'); mot.push(p.tipo === 'vacina' ? 'Vacina vencida' : p.tipo === 'reforco' ? 'Reforço de vermífugo vencido' : p.rot + ' vencido'); });
   if (!regs.some(r => r.tipo === 'tcle')) { pend.push('Sem termo de consentimento'); mot.push('Sem termo de consentimento'); }
-  const intervalo = libera && libera > h;
+  const intervalo = libera && somaDiasIso(libera, -TOLERANCIA_DIAS) > h;
   if (intervalo) mot.push('Intervalo entre doações');
   const ult12 = doa.filter(r => r.data >= somaDiasIso(h, -365)).length;
   const sit = imp.length ? 'imp' : pend.length ? 'pend' : intervalo ? 'intervalo' : 'apto';
@@ -4843,7 +4843,8 @@ function calcularAlertas(res, sits) {
       const plaqCit = u.chave === 'plaq' && u.lab === 'Citopet' && fora === 'abaixo' && rs.some(r => r.chave === u.chave && metodoCanon(r.chave, metodoDe(r)) !== met && r.excluido !== '1' && numA(r.valor) != null && Math.abs(dias(r.data, u.data)) <= 15 && dentroRef(r));
       if (on.referencia && fora && !plaqCit && !(u.chave === 'chcm' && fora === 'acima')) {
         const desv = larg ? (fora === 'abaixo' ? mn - v : v - mx) / larg : 0;
-        card = Object.assign({ tipo: 'referencia', nivel: desv >= 0.25 ? 'urgente' : 'normal', titulo: u.exame + ' ' + fora + ' da referência', detalhe: fmtA(v, u.unidade) + ' em ' + br(u.data) + ' · ' + met + (ref ? ' · ' + ref : ''), notas: [] }, base);
+        // eosinófilos acima da referência não impedem a doação: ficam só para avaliar
+        card = Object.assign({ tipo: 'referencia', nivel: desv >= 0.25 && !(u.chave === 'eos' && fora === 'acima') ? 'urgente' : 'normal', titulo: u.exame + ' ' + fora + ' da referência', detalhe: fmtA(v, u.unidade) + ' em ' + br(u.data) + ' · ' + met + (ref ? ' · ' + ref : ''), notas: [] }, base);
         // cruzamento entre laboratórios no mesmo período
         const perto = rs.filter(r => r.chave === u.chave && metodoCanon(r.chave, metodoDe(r)) !== met && r.excluido !== '1' && numA(r.valor) != null && Math.abs(dias(r.data, u.data)) <= 15).sort((x, y) => Math.abs(dias(x.data, u.data)) - Math.abs(dias(y.data, u.data)));
         const ok = perto.find(dentroRef);
@@ -5479,7 +5480,7 @@ const somaDiasIso = (iso, n) => { const d = new Date(iso + 'T12:00'); d.setDate(
 const diaSemana = iso => new Date(iso + 'T12:00').getDay();
 const inicioSemana = iso => somaDiasIso(iso, -((diaSemana(iso) + 6) % 7));   // semana começa na segunda
 /* ── previsão automática das próximas doações (3 meses depois da última) ── */
-const INTERVALO_DOACAO_MESES = 3, AVISO_DIAS = 14;
+const INTERVALO_DOACAO_MESES = 3, AVISO_DIAS = 14, TOLERANCIA_DIAS = 7;   // até 1 semana antes dos 3 meses a doação é aceita
 function previsoesDoacao() {
   const itens = (E.agenda && E.agenda.itens) || [], h = hoje(), out = [];
   E.d.animais.filter(a => a.doador === '1' && a.ativo !== '0' && !a.aposentadoEm).forEach(a => {
@@ -7422,7 +7423,7 @@ async function abrirModulo(nome, aid, rid) {
     // à prova de erros: o que a ficha precisa conferir antes de ir para a carteira (intervalo, impedimentos e pendências do doador)
     E.ponte.admin = pode('admin');
     if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
-      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, intervaloMeses: INTERVALO_DOACAO_MESES,
+      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
         vacinas: regsDe(aid).filter(r => r.tipo === 'vacina' && r.excluido !== '1').map(r => ({ data: r.data, produtos: produtos(r) })),
         doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })) }; } }
   if (nome === 'tcle') {
