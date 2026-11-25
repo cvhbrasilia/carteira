@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125202243">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125203356">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -585,13 +585,16 @@ a.btn{text-decoration:none}
 .ct-pe{width:100%;display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
 .ct-selo{width:118px;aspect-ratio:1;background:var(--img-selo) center/contain no-repeat;flex:none;opacity:.9}
 .ct-ano{position:relative;display:block;width:124px;height:124px;flex:none}.ct-ano svg{position:absolute;inset:0;width:100%;height:100%}.ct-ano-s{position:absolute;left:50%;top:27%;width:24%;aspect-ratio:160/176;transform:translateX(-50%);background:var(--img-simb) center/contain no-repeat;z-index:1}
-.ct-ass{display:flex;flex-direction:column;align-items:stretch;width:max-content;position:relative;padding-top:1.6em}
+.ct-ass{display:flex;flex-direction:column;align-items:center;text-align:center;width:max-content;position:relative}
+.ct-meio{flex:1;display:grid;grid-template-columns:1fr 1fr;align-items:end;justify-items:center;align-self:flex-end}
+.ct-dat{display:flex;flex-direction:column;align-items:center;text-align:center}.ct-dat b{font-size:15px;color:#5F130F;font-weight:600}.ct-dat small{font-size:12px;color:#6B5850;margin-top:1px}.ct-feed .ct-dat b{font-size:22px}.ct-story .ct-dat b{font-size:25px}.ct-feed .ct-dat small{font-size:17px}.ct-story .ct-dat small{font-size:20px}
+.ct-rb2{display:block;width:9em;height:3.4em;margin-bottom:-1.2em;position:relative;z-index:1;font-size:15px;pointer-events:none}.ct-rb2 svg{display:block;width:100%;height:100%;overflow:visible}.ct-feed .ct-rb2{font-size:22px}.ct-story .ct-rb2{font-size:25px}
 .ct-as-top{display:flex;align-items:stretch;font-size:15px}.ct-as-top b{flex:none;font-size:1em!important}.ct-feed .ct-as-top{font-size:22px}.ct-story .ct-as-top{font-size:25px}
 .ct-cr{position:relative;display:inline-block}
 .ct-rb{position:absolute;left:50%;bottom:.75em;transform:translateX(-50%);width:10em;height:4em;pointer-events:none}.ct-rb svg{display:block;width:100%;height:100%;overflow:visible}
 .ct-carimbo{position:relative;width:200px;height:66px;margin-bottom:-2px}.ct-carimbo>svg{display:block;width:100%;height:100%}.ct-rub{position:absolute;inset:-26px 10px auto;height:70px;width:auto}
 .ct-linha{display:block;width:260px;height:1px;background:#5F130F;opacity:.5;margin:4px 0 6px}
-.ct-ass b{font-size:15px;color:#5F130F;font-weight:600}.ct-ass small{font-size:12px;color:#6B5850;margin-top:2px}
+.ct-ass b{font-size:15px;color:#5F130F;font-weight:600;position:relative}.ct-ass small{font-size:12px;color:#6B5850;margin-top:1px}
 .ct-rod{margin:14px 0 0;font-size:11px;letter-spacing:.08em;color:#9A8A80}
 .ct-feed .ct-b1,.ct-story .ct-b1{inset:28px}.ct-feed .ct-b2,.ct-story .ct-b2{inset:36px;border-width:3px}.ct-feed .ct-b3,.ct-story .ct-b3{inset:46px;border-width:.8px}
 .ct-feed .ct-cn,.ct-story .ct-cn{width:18px;height:18px}.ct-feed .ct-cn.tl,.ct-story .ct-cn.tl{left:28px;top:28px}.ct-feed .ct-cn.tr,.ct-story .ct-cn.tr{right:28px;top:28px}.ct-feed .ct-cn.bl,.ct-story .ct-cn.bl{left:28px;bottom:28px}.ct-feed .ct-cn.br,.ct-story .ct-cn.br{right:28px;bottom:28px}
@@ -1049,7 +1052,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125202243';
+  var VERSAO = '20261125203356';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4082,16 +4085,17 @@ const csFem = an => /^f/.test(semAc((an && an.sexo) || ''));
 const gen = (an, m, f, n) => an && an.neutro ? n : csFem(an) ? f : m;
 const CERT_PADRAO = {
   saude: { tit: () => 'Certificado de Saúde', ab: an => 'O Centro Veterinário de Hemoterapia (CVH) certifica que ' + gen(an, 'o doador', 'a doadora', 'o(a) doador(a)'), tx: an => csTexto(an) },
-  doacao: { tit: () => 'Certificado de Doação', ab: () => 'O Centro Veterinário de Hemoterapia certifica e agradece a',
-    tx: an => 'O CVH agradece por mais esse lindo gesto de amor e solidariedade! Sua doação faz a diferença e ajuda a escrever novas histórias de vida. Obrigado por ser ' + gen(an, 'um verdadeiro herói!', 'uma verdadeira heroína!', 'um verdadeiro herói ou uma verdadeira heroína!') },
-  aposentadoria: { tit: an => gen(an, 'Certificado do Doador', 'Certificado da Doadora', 'Certificado do Doador'), ab: () => 'O Centro Veterinário de Hemoterapia homenageia',
-    tx: an => 'O CVH agradece por sua valiosa contribuição como ' + gen(an, 'doador', 'doadora', 'doador(a)') + ' de sangue, ajudando a salvar tantas vidas. Agora é hora de descansar dessa missão especial e seguir recebendo todo o amor e cuidado!' }
+  // a abertura, o nome e o texto formam uma frase só: o CVH aparece uma vez, lá em cima
+  doacao: { tit: () => 'Certificado de Doação', ab: () => 'O Centro Veterinário de Hemoterapia (CVH) certifica e agradece a',
+    tx: an => 'pela doação de sangue, mais um lindo gesto de amor e solidariedade, que faz a diferença e ajuda a escrever novas histórias de vida. Obrigado por ser ' + gen(an, 'um verdadeiro herói!', 'uma verdadeira heroína!', 'um verdadeiro herói ou uma verdadeira heroína!') },
+  aposentadoria: { tit: an => gen(an, 'Certificado do Doador', 'Certificado da Doadora', 'Certificado do Doador'), ab: () => 'O Centro Veterinário de Hemoterapia (CVH) homenageia e agradece a',
+    tx: (an, n) => 'pela valiosa contribuição como ' + gen(an, 'doador', 'doadora', 'doador(a)') + ' de sangue' + (n > 1 ? ', com ' + n + ' doações que ajudaram' : ', ajudando') + ' a salvar tantas vidas. Agora é hora de descansar dessa missão especial e seguir recebendo todo o amor e cuidado!' }
 };
 const CS_TITULO = CERT_PADRAO.saude.tit();
 const csAbertura = an => CERT_PADRAO.saude.ab(an);
-const csTexto = an => { const f = csFem(an), o = gen(an, 'o', 'a', 'o(a)'); return ['Foi submetid' + o + ' à avaliação clínica, incluindo exame físico, hemograma completo, perfil bioquímico e exames sorológicos e de biologia molecular (PCR) para triagem de agentes infecciosos, conforme as recomendações da Associação Brasileira Veterinária de Hematologia e Medicina Transfusional (ABVHMT).',
+const csTexto = an => { const f = csFem(an), o = gen(an, 'o', 'a', 'o(a)'); return ['foi submetid' + o + ' à avaliação clínica, incluindo exame físico, hemograma completo, perfil bioquímico e exames sorológicos e de biologia molecular (PCR) para triagem de agentes infecciosos, conforme as recomendações da Associação Brasileira Veterinária de Hematologia e Medicina Transfusional (ABVHMT).',
   'Na data da avaliação, o animal apresentou condições clínicas e laboratoriais compatíveis com os critérios de saúde estabelecidos para doadores de sangue, com resultados negativos para os agentes infecciosos pesquisados.',
-  'Após o procedimento de doação de sangue, ' + gen(an, 'o doador', 'a doadora', 'o(a) doador(a)') + ' recebeu vermifugação como parte dos cuidados preventivos oferecidos pelo CVH.'].join('\n\n'); };
+  'Após o procedimento de doação de sangue, ' + gen(an, 'o doador', 'a doadora', 'o(a) doador(a)') + ' recebeu vermifugação como parte dos cuidados preventivos.'].join('\n\n'); };
 // certificado de saúde: mesmo desenho dos outros, com o canil e o texto da avaliação de doador
 function certSaudeHtml(c, fmt) {
   const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt];
@@ -4106,17 +4110,28 @@ function certSaudeHtml(c, fmt) {
     '<h1 class="ct-tit">' + esc(String(d.titulo || '').trim() || CS_TITULO) + '</h1></div>' +
     '<div class="ct-g"><p class="ct-sub">' + esc(String(d.abertura || '').trim() || csAbertura(an)) + '</p>' +
     '<h2 class="ct-nome">' + (c.modelo ? CM_NOME : esc(an.nome)) + '</h2>' + (c.modelo ? '<p class="ct-quando">Canil ' + CM_CANIL + '</p>' : canilTxt ? '<p class="ct-quando">' + esc(canilTxt) + '</p>' : '') +
-    ps.map(t => '<p class="ct-txt">' + esc(t) + '</p>').join('') + '<p class="ct-data">Data da avaliação ' + (c.modelo ? CM_DATA : br(c.data)) + '</p></div>' +
-    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b></div><small>Médico veterinário · <span class="ct-cr">' + esc(v.crmv || '') + (v.rubrica ? '<span class="ct-rb"><svg viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg></span>' : '') + '</span></small><small class="ct-el">Assinado eletronicamente</small></div>' + seloAno(c.ano, 'CERTIFICADO DE SAÚDE · CENTRO VETERINÁRIO DE HEMOTERAPIA ·') + '</div>' +
-    '<p class="ct-rod">Brasília, DF · ' + (c.modelo ? CM_DATA : br(c.data) + ' · Certificado ' + codCert(c)) + ' · cvh.vet.br</p></div></div></div>';
+    ps.map(t => '<p class="ct-txt">' + esc(t) + '</p>').join('') + '</div>' +
+    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i>' + meioCert(c, v, true, 'Data da avaliação') + seloAno(c.ano, 'CERTIFICADO DE SAÚDE · CENTRO VETERINÁRIO DE HEMOTERAPIA ·') + '</div>' +
+    '<p class="ct-rod">Brasília, DF · ' + (c.modelo ? CM_DATA : br(dataCert(c)) + ' · Certificado ' + codCert(c)) + ' · cvh.vet.br</p></div></div></div>';
+}
+// rodapé do certificado: o espaço entre os selos dividido ao meio, a assinatura numa metade e a data na outra
+// data que sai no certificado: no de aposentadoria automático, a da última doação
+const dataCert = c => c.tipo === 'aposentadoria' && !c.manual && c.r && c.r.data ? c.r.data : c.data;
+function meioCert(c, v, eletronica, rot) {
+  return '<div class="ct-meio">' + assCert(v, eletronica) + '<div class="ct-dat"><b>' + (c.modelo ? CM_DATA : br(dataCert(c))) + '</b><small>' + rot + '</small>' + '<small style="visibility:hidden">.</small>'.repeat(eletronica ? 2 : 1) + '</div></div>';
+}
+// assinatura do certificado: a rubrica levemente por cima do nome; embaixo médico veterinário e o CRMV, cada um numa linha
+function assCert(v, eletronica) {
+  return '<div class="ct-ass">' + (v.rubrica ? '<span class="ct-rb2"><svg viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg></span>' : '') +
+    '<b>' + esc(v.nome || '') + '</b><small>Médico veterinário</small><small>' + esc(v.crmv || '') + '</small>' + (eletronica ? '<small class="ct-el">Assinado eletronicamente</small>' : '') + '</div>';
 }
 function certHtml(c, fmt) {
   if (c.tipo === 'saude') return certSaudeHtml(c, fmt);
   const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt], apos = c.tipo === 'aposentadoria';
   // textos do CVH no gênero do animal (fêmea: doadora, heroína); o feito à mão pode ter título, abertura e texto editados
   const P = CERT_PADRAO[apos ? 'aposentadoria' : 'doacao'], d = (c.manual && c.r && c.r.dados) || {};
-  const texto = (String(d.texto || '').trim() || P.tx(an)).split(/\n\s*\n|\n/).map(t => t.trim()).filter(Boolean).map(esc).join('</p><p class="ct-txt">');
-  const quando = c.modelo ? (apos ? 'Aposentadoria em ' : 'Doação de sangue em ') + CM_DATA : apos ? 'Aposentadoria em ' + dataLonga(c.data) + (c.n ? ' · ' + c.n + (c.n === 1 ? ' doação' : ' doações') + ' de sangue' : '') : 'Doação de sangue em ' + dataLonga(c.data);
+  const texto = (String(d.texto || '').trim() || P.tx(an, c.n)).split(/\n\s*\n|\n/).map(t => t.trim()).filter(Boolean).map(esc).join('</p><p class="ct-txt">');
+  const quando = '';
   const ca = fmt === 'a4' ? 200 : fmt === 'feed' ? 215 : 300, ci = fmt === 'a4' ? 33 : 46;
   const canto = '<svg class="ct-canto" viewBox="0 0 ' + (ca + 20) + ' ' + (ca + 20) + '" style="left:' + ci + 'px;top:' + ci + 'px;width:' + (ca + 20) + 'px;height:' + (ca + 20) + 'px"><path d="' + tuboCanto(ca) + '" fill="none" stroke="#A73E3E" stroke-width="' + (fmt === 'a4' ? 1.8 : 2.6) + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   return '<div class="ct ct-' + fmt + '" style="width:' + W + 'px;height:' + H + 'px"><i class="ct-marca"></i><i class="ct-b1"></i><i class="ct-b2"></i><i class="ct-b3"></i>' + canto +
@@ -4124,9 +4139,9 @@ function certHtml(c, fmt) {
     '<div class="ct-in"><div class="ct-g"><i class="ct-logo" role="img" aria-label="CVH Centro Veterinário de Hemoterapia"></i>' +
     '<h1 class="ct-tit">' + esc(String(d.titulo || '').trim() || P.tit(an)) + '</h1></div>' +
     '<div class="ct-g"><p class="ct-sub">' + esc(String(d.abertura || '').trim() || P.ab(an)) + '</p>' +
-    '<h2 class="ct-nome">' + (c.modelo ? CM_NOME : esc(an.nome)) + '</h2><p class="ct-quando">' + quando + '</p><p class="ct-txt">' + texto + '</p></div>' +
-    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b></div><small>Médico veterinário · <span class="ct-cr">' + esc(v.crmv || '') + (v.rubrica ? '<span class="ct-rb"><svg viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg></span>' : '') + '</span></small></div>' + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
-    '<p class="ct-rod">Brasília, DF · ' + (c.modelo ? CM_DATA : br(c.data) + ' · Certificado ' + codCert(c)) + ' · cvh.vet.br</p></div></div></div>';
+    '<h2 class="ct-nome">' + (c.modelo ? CM_NOME : esc(an.nome)) + '</h2>' + (quando ? '<p class="ct-quando">' + quando + '</p>' : '') + '<p class="ct-txt">' + texto + '</p></div>' +
+    '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i>' + meioCert(c, v, false, apos ? 'Data da última doação' : 'Data da doação') + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
+    '<p class="ct-rod">Brasília, DF · ' + (c.modelo ? CM_DATA : br(dataCert(c)) + ' · Certificado ' + codCert(c)) + ' · cvh.vet.br</p></div></div></div>';
 }
 async function certImagem(c, fmt, tipoImg) {
   if (!window.htmlToImage) await carregarScript(LIB_IMG);
@@ -4206,7 +4221,7 @@ async function ocultarCert(aid, id, b, mostrar) {
 }
 // certificado feito à mão (saúde, doação ou aposentadoria): escolhe o doador e a data (e o canil, no de saúde); título, abertura e texto podem ser editados.
 // O de saúde fica fora da carteira, a não ser que marque; o de doação e o de aposentadoria já vêm marcados para ir
-const CERT_K = { saude: ['certsaude', 'Certificado de saúde', 'Data da avaliação'], doacao: ['certmanual', 'Certificado de doação', 'Data da doação'], aposentadoria: ['certmanual', 'Certificado de aposentadoria', 'Data da aposentadoria'] };
+const CERT_K = { saude: ['certsaude', 'Certificado de saúde', 'Data da avaliação'], doacao: ['certmanual', 'Certificado de doação', 'Data da doação'], aposentadoria: ['certmanual', 'Certificado de aposentadoria', 'Data da última doação'] };
 function novoCert(k, aid, id) {
   const atual = id ? E.d.registros.find(r => r.id === id) : null, da = (atual && atual.dados) || {};
   if (atual) { aid = atual.animalId; k = atual.tipo === 'certsaude' ? 'saude' : da.k === 'aposentadoria' ? 'aposentadoria' : 'doacao'; }
@@ -4214,7 +4229,7 @@ function novoCert(k, aid, id) {
   const doadores = E.d.animais.filter(a => a.doador === '1' || a.id === aid).sort((a, b) => a.nome.localeCompare(b.nome));
   const ult = !atual && aid && saude ? E.d.registros.filter(r => r.animalId === aid && r.tipo === 'certsaude' && r.excluido !== '1').sort(porData).pop() : null;
   const ultDoa = aid ? regsDe(aid).filter(r => r.tipo === 'doacao').sort(porData).pop() : null, an0 = animalDe(aid);
-  const dataIni = atual ? atual.data : k === 'aposentadoria' ? ((an0 && an0.aposentadoEm) || hoje()) : ultDoa ? ultDoa.data : hoje();
+  const dataIni = atual ? atual.data : ultDoa ? ultDoa.data : hoje();
   const texto0 = atual && String(da.texto || '').trim() ? da.texto : saude && atual ? P.tx(an0).split('\n\n').filter((t, i) => i < 2 || !(da.verm === false || da.verm === '0')).join('\n\n') : P.tx(an0);
   abrirFolha((atual ? 'Editar ' : '') + CERT_K[k][1].replace(/^C/, atual ? 'c' : 'C'),
     '<p class="nota">' + (saude ? 'Para entregar quando pedirem (normalmente canil). Não vai para a carteira, a não ser que você marque.' : 'Para uma doação ou aposentadoria que não está registrada no painel. Vai para a carteira do responsável, a não ser que você desmarque.') + '</p>' +
