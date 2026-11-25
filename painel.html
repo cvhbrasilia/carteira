@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125185301">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125185430">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1042,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125185301';
+  var VERSAO = '20261125185430';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -7353,7 +7353,7 @@ async function leituraIA(tipo, accept, btn, pronto) {
   if (btn) { btn.disabled = true; btn.textContent = 'Lendo… pode levar até 2 min'; btn.dataset.msg = 'Lendo… pode levar até 2 min'; rel = setInterval(() => { seg += 1; btn.textContent = (btn.dataset.msg || 'Lendo…') + ' · ' + seg + 's'; }, 1000); }
   try {
     const a = pronto || await lerArquivo(f);
-    const MAX = 4;
+    const MAX = 6, motivos = [];
     for (let t = 0; t < MAX; t++) {
       let res;
       try {
@@ -7362,9 +7362,11 @@ async function leituraIA(tipo, accept, btn, pronto) {
       }
       catch (e) { if (!/NetworkError|HTTP 0|tempo|timeout/i.test(e.message)) throw e; res = { ocupado: true }; }
       if (res && !res.ocupado) return res.dados !== undefined ? res.dados : res;
-      if (t < MAX - 1) { if (btn) btn.dataset.msg = (res && res.lento ? 'Google lento' : 'Google ocupado') + ', tentando outro modelo (' + (t + 2) + '/' + MAX + ')'; if (!(res && res.lento)) await new Promise(ok => setTimeout(ok, 2500)); }
+      motivos.push(res && res.lento ? 'lento' : (res && res.motivo) || 'ocupado');
+      // espera um pouco mais a cada tentativa: o Google costuma liberar em segundos
+      if (t < MAX - 1) { const msg = (res && res.lento ? 'Google lento' : 'Google ocupado') + ', tentando de novo (' + (t + 2) + '/' + MAX + ')'; if (btn) btn.dataset.msg = msg; else toast(msg + '…', 4000); if (!(res && res.lento)) await new Promise(ok => setTimeout(ok, 2500 + t * 2500)); }
     }
-    throw new Error('O Gemini está sobrecarregado agora. Tentei ' + MAX + ' vezes, inclusive com outros modelos. Espere alguns minutos e tente de novo.');
+    throw new Error('O Gemini está sobrecarregado agora. Tentei ' + MAX + ' vezes, inclusive com outros modelos (respostas: ' + motivos.join(', ') + '). Espere alguns minutos e tente de novo.');
   }
   catch (e) { const c = caixa(); if (c) c.textContent = e.message; else toast(e.message, 8000); return null; }
   finally { if (rel) clearInterval(rel); if (btn) { btn.disabled = false; btn.textContent = t; } }
