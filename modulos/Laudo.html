@@ -2347,17 +2347,28 @@ function blocoIdent(x, y, w, tam) {
     ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica]]),
     ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], X.labNome ? [estado.misto ? "Laboratórios" : "Laboratório", (estado.misto ? "IDEXX no CVH e " : "") + X.labNome + (X.labNumero ? " · nº " + X.labNumero : ""), false, true] : ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
-  // A4: três colunas; celular: duas. O campo que não cabe numa coluna ocupa duas (ou a linha inteira), sem mudar a ordem.
-  const cols = w > 400 ? 3 : 2, gap = 14, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
+  // A4: quatro colunas, e o que é longo ocupa duas; celular: duas. Campo de uma coluna pode subir para completar uma linha que ficou com espaço.
+  const cols = w > 400 ? 4 : 2, maxSpan = w > 400 ? 2 : cols, gap = w > 400 ? 12 : 14, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
   let usadas = cols;
-  const por = (it) => { if (usadas + it.span > cols) { linhas.push([]); usadas = 0; } it.col = usadas; usadas += it.span; linhas[linhas.length - 1].push(it); };
+  const its = [], por = (it) => its.push(it), poe = (it) => { it.col = usadas; usadas += it.span; linhas[linhas.length - 1].push(it); };
   itens.forEach(([rot, val, forte]) => {
     const r = rot ? rot + ":" : "", wr = rot ? largura(r + " ", tam, true) : 0, v = String(val || "").trim(), txt = rot ? v || vazio : v, b = !!forte && !!v && !!rot;
-    let span = 1; while (span < cols && wr + largura(txt, tam, b) > larg(span)) span++;
+    let span = 1; while (span < maxSpan && wr + largura(txt, tam, b) > larg(span)) span++;
+    // no A4, o que não cabe em duas colunas vai para três em vez de quebrar a linha
+    while (span < cols && wr + largura(txt, tam, b) > larg(span)) span++;
     const cabe = wr + largura(txt, tam, b) <= larg(span);
-    if (!rot) { let sp = 1; while (sp < cols && largura(v, tam, true) > larg(sp)) sp++; por({ r: v, wr: 0, b: false, vazio: false, span: sp, ls: [""] }); return; }
-    por({ r, wr, b, vazio: !!rot && !v, span, ls: cabe ? [txt] : quebrar(txt, tam, b, Math.max(60, larg(cols) - wr)) });
+    if (!rot) { let sp = 1; while (sp < maxSpan && largura(v, tam, true) > larg(sp)) sp++; por({ r: v, wr: 0, b: false, vazio: false, span: sp, ls: [""] }); return; }
+    por({ r, wr, b, vazio: !!rot && !v, span, ls: cabe ? [txt] : quebrar(txt, tam, b, Math.max(60, larg(span) - wr)) });
   });
+  while (its.length) {
+    if (usadas + its[0].span > cols) {
+      // sobrou espaço na linha: um dos próximos campos curtos completa a linha
+      const k = usadas > 0 && usadas < cols ? its.findIndex((o, n) => n > 0 && n <= 3 && usadas + o.span <= cols) : -1;
+      if (k > 0) { poe(its.splice(k, 1)[0]); continue; }
+      linhas.push([]); usadas = 0;
+    }
+    poe(its.shift());
+  }
   const alt = linhas.map((l) => Math.max(...l.map((i) => i.ls.length)) * lh), h = 13 + alt.reduce((a, c) => a + c, 0);
   el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
   let yy = y + 8 + tam;
@@ -2572,17 +2583,15 @@ function blocosTipagem(x, w, cel) {
     const wl = Math.round(w * 0.63), xr = x + wl + 14, wr = w - wl - 14, SL = sistemasCompat();
     cartoes.forEach((c, i) => {
       const sis = SL.find((s2) => s2.titulo === c.titulo); if (!sis) return;
-      if (separar && i === 1) B.push({ h: 0, quebra: true, el: () => [] });
-      // separado em duas folhas sobra espaço: a fita do DEA 1 vai na largura toda, abaixo da faixa, e a foto do DAL fica maior
-      const fitaLarga = separar && c.foto === "fotoDea" && IMG_DIN.fotoDea && !c.tubo;
-      const cb = blocoCartao(Object.assign({ rotW: 70, fhMax: c.foto === "fotoDea" ? 60 : separar ? 128 : 100, fotoAbaixo: c.foto === "fotoDea" }, c, fitaLarga ? { foto: null } : {}), x, wl, false);
+      // fita do DEA 1 e foto do DAL embaixo das informações, dentro do cartão, ao lado do esquema de compatibilidade
+      const cb = blocoCartao(Object.assign({ rotW: 70, fhMax: c.foto === "fotoDea" ? 60 : separar ? 118 : 100, fotoAbaixo: true }, c), x, wl, false);
       const pw = Math.min(176, wr - 12), sp = Object.assign({}, sis, { titulo: "" }), pp = painelCompat(0, 0, pw, sp), hb = Math.max(cb.h - 10, pp.h + 14);
       B.push({ h: hb + 10, el: (y) => {
         const e = cb.el(y); e.push(E.selo(xr, y, wr, hb, { s: COR.LINHA, lw: 0.6, r: 8 }), T(xr + wr / 2, y + 13, "COMPATIBILIDADE PARA TRANSFUSÃO", 6, { b: true, c: COR.OURO, a: "m" }));
         e.push(...painelCompat(xr + (wr - pw) / 2, y + 4 + (hb - pp.h) / 2, pw, sp).el); return e; } });
-      if (fitaLarga) { const im = IMG_DIN.fotoDea, fh = (w - 24) * im.h / im.w; B.push({ h: fh + 22, el: (y) => [E.ret(x, y, w, fh + 12, { f: COR.CLARO }), E.ret(x, y, 3, fh + 12, { f: COR.BORDO }), E.img("fotoDea", x + 12, y + 6, w - 24, fh)] }); }
-      if (separar) { if (i === 0 && temGrau) B.push(...blocosNota(NOTA_GRAU, x, w, 7.6, COR.TXT2)); B.push(...blocoTexto(i === 0 ? "SOBRE O DEA 1" : "SOBRE O DAL", paras[i], x, w, 8)); }
     });
+    // as duas tipagens primeiro; os textos vêm depois e, se não couber tudo numa folha, vão com a assinatura para a segunda
+    if (separar) { if (temGrau) B.push(...blocosNota(NOTA_GRAU, x, w, 7.6, COR.TXT2)); B.push({ h: 0, quebra: true, el: () => [] }); B.push(...blocoTexto("SOBRE O DEA 1", paras[0], x, w, 8), ...blocoTexto("SOBRE O DAL", paras[1], x, w, 8)); B.umaFolha = true; }
   } else if (separar) {
     cartoes.forEach((c, i) => { if (i === 1) B.push({ h: 0, quebra: true, el: () => [] }); B.push(blocoCartao(c, x, w, cel)); if (i === 0 && temGrau) B.push(...blocosNota(NOTA_GRAU, x, w, 7.6, COR.TXT2)); B.push(...blocoTexto(i === 0 ? "SOBRE O DEA 1" : "SOBRE O DAL", paras[i], x, w, 8)); });
   } else if (lado) {
@@ -2752,7 +2761,7 @@ function blocosCorpo(x, w, cel) {
   else if (t === "compat") B = [...(estado.tip ? [...comTip(() => blocosTipagem(x, w, cel)), ESP(10), { h: 0, quebra: true, el: () => [] }] : []), ...blocosCompat(x, w, cel)];
   else if (t === "tecsa") B = blocosTecsa(x, w, cel);
   else if (t === "requisicao") B = blocosRequisicao(x, w, cel);
-  return [...B, ...blocoTexto("OBSERVAÇÕES", estado.obs, x, w, cel ? 9.2 : 9.6)];
+  const R = [...B, ...blocoTexto("OBSERVAÇÕES", estado.obs, x, w, cel ? 9.2 : 9.6)]; R.umaFolha = !!B.umaFolha; return R;
 }
 // requisição: as partes do pedido em faixas e a assinatura do médico veterinário solicitante feita no celular da internação
 function blocosRequisicao(x, w, cel) {
@@ -2845,6 +2854,7 @@ function paginasLaudo() {
     });
     if (y > PG.YMAX - rodapeH) novaPag();
   };
+  if (blocos.umaFolha) { const uma = laudoNumaFolha(blocos, metodo); if (uma) return [[...cabecalhoA4(), ...uma]]; }
   dispor(soTexto ? blocos.length : tail0);
   // a assinatura ficaria sozinha na segunda folha: primeiro tenta reduzir tudo um pouco e fechar numa folha só;
   // se não der, as últimas linhas das observações descem junto com a assinatura
