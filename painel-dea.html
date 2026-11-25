@@ -1036,7 +1036,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125131747';
+  var VERSAO = '20261125133955';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2780,6 +2780,16 @@ async function ctnRecursos() {
   return CTN_REC = { frente, verso, selo };
 }
 const ctnLaudo = aid => laudosDe(aid).find(r => r.excluido !== '1' && ehTipLaudo(r.dados || {}));
+// tipagem do animal: a do cadastro; o que faltar lá vem do laudo de tipagem assinado mais recente (ficha, requisição, estoque)
+function tipagemDe(an) {
+  let ts = an.tipoSanguineo || '', dal = an.dal || '';
+  if ((!/dea\s*1\s*(pos|neg)/i.test(ts) && !/^(A|B|AB)$/.test(ts)) || !dal) {
+    const L = an.id ? ctnLaudo(an.id) : null, d = L ? (L.dados || {}) : {}, t = (d.tipoLaudo === 'tipagem' ? d.detalhe : (d.detalhe || {}).tipagem) || {};
+    if (!/dea\s*1\s*(pos|neg)/i.test(ts) && !/^(A|B|AB)$/.test(ts)) { if (t.dea1 && t.dea1.on && /^(pos|neg)/i.test(t.dea1.res || '')) ts = 'DEA 1 ' + (/^pos/i.test(t.dea1.res) ? 'Positivo' : 'Negativo'); else if (t.grupo) ts = t.grupo; }
+    if (!dal && t.dal && t.dal.on && /^(pos|neg)/i.test(t.dal.res || '')) dal = /^pos/i.test(t.dal.res) ? 'Positivo' : 'Negativo';
+  }
+  return { tipoSanguineo: ts, dal };
+}
 const ctnFoto = an => { try { const f = JSON.parse(an.foto || ''); return f && f.id ? f : null; } catch (_) { return null; } };
 async function ctnArquivo(id) { const r = await api('lerArquivoDrive', E.sessao, id); return ctnImg('data:' + (/^image\//.test(r.mime || '') ? r.mime : 'image/jpeg') + ';base64,' + r.base64); }
 // texto com espaçamento entre letras (as legendas em caixa alta)
@@ -7312,7 +7322,7 @@ async function abrirModulo(nome, aid, rid) {
   catch (e) { telaInicio(); toast(e.message, 7000); return; }
   E.livro = null; E.animal = aid || null; E.resp = rp.id || null; E.modAberto = nome;
   const v = vetLogado(), vp = (E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0];
-  E.ponte = { animal: an ? { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: an.tipoSanguineo, dal: an.dal || '', nascimento: an.nascimento, doador: an.doador === '1' } : null,
+  E.ponte = { animal: an ? { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: tipagemDe(an).tipoSanguineo, dal: tipagemDe(an).dal, nascimento: an.nascimento, doador: an.doador === '1' } : null,
     responsavel: { nome: rp.nome || '', cpf: rp.cpf || '' }, vet: v ? { nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || '' } : null, temGemini: !!E.d.config.temGemini, fichas: an ? fichasDe(aid) : [],
     racasExtra: { cao: racasExtra(false), gato: racasExtra(true) }, aba: E.abrirAba || '' }; E.abrirAba = '';
   if (nome === 'fichas') { E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.rascunhos = an ? andamentoDe(aid) : []; E.ponte.abrir = E.fichaAbrir || null; E.fichaAbrir = null;
@@ -7338,7 +7348,7 @@ async function abrirModulo(nome, aid, rid) {
     const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}; return { numero: String(d.numero || (d.ficha || {}).numero || '').trim(), data: r.data, animalId: r.animalId, ac: (d.ficha || {}).acDoa || '' }; });
     andamentoDe().forEach(f => { const n = String(f.numero || (f.ficha || {}).numero || '').trim(); if (n && !doa.some(x => x.numero === n)) doa.push({ numero: n, data: f.data, animalId: f.animalId, andamento: true }); });
     E.ponte.doacoes = doa.filter(x => x.numero);
-    if (!an) E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip, idade: a.nascimento ? idade(a.nascimento) : '', peso: pesoAtual(a.id), resp: (respDe(a) || {}).nome || '', tipoSanguineo: a.tipoSanguineo, dal: a.dal || '' })).sort((a, b) => a.nome.localeCompare(b.nome));
+    if (!an) E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip, idade: a.nascimento ? idade(a.nascimento) : '', peso: pesoAtual(a.id), resp: (respDe(a) || {}).nome || '', tipoSanguineo: tipagemDe(a).tipoSanguineo, dal: tipagemDe(a).dal })).sort((a, b) => a.nome.localeCompare(b.nome));
   }
   if (nome === 'receitas') {
     // endereço do responsável: o da última receita dele, se houver
@@ -7355,7 +7365,7 @@ async function abrirModulo(nome, aid, rid) {
     const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => { const d = r.dados || {}; return { animalId: r.animalId, data: r.data, numero: String(d.numero || (d.ficha || {}).numero || '').trim(), vetNome: r.vetNome || '', vetCrmv: r.vetCrmv || '' }; });
     andamentoDe().forEach(f => { if (!f.animalId || !f.data) return; const n = String(f.numero || (f.ficha || {}).numero || '').trim(); if (!doa.some(x => x.animalId === f.animalId && x.data === f.data)) doa.push({ animalId: f.animalId, data: f.data, numero: n, andamento: true }); });
     const corte = somaDiasIso(hoje(), -90); E.ponte.doacoes = doa.filter(x => x.data >= corte);
-    E.ponte.animais = E.d.animais.filter(a => a.ativo !== '0' || doa.some(x => x.animalId === a.id)).map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip || '', nascimento: a.nascimento || '', idade: a.nascimento ? idade(a.nascimento) : '', resp: (respDe(a) || {}).nome || '', doador: a.doador === '1', tipoSanguineo: a.tipoSanguineo || '', dal: a.dal || '' }));
+    E.ponte.animais = E.d.animais.filter(a => a.ativo !== '0' || doa.some(x => x.animalId === a.id)).map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip || '', nascimento: a.nascimento || '', idade: a.nascimento ? idade(a.nascimento) : '', resp: (respDe(a) || {}).nome || '', doador: a.doador === '1', tipoSanguineo: tipagemDe(a).tipoSanguineo, dal: tipagemDe(a).dal }));
     E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.usuario = E.u.nome;
     E.ponte.racasCao = RACAS_CAO.concat(racasExtra(false)); E.ponte.racasGato = RACAS_GATO.concat(racasExtra(true));
   }
@@ -7365,7 +7375,7 @@ async function abrirModulo(nome, aid, rid) {
     // fichas de doação com coleta: código, doador, volume de ST, lote e validade da bolsa, segmento
     E.ponte.doacoes = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}, f = d.ficha || {}, a = animalDe(r.animalId) || {};
       return { numero: String(d.numero || f.numero || '').trim(), data: r.data, animalId: r.animalId, nome: a.nome || '', volume: f.volume || '', lote: f.lote || '', validade: f.validade || '', seguimento: f.seguimento || '', naoColetado: !!d.naoColetado, fim: f.fim || '', assinadoEm: r.assinadoEm || '' }; });
-    E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, tipoSanguineo: a.tipoSanguineo, dal: a.dal || '' }));
+    E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, tipoSanguineo: tipagemDe(a).tipoSanguineo, dal: tipagemDe(a).dal }));
     E.ponte.usuario = E.u.nome; E.ponte.admin = pode('admin');
   }
   if (nome === 'qualidade') {
