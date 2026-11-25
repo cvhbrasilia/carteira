@@ -2386,11 +2386,11 @@ function blocoIdent(x, y, w, tam0) {
         if (L[L.length - 1].length && usado + gmin + it.lw > livre) { L.push([]); usado = 0; }
         usado += (L[L.length - 1].length ? gmin : 0) + it.lw; L[L.length - 1].push(it); });
       return { L, tam }; };
-    let F = fluxo(tam0); for (const t2 of [tam0 - 0.5, tam0 - 1]) { const G = fluxo(t2); if (G.L.length < F.L.length) F = G; }
-    const { L, tam } = F, lh = tam + 5.2, h = 13 + L.length * lh;
+    let F = fluxo(tam0 + 0.5); for (const t2 of [tam0, tam0 - 0.5]) { if (F.L.length <= 4) break; F = fluxo(t2); }
+    const { L, tam } = F, lh = tam + 7, h = 16 + L.length * lh;
     el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
     // cada linha ocupa a largura toda: o espaço que sobra é dividido entre os campos
-    L.forEach((l, li) => { const yy = y + 8 + tam + li * lh, tot = l.reduce((a, i) => a + i.lw, 0), g = l.length > 1 ? Math.min(46, (w - 24 - tot) / (l.length - 1)) : 0; let cx = x + 12;
+    L.forEach((l, li) => { const yy = y + 10 + tam + li * lh, tot = l.reduce((a, i) => a + i.lw, 0), g = l.length > 1 ? Math.min(46, (w - 24 - tot) / (l.length - 1)) : 0; let cx = x + 12;
       l.forEach((it) => { if (it.r) el.push(T(cx, yy, it.r, tam, { b: true, c: COR.OURO })); if (it.txt) el.push(T(cx + it.wr, yy, it.txt, tam, { b: it.b, i: it.vazio, c: it.vazio ? COR.MARROM2 : it.b ? COR.BORDO : COR.TEXTO })); cx += it.lw + g; }); });
     return { el, h };
   }
@@ -2869,10 +2869,11 @@ function paginasLaudo() {
   const X = PG.X, W = PG.CW, pags = []; let pag = [], y = PG.Y;
   const novaPag = () => { pags.push(pag); pag = []; y = PG.Y; };
   const tt = estado.exame.titulo || "Resultado de exame", tam = tt.length > 24 ? 20 : tt.length > 18 ? 22 : 26;
+  y += 12;
   const tb = tuboTitulo(X + largura(tt, tam, true) + 12, y, X + W, tam, 88); y += tb.dy;
   pag.push(T(X, y + tam * 0.86, tt, tam, { b: true, c: COR.BORDO })); pag.push(...tb.el);
-  y += Math.max(tam * 0.86 + 16, tb.h + 6);
-  const id = blocoIdent(X, y, W, 9.5); pag.push(...id.el); y += id.h + 10;
+  y += Math.max(tam * 0.86 + 20, tb.h + 10);
+  const id = blocoIdent(X, y, W, 9.5); pag.push(...id.el); y += id.h + 16;
   const blocos = blocosCorpo(X, W, false); while (blocos.length && blocos[blocos.length - 1].vazio) blocos.pop();
   const metodo = quebrar(notaMetodo(), 7.5, false, W), rodapeH = 96 + metodo.length * 10;
   // o fim do laudo (pelo menos umas quatro linhas) vai junto com a assinatura, para ela nunca ficar sozinha numa folha
@@ -2891,7 +2892,13 @@ function paginasLaudo() {
     });
     if (y > PG.YMAX - rodapeH) novaPag();
   };
-  if (blocos.umaFolha) { const uma = laudoNumaFolha(blocos, metodo); if (uma) return [[...cabecalhoA4(), ...uma]]; }
+  if (blocos.umaFolha) {
+    const uma = laudoNumaFolha(blocos, metodo); if (uma) return [[...cabecalhoA4(), ...uma]];
+    const iq = blocos.findIndex((b) => b.quebra), pre = iq > 0 ? blocos.slice(0, iq) : [], hPre = pre.reduce((a, b) => a + b.h, 0), sobra = PG.YMAX - 30 - (y + hPre);
+    // só os blocos grandes (título da seção e quadros) ganham espaço; as linhas da nota ficam juntas
+    const grandes = pre.filter((b) => b.h >= 26).length;
+    if (iq > 0 && sobra > 20 && grandes) { const extra = Math.min(40, sobra / grandes); for (let i = 0; i < iq; i++) { const b = blocos[i], el0 = b.el; if (b.h < 26) continue; blocos[i] = Object.assign({}, b, { h: b.h + extra, el: (yy) => el0(yy + extra) }); } for (let i = 0; i < blocos.length; i++) resto[i] = blocos.slice(i).reduce((a, b) => a + b.h, 0); }
+  }
   dispor(soTexto ? blocos.length : tail0);
   // a assinatura ficaria sozinha na segunda folha: primeiro tenta reduzir tudo um pouco e fechar numa folha só;
   // se não der, as últimas linhas das observações descem junto com a assinatura
@@ -2910,10 +2917,11 @@ const ESCALA_MIN = 0.82;
 function laudoNumaFolha(blocos, metodo) {
   const X = PG.X, W = PG.CW, el = []; let y = PG.Y;
   const tt = estado.exame.titulo || "Resultado de exame", tam = tt.length > 24 ? 20 : tt.length > 18 ? 22 : 26;
+  y += 12;
   const tb = tuboTitulo(X + largura(tt, tam, true) + 12, y, X + W, tam, 88); y += tb.dy;
   el.push(T(X, y + tam * 0.86, tt, tam, { b: true, c: COR.BORDO })); el.push(...tb.el);
-  y += Math.max(tam * 0.86 + 16, tb.h + 6);
-  const id = blocoIdent(X, y, W, 9.5); el.push(...id.el); y += id.h + 10;
+  y += Math.max(tam * 0.86 + 20, tb.h + 10);
+  const id = blocoIdent(X, y, W, 9.5); el.push(...id.el); y += id.h + 16;
   blocos.forEach((b) => { if (b.quebra) return; el.push(...b.el(y)); y += b.h; });
   let yr = y + 12; metodo.forEach((l) => { el.push(T(X, yr, l, 7.5, { i: true, c: COR.MARROM2 })); yr += 10; }); yr += 12;
   const as = blocoAssinatura(X, W, yr); el.push(...as.el);
