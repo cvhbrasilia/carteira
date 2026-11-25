@@ -2354,15 +2354,15 @@ function blocoIdent(x, y, w, tam0) {
   const cvhTxt = !estado.receptor && ((CTX.animal || {}).doador || X.doacao) ? "CVH - Doador" : CLINICA_CVH;
   const ts = estado.tipo === "tipagem" || tipAtual() ? "" : tipoSanguineoTxt();
   const itens = [["Paciente", P.nome, true], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : "", false, true],
-    ["Responsável", R.nome], [w > 400 ? "CPF" : "CPF do responsável", R.cpf || "", false, true], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
+    ["Responsável", R.nome], ["CPF", R.cpf || "", false, true], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
     ["Liberação", liberacaoTxt()],
-    ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [[w > 400 ? "M.V. solicitante" : "Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", cvhTxt] : ["Clínica veterinária", X.clinica]]),
+    ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [["M.V. solicitante", solicitanteTxt()], ehCvh() ? ["", cvhTxt] : ["Clínica veterinária", X.clinica]]),
     ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? (w > 400 ? "" : "nº " + X.doacao) : X.amostra ? "nº " + X.amostra : "", false, true], X.labNome ? [estado.misto ? "Laboratórios" : "Laboratório", (estado.misto ? "IDEXX no CVH e " : "") + X.labNome + (X.labNumero ? " · nº " + X.labNumero : ""), false, true] : ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
   // A4: quatro colunas, e o que é longo ocupa duas; se passar de quatro linhas, tenta cinco colunas com a letra um pouco menor.
   // Celular: duas. Campo de uma coluna pode subir para completar uma linha que ficou com espaço.
   const arranjo = (cols, tam) => {
-  const maxSpan = w > 400 ? 2 : cols, gap = w > 400 ? 12 : 14, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
+  const maxSpan = w > 400 ? 2 : cols, gap = w > 400 ? 12 : 10, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
   let usadas = cols;
   const its = [], por = (it) => its.push(it), poe = (it) => { it.col = usadas; usadas += it.span; linhas[linhas.length - 1].push(it); };
   itens.forEach(([rot, val, forte]) => {
@@ -2377,7 +2377,7 @@ function blocoIdent(x, y, w, tam0) {
   while (its.length) {
     if (usadas + its[0].span > cols) {
       // sobrou espaço na linha: um dos próximos campos curtos completa a linha
-      const k = usadas > 0 && usadas < cols ? its.findIndex((o, n) => n > 0 && n <= 3 && usadas + o.span <= cols) : -1;
+      const k = usadas > 0 && usadas < cols ? its.findIndex((o, n) => n > 0 && n <= 4 && usadas + o.span <= cols) : -1;
       if (k > 0) { poe(its.splice(k, 1)[0]); continue; }
       linhas.push([]); usadas = 0;
     }
@@ -2386,6 +2386,8 @@ function blocoIdent(x, y, w, tam0) {
   return { linhas, wm, gap, tam, n: linhas.reduce((a, l) => a + Math.max(...l.map((i) => i.ls.length)), 0) };
   };
   if (w > 400) {
+    // o microchip é dado do animal: vai junto com paciente, raça, idade e peso, antes do responsável
+    { const im = itens.findIndex((e) => e[0] === "Microchip"), ip = itens.findIndex((e) => e[0] === "Responsável"); if (im > ip && ip >= 0) itens.splice(ip, 0, itens.splice(im, 1)[0]); }
     const fluxo = (tam) => { const L = [[]], gmin = 14, livre = w - 24; let usado = 0;
       itens.forEach(([rot, val, forte]) => { const r = rot ? rot + ":" : "", wr = rot ? largura(r + " ", tam, true) : 0, v = String(val || "").trim(), txt = rot ? v || vazio : v, b = !!forte && !!v && !!rot;
         const it = rot ? { r, wr, txt, b, vazio: !v } : { r: v, wr: 0, txt: "", b: false, vazio: false }; it.lw = rot ? wr + largura(txt, tam, b) : largura(v, tam, true);
@@ -2394,12 +2396,17 @@ function blocoIdent(x, y, w, tam0) {
       return { L, tam }; };
     let F = fluxo(tam0 + 0.5); for (const t2 of [tam0, tam0 - 0.5]) { if (F.L.length <= 4) break; F = fluxo(t2); }
     // mesmas linhas, mas equilibradas: os campos são divididos na ordem de modo que todas as linhas fiquem parecidas de cheias
-    { const its = F.L.flat(), n = F.L.length, livre = w - 24, larg = (i, j) => its.slice(i, j).reduce((a2, o) => a2 + o.lw, 0) + 14 * (j - i - 1);
-      const memo = {}, melhor = (i, k) => { const ch = i + "," + k; if (ch in memo) return memo[ch];
-        if (k === 1) { const l = larg(i, its.length); return (memo[ch] = l <= livre ? { c: (livre - l) ** 2, cortes: [] } : null); }
-        let r = null; for (let j = i + 1; j <= its.length - (k - 1); j++) { const l = larg(i, j); if (l > livre) break; const sub = melhor(j, k - 1); if (!sub) continue; const c = (livre - l) ** 2 + sub.c; if (!r || c < r.c) r = { c, cortes: [j, ...sub.cortes] }; }
-        return (memo[ch] = r); };
-      const m = n > 1 ? melhor(0, n) : null; if (m) { const L2 = []; let i0 = 0; [...m.cortes, its.length].forEach((j) => { L2.push(its.slice(i0, j)); i0 = j; }); F.L = L2; } }
+    { const livre = w - 24;
+      const dividir = (its, n) => { const larg = (i, j) => its.slice(i, j).reduce((a2, o) => a2 + o.lw, 0) + 14 * (j - i - 1);
+        const memo = {}, melhor = (i, k) => { const ch = i + "," + k; if (ch in memo) return memo[ch];
+          if (k === 1) { const l = larg(i, its.length); return (memo[ch] = l <= livre ? { c: (livre - l) ** 2, cortes: [] } : null); }
+          let r = null; for (let j = i + 1; j <= its.length - (k - 1); j++) { const l = larg(i, j); if (l > livre) break; const sub = melhor(j, k - 1); if (!sub) continue; const c = (livre - l) ** 2 + sub.c; if (!r || c < r.c) r = { c, cortes: [j, ...sub.cortes] }; }
+          return (memo[ch] = r); };
+        const m = n > 1 ? melhor(0, n) : null; if (!m) return null; const L2 = []; let i0 = 0; [...m.cortes, its.length].forEach((j) => { L2.push(its.slice(i0, j)); i0 = j; }); return L2; };
+      const its = F.L.flat(), n = F.L.length, im = its.findIndex((o) => o.r === "Microchip:");
+      // dados do animal (até o microchip) nas duas primeiras linhas; responsável, datas e solicitante nas outras
+      const A2 = n === 4 && im > 0 ? dividir(its.slice(0, im + 1), 2) : null, B2 = A2 ? dividir(its.slice(im + 1), 2) : null;
+      if (A2 && B2) F.L = [...A2, ...B2]; else { const L2 = dividir(its, n); if (L2) F.L = L2; } }
     const { L, tam } = F, lh = tam + 7, h = 16 + L.length * lh;
     el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
     // cada linha ocupa a largura toda: o espaço que sobra é dividido entre os campos
@@ -2407,7 +2414,24 @@ function blocoIdent(x, y, w, tam0) {
       l.forEach((it) => { if (it.r) el.push(T(cx, yy, it.r, tam, { b: true, c: COR.OURO })); if (it.txt) el.push(T(cx + it.wr, yy, it.txt, tam, { b: it.b, i: it.vazio, c: it.vazio ? COR.MARROM2 : it.b ? COR.BORDO : COR.TEXTO })); cx += it.lw + g; }); });
     return { el, h };
   }
-  let A = arranjo(w > 400 ? 4 : 2, tam0);
+  // celular: dados do animal em duas linhas (paciente, espécie, raça e peso; sexo, idade e microchip) e o resto em três colunas
+  if (w <= 400) {
+    const tam = tam0 - 0.6, lh = tam + 6, cw = w - 24, gap = 8, med = (rot, val, b) => (rot ? largura(rot + ": ", tam, true) : 0) + largura(String(val || "").trim() || vazio, tam, !!b);
+    const pega = (rot) => itens.find((e) => e[0] === rot), L1 = ["Paciente", "Espécie", "Raça", "Peso"].map(pega), L2 = ["Sexo", "Idade", "Microchip"].map(pega);
+    const cab = (L, un) => L.every(Boolean) && L.every((e, i) => med(e[0], e[1], e[2]) <= (un[i] / 12) * cw - gap);
+    if (cab(L1, [3, 3, 3, 3]) && cab(L2, [3, 3, 6])) {
+      const usados = new Set([...L1, ...L2]), resto = itens.filter((e) => !usados.has(e)), linhas = [L1.map((e, i) => [e, i * 3, 3]), L2.map((e, i) => [e, i * 3, i === 2 ? 6 : 3])];
+      const span = (e) => { for (const u of [4, 8, 12]) if (med(e[0], e[1], e[2]) <= (u / 12) * cw - gap) return u; return 12; };
+      const fila = resto.map((e) => ({ e, u: span(e) })); let lin = [], usado = 12;
+      while (fila.length) { let k = 0; if (usado + fila[0].u > 12) { k = usado < 12 ? fila.findIndex((o, n) => n > 0 && n <= 4 && usado + o.u <= 12) : -1; if (k < 0) { lin = []; linhas.push(lin); usado = 0; k = 0; } } const o = fila.splice(k, 1)[0]; lin.push([o.e, usado, o.u]); usado += o.u; }
+      const h = 13 + linhas.length * lh; el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
+      linhas.forEach((l, li) => { const yy = y + 8 + tam + li * lh; l.forEach(([[rot, val, forte], u0]) => { const cx = x + 12 + (u0 / 12) * cw, v = String(val || "").trim(), b = !!forte && !!v && !!rot;
+        if (!rot) { el.push(T(cx, yy, v, tam, { b: true, c: COR.OURO })); return; }
+        const wr = largura(rot + ": ", tam, true); el.push(T(cx, yy, rot + ":", tam, { b: true, c: COR.OURO }), T(cx + wr, yy, v || vazio, tam, { b, i: !v, c: !v ? COR.MARROM2 : b ? COR.BORDO : COR.TEXTO })); }); });
+      return { el, h };
+    }
+  }
+  let A = w > 400 ? arranjo(4, tam0) : arranjo(3, tam0 - 0.6);
   const { linhas, wm, gap, tam } = A, lh = tam + 5.2;
   const alt = linhas.map((l) => Math.max(...l.map((i) => i.ls.length)) * lh), h = 13 + alt.reduce((a, c) => a + c, 0);
   el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
@@ -2964,7 +2988,8 @@ function paginaCelular() {
   const X = PM.X, W = PM.CW, P = estado.paciente, R = estado.resp, Xm = estado.exame;
   const lw = 150, lh = lw * IMGS.logoH / IMGS.logoW, el = [E.img("logo", X, 16, lw, lh)];
   let y = 16 + lh + 12;
-  el.push(T(PM.W - X, 16 + lh / 2 + 3, "LAUDO DE EXAME", 7.5, { b: true, c: COR.VERMELHO, a: "e" }));
+  el.push(T(PM.W - X, 16 + lh / 2 + (Xm.doacao ? -2 : 3), "LAUDO DE EXAME", 7.5, { b: true, c: COR.VERMELHO, a: "e" }));
+  if (Xm.doacao) el.push(T(PM.W - X, 16 + lh / 2 + 9, "Doação " + Xm.doacao, 7.5, { c: COR.MARROM2, a: "e" }));
   el.push(E.lin(X, y, PM.W - X, y, { s: COR.BEGE, lw: 0.6 })); const yLinha = y; y += 22;
   { const tt = Xm.titulo || "Resultado de exame", tam = tt.length > 22 ? 14 : tt.length > 16 ? 16 : 20, tb = tuboTitulo(X + largura(tt, tam, true) + 8, y, X + W, tam, yLinha + 2); y += tb.dy;
     el.push(T(X, y + tam * 0.86, tt, tam, { b: true, c: COR.BORDO })); el.push(...tb.el); y += Math.max(tam + 8, tb.h) + 6; }

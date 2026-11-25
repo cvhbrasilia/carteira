@@ -578,7 +578,7 @@ a.btn{text-decoration:none}
 .au-d{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:#5F130F;background:#EEE5DB;border-radius:8px;padding:5px 10px;margin:12px 0 4px}
 .au-i{display:flex;gap:10px;padding:8px 2px 8px 10px;border-left:3px solid #C6B098;margin:4px 0}.au-i.novo{border-left-color:#C49A6C}.au-i.del{border-left-color:#A83D3D}.au-i.ent{border-left-color:#EEE5DB;opacity:.75}
 .au-i time{font-variant-numeric:tabular-nums;color:#7a6a62;font-size:12.5px;min-width:38px;padding-top:1px}.au-i b{display:block;color:#5F130F;font-size:14px}.au-i span{display:block;font-size:13.5px;color:#2b2320}.au-i small{display:block;font-size:12px;color:#7a6a62;word-break:break-word}.au-i em{font-style:normal;font-size:11.5px;color:#8A5A2B;font-weight:700}
-.pd-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:4px 0 12px}
+.pd-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:4px 0 12px}.pd-eq button.ci-k{font:inherit;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}.pd-eq button.ci-k.on{background:#F7EFE6;border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
 .pd-i{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--linha)}.pd-i:first-child{border-top:0}
 .pd-ck{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid #C6B098;background:#fff;color:#fff;font-weight:800;cursor:pointer;margin-top:1px}.pd-i.feita .pd-ck{background:#5F130F;border-color:#5F130F}.pd-i.atr .pd-ck{border-color:#A83D3D}
 .pd-c{flex:1;min-width:0}.pd-c b{display:block;color:#2b2320;font-size:14.5px;white-space:pre-wrap}.pd-i.feita .pd-c b{text-decoration:line-through;color:#7a6a62}.pd-c small{display:block;color:#7a6a62;font-size:12px;margin-top:2px}
@@ -950,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125024535';
+  var VERSAO = '20261125025925';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5485,21 +5485,24 @@ async function telaPendencias(filtro) {
 function pintarPendencias() {
   const R = E.pd, f = E.pdFiltro, h = hoje(), adm = pode('admin');
   const ab = R.lista.filter(p => !p.feitoEm), grupos = { minhas: ab.filter(p => p.paraId === E.u.id), criadas: ab.filter(p => p.criadoPorId === E.u.id && p.paraId !== E.u.id), todas: ab, feitas: R.lista.filter(p => p.feitoEm) };
+  // card de cada pessoa da equipe (administrador): mostra só as pendências abertas daquela pessoa
+  const pFil = /^p:/.test(f) ? f.slice(2) : ''; if (pFil) grupos[f] = ab.filter(p => p.paraId === pFil);
   const l = (grupos[f] || []).slice().sort((a, b) => f === 'feitas' ? String(b.feitoEm).localeCompare(String(a.feitoEm)) : ordemPend(a, b));
   const chip = (v, t) => '<button class="filtro' + (f === v ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + v + '">' + t + ' <b>' + grupos[v].length + '</b></button>';
-  const porPessoa = {}; if (adm) ab.forEach(p => { (porPessoa[p.paraNome] = porPessoa[p.paraNome] || { n: 0, at: 0 }).n++; if (p.prazo && p.prazo < h) porPessoa[p.paraNome].at++; });
+  const porPessoa = {}; if (adm) ab.forEach(p => { (porPessoa[p.paraNome] = porPessoa[p.paraNome] || { n: 0, at: 0, id: p.paraId }).n++; if (p.prazo && p.prazo < h) porPessoa[p.paraNome].at++; });
   raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Pendências</b></div><button class="pill escura" data-acao="pd-nova">+ Nova</button></header>' +
     '<p class="nota">Tarefas passadas de uma pessoa para outra, com prazo. Cada um vê as suas e as que criou. O administrador vê todas.</p>' +
-    (adm && Object.keys(porPessoa).length ? '<div class="pd-eq">' + Object.keys(porPessoa).sort().map(n => '<div class="ci-k" style="--c:' + (porPessoa[n].at ? '#A83D3D' : '#C49A6C') + '"><b>' + porPessoa[n].n + '</b><span>' + esc(n.split(' ')[0]) + '</span><small>' + (porPessoa[n].at ? porPessoa[n].at + (porPessoa[n].at === 1 ? ' atrasada' : ' atrasadas') : 'em dia') + '</small></div>').join('') + '</div>' : '') +
+    (adm && Object.keys(porPessoa).length ? '<div class="pd-eq">' + Object.keys(porPessoa).sort().map(n => '<button type="button" class="ci-k' + (f === 'p:' + porPessoa[n].id ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + (f === 'p:' + porPessoa[n].id ? 'todas' : 'p:' + porPessoa[n].id) + '" style="--c:' + (porPessoa[n].at ? '#A83D3D' : '#C49A6C') + '"><b>' + porPessoa[n].n + '</b><span>' + esc(n.split(' ')[0]) + '</span><small>' + (porPessoa[n].at ? porPessoa[n].at + (porPessoa[n].at === 1 ? ' atrasada' : ' atrasadas') : 'em dia') + '</small></button>').join('') + '</div>' : '') +
     '<div class="filtros">' + chip('minhas', 'Para mim') + chip('criadas', 'Que eu passei') + (adm ? chip('todas', 'Todas') : '') + chip('feitas', 'Concluídas') + '</div>' +
+    (pFil ? '<p class="nota" style="margin:0 0 8px">Pendências abertas de <b>' + esc(((E.pd.equipe || []).find(u => u.id === pFil) || {}).nome || (ab.find(p => p.paraId === pFil) || {}).paraNome || '') + '</b>. Toque no card de novo para ver todas.</p>' : '') +
     '<section class="cartao">' + (l.length ? l.map(p => { const an = p.animalId ? animalDe(p.animalId) : null, atr = !p.feitoEm && p.prazo && p.prazo < h, hj = !p.feitoEm && p.prazo === h, meu = adm || p.criadoPorId === E.u.id;
       const podePri = !p.feitoEm && (adm || p.criadoPorId === E.u.id || p.paraId === E.u.id);
       return '<div class="pd-i' + (p.feitoEm ? ' feita' : atr ? ' atr' : '') + (p.prioridade && !p.feitoEm ? ' pri' : '') + '"><button class="pd-ck" data-acao="pd-feito" data-id="' + p.id + '" aria-label="' + (p.feitoEm ? 'Reabrir' : 'Concluir') + '">' + (p.feitoEm ? '✓' : '') + '</button><div class="pd-c"><b>' + (p.prioridade && !p.feitoEm ? '<i class="pd-pri">Prioridade</i> ' : '') + esc(p.texto) + '</b>' +
         '<small>' + esc([p.paraId === E.u.id ? 'Para mim' : 'Para ' + p.paraNome, p.criadoPorId === E.u.id ? 'criada por mim' : 'de ' + p.criadoPor, 'em ' + br(String(p.criadoEm).slice(0, 10))].join(' · ')) + '</small>' +
         '<span class="pd-ms">' + (p.prazo ? '<em class="pd-pz' + (atr ? ' atr' : hj ? ' hj' : '') + '">' + (atr ? 'Atrasada, prazo ' : hj ? 'Vence hoje, ' : 'Prazo ') + br(p.prazo) + '</em>' : '') + (an ? '<button class="pd-an" data-acao="abrir-animal" data-id="' + an.id + '">' + esc(an.nome) + ' ›</button>' : '') + (p.feitoEm ? '<em class="pd-pz">Concluída por ' + esc(p.feitoPor) + ' em ' + br(String(p.feitoEm).slice(0, 10)) + '</em>' : '') + '</span></div>' +
         (meu || podePri ? '<div class="pd-bt">' + (podePri ? '<button class="pd-pbt' + (p.prioridade ? ' on' : '') + '" data-acao="pd-prioridade" data-id="' + p.id + '">' + (p.prioridade ? 'Tirar prioridade' : '▲ Prioridade') + '</button>' : '') + (meu && !p.feitoEm ? '<button data-acao="pd-editar" data-id="' + p.id + '">Editar</button>' : '') + (meu ? '<button data-acao="pd-apagar" data-id="' + p.id + '">Apagar</button>' : '') + '</div>' : '') + '</div>'; }).join('')
-      : '<p class="vazio-p">' + (f === 'minhas' ? 'Nenhuma pendência para você.' : f === 'feitas' ? 'Nenhuma pendência concluída nos últimos 30 dias.' : 'Nenhuma pendência aqui.') + '</p>') + '</section></div></main>';
+      : '<p class="vazio-p">' + (pFil ? 'Nenhuma pendência aberta para esta pessoa.' : f === 'minhas' ? 'Nenhuma pendência para você.' : f === 'feitas' ? 'Nenhuma pendência concluída nos últimos 30 dias.' : 'Nenhuma pendência aqui.') + '</p>') + '</section></div></main>';
 }
 function formPendencia(p, aid) {
   p = p || { paraId: E.u.id, animalId: aid || '' };
