@@ -3504,9 +3504,11 @@ init();
     // recorte que pegou a escrita de caneta embaixo do poço (etiqueta do cartão): corta logo abaixo da ponta do microtubo
     function aparaTinta(cv) {
       const W = cv.width, H = cv.height, p = cv.getContext("2d").getImageData(0, 0, W, H).data, tinta = new Float32Array(H), verm = new Int32Array(H), papel = new Float32Array(H);
-      for (let y = 0; y < H; y++) { let n = 0, v = 0, pb = 0; for (let x = 0; x < W; x += 2) { const i = (y * W + x) * 4, r = p[i], g = p[i + 1], b = p[i + 2], lum = (r + g + b) / 3; if ((b > r + 20 && b > g + 6 && lum < 200) || lum < 60) n++; if (r > 140 && r > g * 1.8 && r > b * 1.8) v++; if (lum > 212 && Math.max(r, g, b) - Math.min(r, g, b) < 26) pb++; } tinta[y] = n / (W / 2); verm[y] = v; papel[y] = pb / (W / 2); }
+      for (let y = 0; y < H; y++) { let n = 0, v = 0, pb = 0; for (let x = 0; x < W; x += 2) { const i = (y * W + x) * 4, r = p[i], g = p[i + 1], b = p[i + 2], lum = (r + g + b) / 3; if ((b > r + 20 && b > g + 6 && lum < 200) || lum < 60) n++; if (r > 80 && r > g * 1.6 && r > b * 1.5) v++; if (lum > 212 && Math.max(r, g, b) - Math.min(r, g, b) < 26) pb++; } tinta[y] = n / (W / 2); verm[y] = v; papel[y] = pb / (W / 2); }
       let ultV = -1; for (let y = 0; y < H; y++) if (verm[y] > 2) ultV = y;
-      const ini = ultV >= 0 ? ultV + Math.round(H * 0.02) : Math.round(H * 0.35);
+      // sem achar as hemácias no fundo do poço, a foto fica como foi recortada (não corta o microtubo)
+      if (ultV < 0 || ultV < H * 0.2) return cv;
+      const ini = ultV + Math.round(H * 0.02);
       let corte = -1; for (let y = ini; y < H; y++) if (tinta[y] > 0.012 || papel[y] > 0.5) { corte = y; break; }
       if (corte < 0 || corte < H * 0.25) return cv;
       const fim = Math.max(ultV + Math.round(H * 0.04), corte - Math.round(H * 0.02)), o = document.createElement("canvas"); o.width = W; o.height = Math.min(H, fim);
