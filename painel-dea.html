@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125175201">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125175552">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1042,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125175201';
+  var VERSAO = '20261125175552';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -8497,7 +8497,7 @@ function menuAnimal() {
 function telaImportacao() {
   const im = E.imp;
   const rot = x => ({ vacina: 'Vacina', vermifugo: 'Vermífugo', ecto: 'Ectoparasitas' }[x.tipo] || 'Registro');
-  const det = x => x.tipo === 'vacina' ? (x.etiquetas || []).map(e => e.produto).join(' + ') : (x.produto || '');
+  const det = x => (x.tipo === 'vacina' ? (x.etiquetas || []).map(e => e.produto).join(' + ') : (x.produto || '')) + (x.vet ? ' · carimbo ' + x.vet : '');
   abrirFolha('Registros encontrados', (im.itens.length ? '<p class="nota">Revise cada item. Ele abre preenchido, você confere e salva.</p>' + im.itens.map((x, i) =>
     '<div class="imp' + (im.feitos.has(i) ? ' feito' : '') + '"><div class="t"><b>' + rot(x) + ' · ' + (br(x.data) || 'sem data') + '</b>' + esc(det(x)) + '</div>' +
     (im.feitos.has(i) ? '<span class="chip ok">Salvo</span>' : '<button class="btn peq" data-acao="imp-item" data-i="' + i + '">Revisar</button>') + '</div>').join('') : '<p class="nota">Não encontrei registros legíveis nesta foto. Tente uma foto mais nítida, de frente e com boa luz.</p>') +
@@ -8548,10 +8548,13 @@ function importarItem(i) {
   const x = E.imp.itens[i], an = animalDe(E.animal);
   const ok = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
   const pre = { data: ok(x.data), proxima: ok(x.proxima), dados: {}, aoSalvar: () => { E.imp.feitos.add(i); telaImportacao(); } };
-  if (x.tipo === 'vacina') pre.dados.etiquetas = (x.etiquetas || []).map(e => { const v = acharProduto(e.produto, an); return { produto: v ? v.produto : e.produto, cor: v ? v.cor : '', estilo: v ? v.estilo : '', cod: e.cod, sn: e.sn, lote: e.lote, fab: e.fab, venc: e.venc }; });
+  if (x.tipo === 'vacina') pre.dados.etiquetas = (x.etiquetas || []).map(e => { const v = acharProduto(e.produto, an); return { produto: v ? v.produto : e.produto, cor: v ? v.cor : '', estilo: v ? v.estilo : '', corpo: /cinza/i.test(e.corpo || '') ? 'cinza' : '', cod: e.cod, sn: e.sn, lote: e.lote, fab: e.fab, venc: e.venc }; });
   else if (x.tipo === 'vermifugo') pre.dados = { produto: x.produto, comprimidos: x.comprimidos, peso: x.peso, reforco: ok(x.reforco) };
   else pre.dados = { produto: x.produto, peso: x.peso };
   abrirFormRegistro({ tipo: x.tipo === 'vermifugo' || x.tipo === 'ecto' ? x.tipo : 'vacina', animalId: an.id }, pre);
+  // carimbo lido no cartão: quem não é médico veterinário já encontra o médico veterinário do carimbo escolhido para assinar
+  { const sel = $('#fVetAss'), n = semAc(x.vet || ''), c = String(x.crmv || '').replace(/\D/g, '');
+    if (sel && (n || c)) { const v = (E.d.vets || []).find(v => (c && String(v.crmv || '').replace(/\D/g, '') === c) || (n && semAc(v.nome).split(' ')[0] === n.split(' ')[0] && semAc(v.nome).includes(n.split(' ').slice(-1)[0]))); if (v) sel.value = v.id; } }
   // sem data no cartão: o campo fica vazio, para não entrar com a data de hoje sem querer
   if (!pre.data && $('#fData')) { $('#fData').value = ''; $('#fData').focus(); toast('Esta linha do cartão está sem data. Informe a data antes de salvar.', 5000); }
 }
