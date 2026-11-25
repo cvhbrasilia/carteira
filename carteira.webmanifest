@@ -1,6 +1,6 @@
 {
-  "name": "Carteira de Saúde CVH",
-  "short_name": "Carteira CVH",
+  "name": "Carteira de saúde CVH",
+  "short_name": "Carteira de saúde",
   "display": "standalone",
   "background_color": "#C6B098",
   "theme_color": "#C6B098",
