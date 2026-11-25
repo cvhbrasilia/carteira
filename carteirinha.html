@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125204723">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125214135">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -944,7 +944,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
 .nota{font-size:13px;color:var(--tinta2);line-height:1.45}
 .erro-ia{border:1px solid #F0C9C5;background:#FDF1EF;color:var(--critico);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
 .pad{border:1.5px solid var(--areia2);border-radius:12px;background:#fff;touch-action:none;width:100%;aspect-ratio:5/2;display:block}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--tinta);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:80;max-width:90%;text-align:center;pointer-events:none}
+.toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-20px);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;z-index:80;width:max-content;max-width:min(94vw,620px);text-align:center;pointer-events:none;line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .imp{display:flex;align-items:center;gap:10px;border:1px solid var(--linha);background:#fff;border-radius:12px;padding:10px 12px}
 .imp .t{flex:1;min-width:0;font-size:14px}
@@ -1051,14 +1051,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
       .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); if (fn === 'carteiraPublica' && r.r && r.r.chaveArquivos) CHAVE_R = r.r.chaveArquivos; return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
-  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125204723';
+  // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261125214135';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
       v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
       var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
-      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.style.cssText = 'position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:12px;padding:8px 14px;font:600 13px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:min(94vw,620px);white-space:nowrap';
       d.onclick = function () { location.reload(); }; document.body.appendChild(d);
     }).catch(function () {});
   }

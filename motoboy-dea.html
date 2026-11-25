@@ -46,14 +46,14 @@
       .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); if (fn === 'carteiraPublica' && r.r && r.r.chaveArquivos) CHAVE_R = r.r.chaveArquivos; return reescrever(r.r); });
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
-  // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125204723';
+  // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261125214135';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
       v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
       var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
-      d.style.cssText = 'position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:14px;padding:13px 18px;font:600 15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+      d.style.cssText = 'position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:12px;padding:8px 14px;font:600 13px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:min(94vw,620px);white-space:nowrap';
       d.onclick = function () { location.reload(); }; document.body.appendChild(d);
     }).catch(function () {});
   }
@@ -181,7 +181,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png?v=2"><link rel="icon" type="image/png" href="motoboy-192.png?v=2"><link rel="manifest" href="motoboy-dea.webmanifest?v=20261125204723">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png?v=2"><link rel="icon" type="image/png" href="motoboy-192.png?v=2"><link rel="manifest" href="motoboy-dea.webmanifest?v=20261125214135">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Motoboy DEA+</title>
 <style>
@@ -231,7 +231,7 @@ input[type=text],input[type=tel],input[type=number],textarea{width:100%;border:1
 #cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
 #cam .linha{display:flex;gap:8px}
 #cam .linha input{flex:1}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:12px 16px;border-radius:14px;z-index:40;max-width:92vw;font-weight:600}
+.toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:14px;z-index:40;width:max-content;max-width:min(94vw,620px);font-weight:500;font-size:13px;line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}
 #alarme{position:fixed;inset:0;background:var(--verm);color:#fff;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
 #alarme h2{font-size:24px;margin:8px 0}
 #alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}

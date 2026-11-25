@@ -129,7 +129,7 @@ input,select,textarea{font:inherit;font-size:15px;color:var(--tinta);border:1px 
 .res .r .n{font-size:13.5px}
 .res .r .n small{display:block;color:var(--tinta2);font-size:11.5px}
 .res .r .v{text-align:right;font-weight:700;color:var(--vinho);white-space:nowrap}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;max-width:92%;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;z-index:60;width:max-content;max-width:min(94vw,620px);box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .vazio{padding:28px 14px;text-align:center;color:var(--tinta2)}
 .fluxo text{font-family:inherit}
 .fluxo .nd{cursor:pointer}

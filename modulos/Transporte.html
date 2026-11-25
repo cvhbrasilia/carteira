@@ -74,7 +74,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 #gvC{overflow:auto;padding:0 16px 30px}
 #gvC input,#gvC textarea,#gvC select{scroll-margin-top:64px}
 @media (pointer:coarse) and (max-width:899px){#gaveta.kb{max-height:94vh}#gaveta.kb #gvC{padding-bottom:55vh}}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:40;max-width:90vw}
+.toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;z-index:40;width:max-content;max-width:min(94vw,620px);line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}
 .vazio{color:var(--tinta2);font-size:14px;padding:6px 0}
 @media (min-width:1000px){.duas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}}
 #camE{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}

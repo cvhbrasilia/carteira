@@ -62,7 +62,7 @@ input.loc{grid-column:1/-1;font-size:14px;padding:6px 8px;margin-bottom:4px}
 @media (max-width:900px){#previa{max-height:none}}
 .folha-wrap{background:#fff;box-shadow:0 1px 2px rgba(95,19,15,.18),0 6px 18px rgba(95,19,15,.08)}
 svg.folha{display:block;width:100%;height:auto;font-family:"Receita CVH",sans-serif}
-#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--vinho);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.2s;pointer-events:none;z-index:9;max-width:90vw}#toast.on{opacity:1;transform:translateX(-50%)}
+#toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-20px);background:var(--vinho);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:9;width:max-content;max-width:min(94vw,620px);line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}#toast.on{opacity:1;transform:translateX(-50%)}
 </style></head>
 <body><div id="app"></div>
 <script>
