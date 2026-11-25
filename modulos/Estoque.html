@@ -29,7 +29,7 @@ button{cursor:pointer}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:12px}
 .kpi{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 6px rgba(95,19,15,.08);border:0;text-align:left}
 .kpi{position:relative}.kpi span.kco{position:absolute;top:10px;right:10px;width:38px;height:24px;border-radius:7px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:#5F130F}.kpi span.kco.PFC,.kpi span.kco.CRIO{background:#A83D3D}.kpi span.kco.CP{background:#C49A6C}
-.ag-abas button{border:1px solid #E5D8CB;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--vinho)}.ag-abas button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}.hj-abas{margin:0 0 14px}
+.ag-abas button{border:1px solid #E5D8CB;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--vinho)}.ag-abas button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}.hj-abas{margin:0 0 14px}.tp-abas{margin:2px 0 12px}
 .kpi b{display:block;font-size:24px;color:var(--vinho);line-height:1.1}
 .kpi span{font-size:12.5px;color:var(--tinta2)}
 .lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
@@ -580,11 +580,32 @@ function telaHoje() {
   const todasU = P.length + cvh.length + intv.length + caminho.length, nAb = (c) => P.filter((x) => x.c === c).length + [...cvh, ...intv, ...caminho].filter((u) => u.componente === c).length;
   const tab = (c, t) => '<button class="' + (ab === c ? "on" : "") + '" data-a="hjTab" data-v="' + c + '">' + t + " · " + (c ? nAb(c) : todasU) + "</button>";
   const abas = '<div class="filtros ag-abas hj-abas">' + tab("", "Todas") + tab("CH", "CH") + tab("CP", "CP") + tab("PFC", "PFC") + tab("CRIO", "CRIO") + "</div>";
-  return abas + telaHojeLista(soAb(P, (x) => x.c), soAb(cvh), soAb(intv), soAb(caminho), ab);
+  // filtro pelo tipo sanguíneo do doador (vale para as bolsas; o Resolver hoje continua inteiro)
+  const T = S.hjTipo || {}, ativos = Object.keys(T).filter((k) => T[k]);
+  const passa = (u) => { if (!ativos.length) return true; const k = tiposBolsa(u), grupos = {};
+    ativos.forEach((a) => { const g = a.slice(0, a.indexOf(":")); (grupos[g] = grupos[g] || []).push(a); });
+    return Object.values(grupos).every((L) => L.some((a) => k.includes(a))); };
+  return abas + telaHojeLista(soAb(P, (x) => x.c), soAb(cvh).filter(passa), soAb(intv).filter(passa), soAb(caminho).filter(passa), ab, filtroTipos([...soAb(cvh), ...soAb(intv), ...soAb(caminho)]));
 }
-function telaHojeLista(P, cvh, intv, caminho, ab) {
+// tipos do doador da bolsa, como chaves do filtro: cão (DEA 1 e DAL) e gato (A, B, AB)
+function tiposBolsa(u) {
+  const a = doadorDe(u) || {}, t = String(a.tipoSanguineo || ""), k = [];
+  if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/) || [])[1]; if (g) k.push("gato:" + g); return k; }
+  if (/DEA\s*1/i.test(t)) k.push(/neg|−|-/i.test(t.replace(/DEA\s*1/i, "")) ? "dea:-" : "dea:+");
+  if (a.dal) k.push(/neg/i.test(a.dal) ? "dal:-" : "dal:+");
+  return k;
+}
+function filtroTipos(L) {
+  const T = S.hjTipo || {}, n = (k) => L.filter((u) => tiposBolsa(u).includes(k)).length;
+  const bt = (k, t) => '<button class="' + (T[k] ? "on" : "") + '" data-a="hjTipo" data-v="' + k + '">' + t + " · " + n(k) + "</button>";
+  const gato = L.some((u) => /fel|gat/i.test((doadorDe(u) || {}).especie || ""));
+  return '<div class="filtros ag-abas tp-abas">' + bt("dea:-", "DEA 1 −") + bt("dea:+", "DEA 1 +") + bt("dal:-", "DAL −") + bt("dal:+", "DAL +") +
+    (gato ? bt("gato:A", "Gato A") + bt("gato:B", "Gato B") + bt("gato:AB", "Gato AB") : "") +
+    (Object.values(T).some(Boolean) ? '<button data-a="hjTipo" data-v="">Limpar</button>' : "") + "</div>";
+}
+function telaHojeLista(P, cvh, intv, caminho, ab, filtro) {
   return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">' + (ab ? "Nada pendente com " + esc(ab) + "." : "Nada pendente agora.") + '</p>') + "</div>" +
-    '<div class="duas"><div class="cx"><h2>Bolsas disponíveis no CVH · ' + cvh.length + "</h2>" + (cvh.length ? porComponente(cvh) : '<p class="vazio">Nenhuma bolsa disponível.</p>') + "</div>" +
+    (filtro || "") + '<div class="duas"><div class="cx"><h2>Bolsas disponíveis no CVH · ' + cvh.length + "</h2>" + (cvh.length ? porComponente(cvh) : '<p class="vazio">Nenhuma bolsa disponível.</p>') + "</div>" +
     '<div class="cx"><h2>Bolsas na Intensivet · ' + intv.length + "</h2>" + (intv.length ? porComponente(intv) : '<p class="vazio">Nenhuma bolsa na Intensivet.</p>') + (caminho.length ? '<div class="grupo-t">Em trânsito · ' + caminho.length + "</div>" + listaAninhada(caminho) : "") + "</div></div>";
 }
 // fracionamento: escolher a bolsa, fracionar pela pesagem e imprimir as etiquetas novas
@@ -1254,6 +1275,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
   if (a === "agTab") { S.agTab = v; pintar(); return; }
   if (a === "hjTab") { S.hjTab = v; pintar(); return; }
+  if (a === "hjTipo") { S.hjTipo = v ? Object.assign({}, S.hjTipo || {}, { [v]: !(S.hjTipo || {})[v] }) : {}; pintar(); return; }
   if (a === "copiar") { try { await navigator.clipboard.writeText(v); toast(/^https?:\/\//.test(v) ? "Link copiado." : "Copiado: " + v); } catch (e) { toast("Selecione o link e copie."); } return; }
   if (a === "foto") { ALVO_FOTO = v; $("#cam").click(); return; }
   if (a === "cfAdd") { const i = $("#cfCod"); if (i && i.value.trim()) lidoConf(i.value.trim().toUpperCase().replace(/\s+/g, " ")); return; }
