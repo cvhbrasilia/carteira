@@ -273,7 +273,7 @@ button{cursor:pointer}
 .ctn-giro{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
 .ctn-giro .lado{position:absolute;inset:0;width:100%;height:100%;border-radius:2.9%/4.6%;box-shadow:0 6px 22px rgba(95,19,15,.22);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;-webkit-user-drag:none}
 .ctn-giro .vs{transform:rotateY(180deg)}
-.ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}
+.ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}.ctn-abre{text-align:center;margin:10px 0 0}
 .ficha .val{font-size:.86em}
 .mono{font-family:var(--mono);letter-spacing:.03em}
 .prox{display:flex;flex-direction:column;gap:.42em;list-style:none}
@@ -1029,7 +1029,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125123136';
+  var VERSAO = '20261125125412';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2866,7 +2866,7 @@ async function ctnDados(an, fotoAnimal) {
   if (d.cadastro) { const ts = String(an.tipoSanguineo || ''); t = gato ? { grupo: /^(A|B|AB)$/.test(ts) ? ts : '' } : { dea1: /dea 1/i.test(ts) ? { on: true, res: /pos/i.test(ts) ? 'Positivo' : 'Negativo' } : null, dal: /^(pos|neg)/i.test(an.dal || '') ? { on: true, res: /^pos/i.test(an.dal) ? 'Positivo' : 'Negativo' } : null }; }
   return { nome: an.nome || '', raca: an.raca || '', sexo: an.sexo || '', nasc: an.nascimento || '', chip: an.microchip || '', gato,
     dea1: t.dea1 && t.dea1.on && t.dea1.res ? t.dea1.res : '', dal: t.dal && t.dal.on && t.dal.res ? t.dal.res : '', grupo: gato ? (t.grupo || an.tipoSanguineo || '') : '',
-    fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || (E.d.responsavel || {}).nome || '', cpf, vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', corte: meta.corte || null, rot: +(meta.rot || 0) };
+    fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || (E.d.responsavel || {}).nome || '', cpf, vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', celId: d.cel ? (d.cel.id || (typeof d.cel === 'string' ? d.cel : '')) : '', corte: meta.corte || null, rot: +(meta.rot || 0) };
 }
 function ctnFrente(R, D) {
   const cv = document.createElement('canvas'); cv.width = CTN.W; cv.height = CTN.H; const x = cv.getContext('2d');
@@ -2941,7 +2941,7 @@ async function abrirCarteirinha(aid) {
     let C = null;
     const montar = async (fotoNova) => {
       $('#ctnSt').textContent = 'Montando a carteirinha…'; $('#ctnBaixar').disabled = true;
-      try { C = await ctnGerar(animalDe(aid), fotoNova); const p = $('#ctnPrev'); if (!p) return; ctnCartaoVira(p, C.frente.toDataURL('image/png'), C.verso.toDataURL('image/png'));
+      try { C = await ctnGerar(animalDe(aid), fotoNova); const p = $('#ctnPrev'); if (!p) return; ctnCartaoVira(p, C.frente.toDataURL('image/png'), C.verso.toDataURL('image/png'), ctnAbrir(C.D));
         $('#ctnSt').textContent = C.D.foto ? '' : 'Sem foto ainda: a moldura sai com o aviso "Adicionar foto aqui".'; $('#ctnBaixar').disabled = false; }
       catch (e) { if ($('#ctnSt')) $('#ctnSt').textContent = e.message; }
     };
@@ -2971,14 +2971,23 @@ async function abrirCarteirinha(aid) {
     };
   });
 }
+// o que o QR Code do verso abre: o laudo da tipagem (PDF do celular) ou, sem laudo feito no app, a verificação da carteirinha
+function ctnAbrir(D) {
+  if (!D || !D.codigo) return null;
+  const api = (window.CVH_SERVIDOR || {}).api || '';
+  if (D.celId && api && /^L-/.test(D.codigo)) return { rot: 'Abrir o laudo da tipagem', url: api + '?arquivo=' + encodeURIComponent(D.celId) + '&lc=' + encodeURIComponent(D.codigo) };
+  return { rot: /^L-/.test(D.codigo) ? 'Abrir o laudo da tipagem' : 'Abrir a verificação da carteirinha', url: urlVerifCarteira(D.codigo) };
+}
 // link da carteira de saúde que abre direto na carteirinha (o mesmo link do responsável, com o animal)
 function ctnLink(an) {
   if (E.modo === 'painel') { const rp = respDe(an); return rp && rp.token && (E.d.config || {}).urlApp ? linkDe(rp) + '&carteirinha=' + encodeURIComponent(an.id) : ''; }
   return respPode() ? location.origin + location.pathname + '?r=' + encodeURIComponent(E.token) + '&carteirinha=' + encodeURIComponent(an.id) : '';
 }
 // cartão que vira: toque ou arraste para o lado e aparece o verso (o cartão acompanha o dedo)
-function ctnCartaoVira(p, fr, vs) {
-  p.innerHTML = '<div class="ctn-vira" role="button" tabindex="0" aria-label="Carteirinha. Toque para ver o outro lado."><div class="ctn-giro"><img class="lado fr" alt="Frente da carteirinha" src="' + fr + '"><img class="lado vs" alt="Verso da carteirinha" src="' + vs + '"></div></div><p class="ctn-dica">Toque ou arraste para o lado para virar</p>';
+function ctnCartaoVira(p, fr, vs, abrir) {
+  p.innerHTML = '<div class="ctn-vira" role="button" tabindex="0" aria-label="Carteirinha. Toque para ver o outro lado."><div class="ctn-giro"><img class="lado fr" alt="Frente da carteirinha" src="' + fr + '"><img class="lado vs" alt="Verso da carteirinha" src="' + vs + '"></div></div><p class="ctn-dica">Toque ou arraste para o lado para virar' + (abrir ? '. No verso, toque no QR Code para abrir o laudo.' : '') + '</p>' +
+    (abrir ? '<p class="ctn-abre"><button type="button" class="btn sec2" id="ctnAbre">' + esc(abrir.rot) + '</button></p>' : '');
+  if (abrir) p.querySelector('#ctnAbre').onclick = () => window.open(abrir.url, '_blank');
   const v = p.querySelector('.ctn-vira'), g = p.querySelector('.ctn-giro');
   let ang = 0, x0 = null, a0 = 0, mexeu = false;
   const por = (a, anim) => { g.style.transition = anim ? 'transform .55s cubic-bezier(.2,.8,.25,1)' : 'none'; g.style.transform = 'rotateY(' + a + 'deg)'; };
@@ -2986,9 +2995,14 @@ function ctnCartaoVira(p, fr, vs) {
   v.addEventListener('pointerdown', e => { x0 = e.clientX; a0 = ang; mexeu = false; try { v.setPointerCapture(e.pointerId); } catch (_) {} });
   v.addEventListener('pointermove', e => { if (x0 == null) return; const dx = e.clientX - x0; if (Math.abs(dx) > 6) mexeu = true; if (mexeu) por(a0 + dx / v.offsetWidth * 180, 0); });
   const solta = e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null;
-    if (!mexeu) return virar(1);
+    if (!mexeu) return;
     const alvo = Math.abs(dx) > v.offsetWidth * 0.18 ? a0 + (dx < 0 ? -180 : 180) : a0; ang = alvo; por(ang, 1); };
-  v.addEventListener('pointerup', solta); v.addEventListener('pointercancel', e => { x0 = null; por(ang, 1); });
+  v.addEventListener('pointerup', solta);
+  // toque sem arrastar: no verso, em cima do QR Code, abre o laudo; no resto, vira o cartão
+  v.addEventListener('click', e => { if (mexeu) { mexeu = false; return; }
+    const b = v.getBoundingClientRect(), px = (e.clientX - b.left) / b.width * CTN.W, py = (e.clientY - b.top) / b.height * CTN.H, verso = ((Math.round(ang / 180) % 2) + 2) % 2 === 1;
+    if (abrir && verso && px >= 1400 && px <= 1950 && py >= 230 && py <= 920) return window.open(abrir.url, '_blank');
+    virar(1); }); v.addEventListener('pointercancel', e => { x0 = null; por(ang, 1); });
   v.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); virar(1); } else if (e.key === 'ArrowLeft') virar(-1); });
 }
 // recorte da foto como nos laudos: arrasta o quadro e os cantos (o quadro mantém o formato da moldura da carteirinha)
