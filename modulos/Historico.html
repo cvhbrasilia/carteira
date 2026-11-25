@@ -2611,12 +2611,18 @@ async function lerArquivos(files) {
         continue;
       }
       if (rawF) { let o = null; try { o = JSON.parse(rawF); } catch (e) { /* ficha ilegível */ } if (o && o.dados) { processarItens(f.name, hash, null, exameDaFicha(o.dados)); continue; } }
+      // laudo de tipagem feito no painel (A4 ou celular): os dados vêm do arquivo laudo-cvh.json que vai dentro do PDF
+      { let d = null; try { const at = await doc.getAttachments(), lista = at instanceof Map ? [...at.values()] : Object.values(at || {}); const a = lista.find((x) => /laudo-cvh\.json$/i.test((x && x.filename) || "")) || (at && !(at instanceof Map) && at["laudo-cvh.json"]); const ent = at instanceof Map ? [...at.entries()].find(([, x]) => x === a) : null, cont = a && (a.content || (ent && doc.getAttachmentContent ? await doc.getAttachmentContent(ent[0]) : null)); if (cont) d = JSON.parse(new TextDecoder().decode(cont)); } catch (_) { d = null; }
+        const t = d && (d.tipoLaudo === "tipagem" ? d.detalhe : d.tipoLaudo === "compat" ? (d.detalhe || {}).tipagem : null);
+        if (t) { const ex = exameTipagemDeLaudo({ id: d.codigo || hash.slice(0, 12), data: (d.exame || {}).data, dea1: t.dea1, dal: t.dal, grupo: t.grupo || "", metodoGato: t.metodoGato || "", gato: /felin/i.test((d.paciente || {}).especie || ""), cab: { nome: (d.paciente || {}).nome || "", especie: (d.paciente || {}).especie || "", raca: (d.paciente || {}).raca || "", sexo: (d.paciente || {}).sexo || "", idade: (d.paciente || {}).idade || "", chip: (d.paciente || {}).microchip || "" } });
+          if (ex) { if (estado.exames.some((e) => e.chave === ex.chave || (e.fonte === "laudo" && e.data === ex.data && JSON.stringify(e.tipagem) === JSON.stringify(ex.tipagem)))) { mensagem("info", `${f.name} é o mesmo laudo de tipagem já incluído e não entrou de novo.`); continue; }
+            const e = processarItens(f.name, hash, null, ex); if (e) { try { await fotosLaudoTipagem(doc, e); } catch (er) { console.error("fotos tipagem", er); } } continue; } } }
       const paginas = [];
       for (let p = 1; p <= doc.numPages; p++) paginas.push((await (await doc.getPage(p)).getTextContent()).items);
       const ex = processarItens(f.name, hash, paginas);
       if (ex && ex.fotosInfo && ex.fotosInfo.length) { status(`Recortando as fotos de ${f.name}...`); try { await extrairFotos(doc, ex); } catch (e) { console.error("foto", e && (e.stack || e.message || e)); ex.avisos.push("Não consegui extrair a foto do teste deste laudo."); } }
       if (ex && ex.tipagem && ex.tipagem.temFoto) { try { await fotoTipagem(doc, ex); } catch (e) { console.error("foto tipagem", e && (e.stack || e.message || e)); } }
-    } catch (e) { mensagem("erro", `Não consegui abrir ${f.name}. Confira se é um PDF de laudo.`); }
+    } catch (e) { console.error("abrir", f.name, e && (e.stack || e.message || e)); mensagem("erro", `Não consegui abrir ${f.name}. Confira se é um PDF de laudo.`); }
   }
   status("");
   atualizar();
@@ -2642,6 +2648,33 @@ function medidaDaFicha(ex) {
   for (const [k, v] of Object.entries(md)) if (k !== "data" && v !== null && v !== "" && (m[k] == null || m[k] === "")) m[k] = v;
   m.lida = `Da ficha de doação${ex.numero ? " " + ex.numero : ""}.`;
   salvarMedidas(); renderMedidas();
+}
+// laudo de tipagem do CVH (DEA 1, DAL ou grupo felino) pelos dados do laudo: do painel ou do arquivo laudo-cvh.json dentro do PDF
+function exameTipagemDeLaudo(L) {
+  const iso = String(L.data || "").match(/^(\d{4})-(\d{2})-(\d{2})/), data = iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : normalizarData(L.data);
+  const tp = {}, pos = (o) => /^p/i.test(String(o.res || "")), mt = (o) => String(o.metodo || "").replace(/\s*\(?ALVEDIA LAB TEST\)?\.?$/i, "").trim();
+  if (L.dea1 && L.dea1.on && L.dea1.res) { tp.dea1 = pos(L.dea1) ? "+" : "-"; if (pos(L.dea1) && L.dea1.grau) tp.deaGrau = L.dea1.grau; tp.metodoDea = mt(L.dea1); }
+  if (L.dal && L.dal.on && L.dal.res) { tp.dal = pos(L.dal) ? "+" : "-"; if (pos(L.dal) && L.dal.grau) tp.dalGrau = L.dal.grau; tp.metodoDal = mt(L.dal); }
+  const gato = L.gato != null ? L.gato : /felin|gat/i.test(estado.animal.especie || "");
+  if (gato && L.grupo) { tp.felino = L.grupo; tp.metodo = L.metodoGato || ""; }
+  if (!Object.keys(tp).length || !dataValida(data)) return null;
+  // o mesmo resultado reaberto do histórico salvo sai, e fica o do laudo (com as fotos)
+  estado.exames = estado.exames.filter((e) => !(e.fonte === "reaberto" && e.tipagem && Object.keys(e.tipagem).length && e.data === data && !Object.keys(e.valores || {}).length));
+  return { lab: "CVH", equip: "Tipagem sanguínea", fonte: "laudo", valores: {}, pct: {}, refs: {}, refsPct: {}, avisos: [], quali: [], tipagem: tp, data, hora: "", numero: "", chave: "TL" + L.id,
+    cab: Object.assign({ nome: estado.animal.nome || "", idade: "", especie: estado.animal.especie || "", sexo: estado.animal.sexo || "", raca: estado.animal.raca || "", chip: "", responsavel: "", vet: "", registro: "" }, L.cab || {}) };
+}
+// fotos do laudo de tipagem do CVH (PDF enviado à mão): a fita larga embaixo do DEA 1 e o cartão embaixo do DAL
+async function fotosLaudoTipagem(doc, e) {
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p), H = page.view[3] - page.view[1], tc = await page.getTextContent();
+    const tit = (re) => { const it = tc.items.find((t) => re.test(String(t.str).trim()) && Math.abs(t.transform[3]) >= 13); return it ? H - it.transform[5] : null; };
+    const yDea = tit(/^DEA 1$/), yDal = tit(/^DAL$/); if (yDea == null && yDal == null) continue;
+    const imgs = await imagensPagina(doc, p);
+    const pega = (y0, y1, ok) => imgs.filter((m) => m.y0 > y0 && m.y0 < y1 && ok(m.rw / m.rh)).sort((a, b) => b.rw * b.rh - a.rw * a.rh)[0];
+    const add = async (m, sis) => { if (!m || e.fotos.some((f) => f.sistema === sis)) return; const foto = { titulo: sis === "dal" ? "Tipagem DAL" : "Tipagem DEA 1", tipo: "tipagem", sistema: sis, inteira: m.url, w: m.rw, h: m.rh, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true }; await aplicarCorte(foto); e.fotos.push(foto); };
+    if (yDea != null && e.tipagem.dea1) await add(pega(yDea, yDal != null && yDal > yDea ? yDal : H, (r) => r > 3), "dea");
+    if (yDal != null && e.tipagem.dal) await add(pega(yDal, yDea != null && yDea > yDal ? yDea : H, (r) => r > 1.15 && r < 4), "dal");
+  }
 }
 function processarItens(nome, hash, paginas, exPronto) {
   const txtLaudo = exPronto ? "" : montarLinhas(paginas);
@@ -4086,18 +4119,9 @@ async function lerHistorico(doc, nome) {
       let n = 0;
       for (const L of ctx.tipagensLaudo) {
         try {
-          const iso = String(L.data || "").match(/^(\d{4})-(\d{2})-(\d{2})/), data = iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : normalizarData(L.data);
-          const tp = {}, pos = (o) => /^p/i.test(String(o.res || "")), mt = (o) => String(o.metodo || "").replace(/\s*\(?ALVEDIA LAB TEST\)?\.?$/i, "").trim();
-          if (L.dea1 && L.dea1.on && L.dea1.res) { tp.dea1 = pos(L.dea1) ? "+" : "-"; if (pos(L.dea1) && L.dea1.grau) tp.deaGrau = L.dea1.grau; tp.metodoDea = mt(L.dea1); }
-          if (L.dal && L.dal.on && L.dal.res) { tp.dal = pos(L.dal) ? "+" : "-"; if (pos(L.dal) && L.dal.grau) tp.dalGrau = L.dal.grau; tp.metodoDal = mt(L.dal); }
-          if (L.grupo) { tp.felino = L.grupo; tp.metodo = L.metodoGato || ""; }
-          if (!Object.keys(tp).length || !dataValida(data)) continue;
-          // o mesmo resultado reaberto do histórico salvo sai, e fica o do laudo (com as fotos)
-          estado.exames = estado.exames.filter((e) => !(e.fonte === "reaberto" && e.tipagem && Object.keys(e.tipagem).length && e.data === data && !Object.keys(e.valores || {}).length));
-          if (estado.exames.some((e) => e.chave === "TL" + L.id)) continue;
-          const ex = { lab: "CVH", equip: "Tipagem sanguínea", fonte: "laudo", valores: {}, pct: {}, refs: {}, refsPct: {}, avisos: [], quali: [], tipagem: tp, data, hora: "", numero: "", chave: "TL" + L.id,
-            cab: { nome: estado.animal.nome || "", idade: "", especie: estado.animal.especie || "", sexo: estado.animal.sexo || "", raca: estado.animal.raca || "", chip: "", responsavel: "", vet: "", registro: "" } };
-          const e = processarItens("Laudo de tipagem de " + data, "laudo-tipagem-" + L.id, null, ex); if (!e) continue; n++;
+          const ex = exameTipagemDeLaudo(L); if (!ex) continue;
+          if (estado.exames.some((e) => e.chave === ex.chave)) continue;
+          const e = processarItens("Laudo de tipagem de " + ex.data, "laudo-tipagem-" + L.id, null, ex); if (!e) continue; n++;
           for (const fo of L.fotos || []) {
             try { const r = await ponte("lerPdf", fo.id), url = "data:image/jpeg;base64," + r.base64, im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
               const foto = { titulo: fo.alvo === "dal" ? "Tipagem DAL" : "Tipagem DEA 1", tipo: "tipagem", sistema: fo.alvo, inteira: url, w: im.naturalWidth, h: im.naturalHeight, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true };
