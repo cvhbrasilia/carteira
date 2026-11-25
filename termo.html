@@ -46,7 +46,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125042501';
+  var VERSAO = '20261125044517';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -65,7 +65,7 @@
   if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
   // ?v= é a verificação de receita e laudo (código de 12 caracteres); nos links do painel e do motoboy, ?v=2 é só a versão da prévia do WhatsApp
   if (q.get('v') && !window.CVH_PAINEL && String(q.get('v')).replace(/\s/g, '').length >= 8) {
-    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { h = String(h).split('__API_URL__').join(API); document.open(); document.write(h); document.close(); },
       function (e) { document.body.textContent = e.message; });
   }
 })();

@@ -196,6 +196,13 @@ button{cursor:pointer}
 .ficha{background:var(--areia);border-radius:.4em;padding:.85em .9em;display:grid;grid-template-columns:1fr 1fr;gap:.75em .8em;position:relative;overflow:hidden}
 .ficha::before{content:"";position:absolute;left:0;right:0;top:0;height:.2em;background:var(--vermelho)}
 .ficha .larga{grid-column:1/-1}
+.ficha.com-ctn .larga{padding-right:9.6em}
+.ctn-mini{position:absolute;right:.9em;bottom:.85em;width:9.2em;height:5.55em;display:flex;border:0;padding:0;border-radius:.55em;overflow:hidden;box-shadow:0 2px 8px rgba(95,19,15,.22);cursor:pointer;font:inherit;text-align:left;z-index:1}
+.ctn-m-l{flex:0 0 37%;background:#5F130F;color:#C6B098;display:flex;align-items:center;justify-content:center}.ctn-m-l svg{width:1.7em;height:1.7em}
+.ctn-m-r{flex:1;background:#EEE5DB;display:flex;flex-direction:column;justify-content:center;padding:0 .55em;line-height:1.15}
+.ctn-m-r small{font-size:.54em;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D;font-weight:700}.ctn-m-r b{font-size:.78em;color:#5F130F}.ctn-m-r i{font-style:normal;font-size:.62em;color:#A83D3D;margin-top:.3em;font-weight:700}
+.ctn-pos{background:#F7F2EC;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px}.ctn-pos b{color:#5F130F;font-size:14px}.ctn-pos label{display:flex;flex-direction:column;font-size:12.5px;color:#6b5a52;gap:2px}.ctn-pos input{width:100%;accent-color:#5F130F}
+.ctn-prev{display:flex;flex-direction:column;gap:10px;margin:8px 0 12px}.ctn-prev img{width:100%;height:auto;border-radius:12px;box-shadow:0 2px 10px rgba(95,19,15,.18)}
 .ficha .val{font-size:.86em}
 .mono{font-family:var(--mono);letter-spacing:.03em}
 .prox{display:flex;flex-direction:column;gap:.42em;list-style:none}
@@ -951,7 +958,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125042501';
+  var VERSAO = '20261125044517';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -970,7 +977,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
   // ?v= é a verificação de receita e laudo (código de 12 caracteres); nos links do painel e do motoboy, ?v=2 é só a versão da prévia do WhatsApp
   if (q.get('v') && !window.CVH_PAINEL && String(q.get('v')).replace(/\s/g, '').length >= 8) {
-    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { document.open(); document.write(h); document.close(); },
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { h = String(h).split('__API_URL__').join(API); document.open(); document.write(h); document.close(); },
       function (e) { document.body.textContent = e.message; });
   }
 })();
@@ -2672,12 +2679,202 @@ function pgIdent(an, regs) {
   // a próxima doação agendada aparece em destaque, acima de todos os outros avisos
   const destaque = proxDoa ? '<div class="prox-doa"><span>Próxima doação agendada</span><b>' + br(proxDoa.data) + (proxDoa.hora ? ' às ' + esc(proxDoa.hora) : '') + '</b><small>' + (d => d <= 0 ? 'É hoje' : d === 1 ? 'É amanhã' : 'Faltam ' + d + ' dias')(Math.round((new Date(proxDoa.data + 'T12:00') - new Date(hoje() + 'T12:00')) / 864e5)) + (proxDoa.status === 'confirmado' ? ' · confirmada' : '') + '</small></div>' : '';
   const lista = !agHtml ? lista0 : lista0.indexOf('<ul class="prox">') === 0 ? lista0.replace('<ul class="prox">', '<ul class="prox">' + agHtml) : '<ul class="prox">' + agHtml + '</ul>';
-  return pagina(an, '<div class="sec"><h2>Identificação</h2></div><div class="ficha">' +
+  // carteirinha do doador: no painel, no espaço livre da ficha de identificação
+  const ctnBt = an.doador === '1' && E.modo === 'painel' && !E.previa && E.u && (pode('carteiras') || pode('cadastro') || pode('fichas'))
+    ? '<button class="ctn-mini" data-acao="carteirinha" data-id="' + an.id + '" aria-label="Carteirinha do doador"><span class="ctn-m-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="6" width="14" height="13" rx="2"/><circle cx="12" cy="11.5" r="2.6"/><path d="M8 17.500c1-1.800 2.300-2.600 4-2.600s3 .8 4 2.600M9.500 6l1-2h3l1 2"/></svg></span><span class="ctn-m-r"><small>Carteirinha</small><b>do doador</b><i>Baixar ›</i></span></button>' : '';
+  return pagina(an, '<div class="sec"><h2>Identificação</h2></div><div class="ficha' + (ctnBt ? ' com-ctn' : '') + '">' + ctnBt +
     c('Espécie', esc(an.especie)) + c('Raça', esc(an.raca)) + c('Sexo', esc(an.sexo)) + c('Nascimento', an.nascimento ? br(an.nascimento) + ' <small>· ' + idade(an.nascimento) + '</small>' : '') +
     c('Microchip', esc(an.microchip), 'larga mono') + c('Responsável', esc(rp.nome), 'larga') + (an.doador === '1' ? c('Doações registradas', String(nDoa)) : '') +
     (an.doador === '1' && an.aposentadoEm ? c('Clube do Doador', 'Aposentado em ' + br(an.aposentadoEm) + (an.aposentadoMotivo ? ' <small>· ' + esc(an.aposentadoMotivo.toLowerCase()) + '</small>' : ''), 'larga') : '') +
     '</div>' + cartaoFisicoHtml(an) + '<div class="sec"><h2>Próximas datas</h2></div>' + destaque + (destaque && lista0.indexOf('class="nada"') >= 0 && !agHtml ? '' : lista));
 }
+/* ── carteirinha do doador (frente e verso, 2023 × 1276) ──
+   fundo desenhado pelo designer (sem os dados); nome, raça, nascimento, microchip, tipagem, responsável e assinatura vêm do cadastro e do laudo de tipagem.
+   As fotos da fita do DEA 1 e do cartão do DAL são as do laudo, sem nenhuma alteração de cor: só o recorte. */
+const CTN = { W: 2023, H: 1276, ESC: '#5E130F', VERM: '#A83D3D', OURO: '#C39A6B', LINHA: '#C6B098', BEGE: '#EDE4DB', AZUL: '#1A2A9C' };
+let CTN_REC = null;
+const ctnImg = u => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Não consegui carregar a imagem.')); i.src = u; });
+async function ctnRecursos() {
+  if (CTN_REC) return CTN_REC;
+  const fs = [['400', 'Carlito-Regular'], ['700', 'Carlito-Bold']].map(([w, n]) => new FontFace('Carteirinha CVH', 'url(carteirinha/' + n + '.ttf)', { weight: w }));
+  await Promise.all(fs.map(f => f.load().then(x => document.fonts.add(x))));
+  const [frente, verso] = await Promise.all([ctnImg('carteirinha/frente.png'), ctnImg('carteirinha/verso.png')]);
+  return CTN_REC = { frente, verso };
+}
+const ctnLaudo = aid => laudosDe(aid).find(r => r.excluido !== '1' && ehTipLaudo(r.dados || {}));
+const ctnFoto = an => { try { const f = JSON.parse(an.foto || ''); return f && f.id ? f : null; } catch (_) { return null; } };
+async function ctnArquivo(id) { const r = await api('lerArquivoDrive', E.sessao, id); return ctnImg('data:' + (/^image\//.test(r.mime || '') ? r.mime : 'image/jpeg') + ';base64,' + r.base64); }
+// texto com espaçamento entre letras (as legendas em caixa alta)
+function ctnTxt(x, c, t, px, peso, cor, o = {}) {
+  x.font = peso + ' ' + px + 'px "Carteirinha CVH"'; x.fillStyle = cor; x.textBaseline = 'alphabetic';
+  const sp = o.sp || 0, w = sp ? [...t].reduce((s, ch) => s + x.measureText(ch).width, 0) + sp * ([...t].length - 1) : x.measureText(t).width;
+  let x0 = o.a === 'm' ? c[0] - w / 2 : o.a === 'e' ? c[0] - w : c[0];
+  if (!sp) { x.fillText(t, x0, c[1]); return w; }
+  for (const ch of t) { x.fillText(ch, x0, c[1]); x0 += x.measureText(ch).width + sp; }
+  return w;
+}
+function ctnLarg(x, t, px, peso, sp) { x.font = peso + ' ' + px + 'px "Carteirinha CVH"'; return sp ? [...t].reduce((s, ch) => s + x.measureText(ch).width, 0) + sp * ([...t].length - 1) : x.measureText(t).width; }
+// maior tamanho (até o padrão) que cabe na largura
+const ctnCabe = (x, t, px, peso, max, min, spEm) => { let p = px; while (p > min && ctnLarg(x, t, p, peso, (spEm || 0) * p) > max) p -= 1; return p; };
+// recorte "cover" da foto do animal dentro da moldura (sem mexer nas cores)
+function ctnCover(x, im, rx, ry, rw, rh, pos) {
+  const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, k = Math.max(rw / iw, rh / ih), sw = rw / k, sh = rh / k;
+  const p = pos || { x: 0.5, y: 0.4 }, sx = (iw - sw) * p.x, sy = (ih - sh) * p.y;
+  x.drawImage(im, sx, sy, sw, sh, rx, ry, rw, rh);
+}
+function ctnArred(x, rx, ry, rw, rh, r) { x.beginPath(); x.moveTo(rx + r, ry); x.arcTo(rx + rw, ry, rx + rw, ry + rh, r); x.arcTo(rx + rw, ry + rh, rx, ry + rh, r); x.arcTo(rx, ry + rh, rx, ry, r); x.arcTo(rx, ry, rx + rw, ry, r); x.closePath(); }
+// fita do DEA 1 guardada com o laudo: a mesma imagem reconstruída do laudo; aqui entra só a fita, sem as marcações de cima
+function ctnFita(im) {
+  const w = im.naturalWidth, h = im.naturalHeight;
+  if (h === 170) return { sx: 24, sy: 66, sw: w - 48, sh: 84 };
+  return { sx: 0, sy: 0, sw: w, sh: h };
+}
+// poço do paciente no cartão do DAL (o da direita): achado pela cor do sangue, recortado com a borda do poço
+function ctnPocoDal(im) {
+  const w = Math.min(900, im.naturalWidth), h = Math.round(im.naturalHeight * w / im.naturalWidth), cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); g.drawImage(im, 0, 0, w, h); const D = g.getImageData(0, 0, w, h).data, k = im.naturalWidth / w;
+  const red = (i) => { const R = D[i], G = D[i + 1], B = D[i + 2]; return R > 110 && R - G > 45 && R - B > 35; };
+  const run = (arr, ini, lim) => { let best = null, s = -1; for (let i = ini; i <= arr.length; i++) { if (i < arr.length && arr[i] > lim) { if (s < 0) s = i; } else if (s >= 0) { if (!best || i - s > best[1] - best[0]) best = [s, i - 1]; s = -1; } } return best; };
+  const y0 = Math.round(h * 0.25), y1 = Math.round(h * 0.9), col = new Array(w).fill(0);
+  for (let x = 0; x < w; x++) { let n = 0; for (let y = y0; y < y1; y++) if (red((y * w + x) * 4)) n++; col[x] = n / (y1 - y0); }
+  const cx = run(col, Math.round(w * 0.6), 0.25); if (!cx) return null;
+  const row = new Array(h).fill(0); for (let y = 0; y < h; y++) { let n = 0; for (let x = cx[0]; x <= cx[1]; x++) if (red((y * w + x) * 4)) n++; row[y] = n / (cx[1] - cx[0] + 1); }
+  const cy = run(row, 0, 0.3); if (!cy) return null;
+  const m = Math.round((cx[1] - cx[0]) * 0.07), X0 = Math.max(0, cx[0] - m), Y0 = Math.max(0, cy[0] - m), X1 = Math.min(w - 1, cx[1] + m), Y1 = Math.min(h - 1, cy[1] + m);
+  return { sx: X0 * k, sy: Y0 * k, sw: (X1 - X0) * k, sh: (Y1 - Y0) * k };
+}
+// rubrica (traço SVG em 300 × 120) desenhada por cima do CRMV
+function ctnRubrica(x, d, bx, by, bw, bh) {
+  if (!d) return;
+  const nn = String(d).match(/-?\d+(\.\d+)?/g) || []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (let i = 0; i + 1 < nn.length; i += 2) { const a = +nn[i], b = +nn[i + 1]; x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b); }
+  if (x0 > x1) return;
+  const k = Math.min(bw / (x1 - x0), bh / (y1 - y0)), ox = bx + (bw - (x1 - x0) * k) / 2 - x0 * k, oy = by + (bh - (y1 - y0) * k) / 2 - y0 * k, P = (a, b) => [ox + a * k, oy + b * k];
+  x.save(); x.strokeStyle = CTN.AZUL; x.lineWidth = 3.2; x.lineCap = 'round'; x.lineJoin = 'round'; x.beginPath();
+  const re = /([MLQ])([^MLQ]*)/g; let m, ult = null;
+  while ((m = re.exec(d))) {
+    const n = m[2].trim().split(/[\s,]+/).map(Number).filter(v => isFinite(v));
+    if (m[1] === 'M' && n.length >= 2) { x.moveTo(...P(n[0], n[1])); ult = [n[0], n[1]]; for (let i = 2; i + 1 < n.length; i += 2) { x.lineTo(...P(n[i], n[i + 1])); ult = [n[i], n[i + 1]]; } }
+    else if (m[1] === 'L') for (let i = 0; i + 1 < n.length; i += 2) { x.lineTo(...P(n[i], n[i + 1])); ult = [n[i], n[i + 1]]; }
+    else if (m[1] === 'Q') for (let i = 0; i + 3 < n.length; i += 4) { x.quadraticCurveTo(...P(n[i], n[i + 1]), ...P(n[i + 2], n[i + 3])); ult = [n[i + 2], n[i + 3]]; }
+  }
+  x.stroke(); x.restore();
+}
+const MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const ctnData = iso => { const m = /^(\d{4})-(\d\d)-(\d\d)/.exec(iso || ''); return m ? (+m[3]) + ' ' + MES_CURTO[+m[2] - 1] + ' ' + m[1] : ''; };
+const ctnCpf = c => { const d = String(c || '').replace(/\D/g, ''); return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : String(c || ''); };
+// dados da carteirinha: cadastro + último laudo de tipagem (e as fotos dele)
+async function ctnDados(an, fotoAnimal) {
+  const rp = respDe(an) || {}, L = ctnLaudo(an.id); if (!L) throw new Error('Faça o laudo de tipagem sanguínea de ' + an.nome + ' antes de gerar a carteirinha.');
+  const d = L.dados || {}, t = (d.tipoLaudo === 'tipagem' ? d.detalhe : (d.detalhe || {}).tipagem) || {}, gato = /fel|gat/i.test(an.especie || '');
+  const fotos = d.fotos || [], fid = a => (fotos.find(f => f.alvo === a) || {}).id;
+  const [dea, dal, foto] = await Promise.all([fid('dea') && !gato ? ctnArquivo(fid('dea')).catch(() => null) : null, fid('dal') && !gato ? ctnArquivo(fid('dal')).catch(() => null) : null,
+    fotoAnimal ? Promise.resolve(fotoAnimal) : ctnFoto(an) ? ctnArquivo(ctnFoto(an).id).catch(() => null) : null]);
+  const v = d.vet || vetDe(L) || {};
+  return { nome: an.nome || '', raca: an.raca || '', sexo: an.sexo || '', nasc: an.nascimento || '', chip: an.microchip || '', gato,
+    dea1: t.dea1 && t.dea1.on && t.dea1.res ? t.dea1.res : '', dal: t.dal && t.dal.on && t.dal.res ? t.dal.res : '', grupo: gato ? (t.grupo || an.tipoSanguineo || '') : '',
+    fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || '', cpf: rp.cpf || '', vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', pos: (ctnFoto(an) || {}).pos || null };
+}
+function ctnFrente(R, D) {
+  const cv = document.createElement('canvas'); cv.width = CTN.W; cv.height = CTN.H; const x = cv.getContext('2d');
+  x.drawImage(R.frente, 0, 0, CTN.W, CTN.H);
+  if (D.foto) { x.save(); x.beginPath(); x.rect(103, 385, 538, 718); x.clip(); ctnCover(x, D.foto, 103, 385, 538, 718, D.pos); x.restore(); }
+  ctnTxt(x, [843, 163], 'CARTEIRINHA DO DOADOR', 57, 700, CTN.VERM, { sp: 7 });
+  const nome = D.nome.toUpperCase(), pn = ctnCabe(x, nome, 198, 700, 640, 70, 0.055);
+  ctnTxt(x, [843, 423], nome, pn, 700, CTN.ESC, { sp: pn * 0.055 });
+  // raça · sexo (o ponto em dourado)
+  { const pr = ctnCabe(x, D.raca + ' · ' + D.sexo, 68, 400, 640, 40); let xx = 847;
+    if (D.raca) xx += ctnTxt(x, [xx, 529], D.raca, pr, 400, CTN.ESC);
+    if (D.raca && D.sexo) xx += ctnTxt(x, [xx, 529], ' · ', pr, 400, CTN.OURO);
+    if (D.sexo) ctnTxt(x, [xx, 529], D.sexo, pr, 400, CTN.ESC); }
+  if (D.nasc) { ctnTxt(x, [1510, 427], 'NASCIMENTO', 46, 700, CTN.VERM, { sp: 6.5 }); ctnTxt(x, [1512, 529], ctnData(D.nasc), 68, 400, CTN.ESC); }
+  x.fillStyle = CTN.LINHA; x.fillRect(840, 607, 1088, 4); x.fillRect(840, 717, 1088, 4);
+  ctnTxt(x, [844, 676], 'MICROCHIP', 48, 700, CTN.VERM, { sp: 3.7 });
+  ctnTxt(x, [1164, 674], D.chip || 'não informado', ctnCabe(x, D.chip || 'não informado', 67, 400, 760, 40), 400, CTN.ESC);
+  ctnTxt(x, [841, 810], 'TIPAGEM SANGUÍNEA', 48, 700, CTN.VERM, { sp: 4.5 });
+  const coluna = (cx, rot, res, img, tipo, larg) => {
+    ctnTxt(x, [cx, 903], rot, 69, 400, CTN.VERM, { a: 'm' });
+    ctnTxt(x, [cx, 1013], res || 'Não tipado', res ? 107 : 80, 700, CTN.ESC, { a: 'm' });
+    if (!img) return;
+    if (tipo === 'fita') { const c = ctnFita(img), w = larg, h = Math.round(w * c.sh / c.sw); x.drawImage(img, c.sx, c.sy, c.sw, c.sh, cx - w / 2, 1097 - h / 2, w, h); }
+    else { const c = ctnPocoDal(img); if (!c) return; const h = 129, w = Math.round(h * c.sw / c.sh); x.save(); ctnArred(x, cx - w / 2, 1034, w, h, 20); x.clip(); x.drawImage(img, c.sx, c.sy, c.sw, c.sh, cx - w / 2, 1034, w, h); x.restore();
+      x.save(); ctnArred(x, cx - w / 2, 1034, w, h, 20); x.strokeStyle = 'rgba(40,30,30,.55)'; x.lineWidth = 2; x.stroke(); x.restore(); }
+  };
+  if (D.gato) coluna(1385, 'Grupo', D.grupo, null);
+  else if (D.dal) { coluna(1113, 'DEA 1', D.dea1, D.fotoDea, 'fita', 510); x.fillStyle = CTN.LINHA; x.fillRect(1382, 858, 4, 330); coluna(1656, 'DAL', D.dal, D.fotoDal, 'dal'); }
+  else coluna(1385, 'DEA 1', D.dea1, D.fotoDea, 'fita', 562);
+  return cv;
+}
+function ctnVerso(R, D) {
+  const cv = document.createElement('canvas'); cv.width = CTN.W; cv.height = CTN.H; const x = cv.getContext('2d');
+  x.drawImage(R.verso, 0, 0, CTN.W, CTN.H);
+  ctnTxt(x, [110, 200], 'DADOS DO RESPONSÁVEL', 57, 700, CTN.VERM, { sp: 6.6 });
+  ctnTxt(x, [110, 330], 'NOME', 48, 700, CTN.VERM, { sp: 2.5 });
+  ctnTxt(x, [112, 451], D.resp, ctnCabe(x, D.resp, 90, 400, 1110, 50), 400, CTN.ESC);
+  if (D.cpf) { ctnTxt(x, [108, 597], 'CPF', 48, 700, CTN.VERM, { sp: 4 }); ctnTxt(x, [108, 715], ctnCpf(D.cpf), 82, 400, CTN.ESC); }
+  x.fillStyle = CTN.LINHA; x.fillRect(106, 813, 1114, 4);
+  ctnTxt(x, [106, 928], 'ASSINADO ELETRONICAMENTE', 38.5, 700, CTN.VERM, { sp: 1.9 });
+  ctnTxt(x, [112, 1026], D.vet.nome, ctnCabe(x, D.vet.nome, 73, 700, 600, 44), 700, CTN.ESC);
+  ctnTxt(x, [111, 1099], 'Médico veterinário', 54, 400, CTN.ESC);
+  const wc = ctnTxt(x, [742, 1093], D.vet.crmv, 52, 400, CTN.ESC);
+  ctnRubrica(x, D.vet.rubrica, 742 + wc / 2 - 150, 895, 300, 136);
+  // QR Code: abre a verificação do laudo de tipagem, com os botões para baixar o laudo
+  if (D.codigo) {
+    const q = new QRLIB.QRCode(-1, QRLIB.L.M); q.addData(urlVerifCarteira(D.codigo)); q.make(); const n = q.getModuleCount(), area = 400, m = Math.floor(area / n), w = m * n, ox = 1425 + Math.round((497 - w) / 2), oy = 254 + Math.round((497 - w) / 2);
+    x.fillStyle = '#1B1110'; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) x.fillRect(ox + c * m, oy + r * m, m, m);
+    ctnTxt(x, [1673, 880], 'Verificar carteirinha', 57, 400, '#FFFFFF', { a: 'm' });
+    ctnTxt(x, [1673, 992], D.codigo, 57, 400, CTN.BEGE, { a: 'm', sp: 1.5 });
+  }
+  return cv;
+}
+async function ctnGerar(an, fotoAnimal) { const R = await ctnRecursos(), D = await ctnDados(an, fotoAnimal); return { frente: ctnFrente(R, D), verso: ctnVerso(R, D), D }; }
+const ctnBlob = cv => new Promise(ok => cv.toBlob(ok, 'image/png'));
+async function ctnBaixar(an, C) {
+  const base = 'Carteirinha do doador ' + an.nome, fs = await Promise.all([ctnBlob(C.frente), ctnBlob(C.verso)]);
+  const arqs = [new File([fs[0]], base + ' (frente).png', { type: 'image/png' }), new File([fs[1]], base + ' (verso).png', { type: 'image/png' })];
+  if (ehCelular() && navigator.canShare && navigator.canShare({ files: arqs })) { try { await navigator.share({ files: arqs }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  for (const f of arqs) { const l = document.createElement('a'); l.href = URL.createObjectURL(f); l.download = f.name; document.body.appendChild(l); l.click(); l.remove(); await new Promise(r => setTimeout(r, 400)); }
+}
+// folha da carteirinha no painel: prévia da frente e do verso, foto do animal e download
+async function abrirCarteirinha(aid) {
+  const an = animalDe(aid); if (!an) return;
+  abrirFolha('Carteirinha do doador', '<p class="nota" id="ctnSt">Montando a carteirinha de ' + esc(an.nome) + '…</p><div class="ctn-prev" id="ctnPrev"></div>' +
+    '<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button><button class="btn sec2" id="ctnFoto">' + (ctnFoto(an) ? 'Trocar a foto' : 'Colocar a foto') + '</button>' + (ctnFoto(an) ? '<button class="btn sec2" id="ctnTira">Remover a foto</button>' : '') + '</div>' +
+    (ctnFoto(an) ? '<div class="ctn-pos"><b>Enquadrar a foto</b><label>Para os lados<input type="range" id="ctnPx" min="0" max="100" value="' + Math.round(((ctnFoto(an).pos || {}).x ?? 0.5) * 100) + '"></label><label>Para cima e para baixo<input type="range" id="ctnPy" min="0" max="100" value="' + Math.round(((ctnFoto(an).pos || {}).y ?? 0.4) * 100) + '"></label><button class="btn sec2" id="ctnPosOk" hidden>Guardar o enquadramento</button></div>' : '') +
+    '<p class="nota">A foto pode ser tirada na hora ou escolhida da galeria. Ela entra na carteirinha do jeito que foi tirada, só recortada no formato da moldura.</p><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
+    let C = null;
+    const montar = async (fotoNova) => {
+      $('#ctnSt').textContent = 'Montando a carteirinha…'; $('#ctnBaixar').disabled = true;
+      try { C = await ctnGerar(animalDe(aid), fotoNova); const p = $('#ctnPrev'); if (!p) return; p.innerHTML = ''; [C.frente, C.verso].forEach(cv => { const i = new Image(); i.src = cv.toDataURL('image/jpeg', 0.85); i.alt = 'Carteirinha'; p.appendChild(i); });
+        $('#ctnSt').textContent = C.D.foto ? '' : 'Sem foto ainda: a moldura sai com o aviso "Adicionar foto aqui".'; $('#ctnBaixar').disabled = false; }
+      catch (e) { if ($('#ctnSt')) $('#ctnSt').textContent = e.message; }
+    };
+    montar();
+    // enquadramento: mexe só na posição do recorte, a foto continua a mesma
+    let tPos = 0;
+    const posNova = () => { const f = ctnFoto(animalDe(aid)); if (!f || !C) return; C.D.pos = { x: $('#ctnPx').value / 100, y: $('#ctnPy').value / 100 }; clearTimeout(tPos); tPos = setTimeout(() => { ctnRecursos().then(R => { C.frente = ctnFrente(R, C.D); const i = $('#ctnPrev img'); if (i) i.src = C.frente.toDataURL('image/jpeg', 0.85); }); }, 60); $('#ctnPosOk').hidden = false; };
+    if ($('#ctnPx')) { $('#ctnPx').oninput = posNova; $('#ctnPy').oninput = posNova;
+      $('#ctnPosOk').onclick = ev => salvando(ev.currentTarget, async () => { const f = ctnFoto(animalDe(aid)); const s = await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, pos: C.D.pos }); atualizarAnimal(s); ev.currentTarget.hidden = true; toast('Enquadramento guardado.'); }); }
+    $('#ctnBaixar').onclick = ev => salvando(ev.currentTarget, () => ctnBaixar(animalDe(aid), C));
+    $('#ctnFoto').onclick = () => $('#ctnArq').click();
+    if ($('#ctnTira')) $('#ctnTira').onclick = ev => salvando(ev.currentTarget, async () => { const s = await api('animalFoto', E.sessao, aid, null); atualizarAnimal(s); abrirCarteirinha(aid); });
+    $('#ctnArq').onchange = async ev => {
+      const f = ev.target.files && ev.target.files[0]; if (!f) return;
+      $('#ctnSt').textContent = 'Guardando a foto…';
+      try {
+        let bytes = new Uint8Array(await f.arrayBuffer()), mime = (f.type || '').toLowerCase(), nome = f.name || 'foto.jpg';
+        // HEIC e outros formatos que o servidor não guarda viram JPEG na qualidade máxima
+        if (!/^image\/(jpeg|png|webp)$/.test(mime)) { const im = await ctnImg(URL.createObjectURL(f)), cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext('2d').drawImage(im, 0, 0); const b = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 1)); bytes = new Uint8Array(await b.arrayBuffer()); mime = 'image/jpeg'; nome = nome.replace(/\.\w+$/, '') + '.jpg'; }
+        let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        const r = await api('salvarArquivo', E.sessao, aid, 'Foto da carteirinha ' + nome, mime, btoa(bin), true);
+        const s = await api('animalFoto', E.sessao, aid, { id: r.id, nome });
+        atualizarAnimal(s); abrirCarteirinha(aid);
+      } catch (e) { $('#ctnSt').textContent = 'Não consegui guardar a foto. ' + e.message; }
+    };
+  });
+}
+function atualizarAnimal(s) { if (!s || !s.id) return; const i = E.d.animais.findIndex(a => a.id === s.id); if (i >= 0) E.d.animais[i] = Object.assign({}, E.d.animais[i], s); }
+
 // cartão de vacina físico: aviso na carteira e, para o médico veterinário no painel, os botões para marcar onde está
 // cartão de vacina em papel: produzido → guardado no CVH ou entregue ao responsável → responsável confirma o recebimento
 function cfDe(an) {
@@ -8131,6 +8328,7 @@ const ACOES = {
     try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { animalId: b.dataset.aid }); const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (x) x.animalId = b.dataset.aid; toast('Laudo ligado a ' + (animalDe(b.dataset.aid) || {}).nome + '.'); pintarLaboratorios(); }
     catch (e) { b.disabled = false; toast(e.message, 5000); }
   },
+  carteirinha: b => abrirCarteirinha(b.dataset.id),
   'cartao-fisico': async b => {
     const an = animalDe(b.dataset.id); if (!an) return; const v = b.dataset.v; b.disabled = true;
     try {
