@@ -3882,7 +3882,9 @@ function ligar() {
       try { await ponte("laudoParaPedido", { pedido: v, regId: salvo.res.id }); b.textContent = "Enviado para a Intensivet ✓"; } catch (e) { b.disabled = false; st.className = "st erro"; st.textContent = e.message || String(e); } return; }
     if (a === "env-carteira" || a === "env-historico") {
       if (!salvo || !salvo.res || !salvo.res.id) return; const hist = a === "env-historico", st = $("#stEnv"); b.disabled = true;
-      try { await ponte("laudoEnvio", hist ? { id: salvo.res.id, historico: true } : { id: salvo.res.id, carteira: true }); b.textContent = hist ? "Histórico sendo atualizado (leva alguns minutos)" : "Na carteira, em últimos exames ✓"; }
+      try { const rr = await ponte("laudoEnvio", hist ? { id: salvo.res.id, historico: true } : { id: salvo.res.id, carteira: true });
+        if (rr && rr.bloqueado) { b.textContent = "Aguardando " + (rr.rtNome || "o responsável técnico").split(" ")[0]; const st = $("#st"); if (st) { st.className = "st erro"; st.textContent = "Este laudo precisa da atenção de " + (rr.rtNome || "o responsável técnico") + " antes de ir para a carteira (" + rr.motivos.slice(0, 3).join("; ") + "). A pendência já foi enviada para ele."; } }
+        else b.textContent = hist ? "Histórico sendo atualizado (leva alguns minutos)" : "Na carteira, em últimos exames ✓"; }
       catch (e) { b.disabled = false; st.className = "st erro"; st.textContent = "Não consegui enviar. " + (e.message || e); }
       return;
     }

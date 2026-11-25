@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125214135">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125220632">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1052,7 +1052,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125214135';
+  var VERSAO = '20261125220632';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -7137,6 +7137,10 @@ async function telaPainelLaudos(recarregar) {
   catch (e) { toast(e.message, 6000); }
   pintarPainelLaudos();
 }
+// laudo que precisa da atenção do responsável técnico: não foi para a carteira e virou pendência para ele
+function avisoLaudoRT(r, hist) {
+  toast('Este laudo precisa da atenção de ' + (r.rtNome || 'o responsável técnico') + ' antes de ir para a carteira: ' + (r.motivos || []).slice(0, 3).join('; ') + '. A pendência já foi enviada para ele.' + (hist ? ' O histórico foi atualizado.' : ''), 10000);
+}
 function pintarPainelLaudos() {
   if (!document.querySelector('.tela-pl')) return;
   const labs = PL.labs || [], rasc = PL.rasc || [], regs = laudosTodos();
@@ -7160,7 +7164,7 @@ function pintarPainelLaudos() {
     const d = x.dados || {}, ev = envioDe(x), temHist = (!!d.origens || ehTipLaudo(d)) && pode('historico'), rec = x.animalId === 'receptor';
     if (rec) return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).clinica, 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al + '</div><div class="mini-bts">' + (d.cel && d.cel.url ? '<a class="mini" href="' + esc(d.cel.url) + '" target="_blank" rel="noopener">PDF</a>' : '') + (d.a4 && d.a4.url ? '<a class="mini" href="' + esc(d.a4.url) + '" target="_blank" rel="noopener">A4</a>' : '') + (d.edicao && d.edicao.id && pode('laudos') ? '<button class="mini" data-acao="laudo-corrigir" data-id="' + x.id + '">Reabrir</button>' : '') + '</div></div>';
     return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al +
-      '<small>' + (ev.carteira ? '<span class="chip ok">na carteira</span>' : '<span class="chip neutro">fora da carteira</span>') + ' ' + (temHist ? (ev.historico ? '<span class="chip ok">no histórico</span>' : '<span class="chip neutro">fora do histórico</span>') : '') + '</small></div>' +
+      '<small>' + (ev.carteira ? '<span class="chip ok">na carteira</span>' : ev.aguardaRT ? '<span class="chip critico">aguarda ' + esc(String(((E.d.vets || []).find(v => v.padrao === '1') || (E.d.vets || [])[0] || {}).nome || 'o RT').split(' ')[0]) + ' · ' + esc((ev.aguardaRT.motivos || []).slice(0, 2).join('; ')) + '</span>' : '<span class="chip neutro">fora da carteira</span>') + ' ' + (temHist ? (ev.historico ? '<span class="chip ok">no histórico</span>' : '<span class="chip neutro">fora do histórico</span>') : '') + '</small></div>' +
       '<div class="mini-bts">' + (d.cel && d.cel.url ? '<a class="mini" href="' + esc(d.cel.url) + '" target="_blank" rel="noopener">PDF</a>' : '') +
       (!ev.carteira && !ev.carteiraEm ? '<button class="mini" data-acao="pl-envio-tudo" data-id="' + x.id + '">Enviar para a carteira' + (temHist ? ' e o histórico' : '') + '</button>' : '') +
       '<button class="mini" data-acao="pl-envio" data-id="' + x.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' +
@@ -7808,7 +7812,7 @@ const PONTE = {
   laudoEnvio: async o => {
     const r = await api('laudoEnvio', E.sessao, o.id, 'carteira' in o ? { carteira: !!o.carteira } : { historico: !!o.historico }); guardarRegistro(r);
     if (o.historico) setTimeout(() => atualizarHistoricoSozinho(r.animalId), 300);
-    return true;
+    return r.bloqueado ? { bloqueado: true, motivos: r.motivos || [], rtNome: r.rtNome || '' } : true;
   },
   salvarLaudo: async o => {
     if (o.receptor) return salvarLaudoReceptor(o);
@@ -8984,7 +8988,7 @@ const ACOES = {
   'pl-envio-tudo': async b => {
     const r = regPorId(b.dataset.id); if (!r) return; b.disabled = true;
     try { const hist = (!!((r.dados || {}).origens) || ehTipLaudo(r.dados)) && pode('historico'); let salvo = await api('laudoEnvio', E.sessao, r.id, Object.assign({ carteira: true }, hist ? { historico: true } : {})); guardarRegistro(salvo);
-      if (hist) atualizarHistoricoSozinho(r.animalId); toast('Laudo enviado para a carteira' + (hist ? ' e o histórico sendo atualizado (leva alguns minutos).' : '.'), 5000);
+      if (hist) atualizarHistoricoSozinho(r.animalId); if (salvo.bloqueado) avisoLaudoRT(salvo, hist); else toast('Laudo enviado para a carteira' + (hist ? ' e o histórico sendo atualizado (leva alguns minutos).' : '.'), 5000);
       if (document.querySelector('.tela-pl')) pintarPainelLaudos(); else if (document.querySelector('#listaLd')) telaLaudos(E.animal);
     } catch (e) { toast(e.message, 6000); b.disabled = false; }
   },
@@ -8993,7 +8997,7 @@ const ACOES = {
     try {
       const o = { [b.dataset.c]: b.dataset.v === '1' }; const salvo = await api('laudoEnvio', E.sessao, r.id, o); guardarRegistro(salvo);
       if (b.dataset.c === 'historico') { atualizarHistoricoSozinho(r.animalId); toast('Histórico laboratorial sendo atualizado com este laudo. Leva alguns minutos.', 6000); }
-      else toast(o.carteira ? 'Laudo enviado para a carteira do responsável.' : 'Laudo retirado da carteira.', 4000);
+      else if (salvo.bloqueado) avisoLaudoRT(salvo); else toast(o.carteira ? 'Laudo enviado para a carteira do responsável.' : 'Laudo retirado da carteira.', 4000);
       if (document.querySelector('.tela-pl')) pintarPainelLaudos(); else if (document.querySelector('#listaLd')) telaLaudos(E.animal);
     } catch (e) { toast(e.message, 6000); b.disabled = false; }
   },
