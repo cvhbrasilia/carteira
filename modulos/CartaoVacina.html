@@ -365,17 +365,17 @@ function idadeHoje(n) {
 }
 // as folhas do cartão físico (A4, frente e verso com a mesma página)
 const FOLHAS = [
-  { k: "vacina", t: "Controle de vacinação", linhas: 7 },
-  { k: "vermifugo", t: "Controle de vermifugação", linhas: 8 },
-  { k: "ecto", t: "Controle de ectoparasitas", sub: "pulgas e carrapatos", linhas: 8 },
+  { k: "vacina", t: "Controle de vacinação", linhas: 6 },
+  { k: "vermifugo", t: "Controle de vermifugação", linhas: 7 },
+  { k: "ecto", t: "Controle de ectoparasitas", sub: "pulgas e carrapatos", linhas: 7 },
   { k: "obs", t: "Observações", linhas: 0 },
 ];
 
 // ---------- desenho das folhas (conteúdo dentro da área do papel timbrado) ----------
 const X0 = PG.X, W0 = PG.CW, LIN = "#B39B7F", ROT = "#8A6640";
-function dataEmBranco(x, y, tam) {
-  // __/__/____ desenhado em linhas, com as barras
-  const el = [], w1 = 14, w3 = 24, g = 7; let xx = x;
+function dataEmBranco(x, y, tam, grande) {
+  // __/__/____ desenhado em linhas, com as barras (grande: espaço folgado para escrever à mão)
+  const el = [], w1 = grande ? 19 : 14, w3 = grande ? 30 : 24, g = grande ? 9 : 7; let xx = x;
   [w1, w1, w3].forEach((w, i) => { el.push(E.lin(xx, y, xx + w, y, { s: LIN, lw: 0.8 })); xx += w; if (i < 2) { el.push(T(xx + 1.5, y - 1.5, "/", tam || 9, { c: LIN })); xx += g; } });
   return { el, w: xx - x };
 }
@@ -413,28 +413,30 @@ function linhasFolha(f, y) {
     return el;
   }
   const h = (yF - y) / n;
+  // datas maiores para escrever à mão; o médico veterinário fica sozinho à direita, com espaço para assinar e carimbar
+  const data = (x, yy) => dataEmBranco(x, yy, 12, true).el;
+  const assinatura = (x, yy) => { el.push(rotulo(x, yy + 13, "Médico veterinário")); el.push(E.lin(x, yy + h - 9, X0 + W0 - 8, yy + h - 9, { s: LIN, lw: 0.8 })); };
   for (let i = 0; i < n; i++) {
     const yy = y + i * h, cx = X0 + 8;
-    // linha do registro: faixa clara alternada, número da linha e os campos
     if (i % 2 === 0) el.push(E.selo(X0, yy + 2, W0, h - 4, { f: "#F8F1E9", r: 8 }));
     el.push(E.lin(X0 + 6, yy + h, X0 + W0 - 6, yy + h, { s: "#D3C2AE", lw: 0.7 }));
     if (f.k === "vacina") {
-      // vacinado em (esquerda), espaço das etiquetas (meio), médico veterinário e revacinar em (direita)
-      el.push(rotulo(cx, yy + 16, "Vacinado em")); el.push(...dataEmBranco(cx, yy + 32).el);
-      const ex = X0 + 112, ew = 200, eh = h - 16;
-      el.push(E.selo(ex, yy + 8, ew, eh, { s: "#C6B098", lw: 0.7, r: 6 }));
-      el.push(T(ex + ew / 2, yy + 8 + eh / 2 + 2.5, "etiquetas da vacina", 7, { i: true, c: "#B5A28C", a: "m" }));
-      const rx = X0 + 326;
-      el.push(rotulo(rx, yy + 16, "Médico veterinário")); el.push(E.lin(rx, yy + 34, X0 + W0 - 8, yy + 34, { s: LIN, lw: 0.8 }));
-      { const dx = X0 + W0 - 8 - 66; el.push(rotulo(dx - largura("REVACINAR EM", 6.6, true) - 6, yy + h - 18, "Revacinar em")); el.push(...dataEmBranco(dx, yy + h - 17).el); }
+      // à esquerda vacinado em e, embaixo, revacinar em; no meio o quadro das etiquetas (cabe a múltipla, inclusive as mais grossas)
+      el.push(rotulo(cx, yy + 13, "Vacinado em")); el.push(...data(cx, yy + 31));
+      el.push(rotulo(cx, yy + h / 2 + 10, "Revacinar em")); el.push(...data(cx, yy + h / 2 + 28));
+      const ex = X0 + 106, ew = 214, eh = h - 10;
+      el.push(E.selo(ex, yy + 5, ew, eh, { s: "#C6B098", lw: 0.7, r: 6 }));
+      el.push(T(ex + ew / 2, yy + 5 + eh - 6, "etiquetas da vacina", 6.5, { i: true, c: "#B5A28C", a: "m" }));
+      assinatura(X0 + 332, yy);
     } else {
-      const prod = f.k === "vermifugo" ? "Vermífugo" : "Ectoparasiticida";
-      el.push(rotulo(cx, yy + 16, f.k === "vermifugo" ? "Vermifugado em" : "Data")); el.push(...dataEmBranco(cx, yy + 32).el);
-      const px = X0 + 112; el.push(rotulo(px, yy + 16, prod)); el.push(E.lin(px, yy + 34, px + 170, yy + 34, { s: LIN, lw: 0.8 }));
-      const kx = X0 + 296; el.push(rotulo(kx, yy + 16, "Peso")); el.push(E.lin(kx, yy + 34, kx + 34, yy + 34, { s: LIN, lw: 0.8 })); el.push(T(kx + 36, yy + 33, "kg", 7.5, { c: ROT }));
-      const rx = X0 + 352; el.push(rotulo(rx, yy + 16, "Médico veterinário")); el.push(E.lin(rx, yy + 34, X0 + W0 - 8, yy + 34, { s: LIN, lw: 0.8 }));
-      if (f.k === "vermifugo") { el.push(rotulo(cx, yy + h - 12, "Reforço em")); el.push(...dataEmBranco(cx + 50, yy + h - 11).el); }
-      { const dx = X0 + W0 - 8 - 66; el.push(rotulo(dx - largura("PRÓXIMO EM", 6.6, true) - 6, yy + h - 12, "Próximo em")); el.push(...dataEmBranco(dx, yy + h - 11).el); }
+      // à esquerda a data e, embaixo, próximo em (ectoparasitas) ou reforço em (vermífugo); no meio o produto; à direita o médico veterinário sozinho
+      const verm = f.k === "vermifugo";
+      el.push(rotulo(cx, yy + 13, verm ? "Vermifugado em" : "Data")); el.push(...data(cx, yy + 31));
+      el.push(rotulo(cx, yy + h / 2 + 10, verm ? "Reforço em" : "Próximo em")); el.push(...data(cx, yy + h / 2 + 28));
+      const px = X0 + 112, pw = 150; el.push(rotulo(px, yy + 13, verm ? "Vermífugo" : "Ectoparasiticida")); el.push(E.lin(px, yy + 31, px + pw, yy + 31, { s: LIN, lw: 0.8 }));
+      if (verm) { el.push(rotulo(px, yy + h / 2 + 10, "Próximo em")); el.push(...data(px, yy + h / 2 + 28)); }
+      const kx = X0 + 274; el.push(rotulo(kx, yy + 13, "Peso")); el.push(E.lin(kx, yy + 31, kx + 34, yy + 31, { s: LIN, lw: 0.8 })); el.push(T(kx + 36, yy + 30, "kg", 7.5, { c: ROT }));
+      assinatura(X0 + 332, yy);
     }
   }
   return el;
