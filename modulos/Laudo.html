@@ -1957,7 +1957,11 @@ const TIPOS = {
 };
 const extDoador = () => estado.tipo === "compat" && !!(estado.t && estado.t.doadorExterno);
 const GRAUS = ["", "+", "++", "+++"];
-const NOTA_GRAU = "As cruzes indicam a intensidade da aglutinação no teste do paciente, de + (fraca) a +++ (intensa).";
+// cruzes: no DEA 1 é a marcação da linha do teste na fita (hemácias retidas na linha); no DAL é a aglutinação no cartão
+const notaGrau = () => { const t = tipAtual() || {}, d = !!(t.dea1 && t.dea1.on && t.dea1.res === "Positivo" && t.dea1.grau), l = !!(t.dal && t.dal.on && t.dal.res === "Positivo" && t.dal.grau);
+  if (d && l) return "As cruzes indicam a intensidade da reação, de + (fraca) a +++ (intensa). No DEA 1, é a intensidade da linha do teste na fita, formada pelas hemácias retidas na linha. No DAL, é a intensidade da aglutinação no cartão.";
+  if (d) return "As cruzes indicam a intensidade da linha do teste na fita, formada pelas hemácias retidas na linha, de + (fraca) a +++ (intensa).";
+  return "As cruzes indicam a intensidade da aglutinação no cartão, de + (fraca) a +++ (intensa)."; };
 const NOTA_DEA1 = "O grupo 1 do sistema DEA (Dog Erythrocyte Antigen) é o mais relevante clinicamente na medicina transfusional veterinária. Os cães podem ser classificados como DEA 1 positivo ou DEA 1 negativo. Cães DEA 1 negativos não possuem aloanticorpos naturais contra o DEA 1, mas podem se sensibilizar após uma transfusão incompatível e desenvolver anticorpos em cerca de 4 a 14 dias, o que pode resultar em reações hemolíticas agudas ou tardias nas transfusões seguintes.\n" +
   "Este teste identifica apenas o grupo DEA 1. Existem outros sistemas sanguíneos clinicamente relevantes em cães, como DAL, Kai 1, Kai 2 e outros antígenos do sistema DEA (DEA 3, 4, 5 e 7), que não são avaliados na rotina. Por isso, a prova de compatibilidade é fortemente recomendada antes de qualquer transfusão, especialmente em pacientes que já receberam transfusão, para reduzir o risco de reações causadas por incompatibilidades não detectáveis na tipagem para o DEA 1.";
 const NOTA_DAL = "Além do DEA 1, grupo mais relevante clinicamente na medicina transfusional veterinária, os cães também podem ser classificados como DAL positivo ou DAL negativo. Cães DAL negativos não possuem aloanticorpos naturais contra o DAL, mas podem se sensibilizar após uma transfusão incompatível e desenvolver anticorpos, o que pode resultar em reações hemolíticas agudas ou tardias nas transfusões seguintes.\n" +
@@ -2410,10 +2414,11 @@ function blocoCartao(c, x, w, cel) {
   const det = []; (c.linhas || []).forEach(([rot, val, dest]) => { if (!val) return; if (val === "\u00a0") return det.push([rot, "", false]); quebrar(val, dest ? 10 : 8.8, !!dest, larguraTxt - rotW).forEach((l, i) => det.push([i ? "" : rot, l, dest])); });
   const wSelo = c.res ? largura(c.res, c.tamRes || 8.6, true) + 18 : 0, selBaixo = !!(c.titulo && c.res && 22 + largura(c.titulo, tamT, true) + wSelo > w - 10);
   // informações secundárias (método, kit) em letra pequena, na frente do título e do resultado
-  const xInfo = c.info && c.info.length && !selBaixo ? 30 + largura(c.titulo || "", tamT, true) + wSelo + 10 : 0, wInfo = w - 12 - xInfo - (tb ? twT + 18 : 0), tamI = 6.6, lhI = 8.6;
-  const infoLs = xInfo && wInfo > 80 ? c.info.flatMap((t2) => quebrar(t2, tamI, false, wInfo)) : [];
-  // sem espaço na frente do título: volta para as linhas do cartão, em letra pequena
-  if (c.info && c.info.length && !infoLs.length) c.info.forEach((t2) => quebrar(t2, 7.4, false, larguraTxt).forEach((l) => det.push(["", l, false])));
+  const xInfo = c.info && c.info.length && !selBaixo ? 30 + largura(c.titulo || "", tamT, true) + wSelo + 10 : 0, wInfo = w - 12 - xInfo - (tb ? twT + 18 : 0), tamI = 5.9, lhI = 7.6;
+  // cada linha: rótulo (Método) e o valor; o que não couber continua embaixo, alinhado com o valor
+  const infoLs = xInfo && wInfo > 80 ? c.info.flatMap(([r, v]) => { const wr = r ? largura(r + "  ", tamI, true) : 0; return quebrar(v, tamI, false, wInfo - wr).map((l, i) => ({ r: i ? "" : r, wr, l })); }) : [];
+  // sem espaço na frente do título: volta para as linhas do cartão
+  if (c.info && c.info.length && !infoLs.length) c.info.forEach(([r, v]) => quebrar(v, 8.8, false, larguraTxt - rotW).forEach((l, i) => det.push([i ? "" : r, l, false])));
   const tit0 = Math.max((c.tamT ? 40 : 46) + (selBaixo ? (c.tamRes ? 24 : 19) : 0), infoLs.length ? 18 + infoLs.length * lhI : 0), hTxt = Math.max((c.titulo ? tit0 : 18) + det.reduce((s, d) => s + (d[2] ? 15 : 13), 0) + (det.length ? 6 : 0), tb ? thT + 14 : 0);
   const h = abaixo ? hTxt + (im ? fh + 12 : 0) : Math.max(hTxt, im ? fh + 24 : 0, c.titulo ? (c.tamT ? (det.length ? 54 : 40) : 62) : 0);
   return { h: h + 10, el: (y) => {
@@ -2422,9 +2427,9 @@ function blocoCartao(c, x, w, cel) {
     if (c.res) e.push(...(selBaixo ? seloRes(x + 16, y + (c.tamT ? 34 : 36), c.res, c.pos, c.tamRes) : seloRes(x + 22 + largura(c.titulo, tamT, true), y + (c.tamRes ? 12 : 13), c.res, c.pos, c.tamRes)).el);
     let yy = y + (c.titulo ? tit0 : 20);
     det.forEach(([rot, val, dest]) => { e.push(T(x + 16, yy, rot, 8.6, { c: COR.MARROM2 }), T(x + 16 + rotW, yy, val, dest ? 10 : 8.8, { b: !!dest, c: dest ? COR.BORDO : COR.TEXTO })); yy += dest ? 15 : 13; });
-    if (im) { const fx = abaixo ? x + 16 : x + w - 12 - fw, fy = abaixo ? y + hTxt : y + (h - fh) / 2; e.push(E.img(fotoK, fx, fy, fw, fh), E.ret(fx, fy, fw, fh, { s: COR.BEGE, lw: 0.6 })); }
+    if (im) { const fx = abaixo ? x + 3 + (w - 3 - fw) / 2 : x + w - 12 - fw, fy = abaixo ? y + hTxt : y + (h - fh) / 2; e.push(E.img(fotoK, fx, fy, fw, fh), E.ret(fx, fy, fw, fh, { s: COR.BEGE, lw: 0.6 })); }
     if (tb) e.push(E.img(c.tubo, x + w - 14 - twT, y + 8, twT, thT));
-    if (infoLs.length) { const y0 = y + Math.max(11, 22 - (infoLs.length * lhI) / 2) + tamI; infoLs.forEach((l, i) => e.push(T(x + xInfo, y0 + i * lhI, l, tamI, { c: COR.MARROM2 }))); }
+    if (infoLs.length) { const y0 = y + Math.max(11, 22 - (infoLs.length * lhI) / 2) + tamI; infoLs.forEach((o, i) => { if (o.r) e.push(T(x + xInfo, y0 + i * lhI, o.r, tamI, { b: true, c: COR.MARROM2 })); e.push(T(x + xInfo + o.wr, y0 + i * lhI, o.l, tamI, { c: COR.MARROM2 })); }); }
     return e; } };
 }
 
@@ -2581,7 +2586,7 @@ function blocosTipagem(x, w, cel) {
   if (!felino() && t.davr && cartoes.length) { const alvo = cartoes.find((c) => c.titulo === "DAL") || cartoes[0]; alvo.linhas.push(["", siglaDavr()]); }
   // A4: método, kit e DAVR em letra pequena na frente do resultado; no cartão fica só a intensidade
   if (!cel && !felino()) cartoes.forEach((c) => { const sec = c.linhas.filter(([r, v]) => (r === "Método" || r === "Kit" || r === "") && v), m = sec.filter(([r]) => r === "Método").map((l) => l[1]), k = sec.filter(([r]) => r !== "Método").map((l) => l[1]).join("  ·  ");
-    c.info = [...m, ...(k ? [k] : [])]; c.linhas = c.linhas.filter(([r]) => r !== "Método" && r !== "Kit" && r !== ""); });
+    c.info = [...m.map((v) => ["Método", v]), ...(k ? [/^Lote /.test(k) ? ["Lote", k.slice(5)] : ["", k]] : [])]; c.linhas = c.linhas.filter(([r]) => r !== "Método" && r !== "Kit" && r !== ""); });
   const lado = !cel && t.diagrama && sistemasCompat().length;
   const ambos = !felino() && t.dea1.on && t.dal.on, paras = String(t.nota || "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
   // DEA 1 e DAL juntos, com o texto padrão: cada sistema com o seu parágrafo logo abaixo; se não couber numa folha, o DAL começa na segunda
@@ -2600,9 +2605,9 @@ function blocosTipagem(x, w, cel) {
         e.push(...painelCompat(xr + (wr - pw) / 2, y + 4 + (hb - pp.h) / 2, pw, sp).el); return e; } });
     });
     // as duas tipagens primeiro; os textos vêm depois e, se não couber tudo numa folha, vão com a assinatura para a segunda
-    if (separar) { if (temGrau) B.push(...blocosNota(NOTA_GRAU, x, w, 7.6, COR.TXT2)); B.push({ h: 0, quebra: true, el: () => [] }); B.push(...blocoTexto("SOBRE O DEA 1", paras[0], x, w, 8), ...blocoTexto("SOBRE O DAL", paras[1], x, w, 8)); B.umaFolha = true; }
+    if (separar) { if (temGrau) B.push(...blocosNota(notaGrau(), x, w, 7.6, COR.TXT2)); B.push({ h: 0, quebra: true, el: () => [] }); B.push(...blocoTexto("SOBRE O DEA 1", paras[0], x, w, 8), ...blocoTexto("SOBRE O DAL", paras[1], x, w, 8)); B.umaFolha = true; }
   } else if (separar) {
-    cartoes.forEach((c, i) => { if (i === 1) B.push({ h: 0, quebra: true, el: () => [] }); B.push(blocoCartao(c, x, w, cel)); if (i === 0 && temGrau) B.push(...blocosNota(NOTA_GRAU, x, w, 7.6, COR.TXT2)); B.push(...blocoTexto(i === 0 ? "SOBRE O DEA 1" : "SOBRE O DAL", paras[i], x, w, 8)); });
+    cartoes.forEach((c, i) => { if (i === 1) B.push({ h: 0, quebra: true, el: () => [] }); B.push(blocoCartao(c, x, w, cel)); if (i === 0 && temGrau) B.push(...blocosNota(notaGrau(), x, w, 7.6, COR.TXT2)); B.push(...blocoTexto(i === 0 ? "SOBRE O DEA 1" : "SOBRE O DAL", paras[i], x, w, 8)); });
   } else if (lado) {
     // A4: cartões numa coluna e o esquema de compatibilidade na outra, para caber numa folha
     const wl = Math.round(w * 0.6), xr = x + wl + 18, wr = w - wl - 18, cs = cartoes.map((c) => blocoCartao(Object.assign({ fotoAbaixo: true, fhMax: 96, rotW: 70 }, c), x, wl, false));
@@ -2615,7 +2620,7 @@ function blocosTipagem(x, w, cel) {
     B.push(...blocosNota(SL.map((x2) => x2.legenda.join(" ")).join(" "), x, w, 7.2, COR.TXT2));
   } else if (!separar) cartoes.forEach((c) => B.push(blocoCartao(c, x, w, cel)));
   if (!felino()) {
-    if (temGrau && !separar) B.push(...blocosNota(NOTA_GRAU, x, w, 7.6, COR.TXT2));
+    if (temGrau && !separar) B.push(...blocosNota(notaGrau(), x, w, 7.6, COR.TXT2));
   }
   if (!lado) B.push(...blocoDiagrama(x, w, cel));
   B.push(...blocoTexto(separar ? "OUTROS SISTEMAS SANGUÍNEOS" : "SOBRE A TIPAGEM", separar ? paras[2] : t.nota, x, w, cel ? 8.6 : 8));

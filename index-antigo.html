@@ -950,7 +950,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125004638';
+  var VERSAO = '20261125005538';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6264,6 +6264,12 @@ function pintarHemoIA() {
   $('#hiCalc').onclick = () => { Object.assign(T, { comp: 'CH', rec: ht != null ? String(ht).replace('.', ',') : T.rec, hb: hb != null ? String(hb).replace('.', ',') : T.hb, usarHb: !!H.usarHb, plq: V.plaquetas != null ? String(V.plaquetas) : T.plq, tp: V.tp != null ? String(V.tp) : T.tp, ttpa: V.ttpa != null ? String(V.ttpa) : T.ttpa, fib: V.fibrinogenio != null ? String(V.fibrinogenio) : T.fib }); telaTransfusao(); };
 }
 /* ═════════════ Laudos de exames (resultado da IDEXX no padrão do CVH) ═════════════ */
+// laudo de tipagem do CVH (ou prova de compatibilidade com a tipagem junto): entra no Histórico Laboratorial pelos dados do próprio laudo
+const ehTipLaudo = d => !!d && (d.tipoLaudo === 'tipagem' || (d.tipoLaudo === 'compat' && !!(d.detalhe || {}).tipagem));
+function tipagensLaudo(aid) {
+  return laudosDe(aid).filter(r => r.excluido !== '1' && ehTipLaudo(r.dados)).map(r => { const d = r.dados, t = (d.tipoLaudo === 'tipagem' ? d.detalhe : d.detalhe.tipagem) || {};
+    return { id: r.id, data: (d.exame || {}).data || r.data, dea1: t.dea1 || null, dal: t.dal || null, grupo: t.grupo || '', metodoGato: t.metodoGato || '', fotos: (d.fotos || []).filter(f => f.alvo === 'dea' || f.alvo === 'dal').map(f => ({ id: f.id, alvo: f.alvo })) }; });
+}
 function laudosDe(aid) { return regsDe(aid).filter(r => r.tipo === 'laudo').sort((a, b) => (b.data + (b.assinadoEm || '')).localeCompare(a.data + (a.assinadoEm || ''))); }
 // laudo de receptor sem cadastro: salvo e assinado como os outros, com animalId 'receptor' (fica só no painel de laudos)
 async function salvarLaudoReceptor(o) {
@@ -6298,9 +6304,9 @@ function itemLaudo(r, comAnimal) {
   const sit = idx ? (fo.length ? '<span class="ld-fo">Fora da referência: ' + esc(fo.map(l => l.nome).join(', ')) + '</span>' : '<span class="ld-ok">Todos dentro da referência</span>')
     : rs.length ? rs.slice(0, 8).map(x => '<span class="' + (x.alerta ? 'ld-fo' : 'ld-ok') + '">' + esc(x.nome + ': ' + x.texto) + '</span>').join(' ') : '';
   return '<div class="ld-i"><div class="ld-t"><b>' + (comAnimal ? esc(an.nome) + ' · ' : '') + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(r.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', (d.exame || {}).equip, idx ? (d.linhas || []).length + ' resultados' : '', r.vetNome].filter(Boolean).join(' · ')) + '</small>' + sit + '</div>' +
-    '<div class="acoes">' + lk(d.cel, 'PDF celular') + lk(d.a4, 'PDF A4') + (d.fotos || []).map(f => '<a class="btn sec2 peq" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(f.id) : '#') + '" target="_blank" rel="noopener">' + (f.alvo === 'tubo' ? 'Foto do plasma' : 'Foto do cartão') + (f.noLaudo ? '' : ' (só guardada)') + '</a>').join('') + (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn sec2 peq" data-acao="copiar-zap" data-href="' + esc(w) + '">Copiar mensagem</button>' : '') +
+    '<div class="acoes">' + lk(d.cel, 'PDF celular') + lk(d.a4, 'PDF A4') + (d.fotos || []).map(f => '<a class="btn sec2 peq" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(f.id) : '#') + '" target="_blank" rel="noopener">' + (f.alvo === 'tubo' ? 'Foto do plasma' : f.alvo === 'dea' ? 'Fita do DEA 1' : f.alvo === 'dal' ? 'Cartão do DAL' : 'Foto do cartão') + (f.noLaudo ? '' : ' (só guardada)') + '</a>').join('') + (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn sec2 peq" data-acao="copiar-zap" data-href="' + esc(w) + '">Copiar mensagem</button>' : '') +
     (((d.edicao && d.edicao.id) || edicaoDeAntigo(d)) && pode('laudos') ? '<button class="btn sec2 peq" data-acao="laudo-corrigir" data-id="' + r.id + '">Corrigir</button>' : '') +
-    (pode('laudos') && !rec ? (() => { const ev = envioDe(r); return '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' + (d.origens && pode('historico') ? '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : ''); })() : '') +
+    (pode('laudos') && !rec ? (() => { const ev = envioDe(r); return '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="carteira" data-v="' + (ev.carteira ? '0' : '1') + '">' + (ev.carteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button>' + ((d.origens || ehTipLaudo(d)) && pode('historico') ? '<button class="btn sec2 peq" data-acao="pl-envio" data-id="' + r.id + '" data-c="historico" data-v="1">' + (ev.historico ? 'Atualizar o histórico' : 'Enviar para o histórico') + '</button>' : ''); })() : '') +
     (pode(['historico']) ? '<button class="btn sec2 peq rc-del" data-acao="laudo-apagar" data-id="' + r.id + '">Apagar</button>' : '') + '</div>' +
     (!rec && (d.paciente || {}).nome && an.nome && semAc(d.paciente.nome).trim().toLowerCase() !== semAc(an.nome).trim().toLowerCase() ? '<p class="nota ld-dif">Este laudo saiu com o nome "' + esc(d.paciente.nome) + '" e o cadastro hoje está "' + esc(an.nome) + '".' + (d.edicao && d.edicao.id ? ' Toque em Corrigir para refazer o laudo com o cadastro atual.' : ' Ele foi feito antes de o painel guardar a parte editável, então precisa ser refeito.') + '</p>' : '') + '</div>';
 }
@@ -6436,7 +6442,7 @@ const TIPOS_PL = [['tecsa', 'TECSA'], ['citopet', 'Citopet'], ['idexx', 'IDEXX']
 const catReg = r => { const d = r.dados || {}; return d.tipoLaudo === 'tecsa' ? 'tecsa' : (!d.tipoLaudo || d.tipoLaudo === 'idexx') ? ((d.exame || {}).labNome === 'Citopet' ? 'citopet' : 'idexx') : d.tipoLaudo; };
 const alertaReg = r => { const d = r.dados || {}, t = catReg(r); return (t === 'idexx' || t === 'citopet') && (d.linhas || []).length ? foraLaudo(d).map(l => l.nome) : (d.resumo || []).filter(x => x.alerta).map(x => x.nome + ': ' + x.texto); };
 const alertaLab = x => (x.resumo || []).filter(r => r.positivo || r.alterado).map(r => (r.positivo ? 'DETECTADO ' : '') + r.exame + (r.resultado ? ' ' + r.resultado : ''));
-const envioDe = r => Object.assign({ carteira: true, historico: !!((r.dados || {}).origens) }, (r.dados || {}).envio || {});
+const envioDe = r => Object.assign({ carteira: true, historico: !!((r.dados || {}).origens) || ehTipLaudo(r.dados) }, (r.dados || {}).envio || {});
 const PL = { tipo: 'tecsa', mes: 'recentes', labs: null, rasc: null };
 async function telaPainelLaudos(recarregar) {
   E.livro = null; E.animal = null; fecharFolha();
@@ -6465,7 +6471,7 @@ function pintarPainelLaudos() {
     if (o.k === 'lab') return '<div class="item lab-it' + (x.situacao === 'novo' ? ' novo' : '') + '"><div class="t"><b><span class="chip ' + (o.al.length || x.positivo ? 'critico' : 'neutro') + '">' + (ROT_LAB[x.origem] || x.origem) + '</span> ' + esc(nome(o)) + (x.codigo ? ' <small>· doação ' + esc(x.codigo) + '</small>' : '') + '</b><small>' + esc([br(isoLab(x)) || x.data, x.numero ? 'nº ' + x.numero : '', x.completo === 'NÃO' ? 'resultado parcial' : '', ['ignorado', 'arquivado'].includes(x.situacao) ? 'arquivado' : 'recebido do laboratório, aguardando o laudo do CVH'].filter(Boolean).join(' · ')) + '</small>' + al + '</div>' +
       '<div class="mini-bts"><a class="mini" href="' + esc(window.CVH_SERVIDOR ? CVH_SERVIDOR.arquivo(x.arquivoId) : '#') + '" target="_blank" rel="noopener">PDF</a><button class="mini" data-acao="lab-laudo" data-id="' + esc(x.id) + '">Fazer laudo CVH</button><button class="mini" data-acao="pl-marcar" data-id="' + esc(x.id) + '" data-v="' + (['ignorado', 'arquivado'].includes(x.situacao) ? 'visto' : 'arquivado') + '">' + (['ignorado', 'arquivado'].includes(x.situacao) ? 'Voltar para o fluxo' : 'Arquivar') + '</button></div></div>';
     if (o.k === 'rasc') return '<div class="item lab-it"><div class="t"><b><span class="chip neutro">em edição</span> ' + esc(nome(o)) + ' · ' + esc(x.titulo || 'Laudo') + '</b><small>' + esc(['salvo ' + br(String(x.em || '').slice(0, 10)), x.usuario].filter(Boolean).join(' · ')) + '</small></div><div class="mini-bts"><button class="mini" data-acao="laudo-ed-abrir" data-id="' + esc(x.id) + '">Revisar e assinar</button></div></div>';
-    const d = x.dados || {}, ev = envioDe(x), temHist = !!d.origens && pode('historico'), rec = x.animalId === 'receptor';
+    const d = x.dados || {}, ev = envioDe(x), temHist = (!!d.origens || ehTipLaudo(d)) && pode('historico'), rec = x.animalId === 'receptor';
     if (rec) return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).clinica, 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al + '</div><div class="mini-bts">' + (d.cel && d.cel.url ? '<a class="mini" href="' + esc(d.cel.url) + '" target="_blank" rel="noopener">PDF</a>' : '') + (d.a4 && d.a4.url ? '<a class="mini" href="' + esc(d.a4.url) + '" target="_blank" rel="noopener">A4</a>' : '') + (d.edicao && d.edicao.id && pode('laudos') ? '<button class="mini" data-acao="laudo-corrigir" data-id="' + x.id + '">Reabrir</button>' : '') + '</div></div>';
     return '<div class="item lab-it"><div class="t"><b>' + esc(nome(o)) + ' · ' + esc(d.titulo || 'Laudo') + '</b><small>' + esc([br(x.data), (d.exame || {}).doacao ? 'doação ' + d.exame.doacao : '', 'assinado por ' + (x.vetNome || '')].filter(Boolean).join(' · ')) + '</small>' + al +
       '<small>' + (ev.carteira ? '<span class="chip ok">na carteira</span>' : '<span class="chip neutro">fora da carteira</span>') + ' ' + (temHist ? (ev.historico ? '<span class="chip ok">no histórico</span>' : '<span class="chip neutro">fora do histórico</span>') : '') + '</small></div>' +
@@ -6895,6 +6901,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.ultimo = ult ? { id: ult.dados.a4.id, nome: ult.dados.a4.nome || 'historico.pdf', data: ult.data } : null;
     // PDFs originais dos laudos da IDEXX e da TECSA salvos no painel: entram sozinhos no histórico
     E.ponte.laudosOrigem = laudosDe(aid).filter(r => (r.dados || {}).origens).flatMap(r => r.dados.origens.map(o => ({ id: o.id, nome: o.nome, data: r.data })));
+    E.ponte.tipagensLaudo = tipagensLaudo(aid);
   }
   E.modSujo = false;
   const quem = an ? an.nome : rp.nome;
@@ -7235,7 +7242,7 @@ async function atualizarHistoricoSozinho(aid) {
     const P = { animal: { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: an.tipoSanguineo, dal: an.dal || '', nascimento: an.nascimento },
       responsavel: { nome: rp.nome || '', cpf: rp.cpf || '' }, vet: v ? { nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || '' } : null, temGemini: !!E.d.config.temGemini, fichas: fichasDe(aid), racasExtra: { cao: racasExtra(false), gato: racasExtra(true) },
       ultimo: ult ? { id: ult.dados.a4.id, nome: ult.dados.a4.nome || 'historico.pdf', data: ult.data } : null,
-      laudosOrigem: laudosDe(aid).filter(r => (r.dados || {}).origens).flatMap(r => r.dados.origens.map(o => ({ id: o.id, nome: o.nome, data: r.data }))), autoSalvar: true, autoAid: aid };
+      laudosOrigem: laudosDe(aid).filter(r => (r.dados || {}).origens).flatMap(r => r.dados.origens.map(o => ({ id: o.id, nome: o.nome, data: r.data }))), tipagensLaudo: tipagensLaudo(aid), autoSalvar: true, autoAid: aid };
     let fr = $('#moduloAuto'); if (fr) fr.remove();
     fr = document.createElement('iframe'); fr.id = 'moduloAuto'; fr.title = 'Atualização do histórico'; fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
     fr.style.cssText = 'position:fixed;left:-3000px;top:0;width:1200px;height:900px;border:0;visibility:hidden';
@@ -8227,7 +8234,7 @@ const ACOES = {
   'pl-marcar': async b => { try { await api('laboratorioMarcar', E.sessao, b.dataset.id, { situacao: b.dataset.v }); const x = (PL.labs || []).find(y => y.id === b.dataset.id); if (x) x.situacao = b.dataset.v; pintarPainelLaudos(); } catch (e) { toast(e.message, 4000); } },
   'pl-envio-tudo': async b => {
     const r = regPorId(b.dataset.id); if (!r) return; b.disabled = true;
-    try { const hist = !!((r.dados || {}).origens) && pode('historico'); let salvo = await api('laudoEnvio', E.sessao, r.id, Object.assign({ carteira: true }, hist ? { historico: true } : {})); guardarRegistro(salvo);
+    try { const hist = (!!((r.dados || {}).origens) || ehTipLaudo(r.dados)) && pode('historico'); let salvo = await api('laudoEnvio', E.sessao, r.id, Object.assign({ carteira: true }, hist ? { historico: true } : {})); guardarRegistro(salvo);
       if (hist) atualizarHistoricoSozinho(r.animalId); toast('Laudo enviado para a carteira' + (hist ? ' e o histórico sendo atualizado (leva alguns minutos).' : '.'), 5000);
       if (document.querySelector('.tela-pl')) pintarPainelLaudos(); else if (document.querySelector('#listaLd')) telaLaudos(E.animal);
     } catch (e) { toast(e.message, 6000); b.disabled = false; }
