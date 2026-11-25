@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125195237">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125200648">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -604,6 +604,7 @@ a.btn{text-decoration:none}
 .ct-feed .ct-txt{font-size:31px;margin-top:18px;max-width:860px}.ct-story .ct-txt{font-size:39px;margin-top:30px;max-width:860px}
 /* certificado de saúde: texto mais longo, em letra menor */
 .ct-saude .ct-nome{font-size:64px}.ct-saude .ct-quando{font-size:19px}.ct-saude .ct-txt{font-size:14.5px;line-height:1.45;max-width:860px;margin-top:6px}.ct-saude .ct-tit{margin-bottom:0}
+.cs-ed{margin:10px 0}.cs-ed summary{cursor:pointer;color:var(--vinho);font-weight:700;margin-bottom:8px}.cs-ed textarea{width:100%;font:inherit;line-height:1.45}
 .ct-data{margin:10px 0 0;font-size:15px;font-weight:700;color:#5F130F}.ct-el{display:block;font-size:11px;color:#8A6640;margin-top:2px}
 .ct-feed.ct-saude .ct-nome{font-size:96px}.ct-feed.ct-saude .ct-quando{font-size:28px}.ct-feed.ct-saude .ct-txt{font-size:23px;margin-top:12px;max-width:880px}.ct-feed .ct-data{font-size:24px;margin-top:16px}.ct-feed .ct-el{font-size:16px}
 .ct-story.ct-saude .ct-nome{font-size:120px}.ct-story.ct-saude .ct-quando{font-size:34px}.ct-story.ct-saude .ct-txt{font-size:29px;margin-top:20px;max-width:880px}.ct-story .ct-data{font-size:30px;margin-top:24px}.ct-story .ct-el{font-size:19px}
@@ -1047,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125195237';
+  var VERSAO = '20261125200648';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4070,22 +4071,28 @@ function carimboCert(v) {
 }
 // frase do certificado (fica aqui para trocar fácil pelo texto do CVH)
 const CERT_FRASE = d => 'pela doação de sangue realizada em ' + d + ', um gesto generoso que oferece a outros animais uma nova chance de vida.';
+// textos padrão do certificado de saúde (no gênero do animal); tudo pode ser editado em cada certificado
+const CS_TITULO = 'Certificado de Saúde';
+const csFem = an => /^f/.test(semAc((an && an.sexo) || ''));
+const csAbertura = an => 'O Centro Veterinário de Hemoterapia (CVH) certifica que ' + (csFem(an) ? 'a doadora' : 'o doador');
+const csTexto = an => { const f = csFem(an); return ['Foi submetid' + (f ? 'a' : 'o') + ' à avaliação clínica, incluindo exame físico, hemograma completo, perfil bioquímico e exames sorológicos e de biologia molecular (PCR) para triagem de agentes infecciosos, conforme as recomendações da Associação Brasileira Veterinária de Hematologia e Medicina Transfusional (ABVHMT).',
+  'Na data da avaliação, o animal apresentou condições clínicas e laboratoriais compatíveis com os critérios de saúde estabelecidos para doadores de sangue, com resultados negativos para os agentes infecciosos pesquisados.',
+  'Após o procedimento de doação de sangue, ' + (f ? 'a doadora' : 'o doador') + ' recebeu vermifugação como parte dos cuidados preventivos oferecidos pelo CVH.'].join('\n\n'); };
 // certificado de saúde: mesmo desenho dos outros, com o canil e o texto da avaliação de doador
 function certSaudeHtml(c, fmt) {
-  const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt], fem = /^f/.test(semAc(an.sexo || '')), o = fem ? 'a' : 'o';
+  const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt];
   const canil = String(c.canil || '').trim(), canilTxt = canil ? (/^canil\b/i.test(canil) ? canil : 'Canil ' + canil) : '';
-  const ps = ['Foi submetid' + o + ' à avaliação clínica, incluindo exame físico, e a exames hematológicos, bioquímicos e de biologia molecular, conforme os protocolos de triagem de doadores de sangue do CVH.',
-    'Na data da avaliação, o animal apresentou condições clínicas e laboratoriais compatíveis com os critérios de saúde estabelecidos para doadores de sangue, com resultados negativos para os agentes infecciosos pesquisados.']
-    .concat(c.verm ? ['Após o procedimento de doação de sangue, o animal recebeu vermifugação como parte dos cuidados preventivos oferecidos pelo CVH.'] : []);
+  const d = (c.r && c.r.dados) || {}, ps0 = String(d.texto || '').trim() ? String(d.texto) : csTexto(an).split('\n\n').filter((t, i) => i < 2 || c.verm).join('\n\n');
+  const ps = ps0.split(/\n\s*\n|\n/).map(t => t.trim()).filter(Boolean);
   const ca = fmt === 'a4' ? 200 : fmt === 'feed' ? 215 : 300, ci = fmt === 'a4' ? 33 : 46;
   const canto = '<svg class="ct-canto" viewBox="0 0 ' + (ca + 20) + ' ' + (ca + 20) + '" style="left:' + ci + 'px;top:' + ci + 'px;width:' + (ca + 20) + 'px;height:' + (ca + 20) + 'px"><path d="' + tuboCanto(ca) + '" fill="none" stroke="#A73E3E" stroke-width="' + (fmt === 'a4' ? 1.8 : 2.6) + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   return '<div class="ct ct-' + fmt + ' ct-saude" style="width:' + W + 'px;height:' + H + 'px"><i class="ct-marca"></i><i class="ct-b1"></i><i class="ct-b2"></i><i class="ct-b3"></i>' + canto +
     '<i class="ct-cn tl"></i><i class="ct-cn tr"></i><i class="ct-cn bl"></i><i class="ct-cn br"></i>' +
     '<div class="ct-in"><div class="ct-g"><i class="ct-logo" role="img" aria-label="CVH Centro Veterinário de Hemoterapia"></i>' +
-    '<h1 class="ct-tit">Certificado de Saúde</h1></div>' +
-    '<div class="ct-g"><p class="ct-sub">O Centro Veterinário de Hemoterapia (CVH) certifica que ' + (fem ? 'a doadora' : 'o doador') + '</p>' +
+    '<h1 class="ct-tit">' + esc(String(d.titulo || '').trim() || CS_TITULO) + '</h1></div>' +
+    '<div class="ct-g"><p class="ct-sub">' + esc(String(d.abertura || '').trim() || csAbertura(an)) + '</p>' +
     '<h2 class="ct-nome">' + esc(an.nome) + '</h2>' + (canilTxt ? '<p class="ct-quando">' + esc(canilTxt) + '</p>' : '') +
-    ps.map(t => '<p class="ct-txt">' + t + '</p>').join('') + '<p class="ct-data">Data da avaliação ' + br(c.data) + '</p></div>' +
+    ps.map(t => '<p class="ct-txt">' + esc(t) + '</p>').join('') + '<p class="ct-data">Data da avaliação ' + br(c.data) + '</p></div>' +
     '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b></div><small>Médico veterinário · <span class="ct-cr">' + esc(v.crmv || '') + (v.rubrica ? '<span class="ct-rb"><svg viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg></span>' : '') + '</span></small><small class="ct-el">Assinado eletronicamente</small></div>' + seloAno(c.ano, 'CERTIFICADO DE SAÚDE · CENTRO VETERINÁRIO DE HEMOTERAPIA ·') + '</div>' +
     '<p class="ct-rod">Brasília, DF · ' + br(c.data) + ' · Certificado ' + codCert(c) + ' · cvh.vet.br</p></div></div></div>';
 }
@@ -4174,7 +4181,7 @@ function botoesCert(c, ed, naFolha, fmtAtual) {
     acoes +
     (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>' : '') +
     (ed && c.tipo === 'doacao' ? '<button class="btn sec2 peq rc-del" data-acao="cert-ocultar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
-    (ed && c.tipo === 'saude' && E.certDe ? '<button class="btn sec2 peq" data-acao="cs-carteira" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + (c.naCarteira ? '0' : '1') + '">' + (c.naCarteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button><button class="btn sec2 peq rc-del" data-acao="cs-apagar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
+    (ed && c.tipo === 'saude' && E.certDe ? '<button class="btn sec2 peq" data-acao="cs-editar" data-id="' + c.id + '">Editar</button>' + '<button class="btn sec2 peq" data-acao="cs-carteira" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + (c.naCarteira ? '0' : '1') + '">' + (c.naCarteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button><button class="btn sec2 peq rc-del" data-acao="cs-apagar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
     (naFolha ? '<button class="btn sec2 peq" data-acao="fechar">Voltar</button>' : '') + '</div>';
 }
 async function ocultarCert(aid, id, b, mostrar) {
@@ -4183,23 +4190,40 @@ async function ocultarCert(aid, id, b, mostrar) {
   try { guardarRegistro(await api('anexarFichaDoacao', E.sessao, id, null, { certOculto: !mostrar })); fecharFolha(); telaCertificados(aid); toast(mostrar ? 'Certificado restaurado.' : 'Certificado apagado. A doação continua registrada.', 4000); }
   catch (e) { b.disabled = false; toast(e.message, 5000); }
 }
-// certificado de saúde: só quando alguém pede (normalmente canil). Escolhe o doador, a data da avaliação e o canil; a carteira é opcional
-function novoCertSaude(aid) {
+// certificado de saúde: só quando alguém pede (normalmente canil). Escolhe o doador, a data e o canil; título, abertura e texto podem ser editados. A carteira é opcional
+function novoCertSaude(aid, id) {
+  const atual = id ? E.d.registros.find(r => r.id === id) : null, da = (atual && atual.dados) || {};
+  if (atual) aid = atual.animalId;
   const doadores = E.d.animais.filter(a => a.doador === '1' || a.id === aid).sort((a, b) => a.nome.localeCompare(b.nome));
-  const ult = aid ? E.d.registros.filter(r => r.animalId === aid && r.tipo === 'certsaude' && r.excluido !== '1').sort(porData).pop() : null;
+  const ult = !atual && aid ? E.d.registros.filter(r => r.animalId === aid && r.tipo === 'certsaude' && r.excluido !== '1').sort(porData).pop() : null;
   const ultDoa = aid ? regsDe(aid).filter(r => r.tipo === 'doacao').sort(porData).pop() : null;
-  abrirFolha('Certificado de saúde',
+  const an0 = animalDe(aid), texto0 = atual ? (String(da.texto || '').trim() ? da.texto : csTexto(an0).split('\n\n').filter((t, i) => i < 2 || !(da.verm === false || da.verm === '0')).join('\n\n')) : csTexto(an0);
+  abrirFolha(atual ? 'Editar certificado de saúde' : 'Certificado de saúde',
     '<p class="nota">Para entregar quando pedirem (normalmente canil). Não vai para a carteira, a não ser que você marque.</p>' +
-    campo('csAn', 'Doador', '<select id="csAn">' + (aid ? '' : '<option value="">Escolha o doador</option>') + doadores.map(a => '<option value="' + a.id + '"' + (a.id === aid ? ' selected' : '') + '>' + esc(a.nome + ((respDe(a) || {}).nome ? ' · ' + respDe(a).nome : '')) + '</option>').join('') + '</select>') +
-    campo('csData', 'Data da avaliação', inp('csData', ultDoa ? ultDoa.data : hoje(), 'type="date"')) +
-    campo('csCanil', 'Canil', inp('csCanil', ult ? (ult.dados || {}).canil : '', 'placeholder="nome do canil"')) +
-    '<label class="chk"><input type="checkbox" id="csVerm" checked> Recebeu vermifugação depois da doação</label>' +
-    '<label class="chk"><input type="checkbox" id="csCart"> Enviar também para a carteira do responsável</label>' +
-    '<div class="acoes"><button class="btn" id="csSalvar">Gerar certificado</button></div>',
+    campo('csAn', 'Doador', '<select id="csAn"' + (atual ? ' disabled' : '') + '>' + (aid ? '' : '<option value="">Escolha o doador</option>') + doadores.map(a => '<option value="' + a.id + '"' + (a.id === aid ? ' selected' : '') + '>' + esc(a.nome + ((respDe(a) || {}).nome ? ' · ' + respDe(a).nome : '')) + '</option>').join('') + '</select>') +
+    campo('csData', 'Data da avaliação', inp('csData', atual ? atual.data : ultDoa ? ultDoa.data : hoje(), 'type="date"')) +
+    campo('csCanil', 'Canil', inp('csCanil', atual ? da.canil : ult ? (ult.dados || {}).canil : '', 'placeholder="nome do canil"')) +
+    '<details class="cs-ed"' + (atual ? ' open' : '') + '><summary>Editar o texto do certificado</summary>' +
+    campo('csTit', 'Título', inp('csTit', da.titulo || CS_TITULO)) +
+    campo('csAb', 'Abertura (antes do nome)', inp('csAb', da.abertura || csAbertura(an0))) +
+    campo('csTx', 'Texto (cada parágrafo separado por uma linha em branco)', '<textarea id="csTx" rows="12">' + esc(texto0) + '</textarea>') +
+    '<button class="btn sec2 peq" type="button" id="csPadrao">Voltar ao texto padrão</button></details>' +
+    (atual ? '' : '<label class="chk"><input type="checkbox" id="csCart"> Enviar também para a carteira do responsável</label>') +
+    '<div class="acoes"><button class="btn" id="csSalvar">' + (atual ? 'Salvar e assinar de novo' : 'Gerar certificado') + '</button></div>',
     () => {
+      const padrao = () => { const an = animalDe(vl('csAn') || aid); $('#csTit').value = CS_TITULO; $('#csAb').value = csAbertura(an); $('#csTx').value = csTexto(an); };
+      let mexeu = !!atual; ['csTit', 'csAb', 'csTx'].forEach(k => { $('#' + k).oninput = () => { mexeu = true; }; });
+      $('#csPadrao').onclick = () => { padrao(); mexeu = false; };
+      // trocar o doador ajusta o gênero do texto (enquanto o texto não foi mexido)
+      $('#csAn').onchange = () => { if (!mexeu) padrao(); };
       $('#csSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
-        const an = vl('csAn'), data = vl('csData'); if (!an) throw new Error('Escolha o doador.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new Error('Informe a data da avaliação.');
-        const r = await api('salvarRegistro', E.sessao, { animalId: an, tipo: 'certsaude', data, dados: { canil: vl('csCanil'), verm: $('#csVerm').checked, naCarteira: $('#csCart').checked ? '1' : '' } });
+        const an = atual ? atual.animalId : vl('csAn'), data = vl('csData'); if (!an) throw new Error('Escolha o doador.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new Error('Informe a data da avaliação.');
+        const a = animalDe(an), tit = vl('csTit'), ab = vl('csAb'), tx = $('#csTx').value.replace(/\r/g, '').trim();
+        if (!tx) throw new Error('Escreva o texto do certificado.');
+        // guarda só o que foi mudado em relação ao padrão (o padrão acompanha o gênero do animal)
+        const dados = { canil: vl('csCanil'), naCarteira: atual ? (da.naCarteira || '') : ($('#csCart').checked ? '1' : ''),
+          titulo: tit && tit !== CS_TITULO ? tit : '', abertura: ab && ab !== csAbertura(a) ? ab : '', texto: tx !== csTexto(a) ? tx : '' };
+        const r = await api('salvarRegistro', E.sessao, Object.assign({ animalId: an, tipo: 'certsaude', data, dados }, atual ? { id: atual.id } : {}));
         guardarRegistro(r); fecharFolha(); telaCertificados(an); verCert(an, r.id, 'a4');
       });
     });
@@ -9111,6 +9135,7 @@ const ACOES = {
   'cert-animal': b => { fecharFolha(); telaCertificados(b.dataset.id); },
   'cert-lista': () => telaCertificados(),
   'cs-novo': b => novoCertSaude(b.dataset.aid || ''),
+  'cs-editar': b => { fecharFolha(); novoCertSaude('', b.dataset.id); },
   'cs-carteira': async b => { b.disabled = true; try { guardarRegistro(await api('certSaudeCarteira', E.sessao, b.dataset.id, b.dataset.v === '1')); fecharFolha(); telaCertificados(b.dataset.aid); toast(b.dataset.v === '1' ? 'Certificado enviado para a carteira do responsável.' : 'Certificado tirado da carteira. Continua aqui nos certificados.', 4000); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'cs-apagar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Toque de novo para apagar'; return; } b.disabled = true; try { await api('excluirRegistro', E.sessao, b.dataset.id); E.d.registros = E.d.registros.filter(x => x.id !== b.dataset.id); fecharFolha(); telaCertificados(b.dataset.aid); toast('Certificado de saúde apagado.'); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'rel-csv': () => relCsv(),
