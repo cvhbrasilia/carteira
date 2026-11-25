@@ -2341,18 +2341,22 @@ function liberacaoTxt() {
   if (!q && l) return br(l.iso) + (l.hora ? " às " + l.hora.replace(":", "h") : "");
   return q ? q.data + (q.hora ? " às " + String(q.hora).replace(":", "h") : "") : br(hojeISO());
 }
-function blocoIdent(x, y, w, tam) {
+function blocoIdent(x, y, w, tam0) {
   // cabeçalho igual em todos os laudos: sempre os mesmos campos, na mesma ordem
-  const P = estado.paciente, R = estado.resp, X = estado.exame, el = [], lh = tam + 5.2, vazio = "não informado";
+  const P = estado.paciente, R = estado.resp, X = estado.exame, el = [], vazio = "não informado";
+  // exame de doador do CVH: no lugar do nome do CVH por extenso
+  const cvhTxt = !estado.receptor && ((CTX.animal || {}).doador || X.doacao) ? "CVH - Doador" : CLINICA_CVH;
   const ts = estado.tipo === "tipagem" || tipAtual() ? "" : tipoSanguineoTxt();
   const itens = [["Paciente", P.nome, true], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : "", false, true],
     ["Responsável", R.nome], ["CPF do responsável", R.cpf || "", false, true], [rotuloData().trim(), br(X.data) + (X.hora ? " às " + X.hora.replace(":", "h") : "")],
     ["Liberação", liberacaoTxt()],
-    ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", CLINICA_CVH] : ["Clínica veterinária", X.clinica]]),
+    ...(ehTriagem() ? [["Finalidade", "Exame de triagem", true]] : [["Médico veterinário solicitante", solicitanteTxt()], ehCvh() ? ["", cvhTxt] : ["Clínica veterinária", X.clinica]]),
     ["Microchip", P.microchip, false, true], ["Tipo sanguíneo", ts, true, true], [X.doacao ? "Doação" : "Amostra", X.doacao ? "nº " + X.doacao : X.amostra ? "nº " + X.amostra : "", false, true], X.labNome ? [estado.misto ? "Laboratórios" : "Laboratório", (estado.misto ? "IDEXX no CVH e " : "") + X.labNome + (X.labNumero ? " · nº " + X.labNumero : ""), false, true] : ["Equipamento", X.equip, false, true]]
     .filter((e) => !e[3] || String(e[1] || "").trim());
-  // A4: quatro colunas, e o que é longo ocupa duas; celular: duas. Campo de uma coluna pode subir para completar uma linha que ficou com espaço.
-  const cols = w > 400 ? 4 : 2, maxSpan = w > 400 ? 2 : cols, gap = w > 400 ? 12 : 14, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
+  // A4: quatro colunas, e o que é longo ocupa duas; se passar de quatro linhas, tenta cinco colunas com a letra um pouco menor.
+  // Celular: duas. Campo de uma coluna pode subir para completar uma linha que ficou com espaço.
+  const arranjo = (cols, tam) => {
+  const maxSpan = w > 400 ? 2 : cols, gap = w > 400 ? 12 : 14, wm = (w - 24 - gap * (cols - 1)) / cols, larg = (k) => k * wm + (k - 1) * gap, linhas = [];
   let usadas = cols;
   const its = [], por = (it) => its.push(it), poe = (it) => { it.col = usadas; usadas += it.span; linhas[linhas.length - 1].push(it); };
   itens.forEach(([rot, val, forte]) => {
@@ -2373,6 +2377,11 @@ function blocoIdent(x, y, w, tam) {
     }
     poe(its.shift());
   }
+  return { linhas, wm, gap, tam, n: linhas.reduce((a, l) => a + Math.max(...l.map((i) => i.ls.length)), 0) };
+  };
+  let A = arranjo(w > 400 ? 4 : 2, tam0);
+  if (w > 400 && A.n > 4) for (const t2 of [tam0 - 0.7, tam0 - 1.2]) { const B = arranjo(5, t2); if (B.n < A.n) A = B; if (A.n <= 4) break; }
+  const { linhas, wm, gap, tam } = A, lh = tam + 5.2;
   const alt = linhas.map((l) => Math.max(...l.map((i) => i.ls.length)) * lh), h = 13 + alt.reduce((a, c) => a + c, 0);
   el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
   let yy = y + 8 + tam;

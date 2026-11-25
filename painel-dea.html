@@ -951,7 +951,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125010019';
+  var VERSAO = '20261125010951';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6844,7 +6844,7 @@ async function abrirModulo(nome, aid, rid) {
   catch (e) { telaInicio(); toast(e.message, 7000); return; }
   E.livro = null; E.animal = aid || null; E.resp = rp.id || null; E.modAberto = nome;
   const v = vetLogado(), vp = (E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0];
-  E.ponte = { animal: an ? { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: an.tipoSanguineo, dal: an.dal || '', nascimento: an.nascimento } : null,
+  E.ponte = { animal: an ? { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: an.tipoSanguineo, dal: an.dal || '', nascimento: an.nascimento, doador: an.doador === '1' } : null,
     responsavel: { nome: rp.nome || '', cpf: rp.cpf || '' }, vet: v ? { nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || '' } : null, temGemini: !!E.d.config.temGemini, fichas: an ? fichasDe(aid) : [],
     racasExtra: { cao: racasExtra(false), gato: racasExtra(true) }, aba: E.abrirAba || '' }; E.abrirAba = '';
   if (nome === 'fichas') { E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.rascunhos = an ? andamentoDe(aid) : []; E.ponte.abrir = E.fichaAbrir || null; E.fichaAbrir = null;
