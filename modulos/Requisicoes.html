@@ -424,7 +424,7 @@ function blocoTopo(r, y) {
   const v = VETS.find((x) => x.id === r.vetId) || vetPadrao() || {}, el = [], g = 12, wE = (PGW - g) * 0.47, wD = PGW - g - wE, xD = PGX + wE + g, tam = 9;
   const L = [["LABORATÓRIO", LABS[r.lab].completo, { b: true }], ["DATA DA COLETA", br(r.data), { b: true }], ["CLÍNICA", "CVH - Centro Veterinário de Hemoterapia"], ["MÉDICO VETERINÁRIO", v.nome || ""], ["", v.crmv || ""]];
   // exames: uma coluna, nome longo quebra na própria linha
-  const itens = r.exames.map((x) => quebrar(exNome(r.lab, x), 9.5, true, wD - 36)), lh = 11.5;
+  const itens = r.exames.map((x) => quebrar(exNome(r.lab, x), 9.5, true, wD - 32)), lh = 11.5;
   let hE = 30 + itens.reduce((s2, ls) => s2 + ls.length * lh + 3.5, 0);
   const obs = String(r.obs || "").trim() ? quebrar("Observações: " + r.obs.trim(), 8.5, false, wD - 24) : [];
   if (obs.length) hE += 4 + obs.length * 10.5;
@@ -435,7 +435,7 @@ function blocoTopo(r, y) {
   el.push(T(xD + 12, y + 15, "EXAMES SOLICITADOS", 8, { b: true, c: COR.VERMELHO }));
   el.push(T(xD + 12, y + 25, "os mesmos para todos os animais desta folha", 7.5, { i: true, c: COR.MARROM2 }));
   let yy = y + 40;
-  itens.forEach((ls) => { el.push(...caixaMarcada(xD + 12, yy - 7.5, 8.5)); ls.forEach((l, k) => el.push(T(xD + 26, yy + k * lh, l, 9.5, { b: true, c: COR.TEXTO }))); yy += ls.length * lh + 3.5; });
+  itens.forEach((ls) => { el.push(E.circ(xD + 15, yy - 3.2, 1.6, { f: COR.BORDO })); ls.forEach((l, k) => el.push(T(xD + 22, yy + k * lh, l, 9.5, { b: true, c: COR.TEXTO }))); yy += ls.length * lh + 3.5; });
   if (obs.length) { yy += 2; obs.forEach((l, k) => el.push(T(xD + 12, yy + k * 10.5, l, 8.5, { c: COR.TXT2 }))); }
   return { el, h };
 }
@@ -465,10 +465,11 @@ function cardAnimal(a, i, y) {
   while (nome.length > 1 && largura(nome, 14, true) + lNum > max) nome = nome.slice(0, -1);
   el.push(E.txt(tx, y + 19, [seg(nome, 14, { b: true, c: COR.BORDO }), ...(num ? [seg(" " + num, 14, { b: true, c: COR.VERMELHO })] : [])]));
   const nasc = a.nascimento ? br(a.nascimento) + (a.idade ? " (" + a.idade + ")" : "") : "";
-  el.push(campos(tx, y + 33, max, [["ESPÉCIE", a.especie], ["RAÇA", a.raca], ["SEXO", a.sexo], [nasc ? "NASCIMENTO" : "IDADE", nasc || a.idade]], 9.5));
-  el.push(campos(tx, y + 47, max, [["RESPONSÁVEL", a.resp], ["MICROCHIP", a.microchip]], 9.5));
-  if (ehGato(a.especie)) el.push(...marcas(tx, y + 61.5, "TIPO SANGUÍNEO", [["A", "A"], ["B", "B"], ["AB", "AB"]], a.grupo).el);
-  else { const m1 = marcas(tx, y + 61.5, "DEA 1", [["+", "Positivo"], ["-", "Negativo"]], a.dea); el.push(...m1.el); el.push(...marcas(tx + m1.w + 14, y + 61.5, "DAL", [["+", "Positivo"], ["-", "Negativo"]], a.dal).el); }
+  // tipagem: só o resultado (marcado no app ou vindo do cadastro); linha vazia não ocupa espaço
+  const pm = (v) => v === "+" ? "Positivo" : v === "-" ? "Negativo" : "";
+  const linhas = [[["ESPÉCIE", a.especie], ["RAÇA", a.raca], ["SEXO", a.sexo], [nasc ? "NASCIMENTO" : "IDADE", nasc || a.idade]], [["RESPONSÁVEL", a.resp], ["MICROCHIP", a.microchip]],
+    ehGato(a.especie) ? [["TIPO SANGUÍNEO", a.grupo ? "Grupo " + a.grupo : "", { b: true }]] : [["DEA 1", pm(a.dea), { b: true }], ["DAL", pm(a.dal), { b: true }]]].filter((L) => L.some((x) => x[1]));
+  linhas.forEach((L, k) => el.push(campos(tx, y + 33 + k * 14.25, max, L, 9.5)));
   return el;
 }
 function blocoAssinatura(r, y) {
