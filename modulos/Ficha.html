@@ -3519,7 +3519,7 @@ init();
         gel ? "Deixe no quadro só o microtubo do autocontrole (ou os microtubos), do topo até a ponta. A etiqueta escrita embaixo sai e entra uma etiqueta nova com ACD, o animal e a doação." : "Deixe só o tubo dentro do quadro, do topo do plasma até o fundo. O painel separa o plasma e monta o tubo com uma etiqueta impressa, sem a estante e sem a escrita.");
       if (!cv) return null;
       const nome = String(S.animal || (ctx.animal || {}).nome || "").toUpperCase();
-      if (gel) { const g = analisarGel(aparaTinta(cv), 1, true), d = desenharGelProva(g, { pocos: ["ACD"], linhas: [nome, S.numero || ""].filter(Boolean) }); return { blob: await dataUrlBlob(d.url), url: d.url }; }
+      if (gel) { const g = { c: canvasDe(semEtiquetaGel(aparaTinta(cv)), 1000), n: 1 } /* foto real, sem clarear nem mexer na cor */, d = desenharGelProva(g, { pocos: ["ACD"], linhas: [nome, S.numero || ""].filter(Boolean) }); return { blob: await dataUrlBlob(d.url), url: d.url }; }
       const a = analisarTubo(cv);
       if (!a) { toast("Não consegui separar o plasma pela cor. A foto entra como foi recortada.", 6000); const u = cv.toDataURL("image/jpeg", 0.9); return { blob: await dataUrlBlob(u), url: u, cru: true }; }
       const d = desenharTubo(a, { nome, amostra: S.numero || "", data: S.data ? isoBR(S.data) : "" }); return { blob: await dataUrlBlob(d.url), url: d.url };
