@@ -664,6 +664,8 @@ a.btn{text-decoration:none}
 .hj-r{border:1px solid #E3D6C8;border-radius:12px;padding:6px 12px;margin-bottom:12px}.hj-l{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #F1EAE2}.hj-l:last-child{border-bottom:0}.hj-l span{color:#8A7A70;font-size:13px}.hj-l b{text-align:right;color:#2B2320}
 .hj-s{margin:14px 0 0}.hj-s h3{font-size:14px;color:#A83D3D;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}.hj-p{margin:0 0 8px}.hj-p b{display:block}.hj-p small{display:block;color:#8A7A70;font-size:12.5px}.hj-q{font-size:19px;font-weight:700;color:#5F130F;margin:4px 0}
 .opc-hj{display:flex;gap:8px}.opc-hj button{flex:1;border:1px solid #C6B098;background:#fff;color:#5F130F;border-radius:10px;padding:10px;font:inherit;font-weight:700;cursor:pointer}.opc-hj button[aria-pressed=true]{background:#5F130F;color:#fff;border-color:#5F130F}
+.pd-fts{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.pd-ft{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #E3D6C8;padding:0;background:#F6EFE8;cursor:pointer;display:inline-block}.pd-ft img{width:100%;height:100%;object-fit:cover;display:block}
+.pd-ft>button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(43,35,32,.7);color:#fff;font-size:15px;line-height:1;cursor:pointer}.pd-add{display:inline-block;cursor:pointer;margin-top:4px}
 .pd-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:4px 0 12px}.pd-eq button.ci-k{font:inherit;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}.pd-eq button.ci-k.on{background:#F7EFE6;border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
 .pd-i{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--linha)}.pd-i:first-child{border-top:0}
 .pd-ck{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid #C6B098;background:#fff;color:#fff;font-weight:800;cursor:pointer;margin-top:1px}.pd-i.feita .pd-ck{background:#5F130F;border-color:#5F130F}.pd-i.atr .pd-ck{border-color:#A83D3D}
@@ -1036,7 +1038,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125135454';
+  var VERSAO = '20261125140633';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5886,7 +5888,8 @@ async function telaPendencias(filtro) {
   E.pd = R; E.d.pendencias = R.lista.filter(p => p.paraId === E.u.id && !p.feitoEm).length;
   pintarPendencias();
 }
-function pintarPendencias() {
+function pintarPendencias() { pintarPendencias0(); carregarFotosPend(raiz); }
+function pintarPendencias0() {
   const R = E.pd, f = E.pdFiltro, h = hoje(), adm = pode('admin');
   const ab = R.lista.filter(p => !p.feitoEm), grupos = { minhas: ab.filter(p => p.paraId === E.u.id), criadas: ab.filter(p => p.criadoPorId === E.u.id && p.paraId !== E.u.id), todas: ab, feitas: R.lista.filter(p => p.feitoEm) };
   // card de cada pessoa da equipe (administrador): mostra só as pendências abertas daquela pessoa
@@ -5905,6 +5908,7 @@ function pintarPendencias() {
       const podePri = !p.feitoEm && (adm || p.criadoPorId === E.u.id || p.paraId === E.u.id);
       return '<div class="pd-i' + (p.feitoEm ? ' feita' : atr ? ' atr' : '') + (p.prioridade && !p.feitoEm ? ' pri' : '') + '"><button class="pd-ck" data-acao="pd-feito" data-id="' + p.id + '" aria-label="' + (p.feitoEm ? 'Reabrir' : 'Concluir') + '">' + (p.feitoEm ? '✓' : '') + '</button><div class="pd-c"><b>' + (p.prioridade && !p.feitoEm ? '<i class="pd-pri">Prioridade</i> ' : '') + esc(p.texto) + '</b>' +
         '<small>' + esc([p.paraId === E.u.id ? 'Para mim' : 'Para ' + p.paraNome, p.criadoPorId === E.u.id ? 'criada por mim' : 'de ' + p.criadoPor, 'em ' + br(String(p.criadoEm).slice(0, 10))].join(' · ')) + '</small>' +
+        (() => { let F = []; try { F = JSON.parse(p.fotos || '[]') || []; } catch (_) { F = []; } return F.length ? '<span class="pd-fts">' + F.map(f => '<button type="button" class="pd-ft" data-acao="pd-foto" data-id="' + esc(f.id) + '"><img data-fid="' + esc(f.id) + '" alt="Foto anexada"></button>').join('') + '</span>' : ''; })() +
         '<span class="pd-ms">' + (p.prazo ? '<em class="pd-pz' + (atr ? ' atr' : hj ? ' hj' : '') + '">' + (atr ? 'Atrasada, prazo ' : hj ? 'Vence hoje, ' : 'Prazo ') + br(p.prazo) + '</em>' : '') + (an ? '<button class="pd-an" data-acao="abrir-animal" data-id="' + an.id + '">' + esc(an.nome) + ' ›</button>' : '') + (p.feitoEm ? '<em class="pd-pz">Concluída por ' + esc(p.feitoPor) + ' em ' + br(String(p.feitoEm).slice(0, 10)) + '</em>' : '') + '</span></div>' +
         (meu || podePri ? '<div class="pd-bt">' + (podePri ? '<button class="pd-pbt' + (p.prioridade ? ' on' : '') + '" data-acao="pd-prioridade" data-id="' + p.id + '">' + (p.prioridade ? 'Tirar prioridade' : '▲ Prioridade') + '</button>' : '') + (meu && !p.feitoEm ? '<button data-acao="pd-editar" data-id="' + p.id + '">Editar</button>' : '') + (meu ? '<button data-acao="pd-apagar" data-id="' + p.id + '">Apagar</button>' : '') + '</div>' : '') + '</div>'; }).join('')
       : '<p class="vazio-p">' + (pFil ? 'Nenhuma pendência aberta para esta pessoa.' : f === 'minhas' ? 'Nenhuma pendência para você.' : f === 'feitas' ? 'Nenhuma pendência concluída nos últimos 30 dias.' : 'Nenhuma pendência aqui.') + '</p>') + '</section></div></main>');
@@ -5977,6 +5981,20 @@ async function hojeCitopet(aid, v) {
   try { E.ph.citopet = await api('estHojeCitopet', E.sessao, hoje(), aid, v || ''); } catch (e) { toast(e.message, 5000); return false; }
   return true;
 }
+// fotos das pendências: reduzidas para JPEG (lado maior de 1600 px) antes de enviar; abertas só por quem vê a pendência
+E.pdFotoCache = {};
+async function fotoPendJpeg(f) {
+  const u = URL.createObjectURL(f), im = await new Promise((ok, er) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => er(new Error('Imagem inválida.')); i.src = u; });
+  const k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+}
+function carregarFotosPend(raizEl) {
+  (raizEl || document).querySelectorAll('img[data-fid]:not([src])').forEach(async img => {
+    const id = img.dataset.fid; if (!id) return;
+    if (!E.pdFotoCache[id]) { try { const r = await api('pendenciaFotoLer', E.sessao, id); E.pdFotoCache[id] = URL.createObjectURL(new Blob([bytesDeB64(r.base64)], { type: r.mime || 'image/jpeg' })); } catch (_) { return; } }
+    img.src = E.pdFotoCache[id];
+  });
+}
 function formPendencia(p, aid) {
   p = p || { paraId: E.u.id, animalId: aid || '' };
   const an = p.animalId ? animalDe(p.animalId) : null;
@@ -5984,12 +6002,28 @@ function formPendencia(p, aid) {
     campo('pdPara', 'Quem resolve', '<select id="pdPara">' + E.pd.equipe.map(u => '<option value="' + u.id + '"' + (u.id === p.paraId ? ' selected' : '') + '>' + esc(u.nome) + (u.id === E.u.id ? ' (eu)' : '') + '</option>').join('') + '</select>') +
     campo('pdPrazo', 'Prazo (opcional)', inp('pdPrazo', p.prazo || '', 'type="date"')) +
     campo('pdAn', 'Animal relacionado (opcional)', '<input id="pdAn" list="pdAnL" value="' + esc(an ? an.nome : '') + '" placeholder="Digite o nome" autocomplete="off"><datalist id="pdAnL">' + E.d.animais.filter(a => a.ativo !== '0').map(a => '<option value="' + esc(a.nome) + '">' + esc(((E.d.responsaveis || []).find(r => r.id === a.responsavelId) || {}).nome || '') + '</option>').join('') + '</datalist>', 'larga') + '</div>' +
+    '<div class="campo larga"><label>Fotos (opcional)</label><div class="pd-fts" id="pdFts"></div><label class="btn sec2 pd-add">Anexar foto<input type="file" id="pdFoto" accept="image/*" multiple hidden></label></div>' +
     '<button class="btn" id="pdSalvar">Salvar</button>', () => {
+      let fotos = []; try { fotos = JSON.parse(p.fotos || '[]') || []; } catch (_) { fotos = []; }
+      const pintaF = () => { $('#pdFts').innerHTML = fotos.map((f, i) => '<span class="pd-ft"><img data-fid="' + esc(f.id) + '"' + (f.url ? ' src="' + f.url + '"' : '') + ' alt=""><button type="button" data-i="' + i + '" aria-label="Tirar a foto">×</button></span>').join(''); carregarFotosPend($('#pdFts'));
+        $('#pdFts').querySelectorAll('button').forEach(b => b.onclick = () => { fotos.splice(+b.dataset.i, 1); pintaF(); }); };
+      pintaF();
+      $('#pdFoto').onchange = async ev => {
+        const L = [...(ev.target.files || [])]; ev.target.value = '';
+        for (const f of L) {
+          if (fotos.length >= 8) { toast('No máximo 8 fotos por pendência.'); break; }
+          const tmp = { id: '', nome: f.name || 'foto.jpg', url: URL.createObjectURL(f), envio: true }; fotos.push(tmp); pintaF();
+          try { const j = await fotoPendJpeg(f), r = await api('pendenciaFotoSalvar', E.sessao, (f.name || 'foto').replace(/\.\w+$/, '') + '.jpg', 'image/jpeg', j); tmp.id = r.id; tmp.nome = r.nome; delete tmp.envio; E.pdFotoCache[r.id] = tmp.url; }
+          catch (e) { fotos.splice(fotos.indexOf(tmp), 1); toast('Não consegui anexar a foto. ' + e.message, 5000); }
+          pintaF();
+        }
+      };
       $('#pdSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
+        if (fotos.some(f => f.envio)) throw new Error('Espere as fotos terminarem de enviar.');
         const nome = semAc(vl('pdAn')), ach = nome ? E.d.animais.filter(a => semAc(a.nome) === nome) : [];
         if (nome && !ach.length) throw new Error('Animal não encontrado. Escolha um nome da lista ou deixe em branco.');
         const animalId = ach.length ? (ach.find(a => a.id === p.animalId) || ach[0]).id : '';
-        const salvo = await api('pendenciaSalvar', E.sessao, { id: p.id, texto: vl('pdTexto'), paraId: $('#pdPara').value, prazo: vl('pdPrazo'), animalId });
+        const salvo = await api('pendenciaSalvar', E.sessao, { id: p.id, texto: vl('pdTexto'), paraId: $('#pdPara').value, prazo: vl('pdPrazo'), animalId, fotos: fotos.filter(f => f.id).map(f => ({ id: f.id, nome: f.nome })) });
         fecharFolha(); toast('Pendência salva.'); telaPendencias();
       });
     });
@@ -8686,6 +8720,7 @@ const ACOES = {
   'link-temp': () => telaLinkTemp(E.animal),
   'auditoria-animal': () => telaAuditoria(E.animal),
   'pd-filtro': b => { E.pdFiltro = b.dataset.v; pintarPendencias(); },
+  'pd-foto': b => { const u = E.pdFotoCache[b.dataset.id]; if (!u) return toast('A foto ainda está carregando.'); abrirFolha('Foto da pendência', '<img src="' + u + '" alt="" style="width:100%;height:auto;border-radius:12px;display:block">'); },
   'hj-abrir': b => abrirHojeAnimal(b.dataset.id),
   'hj-cit': async b => { if (await hojeCitopet(b.dataset.id, b.dataset.v)) { pintarPendencias(); abrirHojeAnimal(b.dataset.id); } },
   'hj-ficha': b => { const aid = b.dataset.id; if (!(E.ph.citopet[hoje()] || {})[aid]) return abrirHojeAnimal(aid, 'citopet'); fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', aid); },
