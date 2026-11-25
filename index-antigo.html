@@ -111,7 +111,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261125201316">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261125201830">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -603,9 +603,7 @@ a.btn{text-decoration:none}
 .ct-feed .ct-txt{font-size:31px;margin-top:18px;max-width:860px}.ct-story .ct-txt{font-size:39px;margin-top:30px;max-width:860px}
 /* certificado de saúde: texto mais longo, em letra menor */
 .ct-saude .ct-nome{font-size:64px}.ct-saude .ct-quando{font-size:19px}.ct-saude .ct-txt{font-size:14.5px;line-height:1.45;max-width:860px;margin-top:6px}.ct-saude .ct-tit{margin-bottom:0}
-.ct-ph{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom}.ct-ph i{display:block;border-bottom:1.5px solid #B39B7F}.ct-ph small{font-family:var(--f2,inherit);font-style:italic;font-size:12px;color:#B39B7F;letter-spacing:.02em;margin-top:3px;font-weight:400}
-.ct-ph-n i{width:440px;height:74px}.ct-ph-c i{width:300px;height:22px}.ct-dt{display:inline-flex;align-items:flex-end;gap:4px;font-weight:400;color:#B39B7F;vertical-align:bottom}.ct-dt i{display:inline-block;width:2.1em;height:1.1em;border-bottom:1.5px solid #B39B7F}.ct-dt i.a{width:3.2em}
-.ct-feed .ct-ph-n i{width:620px;height:110px}.ct-story .ct-ph-n i{width:700px;height:140px}.ct-feed .ct-ph small{font-size:18px}.ct-story .ct-ph small{font-size:22px}.ct-feed .ct-ph-c i{width:420px;height:32px}.ct-story .ct-ph-c i{width:480px;height:40px}
+.ct-ph{color:#B9A58E}
 .cs-ed{margin:10px 0}.cs-ed summary{cursor:pointer;color:var(--vinho);font-weight:700;margin-bottom:8px}.cs-ed textarea{width:100%;font:inherit;line-height:1.45}
 .ct-data{margin:10px 0 0;font-size:15px;font-weight:700;color:#5F130F}.ct-el{display:block;font-size:11px;color:#8A6640;margin-top:2px}
 .ct-feed.ct-saude .ct-nome{font-size:96px}.ct-feed.ct-saude .ct-quando{font-size:28px}.ct-feed.ct-saude .ct-txt{font-size:23px;margin-top:12px;max-width:880px}.ct-feed .ct-data{font-size:24px;margin-top:16px}.ct-feed .ct-el{font-size:16px}
@@ -1050,7 +1048,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125201316';
+  var VERSAO = '20261125201830';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1194,7 +1192,7 @@ const num = v => String(v == null ? '' : v).trim();
 /* ═════════════ dados ═════════════ */
 const animalDe = id => E.d.animais.find(a => a.id === id);
 // o certificado de saúde fica à parte: só aparece nos certificados (e na carteira quando enviado)
-const regsDe = id => E.d.registros.filter(r => r.animalId === id && r.tipo !== 'certsaude');
+const regsDe = id => E.d.registros.filter(r => r.animalId === id && r.tipo !== 'certsaude' && r.tipo !== 'certmanual');
 const regPorId = id => E.d.registros.find(r => r.id === id) || (E.d.laudosReceptor || []).find(r => r.id === id);
 function respDe(an) { if (E.d.responsavel) return E.d.responsavel; return (E.d.responsaveis || []).find(r => r.id === an.responsavelId); }
 function vetDe(r) { return (E.d.vets || []).find(v => v.id === r.vetId) || { nome: r.vetNome, crmv: r.vetCrmv, rubrica: '' }; }
@@ -4036,18 +4034,19 @@ function certificadosDe(aid, comOcultos, todosSaude) {
   const l = doa.filter(r => dia[r.data] === r).map((r, i) => ({ id: r.id, tipo: 'doacao', r, an, data: r.data, ano: r.data.slice(0, 4), n: i + 1, oculto: !!(r.dados && r.dados.certOculto) }));
   if (an.aposentadoEm) l.push({ id: 'apos-' + aid, tipo: 'aposentadoria', r: doa[doa.length - 1] || null, an, data: an.aposentadoEm, ano: an.aposentadoEm.slice(0, 4), n: doa.length, oculto: false });
   // certificado de saúde (feito no módulo, quando alguém pede): na carteira só os enviados; no módulo todos
-  E.d.registros.filter(r => r.animalId === aid && r.tipo === 'certsaude' && r.excluido !== '1' && /^\d{4}-\d{2}-\d{2}$/.test(r.data || '')).forEach(r => { const d = r.dados || {};
-    if (todosSaude || d.naCarteira) l.push({ id: r.id, tipo: 'saude', r, an, data: r.data, ano: r.data.slice(0, 4), canil: d.canil || '', verm: d.verm !== false && d.verm !== '0', naCarteira: !!d.naCarteira, oculto: false }); });
+  // certificados feitos à mão no módulo (saúde, doação e aposentadoria): na carteira só os enviados; no módulo todos
+  E.d.registros.filter(r => r.animalId === aid && (r.tipo === 'certsaude' || r.tipo === 'certmanual') && r.excluido !== '1' && /^\d{4}-\d{2}-\d{2}$/.test(r.data || '')).forEach(r => { const d = r.dados || {};
+    if (todosSaude || d.naCarteira) l.push({ id: r.id, tipo: r.tipo === 'certsaude' ? 'saude' : d.k === 'aposentadoria' ? 'aposentadoria' : 'doacao', manual: true, r, an, data: r.data, ano: r.data.slice(0, 4), n: 0, canil: d.canil || '', verm: d.verm !== false && d.verm !== '0', naCarteira: !!d.naCarteira, oculto: false }); });
   return (comOcultos ? l : l.filter(c => !c.oculto)).sort((a, b) => b.data.localeCompare(a.data));
 }
 const certPorId = (aid, id) => aid === 'modelo' ? certModelo(id) : certificadosDe(aid, true, true).find(c => c.id === id);
-// modelo para preencher à mão (doação, aposentadoria ou saúde; macho ou fêmea): nome, canil e data ficam em branco
-const CM_NOME = '<span class="ct-ph ct-ph-n"><i></i><small>nome do doador</small></span>', CM_CANIL = '<span class="ct-ph ct-ph-c"><i></i><small>nome do canil</small></span>', CM_DATA = '<span class="ct-dt"><i></i>/<i></i>/<i class="a"></i></span>';
-function certModelo(id) { const [tipo, sexo] = String(id || '').split('|'), h = hoje(); return { id, modelo: true, tipo: tipo === 'aposentadoria' ? 'aposentadoria' : tipo === 'saude' ? 'saude' : 'doacao', an: { id: 'modelo', nome: '', sexo: sexo === 'F' ? 'Fêmea' : 'Macho' }, r: null, data: h, ano: h.slice(0, 4), n: 0, canil: '', verm: true, oculto: false }; }
+// modelo para mostrar (doação, aposentadoria e saúde): no lugar do nome, do canil e da data sai escrito o que vai em cada um
+const CM_NOME = '<span class="ct-ph">Nome do doador</span>', CM_CANIL = '<span class="ct-ph">Nome do canil</span>', CM_DATA = '<span class="ct-ph">dd/mm/aaaa</span>';
+function certModelo(id) { const tipo = String(id || '').split('|')[0], h = hoje(); return { id: tipo, modelo: true, tipo: tipo === 'aposentadoria' ? 'aposentadoria' : tipo === 'saude' ? 'saude' : 'doacao', an: { id: 'modelo', nome: '', sexo: '', neutro: true }, r: null, data: h, ano: h.slice(0, 4), n: 0, canil: '', verm: true, oculto: false }; }
 const certRot = c => c.tipo === 'aposentadoria' ? 'Aposentadoria' : c.tipo === 'saude' ? 'Certificado de saúde' : 'Doação de sangue';
 const certTitulo = c => c.tipo === 'aposentadoria' ? 'Certificado de aposentadoria' : c.tipo === 'saude' ? 'Certificado de saúde' : 'Certificado de doação';
 const dataLonga = iso => +iso.slice(8, 10) + ' de ' + MESES_PT[+iso.slice(5, 7) - 1] + ' de ' + iso.slice(0, 4);
-const codCert = c => (c.tipo === 'saude' ? 'CS-' : 'CD-') + c.ano + '-' + String(c.id).replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase();
+const codCert = c => (c.tipo === 'saude' ? 'CS-' : c.tipo === 'aposentadoria' ? 'CA-' : 'CD-') + c.ano + '-' + String(c.id).replace(/[^a-z0-9]/gi, '').slice(-6).toUpperCase();
 // manguito do canto do certificado (desenho tubo_07), virado para encostar na margem lateral e na de cima
 const TUBO7 = [[27,68],[35,64],[42,60],[50,57],[58,53],[66,49],[73,45],[81,42],[89,38],[97,34],[104,31],[112,27],[120,24],[128,21],[136,18],[144,15],[152,12],[161,10],[169,7],[177,6],[186,4],[194,2],[203,1],[211,1],[220,0],[228,0],[237,0],[246,1],[254,2],[262,4],[271,6],[279,9],[287,12],[295,15],[302,19],[310,24],[317,29],[323,35],[329,41],[335,47],[340,54],[345,61],[349,69],[352,77],[355,85],[357,93],[358,102],[358,110],[357,119],[356,128],[354,136],[350,144],[346,151],[341,158],[335,165],[330,171],[323,177],[316,181],[308,185],[300,187],[292,189],[283,189],[274,188],[266,186],[258,184],[251,179],[244,173],[239,167],[235,159],[233,151],[233,142],[234,134],[238,126],[243,119],[250,114],[258,111],[267,109],[275,109],[284,110],[292,113],[300,116],[307,121],[313,127],[319,133],[325,140],[330,147],[334,154],[338,161],[342,169],[347,176],[350,184],[354,192],[358,200],[361,208],[364,216],[367,224],[371,232],[374,240],[377,248],[380,256],[384,263],[387,271],[391,279],[394,287],[398,294],[402,302],[407,309],[412,317],[416,324],[421,331],[427,337],[432,344],[438,350],[445,356],[451,361],[458,366],[465,371],[473,375],[480,379],[489,382],[497,385],[505,387],[514,388],[522,388],[531,389],[539,389],[548,388],[556,387],[565,386],[573,384],[582,381],[590,379],[598,376],[606,372],[614,369],[621,365],[629,361],[636,357],[644,352],[651,348],[658,343],[664,337],[671,332],[677,325],[683,319],[688,313],[694,306],[698,298],[702,291],[706,283],[709,275],[712,267],[714,259],[715,250],[716,242],[716,233],[715,224],[714,216],[712,208],[709,200],[706,192],[701,184],[696,178],[690,171],[684,165],[677,160],[670,156],[662,152],[654,150],[645,148],[637,148],[628,148],[620,150],[611,152],[603,156],[596,160],[589,165],[582,170],[576,176],[570,183],[566,190],[562,197],[558,205],[555,213],[553,222],[552,230],[551,239],[550,247],[551,256],[552,264],[553,273],[555,281],[557,290],[560,298],[563,306],[566,313],[570,321],[574,329],[579,336],[584,343],[589,350],[594,357],[599,364],[605,370],[611,376],[617,382],[622,389],[629,395],[635,401],[641,407],[647,413],[654,418],[660,424],[667,429],[674,434],[681,440],[688,445],[695,450],[702,455],[709,459],[716,464],[723,468],[731,473],[738,477],[746,481],[753,485],[761,489],[769,493],[776,497],[784,500],[792,504],[800,507],[808,510],[816,513],[824,516],[832,518],[841,521],[849,524],[857,526],[866,528],[874,530],[882,532],[891,534],[899,536],[908,537],[916,538],[924,540],[933,541],[942,542],[950,542],[959,543],[967,544]];
 function tuboCanto(a) {
@@ -4077,12 +4076,21 @@ function carimboCert(v) {
 // frase do certificado (fica aqui para trocar fácil pelo texto do CVH)
 const CERT_FRASE = d => 'pela doação de sangue realizada em ' + d + ', um gesto generoso que oferece a outros animais uma nova chance de vida.';
 // textos padrão do certificado de saúde (no gênero do animal); tudo pode ser editado em cada certificado
-const CS_TITULO = 'Certificado de Saúde';
 const csFem = an => /^f/.test(semAc((an && an.sexo) || ''));
-const csAbertura = an => 'O Centro Veterinário de Hemoterapia (CVH) certifica que ' + (csFem(an) ? 'a doadora' : 'o doador');
-const csTexto = an => { const f = csFem(an); return ['Foi submetid' + (f ? 'a' : 'o') + ' à avaliação clínica, incluindo exame físico, hemograma completo, perfil bioquímico e exames sorológicos e de biologia molecular (PCR) para triagem de agentes infecciosos, conforme as recomendações da Associação Brasileira Veterinária de Hematologia e Medicina Transfusional (ABVHMT).',
+// doador ou doadora pelo sexo do cadastro; no modelo saem as duas formas
+const gen = (an, m, f, n) => an && an.neutro ? n : csFem(an) ? f : m;
+const CERT_PADRAO = {
+  saude: { tit: 'Certificado de Saúde', ab: an => 'O Centro Veterinário de Hemoterapia (CVH) certifica que ' + gen(an, 'o doador', 'a doadora', 'o(a) doador(a)'), tx: an => csTexto(an) },
+  doacao: { tit: 'Certificado de Doação', ab: () => 'O Centro Veterinário de Hemoterapia certifica e agradece a',
+    tx: an => 'O CVH agradece por mais esse lindo gesto de amor e solidariedade! Sua doação faz a diferença e ajuda a escrever novas histórias de vida. Obrigado por ser ' + gen(an, 'um verdadeiro herói!', 'uma verdadeira heroína!', 'um verdadeiro herói ou uma verdadeira heroína!') },
+  aposentadoria: { tit: 'Certificado de Aposentadoria', ab: () => 'O Centro Veterinário de Hemoterapia homenageia',
+    tx: an => 'O CVH agradece por sua valiosa contribuição como ' + gen(an, 'doador', 'doadora', 'doador(a)') + ' de sangue, ajudando a salvar tantas vidas. Agora é hora de descansar dessa missão especial e seguir recebendo todo o amor e cuidado!' }
+};
+const CS_TITULO = CERT_PADRAO.saude.tit;
+const csAbertura = an => CERT_PADRAO.saude.ab(an);
+const csTexto = an => { const f = csFem(an), o = gen(an, 'o', 'a', 'o(a)'); return ['Foi submetid' + o + ' à avaliação clínica, incluindo exame físico, hemograma completo, perfil bioquímico e exames sorológicos e de biologia molecular (PCR) para triagem de agentes infecciosos, conforme as recomendações da Associação Brasileira Veterinária de Hematologia e Medicina Transfusional (ABVHMT).',
   'Na data da avaliação, o animal apresentou condições clínicas e laboratoriais compatíveis com os critérios de saúde estabelecidos para doadores de sangue, com resultados negativos para os agentes infecciosos pesquisados.',
-  'Após o procedimento de doação de sangue, ' + (f ? 'a doadora' : 'o doador') + ' recebeu vermifugação como parte dos cuidados preventivos oferecidos pelo CVH.'].join('\n\n'); };
+  'Após o procedimento de doação de sangue, ' + gen(an, 'o doador', 'a doadora', 'o(a) doador(a)') + ' recebeu vermifugação como parte dos cuidados preventivos oferecidos pelo CVH.'].join('\n\n'); };
 // certificado de saúde: mesmo desenho dos outros, com o canil e o texto da avaliação de doador
 function certSaudeHtml(c, fmt) {
   const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt];
@@ -4104,19 +4112,17 @@ function certSaudeHtml(c, fmt) {
 function certHtml(c, fmt) {
   if (c.tipo === 'saude') return certSaudeHtml(c, fmt);
   const an = c.an, v = c.r ? vetDe(c.r) : ((E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0] || {}), [W, H] = CERT_FMT[fmt], apos = c.tipo === 'aposentadoria';
-  // textos do CVH: a data e o nome vêm grandes, antes do texto menor
-  // texto no gênero do animal (fêmea: doadora, heroína)
-  const fem = /^f/.test(semAc(an.sexo || ''));
-  const texto = apos ? 'O CVH agradece por sua valiosa contribuição como ' + (fem ? 'doadora' : 'doador') + ' de sangue, ajudando a salvar tantas vidas. Agora é hora de descansar dessa missão especial e seguir recebendo todo o amor e cuidado!'
-    : 'O CVH agradece por mais esse lindo gesto de amor e solidariedade! Sua doação faz a diferença e ajuda a escrever novas histórias de vida. Obrigado por ser ' + (fem ? 'uma verdadeira heroína!' : 'um verdadeiro herói!');
+  // textos do CVH no gênero do animal (fêmea: doadora, heroína); o feito à mão pode ter título, abertura e texto editados
+  const P = CERT_PADRAO[apos ? 'aposentadoria' : 'doacao'], d = (c.manual && c.r && c.r.dados) || {};
+  const texto = (String(d.texto || '').trim() || P.tx(an)).split(/\n\s*\n|\n/).map(t => t.trim()).filter(Boolean).map(esc).join('</p><p class="ct-txt">');
   const quando = c.modelo ? (apos ? 'Aposentadoria em ' : 'Doação de sangue em ') + CM_DATA : apos ? 'Aposentadoria em ' + dataLonga(c.data) + (c.n ? ' · ' + c.n + (c.n === 1 ? ' doação' : ' doações') + ' de sangue' : '') : 'Doação de sangue em ' + dataLonga(c.data);
   const ca = fmt === 'a4' ? 200 : fmt === 'feed' ? 215 : 300, ci = fmt === 'a4' ? 33 : 46;
   const canto = '<svg class="ct-canto" viewBox="0 0 ' + (ca + 20) + ' ' + (ca + 20) + '" style="left:' + ci + 'px;top:' + ci + 'px;width:' + (ca + 20) + 'px;height:' + (ca + 20) + 'px"><path d="' + tuboCanto(ca) + '" fill="none" stroke="#A73E3E" stroke-width="' + (fmt === 'a4' ? 1.8 : 2.6) + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   return '<div class="ct ct-' + fmt + '" style="width:' + W + 'px;height:' + H + 'px"><i class="ct-marca"></i><i class="ct-b1"></i><i class="ct-b2"></i><i class="ct-b3"></i>' + canto +
     '<i class="ct-cn tl"></i><i class="ct-cn tr"></i><i class="ct-cn bl"></i><i class="ct-cn br"></i>' +
     '<div class="ct-in"><div class="ct-g"><i class="ct-logo" role="img" aria-label="CVH Centro Veterinário de Hemoterapia"></i>' +
-    '<h1 class="ct-tit">' + (apos ? 'Certificado de Aposentadoria' : 'Certificado de Doação') + '</h1></div>' +
-    '<div class="ct-g"><p class="ct-sub">' + (apos ? 'O Centro Veterinário de Hemoterapia homenageia' : 'O Centro Veterinário de Hemoterapia certifica e agradece a') + '</p>' +
+    '<h1 class="ct-tit">' + esc(String(d.titulo || '').trim() || P.tit) + '</h1></div>' +
+    '<div class="ct-g"><p class="ct-sub">' + esc(String(d.abertura || '').trim() || P.ab(an)) + '</p>' +
     '<h2 class="ct-nome">' + (c.modelo ? CM_NOME : esc(an.nome)) + '</h2><p class="ct-quando">' + quando + '</p><p class="ct-txt">' + texto + '</p></div>' +
     '<div class="ct-g"><div class="ct-pe"><i class="ct-selo" role="img" aria-label="Selo CVH"></i><div class="ct-ass"><div class="ct-as-top"><b>' + esc(v.nome || '') + '</b></div><small>Médico veterinário · <span class="ct-cr">' + esc(v.crmv || '') + (v.rubrica ? '<span class="ct-rb"><svg viewBox="' + rubVB(v.rubrica) + '" preserveAspectRatio="xMidYMid meet"><path vector-effect="non-scaling-stroke" fill="none" stroke="#1A2A9C" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" d="' + esc(v.rubrica) + '"/></svg></span>' : '') + '</span></small></div>' + seloAno(c.ano, apos ? 'GRATIDÃO · CLUBE DO DOADOR · CENTRO VETERINÁRIO DE HEMOTERAPIA ·' : null) + '</div>' +
     '<p class="ct-rod">Brasília, DF · ' + (c.modelo ? CM_DATA : br(c.data) + ' · Certificado ' + codCert(c)) + ' · cvh.vet.br</p></div></div></div>';
@@ -4138,7 +4144,7 @@ async function baixarCert(aid, id, fmt, b, modo) {
   const c = certPorId(aid, id); if (!c) return;
   const t0 = b ? b.innerHTML : ''; if (b) { b.disabled = true; b.textContent = 'Gerando…'; }
   try {
-    const base = c.modelo ? 'Modelo ' + certTitulo(c).toLowerCase() + ' (' + (csFem(c.an) ? 'fêmea' : 'macho') + ')' : (c.tipo === 'saude' ? 'Certificado de saúde ' : 'Certificado ') + c.an.nome + ' ' + c.data;
+    const base = c.modelo ? 'Modelo ' + certTitulo(c).toLowerCase() : (c.tipo === 'saude' ? 'Certificado de saúde ' : 'Certificado ') + c.an.nome + ' ' + c.data;
     if (fmt === 'a4') {
       if (!window.PDFLib) await carregarScript(LIB_PDF);
       const url = await certImagem(c, 'a4', 'jpg'), pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(bytesDeUrl(url));
@@ -4161,9 +4167,9 @@ function verCert(aid, id, fmt) {
   const c = certPorId(aid, id); if (!c) return; fmt = fmt || 'a4';
   const painel = E.modo === 'painel' && !E.previa, ed = painel && (pode('fichas') || pode('carteiras'));
   const tab = (k, t) => '<button class="filtro' + (k === fmt ? ' on' : '') + '" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + id + '" data-v="' + k + '">' + t + '</button>';
-  const [mt, ms] = String(id).split('|'), mod = (t, x, rot) => '<button class="filtro' + ((t || mt) === mt && (x || ms) === ms ? ' on' : '') + '" data-acao="cert-ver" data-aid="modelo" data-id="' + (t || mt) + '|' + (x || ms) + '" data-v="' + fmt + '">' + rot + '</button>';
-  abrirFolha(c.modelo ? 'Modelo para preencher à mão' : c.tipo === 'aposentadoria' ? 'Certificado de aposentadoria' : certTitulo(c) + ' · ' + br(c.data),
-    (c.modelo ? '<p class="nota">Nome, canil e data ficam em branco para escrever à mão.</p><div class="filtros">' + mod('doacao', '', 'Doação') + mod('aposentadoria', '', 'Aposentadoria') + mod('saude', '', 'Saúde') + '</div><div class="filtros">' + mod('', 'M', 'Macho') + mod('', 'F', 'Fêmea') + '</div>' : '') +
+  const mod = (t, rot) => '<button class="filtro' + (c.tipo === t ? ' on' : '') + '" data-acao="cert-ver" data-aid="modelo" data-id="' + t + '" data-v="' + fmt + '">' + rot + '</button>';
+  abrirFolha(c.modelo ? 'Modelos de certificado' : c.tipo === 'aposentadoria' && !c.manual ? 'Certificado de aposentadoria' : certTitulo(c) + ' · ' + br(c.data),
+    (c.modelo ? '<p class="nota">Para mostrar o modelo: no lugar do nome do doador, do canil e da data sai escrito o que vai em cada um.</p><div class="filtros">' + mod('doacao', 'Doação') + mod('aposentadoria', 'Aposentadoria') + mod('saude', 'Saúde') + '</div>' : '') +
     '<div class="filtros">' + tab('a4', 'Digital') + tab('feed', 'Feed') + tab('story', 'Stories') + '</div>' +
     '<div class="ct-prev" id="ctPrev"><div class="ct-esc">' + certHtml(c, fmt) + '</div></div>' + botoesCert(c, ed, true, fmt));
   const [W, H] = CERT_FMT[fmt], ajustar = () => {
@@ -4183,12 +4189,12 @@ function botoesCert(c, ed, naFolha, fmtAtual) {
   const acoes = naFolha ? '<p class="nota" style="width:100%;margin:0">Baixar</p>' + baixa('a4', 'PDF') + baixa('feed', 'Feed') + baixa('story', 'Stories') +
     (podeEnviar ? '<button class="btn sec2 peq" data-acao="cert-baixar" data-m="enviar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + f + '">Enviar ' + (f === 'a4' ? 'a imagem' : f === 'feed' ? 'o feed' : 'os stories') + ' (WhatsApp, Instagram)</button>' : '')
     : ver('a4', 'PDF digital', 'A4 para imprimir') + ver('feed', 'Feed', '1080 × 1350') + ver('story', 'Stories', '1080 × 1920');
-  const rp = respDe(c.an) || {}, tel = String(rp.telefone || '').replace(/\D/g, ''), w = ed && tel && (c.tipo !== 'saude' || c.naCarteira) ? 'https://wa.me/' + (tel.length <= 11 ? '55' + tel : tel) + '?text=' + encodeURIComponent('Olá, ' + (rp.nome || '').split(' ')[0] + '! ' + (c.tipo === 'aposentadoria' ? 'O certificado de aposentadoria de ' : c.tipo === 'saude' ? 'O certificado de saúde de ' : 'O certificado da doação de sangue de ') + c.an.nome + (c.tipo === 'aposentadoria' ? '' : ' (' + br(c.data) + ')') + ' já está na carteira de saúde, na aba Certificados, com versões para imprimir e para postar no feed e nos stories.' + (c.tipo === 'saude' ? '' : ' Muito obrigado por fazer parte do Clube do Doador!') + (rp.token ? '\n\n' + linkDe(rp) : '')) : '';
+  const rp = respDe(c.an) || {}, tel = String(rp.telefone || '').replace(/\D/g, ''), w = ed && tel && !c.modelo && (!c.manual || c.naCarteira) ? 'https://wa.me/' + (tel.length <= 11 ? '55' + tel : tel) + '?text=' + encodeURIComponent('Olá, ' + (rp.nome || '').split(' ')[0] + '! ' + (c.tipo === 'aposentadoria' ? 'O certificado de aposentadoria de ' : c.tipo === 'saude' ? 'O certificado de saúde de ' : 'O certificado da doação de sangue de ') + c.an.nome + (c.tipo === 'aposentadoria' ? '' : ' (' + br(c.data) + ')') + ' já está na carteira de saúde, na aba Certificados, com versões para imprimir e para postar no feed e nos stories.' + (c.tipo === 'saude' ? '' : ' Muito obrigado por fazer parte do Clube do Doador!') + (rp.token ? '\n\n' + linkDe(rp) : '')) : '';
   return '<div class="ct-bts">' +
     acoes +
     (w ? '<a class="btn sec2 peq" href="' + esc(w) + '" target="_blank" rel="noopener">Enviar pelo WhatsApp</a>' : '') +
-    (ed && c.tipo === 'doacao' ? '<button class="btn sec2 peq rc-del" data-acao="cert-ocultar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
-    (ed && c.tipo === 'saude' && E.certDe ? '<button class="btn sec2 peq" data-acao="cs-editar" data-id="' + c.id + '">Editar</button>' + '<button class="btn sec2 peq" data-acao="cs-carteira" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + (c.naCarteira ? '0' : '1') + '">' + (c.naCarteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button><button class="btn sec2 peq rc-del" data-acao="cs-apagar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
+    (ed && c.tipo === 'doacao' && !c.manual ? '<button class="btn sec2 peq rc-del" data-acao="cert-ocultar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
+    (ed && c.manual && E.certDe ? '<button class="btn sec2 peq" data-acao="cs-editar" data-id="' + c.id + '">Editar</button>' + '<button class="btn sec2 peq" data-acao="cs-carteira" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + (c.naCarteira ? '0' : '1') + '">' + (c.naCarteira ? 'Tirar da carteira' : 'Enviar para a carteira') + '</button><button class="btn sec2 peq rc-del" data-acao="cs-apagar" data-aid="' + aid + '" data-id="' + c.id + '">Apagar certificado</button>' : '') +
     (naFolha ? '<button class="btn sec2 peq" data-acao="fechar">Voltar</button>' : '') + '</div>';
 }
 async function ocultarCert(aid, id, b, mostrar) {
@@ -4197,47 +4203,52 @@ async function ocultarCert(aid, id, b, mostrar) {
   try { guardarRegistro(await api('anexarFichaDoacao', E.sessao, id, null, { certOculto: !mostrar })); fecharFolha(); telaCertificados(aid); toast(mostrar ? 'Certificado restaurado.' : 'Certificado apagado. A doação continua registrada.', 4000); }
   catch (e) { b.disabled = false; toast(e.message, 5000); }
 }
-// certificado de saúde: só quando alguém pede (normalmente canil). Escolhe o doador, a data e o canil; título, abertura e texto podem ser editados. A carteira é opcional
-function novoCertSaude(aid, id) {
+// certificado feito à mão (saúde, doação ou aposentadoria): escolhe o doador e a data (e o canil, no de saúde); título, abertura e texto podem ser editados.
+// O de saúde fica fora da carteira, a não ser que marque; o de doação e o de aposentadoria já vêm marcados para ir
+const CERT_K = { saude: ['certsaude', 'Certificado de saúde', 'Data da avaliação'], doacao: ['certmanual', 'Certificado de doação', 'Data da doação'], aposentadoria: ['certmanual', 'Certificado de aposentadoria', 'Data da aposentadoria'] };
+function novoCert(k, aid, id) {
   const atual = id ? E.d.registros.find(r => r.id === id) : null, da = (atual && atual.dados) || {};
-  if (atual) aid = atual.animalId;
+  if (atual) { aid = atual.animalId; k = atual.tipo === 'certsaude' ? 'saude' : da.k === 'aposentadoria' ? 'aposentadoria' : 'doacao'; }
+  k = CERT_K[k] ? k : 'saude'; const P = CERT_PADRAO[k], saude = k === 'saude';
   const doadores = E.d.animais.filter(a => a.doador === '1' || a.id === aid).sort((a, b) => a.nome.localeCompare(b.nome));
-  const ult = !atual && aid ? E.d.registros.filter(r => r.animalId === aid && r.tipo === 'certsaude' && r.excluido !== '1').sort(porData).pop() : null;
-  const ultDoa = aid ? regsDe(aid).filter(r => r.tipo === 'doacao').sort(porData).pop() : null;
-  const an0 = animalDe(aid), texto0 = atual ? (String(da.texto || '').trim() ? da.texto : csTexto(an0).split('\n\n').filter((t, i) => i < 2 || !(da.verm === false || da.verm === '0')).join('\n\n')) : csTexto(an0);
-  abrirFolha(atual ? 'Editar certificado de saúde' : 'Certificado de saúde',
-    '<p class="nota">Para entregar quando pedirem (normalmente canil). Não vai para a carteira, a não ser que você marque.</p>' +
+  const ult = !atual && aid && saude ? E.d.registros.filter(r => r.animalId === aid && r.tipo === 'certsaude' && r.excluido !== '1').sort(porData).pop() : null;
+  const ultDoa = aid ? regsDe(aid).filter(r => r.tipo === 'doacao').sort(porData).pop() : null, an0 = animalDe(aid);
+  const dataIni = atual ? atual.data : k === 'aposentadoria' ? ((an0 && an0.aposentadoEm) || hoje()) : ultDoa ? ultDoa.data : hoje();
+  const texto0 = atual && String(da.texto || '').trim() ? da.texto : saude && atual ? P.tx(an0).split('\n\n').filter((t, i) => i < 2 || !(da.verm === false || da.verm === '0')).join('\n\n') : P.tx(an0);
+  abrirFolha((atual ? 'Editar ' : '') + CERT_K[k][1].replace(/^C/, atual ? 'c' : 'C'),
+    '<p class="nota">' + (saude ? 'Para entregar quando pedirem (normalmente canil). Não vai para a carteira, a não ser que você marque.' : 'Para uma doação ou aposentadoria que não está registrada no painel. Vai para a carteira do responsável, a não ser que você desmarque.') + '</p>' +
     campo('csAn', 'Doador', '<select id="csAn"' + (atual ? ' disabled' : '') + '>' + (aid ? '' : '<option value="">Escolha o doador</option>') + doadores.map(a => '<option value="' + a.id + '"' + (a.id === aid ? ' selected' : '') + '>' + esc(a.nome + ((respDe(a) || {}).nome ? ' · ' + respDe(a).nome : '')) + '</option>').join('') + '</select>') +
-    campo('csData', 'Data da avaliação', inp('csData', atual ? atual.data : ultDoa ? ultDoa.data : hoje(), 'type="date"')) +
-    campo('csCanil', 'Canil', inp('csCanil', atual ? da.canil : ult ? (ult.dados || {}).canil : '', 'placeholder="nome do canil"')) +
+    campo('csData', CERT_K[k][2], inp('csData', dataIni, 'type="date"')) +
+    (saude ? campo('csCanil', 'Canil', inp('csCanil', atual ? da.canil : ult ? (ult.dados || {}).canil : '', 'placeholder="nome do canil"')) : '') +
     '<details class="cs-ed"' + (atual ? ' open' : '') + '><summary>Editar o texto do certificado</summary>' +
-    campo('csTit', 'Título', inp('csTit', da.titulo || CS_TITULO)) +
-    campo('csAb', 'Abertura (antes do nome)', inp('csAb', da.abertura || csAbertura(an0))) +
-    campo('csTx', 'Texto (cada parágrafo separado por uma linha em branco)', '<textarea id="csTx" rows="12">' + esc(texto0) + '</textarea>') +
+    campo('csTit', 'Título', inp('csTit', da.titulo || P.tit)) +
+    campo('csAb', 'Abertura (antes do nome)', inp('csAb', da.abertura || P.ab(an0))) +
+    campo('csTx', 'Texto (cada parágrafo separado por uma linha em branco)', '<textarea id="csTx" rows="' + (saude ? 12 : 6) + '">' + esc(texto0) + '</textarea>') +
     '<button class="btn sec2 peq" type="button" id="csPadrao">Voltar ao texto padrão</button></details>' +
-    (atual ? '' : '<label class="chk"><input type="checkbox" id="csCart"> Enviar também para a carteira do responsável</label>') +
+    (atual ? '' : '<label class="chk"><input type="checkbox" id="csCart"' + (saude ? '' : ' checked') + '> Enviar também para a carteira do responsável</label>') +
     '<div class="acoes"><button class="btn" id="csSalvar">' + (atual ? 'Salvar e assinar de novo' : 'Gerar certificado') + '</button></div>',
     () => {
-      const padrao = () => { const an = animalDe(vl('csAn') || aid); $('#csTit').value = CS_TITULO; $('#csAb').value = csAbertura(an); $('#csTx').value = csTexto(an); };
-      let mexeu = !!atual; ['csTit', 'csAb', 'csTx'].forEach(k => { $('#' + k).oninput = () => { mexeu = true; }; });
+      const padrao = () => { const an = animalDe(vl('csAn') || aid); $('#csTit').value = P.tit; $('#csAb').value = P.ab(an); $('#csTx').value = P.tx(an); };
+      let mexeu = !!atual; ['csTit', 'csAb', 'csTx'].forEach(x => { $('#' + x).oninput = () => { mexeu = true; }; });
       $('#csPadrao').onclick = () => { padrao(); mexeu = false; };
-      // trocar o doador ajusta o gênero do texto (enquanto o texto não foi mexido)
+      // trocar o doador ajusta doador ou doadora (enquanto o texto não foi mexido)
       $('#csAn').onchange = () => { if (!mexeu) padrao(); };
       $('#csSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
-        const an = atual ? atual.animalId : vl('csAn'), data = vl('csData'); if (!an) throw new Error('Escolha o doador.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new Error('Informe a data da avaliação.');
+        const an = atual ? atual.animalId : vl('csAn'), data = vl('csData'); if (!an) throw new Error('Escolha o doador.'); if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new Error('Informe a data.');
         const a = animalDe(an), tit = vl('csTit'), ab = vl('csAb'), tx = $('#csTx').value.replace(/\r/g, '').trim();
         if (!tx) throw new Error('Escreva o texto do certificado.');
-        // guarda só o que foi mudado em relação ao padrão (o padrão acompanha o gênero do animal)
-        const dados = { canil: vl('csCanil'), naCarteira: atual ? (da.naCarteira || '') : ($('#csCart').checked ? '1' : ''),
-          titulo: tit && tit !== CS_TITULO ? tit : '', abertura: ab && ab !== csAbertura(a) ? ab : '', texto: tx !== csTexto(a) ? tx : '' };
-        const r = await api('salvarRegistro', E.sessao, Object.assign({ animalId: an, tipo: 'certsaude', data, dados }, atual ? { id: atual.id } : {}));
+        // guarda só o que foi mudado em relação ao padrão (o padrão acompanha o sexo do animal)
+        const dados = Object.assign(saude ? { canil: vl('csCanil') } : { k }, { naCarteira: atual ? (da.naCarteira || '') : ($('#csCart').checked ? '1' : ''),
+          titulo: tit && tit !== P.tit ? tit : '', abertura: ab && ab !== P.ab(a) ? ab : '', texto: tx !== P.tx(a) ? tx : '' });
+        const r = await api('salvarRegistro', E.sessao, Object.assign({ animalId: an, tipo: CERT_K[k][0], data, dados }, atual ? { id: atual.id } : {}));
         guardarRegistro(r); fecharFolha(); telaCertificados(an); verCert(an, r.id, 'a4');
       });
     });
 }
+const novoCertSaude = (aid, id) => novoCert('saude', aid, id);
 function cartaoCert(c, ed) {
   const apos = c.tipo === 'aposentadoria';
-  return '<article class="ct-card' + (apos ? ' apos' : '') + '"><div class="ct-mini" data-acao="cert-ver" data-aid="' + c.an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + certRot(c) + (c.tipo === 'saude' ? (c.naCarteira ? ' · na carteira' : ' · fora da carteira') : '') + '</small><b>' + esc(c.an.nome) + '</b><span>' + dataLonga(c.data) + '</span></div></div>' + botoesCert(c, ed, false) + '</article>';
+  return '<article class="ct-card' + (apos ? ' apos' : '') + '"><div class="ct-mini" data-acao="cert-ver" data-aid="' + c.an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + certRot(c) + (c.manual ? (c.naCarteira ? ' · na carteira' : ' · fora da carteira') : '') + '</small><b>' + esc(c.an.nome) + '</b><span>' + dataLonga(c.data) + '</span></div></div>' + botoesCert(c, ed, false) + '</article>';
 }
 function telaCertificados(aid, busca) {
   E.livro = null; E.certDe = aid || null;
@@ -4247,17 +4258,17 @@ function telaCertificados(aid, busca) {
     raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="cert-lista">‹ Voltar</button></div>' +
       '<header class="topo"><div class="t"><span>Certificados</span><b>' + esc(an.nome) + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') + '</b></div></header>' +
       '<p class="nota">Cada doação registrada na ficha gera o certificado automaticamente. Ele aparece também na carteira de saúde, na aba Certificados.</p>' +
-      (ed ? '<div class="acoes" style="margin:0 0 12px"><button class="btn sec2 peq" data-acao="cs-novo" data-aid="' + aid + '">+ Certificado de saúde</button></div>' : '') +
+      (ed ? '<div class="acoes" style="margin:0 0 12px">' + '<button class="btn sec2 peq" data-acao="cs-novo" data-k="saude" data-aid="' + aid + '">+ Certificado de saúde</button><button class="btn sec2 peq" data-acao="cs-novo" data-k="doacao" data-aid="' + aid + '">+ Certificado de doação</button><button class="btn sec2 peq" data-acao="cs-novo" data-k="aposentadoria" data-aid="' + aid + '">+ Certificado de aposentadoria</button>' + '</div>' : '') +
       (vis.length ? vis.map(c => cartaoCert(c, ed)).join('') : '<p class="vazio-p">Nenhum certificado ainda. Ele aparece assim que a ficha de doação for salva.</p>') +
       (oc.length && ed ? '<details class="ct-oc"><summary>Certificados apagados (' + oc.length + ')</summary>' + oc.map(c => '<div class="ct-oc-l"><span>' + br(c.data) + '</span><button class="btn sec2 peq" data-acao="cert-mostrar" data-aid="' + aid + '" data-id="' + c.id + '">Restaurar</button></div>').join('') + '</details>' : '') +
       '</div></main>';
     return;
   }
-  const doad = E.d.animais.filter(a => regsDe(a.id).some(r => r.tipo === 'doacao') || E.d.registros.some(r => r.animalId === a.id && r.tipo === 'certsaude' && r.excluido !== '1')).map(a => ({ a, l: certificadosDe(a.id, false, true) })).filter(x => x.l.length);
+  const doad = E.d.animais.filter(a => regsDe(a.id).some(r => r.tipo === 'doacao') || E.d.registros.some(r => r.animalId === a.id && (r.tipo === 'certsaude' || r.tipo === 'certmanual') && r.excluido !== '1')).map(a => ({ a, l: certificadosDe(a.id, false, true) })).filter(x => x.l.length);
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Clube do Doador</span><b>Certificados</b></div></header>' +
     '<p class="nota">Gerados automaticamente a cada doação registrada, com o selo do CVH e o selo do ano. Para cada um há PDF digital para imprimir e imagens prontas para o feed e os stories.</p>' +
-    (ed ? '<div class="acoes" style="margin:0 0 12px"><button class="btn sec2 peq" data-acao="cs-novo">+ Certificado de saúde</button><button class="btn sec2 peq" data-acao="cert-ver" data-aid="modelo" data-id="doacao|M" data-v="a4">Modelos para preencher à mão</button></div>' : '') +
+    (ed ? '<div class="acoes" style="margin:0 0 12px">' + '<button class="btn sec2 peq" data-acao="cs-novo" data-k="saude">+ Certificado de saúde</button><button class="btn sec2 peq" data-acao="cs-novo" data-k="doacao">+ Certificado de doação</button><button class="btn sec2 peq" data-acao="cs-novo" data-k="aposentadoria">+ Certificado de aposentadoria</button>' + '<button class="btn sec2 peq" data-acao="cert-ver" data-aid="modelo" data-id="doacao" data-v="a4">Modelos (PDF, feed e stories)</button></div>' : '') +
     '<div class="busca"><input id="buscaC" type="search" placeholder="Buscar doador ou responsável" value="' + esc(busca || '') + '" aria-label="Buscar certificados"></div>' +
     '<section class="cartao" id="listaC"></section></div></main>';
   const pinta = () => {
@@ -9141,8 +9152,8 @@ const ACOES = {
   'cert-mostrar': b => ocultarCert(b.dataset.aid, b.dataset.id, b, true),
   'cert-animal': b => { fecharFolha(); telaCertificados(b.dataset.id); },
   'cert-lista': () => telaCertificados(),
-  'cs-novo': b => novoCertSaude(b.dataset.aid || ''),
-  'cs-editar': b => { fecharFolha(); novoCertSaude('', b.dataset.id); },
+  'cs-novo': b => novoCert(b.dataset.k || 'saude', b.dataset.aid || ''),
+  'cs-editar': b => { fecharFolha(); novoCert('', '', b.dataset.id); },
   'cs-carteira': async b => { b.disabled = true; try { guardarRegistro(await api('certSaudeCarteira', E.sessao, b.dataset.id, b.dataset.v === '1')); fecharFolha(); telaCertificados(b.dataset.aid); toast(b.dataset.v === '1' ? 'Certificado enviado para a carteira do responsável.' : 'Certificado tirado da carteira. Continua aqui nos certificados.', 4000); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'cs-apagar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Toque de novo para apagar'; return; } b.disabled = true; try { await api('excluirRegistro', E.sessao, b.dataset.id); E.d.registros = E.d.registros.filter(x => x.id !== b.dataset.id); fecharFolha(); telaCertificados(b.dataset.aid); toast('Certificado de saúde apagado.'); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'rel-csv': () => relCsv(),
