@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125221053">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125221525">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -274,6 +274,7 @@ button{cursor:pointer}
 .ctn-giro{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
 .ctn-giro .lado{position:absolute;inset:0;width:100%;height:100%;border-radius:2.9%/4.6%;box-shadow:0 6px 22px rgba(95,19,15,.22);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;-webkit-user-drag:none}
 .ctn-giro .vs{transform:rotateY(180deg)}
+.ctn-cam{position:absolute;inset:0;border-radius:2.9%/4.6%;pointer-events:none}
 .ctn-pg .cartao{padding:14px}.ctn-inst{text-align:center;margin-top:14px}
 .ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}.ctn-bx{display:flex;flex-direction:column;gap:8px;margin-top:10px}.ctn-bx .btn{width:100%}
 .ctn-fmenu{margin:12px 0 4px;padding:12px;border:1px solid #E3D6C8;border-radius:12px;background:#FBF8F4}.ctn-fmenu>b{display:block;color:#5F130F;margin-bottom:8px}
@@ -1052,7 +1053,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125221053';
+  var VERSAO = '20261125221525';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3068,6 +3069,11 @@ async function iniciarCarteirinha() {
 function ctnCartaoVira(p, fr, vs, abrir, naFoto) {
   p.innerHTML = '<div class="ctn-vira" role="button" tabindex="0" aria-label="Carteirinha. Toque para ver o outro lado."><div class="ctn-giro"><img class="lado fr" alt="Frente da carteirinha" src="' + fr + '"><img class="lado vs" alt="Verso da carteirinha" src="' + vs + '"></div></div><p class="ctn-dica">Toque ou arraste para o lado para virar.' + (naFoto ? ' Toque na foto para colocar ou trocar.' : '') + (abrir ? ' No verso, toque no QR Code para abrir ' + (/laudo/.test(abrir.rot) ? 'o laudo.' : 'a verificação.') : '') + '</p>';
   const v = p.querySelector('.ctn-vira'), g = p.querySelector('.ctn-giro');
+  // espessura de cartão de crédito: camadas finas entre a frente e o verso formam a borda que aparece ao virar
+  { const esp = Math.max(4, Math.round((v.offsetWidth || 340) * 0.016)), fr0 = g.querySelector('.fr'), vs0 = g.querySelector('.vs');
+    fr0.style.transform = 'translateZ(' + esp / 2 + 'px)'; vs0.style.transform = 'rotateY(180deg) translateZ(' + esp / 2 + 'px)';
+    for (let i = 0; i < esp; i++) { const c = document.createElement('i'); c.className = 'ctn-cam'; const m = Math.abs(i - (esp - 1) / 2) / (esp / 2);
+      c.style.transform = 'translateZ(' + (i - (esp - 1) / 2) + 'px)'; c.style.background = 'rgb(' + Math.round(150 + 60 * m) + ',' + Math.round(118 + 55 * m) + ',' + Math.round(100 + 50 * m) + ')'; g.insertBefore(c, fr0); } }
   let ang = 0, x0 = null, a0 = 0, mexeu = false;
   const por = (a, anim) => { g.style.transition = anim ? 'transform .55s cubic-bezier(.2,.8,.25,1)' : 'none'; g.style.transform = 'rotateY(' + a + 'deg)'; };
   const virar = d => { ang = Math.round(ang / 180) * 180 + (d < 0 ? -180 : 180); por(ang, 1); };
