@@ -2466,7 +2466,9 @@ function seloRes(x, y, txt, pos, tam) {
 }
 // cartão de resultado (tipagem, testes rápidos, compatibilidade): título, selo do resultado, linhas de detalhe e foto opcional
 function blocoCartao(c, x, w, cel) {
-  const tamT = c.tamT ? (cel ? c.tamT - 1.5 : c.tamT) : cel ? 16 : 19, fotoK = c.foto && IMG_DIN[c.foto] ? c.foto : null, im = fotoK ? IMG_DIN[fotoK] : null;
+  const tamT = c.tamT ? (cel ? c.tamT - 1.5 : c.tamT) : cel ? 16 : 19, pocos = c.titulo === "DAL" && IMG_DIN.dalPoco0 ? ["dalPoco0", "dalPoco1", "dalPoco2"] : null, fotoK = !pocos && c.foto && IMG_DIN[c.foto] ? c.foto : null, im = fotoK ? IMG_DIN[fotoK] : null;
+  // três poços do DAL: mesma altura, lado a lado, com o que cada um representa
+  const ROT_POCO = ["Autoaglutinação", "Controle positivo", "Teste do paciente"], gP = cel ? 8 : 12, wP = (w - 3 - 28 - gP * 2) / 3, hP = pocos ? Math.min(cel ? 74 : 42, ...pocos.map((k) => wP * IMG_DIN[k].h / IMG_DIN[k].w)) : 0, hPoc = pocos ? hP + (cel ? 20 : 16) : 0;
   const abaixo = cel || c.fotoAbaixo, fwMax = abaixo ? w - 28 : Math.min(230, w * 0.48), fhMax = c.fhMax || (cel ? 150 : 118);
   const escF = im ? Math.min(fwMax / im.w, fhMax / im.h) : 0, fw = im ? im.w * escF : 0, fh = im ? im.h * escF : 0;
   const tb = c.tubo && IMG_DIN[c.tubo] ? IMG_DIN[c.tubo] : null, thT = tb ? (cel ? 92 : 84) : 0, twT = tb ? tb.w * thT / tb.h : 0;
@@ -2480,7 +2482,7 @@ function blocoCartao(c, x, w, cel) {
   // sem espaço na frente do título: volta para as linhas do cartão
   if (c.info && c.info.length && !infoLs.length) c.info.forEach(([r, v]) => quebrar(v, 8.8, false, larguraTxt - rotW).forEach((l, i) => det.push([i ? "" : r, l, false])));
   const tit0 = Math.max((c.tamT ? 40 : 46) + (selBaixo ? (c.tamRes ? 24 : 19) : 0), infoLs.length ? 18 + infoLs.length * lhI : 0), hTxt = Math.max((c.titulo ? tit0 : 18) + det.reduce((s, d) => s + (d[2] ? 15 : 13), 0) + (det.length ? 6 : 0), tb ? thT + 14 : 0);
-  const h = abaixo ? hTxt + (im ? fh + 12 : 0) : Math.max(hTxt, im ? fh + 24 : 0, c.titulo ? (c.tamT ? (det.length ? 54 : 40) : 62) : 0);
+  const h = (abaixo ? hTxt + (im ? fh + 12 : 0) : Math.max(hTxt, im ? fh + 24 : 0, c.titulo ? (c.tamT ? (det.length ? 54 : 40) : 62) : 0)) + hPoc - (pocos && !cel ? 6 : 0);
   return { h: h + 10, el: (y) => {
     const e = [E.ret(x, y, w, h, { f: COR.CLARO }), E.ret(x, y, 3, h, { f: COR.BORDO })];
     if (c.titulo) e.push(T(x + 16, y + (c.tamT ? 25 : 26), c.titulo, tamT, { b: true, c: COR.BORDO }));
@@ -2489,6 +2491,7 @@ function blocoCartao(c, x, w, cel) {
     det.forEach(([rot, val, dest]) => { e.push(T(x + 16, yy, rot, 8.6, { c: COR.MARROM2 }), T(x + 16 + rotW, yy, val, dest ? 10 : 8.8, { b: !!dest, c: dest ? COR.BORDO : COR.TEXTO })); yy += dest ? 15 : 13; });
     if (im) { const fx = abaixo ? x + 3 + (w - 3 - fw) / 2 : x + w - 12 - fw, fy = abaixo ? y + hTxt : y + (h - fh) / 2; e.push(E.img(fotoK, fx, fy, fw, fh), E.ret(fx, fy, fw, fh, { s: COR.BEGE, lw: 0.6 })); }
     if (tb) e.push(E.img(c.tubo, x + w - 14 - twT, y + 8, twT, thT));
+    if (pocos) { const yP = y + h - hPoc; pocos.forEach((k, i) => { const q = IMG_DIN[k], pw = hP * q.w / q.h, cx = x + 3 + 14 + wP / 2 + i * (wP + gP); e.push(E.img(k, cx - pw / 2, yP, pw, hP)); e.push(T(cx, yP + hP + (cel ? 12 : 10), ROT_POCO[i], cel ? 7.8 : 7.4, { b: true, c: COR.BORDO, a: "m" })); }); }
     if (infoLs.length) { const y0 = y + Math.max(11, 22 - (infoLs.length * lhI) / 2) + tamI; infoLs.forEach((o, i) => { if (o.r) e.push(T(x + xInfo, y0 + i * lhI, o.r, tamI, { b: true, c: COR.MARROM2 })); e.push(T(x + xInfo + o.wr, y0 + i * lhI, o.l, tamI, { c: COR.MARROM2 })); }); }
     return e; } };
 }
@@ -2650,7 +2653,7 @@ function blocosTipagem(x, w, cel) {
   const lado = !cel && t.diagrama && sistemasCompat().length;
   const ambos = !felino() && t.dea1.on && t.dal.on, paras = String(t.nota || "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
   // DEA 1 e DAL juntos, com o texto padrão: cada sistema com o seu parágrafo logo abaixo; se não couber numa folha, o DAL começa na segunda
-  const separar = !cel && ambos && !t.notaEditada && paras.length === 3 && !SUB;
+  const separar = !cel && ambos && !t.notaEditada && paras.length === 3 && !SUB && !(t.diagrama && sistemasCompat().length);
   const temGrau = !felino() && ((t.dea1.on && t.dea1.grau && t.dea1.res === "Positivo") || (t.dal.on && t.dal.grau && t.dal.res === "Positivo"));
   if (lado && !felino()) {
     // A4 do cão: cada sistema numa faixa própria, com o cartão do resultado e, ao lado, o esquema de compatibilidade daquele sistema
@@ -2664,6 +2667,7 @@ function blocosTipagem(x, w, cel) {
         const e = cb.el(y); e.push(E.selo(xr, y, wr, hb, { s: COR.LINHA, lw: 0.6, r: 8 }), T(xr + wr / 2, y + 13, "COMPATIBILIDADE PARA TRANSFUSÃO", 6, { b: true, c: COR.OURO, a: "m" }));
         e.push(...painelCompat(xr + (wr - pw) / 2, y + 4 + (hb - pp.h) / 2, pw, sp).el); return e; } });
     });
+    B.umaFolha = true;
     // as duas tipagens primeiro; os textos vêm depois e, se não couber tudo numa folha, vão com a assinatura para a segunda
     if (separar) { if (temGrau) B.push(...blocosNota(notaGrau(), x, w, 7.6, COR.TXT2)); B.push({ h: 0, quebra: true, el: () => [] }); B.push(...blocoTexto("SOBRE O DEA 1", paras[0], x, w, 8), ...blocoTexto("SOBRE O DAL", paras[1], x, w, 8)); B.umaFolha = true; }
   } else if (separar) {
@@ -2680,6 +2684,8 @@ function blocosTipagem(x, w, cel) {
     B.push(...blocosNota(SL.map((x2) => x2.legenda.join(" ")).join(" "), x, w, 7.2, COR.TXT2));
   } else if (!separar) cartoes.forEach((c) => B.push(blocoCartao(c, x, w, cel)));
   if (!felino()) {
+    const nImg = (t.dea1.on && IMG_DIN.fotoDea ? 1 : 0) + (t.dal.on && (IMG_DIN.dalPoco0 || IMG_DIN.fotoDal) ? 1 : 0);
+    if (nImg && !separar) B.push({ h: 16, el: (y) => [T(x + w / 2, y + 8, nImg > 1 ? "Imagens correspondentes aos testes realizados neste paciente." : "Imagem correspondente ao teste realizado neste paciente.", cel ? 8 : 7.8, { i: true, c: COR.MARROM2, a: "m" })] });
     if (temGrau && !separar) B.push(...blocosNota(notaGrau(), x, w, 7.6, COR.TXT2));
   }
   if (!lado) B.push(...blocoDiagrama(x, w, cel));
@@ -2963,7 +2969,9 @@ function laudoNumaFolha(blocos, metodo) {
   let yr = y + 12; metodo.forEach((l) => { el.push(T(X, yr, l, 7.5, { i: true, c: COR.MARROM2 })); yr += 10; }); yr += 12;
   const as = blocoAssinatura(X, W, yr); el.push(...as.el);
   const s = (PG.YMAX - 6 - PG.Y) / (yr + as.h - PG.Y);
-  if (s >= 1 || s < ESCALA_MIN) return null;
+  if (s < ESCALA_MIN) return null;
+  // coube sem reduzir: fica no tamanho normal, com a assinatura logo depois do texto
+  if (s >= 1) return el;
   return escalarEls(el, s, X, PG.Y, X + (W - W * s) / 2);
 }
 // reduz elementos em torno de (x0, y0) e leva a borda esquerda para xNovo
@@ -3003,6 +3011,36 @@ function paginaCelular() {
   el.push(T(X, y, CVH_TEL + "  ·  www.cvh.vet.br", 8.5, { c: COR.TXT2 })); y += 22;
   return { folhas: [el], alturas: [y] };
 }
+// cartão do DAL: os três poços recortados da foto real (autoaglutinação, controle positivo e teste do paciente), sem o resto do cartão
+const POCOS_DAL = {};
+function acharPocosDal(im) {
+  // o poço inteiro (parte clara rosada e o sangue embaixo) tem cor; o cartão em volta é branco ou cinza
+  const W0 = im.naturalWidth || im.width, H0 = im.naturalHeight || im.height, w = Math.min(900, W0), h = Math.round(H0 * w / W0), k = W0 / w;
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h; const g = cv.getContext("2d"); g.drawImage(im, 0, 0, w, h); const D = g.getImageData(0, 0, w, h).data;
+  const cor = (i) => D[i] - D[i + 2] > 30 && D[i] > 90;
+  const y0 = Math.round(h * 0.25), y1 = Math.round(h * 0.9), col = new Array(w).fill(0);
+  for (let x = 0; x < w; x++) { let n = 0; for (let y = y0; y < y1; y++) if (cor((y * w + x) * 4)) n++; col[x] = n / (y1 - y0); }
+  const runs = []; let s0 = -1; for (let x = 0; x <= w; x++) { if (x < w && col[x] > 0.3) { if (s0 < 0) s0 = x; } else if (s0 >= 0) { if (x - s0 > w * 0.08) runs.push([s0, x - 1]); s0 = -1; } }
+  if (runs.length < 2) return null;
+  const esq = runs[0], dir = runs[runs.length - 1]; if (dir[0] < w * 0.55 || esq[1] > w * 0.45) return null;
+  const row = new Array(h).fill(0); for (let y = 0; y < h; y++) { let n = 0; for (let x = dir[0]; x <= dir[1]; x++) if (cor((y * w + x) * 4)) n++; row[y] = n / (dir[1] - dir[0] + 1); }
+  let top = -1, bot = -1, best = 0; s0 = -1; for (let y = 0; y <= h; y++) { if (y < h && row[y] > 0.3) { if (s0 < 0) s0 = y; } else if (s0 >= 0) { if (y - s0 > best) { best = y - s0; top = s0; bot = y - 1; } s0 = -1; } }
+  if (top < 0) return null;
+  // os três poços têm o mesmo tamanho e o do meio (controle positivo, quase branco) fica no meio dos outros dois
+  const lw = Math.round(((dir[1] - dir[0]) + (esq[1] - esq[0])) / 2), cL = (esq[0] + esq[1]) / 2, cR = (dir[0] + dir[1]) / 2, cM = (cL + cR) / 2;
+  const m = Math.round(lw * 0.03), caixa = (c) => { const X0 = Math.max(0, Math.round(c - lw / 2) - m), X1 = Math.min(w - 1, Math.round(c + lw / 2) + m), Y0 = Math.max(0, top - m * 2), Y1 = Math.min(h - 1, bot + m); return { sx: X0 * k, sy: Y0 * k, sw: (X1 - X0) * k, sh: (Y1 - Y0) * k }; };
+  return [caixa(cL), caixa(cM), caixa(cR)];
+}
+function pocosDal(foto) {
+  if (!foto || !foto.url) return null; const c = POCOS_DAL[foto.url]; if (c) return c.pocos;
+  POCOS_DAL[foto.url] = { pocos: null };
+  const im = new Image(); im.onload = () => {
+    let p = null; try { p = acharPocosDal(im); } catch (_) { p = null; }
+    POCOS_DAL[foto.url].pocos = p ? p.map((r) => { const c2 = document.createElement("canvas"); c2.width = Math.round(r.sw); c2.height = Math.round(r.sh); c2.getContext("2d").drawImage(im, r.sx, r.sy, r.sw, r.sh, 0, 0, c2.width, c2.height); return { url: c2.toDataURL("image/jpeg", 0.95), w: c2.width, h: c2.height }; }) : false;
+    if (p) { try { renderPrevia(); } catch (_) {} }
+  };
+  im.src = foto.url; return null;
+}
 // só as imagens que entram neste laudo (o PDF embute todas as de IMG_DIN)
 function sincronizarImagens() {
   IMG_DIN = {};
@@ -3010,7 +3048,7 @@ function sincronizarImagens() {
   if (estado.tipo === "compat") { imagensAmostra(); const so = estado.fotoSo || {}; if (estado.t.metodo === "gel") estado.t.provas.forEach((_, i) => { if (estado.fotos["gel" + i] && !so["gel" + i]) IMG_DIN["fotoGel" + i] = estado.fotos["gel" + i]; }); if (estado.fotos.tubo && !so.tubo) IMG_DIN.fotoTubo = estado.fotos.tubo; }
   if (estado.tipo === "tipagem") { imagensAmostra(); if (estado.fotos.tubo && !(estado.fotoSo || {}).tubo) IMG_DIN.fotoTubo = estado.fotos.tubo; }
   const tp = tipAtual();
-  if (tp && !felino() && tp.dal && tp.dal.on && estado.fotos.dal) IMG_DIN.fotoDal = estado.fotos.dal;
+  if (tp && !felino() && tp.dal && tp.dal.on && estado.fotos.dal) { const pc = pocosDal(estado.fotos.dal); if (pc) pc.forEach((q, i) => { IMG_DIN["dalPoco" + i] = q; }); else IMG_DIN.fotoDal = estado.fotos.dal; }
   if (tp && !felino() && tp.dea1 && tp.dea1.on && estado.fotos.dea) IMG_DIN.fotoDea = estado.fotos.dea;
   if (estado.tipo === "fiv" && estado.fotos.fiv) IMG_DIN.fotoFiv = estado.fotos.fiv;
   if (estado.tipo === "requisicao" && estado.fotos.assSol) IMG_DIN.assSol = estado.fotos.assSol;
@@ -3702,6 +3740,8 @@ async function salvar() {
   if (sus.length && estado.alertaOk !== JSON.stringify(sus)) { st.className = "st erro"; st.innerHTML = "Resultado que pede atenção: " + esc(sus.join("; ")) + ". Confira a prévia antes de liberar. <button type=\"button\" class=\"btn mini\" data-a=\"conf-alerta\">Conferi, salvar e assinar</button>"; return; }
   if (estado.receptor) { const P = Object.assign({}, estado.paciente), ts = tipagemTxt(); if (ts) P.tipo = ts; else if (!P.tipo) delete P.tipo; ponte("receptorGuardar", { paciente: P, resp: { nome: estado.resp.nome }, exame: { clinica: estado.exame.clinica || "", solicitante: estado.exame.solicitante || "", solicitanteCrmv: estado.exame.solicitanteCrmv || "", amostra: estado.exame.amostra || "" } }).catch(() => {}); ponte("novaRaca", estado.paciente.especie, estado.paciente.raca).catch(() => {}); }
   const bt = $("#salvar"); bt.disabled = true; st.className = "st"; st.textContent = "Assinando e gerando os PDFs…";
+  // os poços do DAL são recortados da foto ao abrir: espera ficarem prontos antes de gerar os PDFs
+  if (estado.fotos.dal && estado.fotos.dal.url) { pocosDal(estado.fotos.dal); for (let i = 0; i < 40 && POCOS_DAL[estado.fotos.dal.url] && POCOS_DAL[estado.fotos.dal.url].pocos === null; i++) await new Promise((r) => setTimeout(r, 100)); sincronizarImagens(); }
   try {
     const d = new Date(), l = libLab(), quando = l ? { data: br(l.iso), hora: l.hora, iso: d.toISOString(), lab: true } : { data: br(hojeISO()), hora: p2(d.getHours()) + ":" + p2(d.getMinutes()), iso: d.toISOString() }, dados = dadosLaudo();
     const h = (await sha(JSON.stringify(dados) + quando.iso)).toUpperCase();

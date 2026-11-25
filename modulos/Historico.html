@@ -2649,6 +2649,39 @@ function medidaDaFicha(ex) {
   m.lida = `Da ficha de doação${ex.numero ? " " + ex.numero : ""}.`;
   salvarMedidas(); renderMedidas();
 }
+// cartão do DAL: só os três poços (autoaglutinação, controle positivo e teste do paciente), recortados da foto real, lado a lado com o nome embaixo
+function acharPocosDal(im) {
+  // o poço inteiro (parte clara rosada e o sangue embaixo) tem cor; o cartão em volta é branco ou cinza
+  const W0 = im.naturalWidth || im.width, H0 = im.naturalHeight || im.height, w = Math.min(900, W0), h = Math.round(H0 * w / W0), k = W0 / w;
+  const cv = document.createElement("canvas"); cv.width = w; cv.height = h; const g = cv.getContext("2d"); g.drawImage(im, 0, 0, w, h); const D = g.getImageData(0, 0, w, h).data;
+  const cor = (i) => D[i] - D[i + 2] > 30 && D[i] > 90;
+  const y0 = Math.round(h * 0.25), y1 = Math.round(h * 0.9), col = new Array(w).fill(0);
+  for (let x = 0; x < w; x++) { let n = 0; for (let y = y0; y < y1; y++) if (cor((y * w + x) * 4)) n++; col[x] = n / (y1 - y0); }
+  const runs = []; let s0 = -1; for (let x = 0; x <= w; x++) { if (x < w && col[x] > 0.3) { if (s0 < 0) s0 = x; } else if (s0 >= 0) { if (x - s0 > w * 0.08) runs.push([s0, x - 1]); s0 = -1; } }
+  if (runs.length < 2) return null;
+  const esq = runs[0], dir = runs[runs.length - 1]; if (dir[0] < w * 0.55 || esq[1] > w * 0.45) return null;
+  const row = new Array(h).fill(0); for (let y = 0; y < h; y++) { let n = 0; for (let x = dir[0]; x <= dir[1]; x++) if (cor((y * w + x) * 4)) n++; row[y] = n / (dir[1] - dir[0] + 1); }
+  let top = -1, bot = -1, best = 0; s0 = -1; for (let y = 0; y <= h; y++) { if (y < h && row[y] > 0.3) { if (s0 < 0) s0 = y; } else if (s0 >= 0) { if (y - s0 > best) { best = y - s0; top = s0; bot = y - 1; } s0 = -1; } }
+  if (top < 0) return null;
+  // os três poços têm o mesmo tamanho e o do meio (controle positivo, quase branco) fica no meio dos outros dois
+  const lw = Math.round(((dir[1] - dir[0]) + (esq[1] - esq[0])) / 2), cL = (esq[0] + esq[1]) / 2, cR = (dir[0] + dir[1]) / 2, cM = (cL + cR) / 2;
+  const m = Math.round(lw * 0.03), caixa = (c) => { const X0 = Math.max(0, Math.round(c - lw / 2) - m), X1 = Math.min(w - 1, Math.round(c + lw / 2) + m), Y0 = Math.max(0, top - m * 2), Y1 = Math.min(h - 1, bot + m); return { sx: X0 * k, sy: Y0 * k, sw: (X1 - X0) * k, sh: (Y1 - Y0) * k }; };
+  return [caixa(cL), caixa(cM), caixa(cR)];
+}
+// junta os poços numa imagem só (a foto de cada poço sem alteração, só reduzida para a mesma altura), com o nome de cada um
+async function imagemPocos(partes) {
+  try { if (document.fonts && document.fonts.load) await document.fonts.load('700 30px "Laudo CVH"'); } catch (_) {}
+  const hh = Math.min(260, ...partes.map((p) => p.sh)), ws = partes.map((p) => p.sw * hh / p.sh), gap = Math.round(hh * 0.16), rotH = Math.round(hh * 0.3);
+  const c = document.createElement("canvas"); c.width = Math.round(ws.reduce((a, b) => a + b, 0) + gap * 2); c.height = hh + rotH;
+  const g = c.getContext("2d"); g.fillStyle = "#F7F2EC"; g.fillRect(0, 0, c.width, c.height);
+  const ROT = ["Autoaglutinação", "Controle positivo", "Teste do paciente"]; let x = 0;
+  partes.forEach((p, i) => { g.drawImage(p.img, p.sx, p.sy, p.sw, p.sh, x, 0, ws[i], hh); g.fillStyle = "#5F130F"; g.font = '700 ' + Math.round(hh * 0.15) + 'px "Laudo CVH", sans-serif'; g.textAlign = "center"; g.fillText(ROT[i], x + ws[i] / 2, hh + rotH * 0.68); x += ws[i] + gap; });
+  return { url: c.toDataURL("image/jpeg", 0.95), w: c.width, h: c.height };
+}
+async function pocosDaFoto(url) {
+  const im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+  const r = acharPocosDal(im); return r ? imagemPocos(r.map((q) => Object.assign({ img: im }, q))) : null;
+}
 // laudo de tipagem do CVH (DEA 1, DAL ou grupo felino) pelos dados do laudo: do painel ou do arquivo laudo-cvh.json dentro do PDF
 function exameTipagemDeLaudo(L) {
   const iso = String(L.data || "").match(/^(\d{4})-(\d{2})-(\d{2})/), data = iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : normalizarData(L.data);
@@ -2673,7 +2706,16 @@ async function fotosLaudoTipagem(doc, e) {
     const pega = (y0, y1, ok) => imgs.filter((m) => m.y0 > y0 && m.y0 < y1 && ok(m.rw / m.rh)).sort((a, b) => b.rw * b.rh - a.rw * a.rh)[0];
     const add = async (m, sis) => { if (!m || e.fotos.some((f) => f.sistema === sis)) return; const foto = { titulo: sis === "dal" ? "Tipagem DAL" : "Tipagem DEA 1", tipo: "tipagem", sistema: sis, inteira: m.url, w: m.rw, h: m.rh, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true }; await aplicarCorte(foto); e.fotos.push(foto); };
     if (yDea != null && e.tipagem.dea1) await add(pega(yDea, yDal != null && yDal > yDea ? yDal : H, (r) => r > 3), "dea");
-    if (yDal != null && e.tipagem.dal) await add(pega(yDal, yDea != null && yDea > yDal ? yDea : H, (r) => r > 1.15 && r < 4), "dal");
+    if (yDal != null && e.tipagem.dal && !e.fotos.some((f) => f.sistema === "dal")) {
+      const lim = yDea != null && yDea > yDal ? yDea : H, pocos = imgs.filter((m) => m.y0 > yDal && m.y0 < lim && m.rw / m.rh > 1.1 && m.rw / m.rh < 2.4).sort((a, b) => a.x0 - b.x0);
+      if (pocos.length >= 3 && Math.abs(pocos[0].y0 - pocos[2].y0) < 6) {
+        const ims = await Promise.all(pocos.slice(0, 3).map((m) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = m.url; })));
+        const pc = await imagemPocos(ims.map((im) => ({ img: im, sx: 0, sy: 0, sw: im.naturalWidth, sh: im.naturalHeight })));
+        const foto = { titulo: "Tipagem DAL", tipo: "tipagem", sistema: "dal", inteira: pc.url, w: pc.w, h: pc.h, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true }; await aplicarCorte(foto); e.fotos.push(foto);
+      } else {
+        const m = pega(yDal, lim, (r) => r > 1.15 && r < 4); if (m) { const pc = await pocosDaFoto(m.url).catch(() => null); if (pc) { const foto = { titulo: "Tipagem DAL", tipo: "tipagem", sistema: "dal", inteira: pc.url, w: pc.w, h: pc.h, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true }; await aplicarCorte(foto); e.fotos.push(foto); } else await add(m, "dal"); }
+      }
+    }
   }
 }
 function processarItens(nome, hash, paginas, exPronto) {
@@ -4124,7 +4166,8 @@ async function lerHistorico(doc, nome) {
           const e = processarItens("Laudo de tipagem de " + ex.data, "laudo-tipagem-" + L.id, null, ex); if (!e) continue; n++;
           for (const fo of L.fotos || []) {
             try { const r = await ponte("lerPdf", fo.id), url = "data:image/jpeg;base64," + r.base64, im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
-              const foto = { titulo: fo.alvo === "dal" ? "Tipagem DAL" : "Tipagem DEA 1", tipo: "tipagem", sistema: fo.alvo, inteira: url, w: im.naturalWidth, h: im.naturalHeight, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true };
+              let foto = { titulo: fo.alvo === "dal" ? "Tipagem DAL" : "Tipagem DEA 1", tipo: "tipagem", sistema: fo.alvo, inteira: url, w: im.naturalWidth, h: im.naturalHeight, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true };
+              if (fo.alvo === "dal") { const pc = await pocosDaFoto(url).catch(() => null); if (pc) foto = Object.assign(foto, { inteira: pc.url, w: pc.w, h: pc.h }); }
               await aplicarCorte(foto); e.fotos.push(foto); } catch (_) { /* foto fora do Drive: segue sem ela */ }
           }
         } catch (e) { /* laudo incompleto: segue com os outros */ }
