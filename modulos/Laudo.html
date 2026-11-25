@@ -2387,10 +2387,17 @@ function blocoIdent(x, y, w, tam0) {
         usado += (L[L.length - 1].length ? gmin : 0) + it.lw; L[L.length - 1].push(it); });
       return { L, tam }; };
     let F = fluxo(tam0 + 0.5); for (const t2 of [tam0, tam0 - 0.5]) { if (F.L.length <= 4) break; F = fluxo(t2); }
+    // mesmas linhas, mas equilibradas: os campos são divididos na ordem de modo que todas as linhas fiquem parecidas de cheias
+    { const its = F.L.flat(), n = F.L.length, livre = w - 24, larg = (i, j) => its.slice(i, j).reduce((a2, o) => a2 + o.lw, 0) + 14 * (j - i - 1);
+      const memo = {}, melhor = (i, k) => { const ch = i + "," + k; if (ch in memo) return memo[ch];
+        if (k === 1) { const l = larg(i, its.length); return (memo[ch] = l <= livre ? { c: (livre - l) ** 2, cortes: [] } : null); }
+        let r = null; for (let j = i + 1; j <= its.length - (k - 1); j++) { const l = larg(i, j); if (l > livre) break; const sub = melhor(j, k - 1); if (!sub) continue; const c = (livre - l) ** 2 + sub.c; if (!r || c < r.c) r = { c, cortes: [j, ...sub.cortes] }; }
+        return (memo[ch] = r); };
+      const m = n > 1 ? melhor(0, n) : null; if (m) { const L2 = []; let i0 = 0; [...m.cortes, its.length].forEach((j) => { L2.push(its.slice(i0, j)); i0 = j; }); F.L = L2; } }
     const { L, tam } = F, lh = tam + 7, h = 16 + L.length * lh;
     el.push(E.selo(x, y, w, h, { f: COR.CLARO, r: 6 }));
     // cada linha ocupa a largura toda: o espaço que sobra é dividido entre os campos
-    L.forEach((l, li) => { const yy = y + 10 + tam + li * lh, tot = l.reduce((a, i) => a + i.lw, 0), g = l.length > 1 ? Math.min(46, (w - 24 - tot) / (l.length - 1)) : 0; let cx = x + 12;
+    L.forEach((l, li) => { const yy = y + 10 + tam + li * lh, tot = l.reduce((a, i) => a + i.lw, 0), g = l.length > 1 ? Math.min(l.length >= 3 ? 140 : 46, (w - 24 - tot) / (l.length - 1)) : 0; let cx = x + 12;
       l.forEach((it) => { if (it.r) el.push(T(cx, yy, it.r, tam, { b: true, c: COR.OURO })); if (it.txt) el.push(T(cx + it.wr, yy, it.txt, tam, { b: it.b, i: it.vazio, c: it.vazio ? COR.MARROM2 : it.b ? COR.BORDO : COR.TEXTO })); cx += it.lw + g; }); });
     return { el, h };
   }
