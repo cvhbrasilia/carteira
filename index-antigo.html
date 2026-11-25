@@ -111,7 +111,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261125162942">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261125171029">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1041,7 +1041,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125162942';
+  var VERSAO = '20261125171029';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -5975,9 +5975,11 @@ function hojeLista() {
 }
 // coleta de hoje: número, fim da triagem e repouso de 2 h (contado do fim da triagem; sem ele, da assinatura da ficha)
 function hojeColeta(x) {
-  if (!x.reg) return null;
-  const d = x.reg.dados || {}, f = d.ficha || {}, numero = String(d.numero || f.numero || '').replace(/\s/g, ''), nc = !!(d.naoColetado || f.tempo === 'NC' || f.clinico);
-  let ref = null; if (/^\d{1,2}:\d{2}$/.test(f.fim || '')) ref = new Date(x.reg.data + 'T' + f.fim.padStart(5, '0') + ':00'); else if (x.reg.assinadoEm) ref = new Date(x.reg.assinadoEm);
+  // coleta salva na carteira ou ainda na ficha em andamento (a ficha não finalizada não bloqueia a produção)
+  const R = x.reg || (x.rasc && String(x.rasc.numero || (x.rasc.ficha || {}).numero || '').trim() ? { data: x.rasc.data, dados: { ficha: x.rasc.ficha || {}, numero: x.rasc.numero || (x.rasc.ficha || {}).numero }, assinadoEm: x.rasc.atualizadoEm } : null);
+  if (!R) return null;
+  const d = R.dados || {}, f = d.ficha || {}, numero = String(d.numero || f.numero || '').replace(/\s/g, ''), nc = !!(d.naoColetado || f.tempo === 'NC' || f.clinico);
+  let ref = null; if (/^\d{1,2}:\d{2}$/.test(f.fim || '')) ref = new Date(R.data + 'T' + f.fim.padStart(5, '0') + ':00'); else if (R.assinadoEm) ref = new Date(R.assinadoEm);
   const ate = ref && !isNaN(ref) ? new Date(ref.getTime() + 2 * 36e5) : null;
   return { numero, nc, ref, ate, falta: ate ? ate.getTime() - Date.now() : 0, lib: E.ph.lib[numero] || null, ped: E.ph.ped[numero] || null };
 }
@@ -5985,6 +5987,7 @@ const hhmm = t => p2(t.getHours()) + ':' + p2(t.getMinutes());
 function hojeEtapas(x) {
   const c = hojeColeta(x), cit = (E.ph.citopet[hoje()] || {})[x.aid], e = [];
   e.push(c ? (c.nc ? ['ne', 'Sem coleta'] : ['ok', 'Coleta ' + c.numero]) : x.rasc ? ['av', 'Ficha em andamento'] : ['ne', 'Ficha não iniciada']);
+  if (c && !x.reg) e.push(['av', 'Ficha em andamento']);
   e.push(cit === 'sim' ? ['ok', 'Vai para o Citopet'] : cit === 'nao' ? ['ne', 'Sem Citopet'] : ['av', 'Citopet?']);
   if (c && !c.nc) e.push(c.lib ? ['ok', 'Liberada antes por ' + c.lib.por.split(' ')[0]] : !c.ate ? ['ne', 'Repouso sem horário'] : c.falta > 0 ? [c.ped ? 'al' : 'av', (c.ped ? 'Pedido de liberação · ' : 'Repouso até ') + hhmm(c.ate)] : ['ok', 'Liberada para produção']);
   return e;
@@ -6018,7 +6021,7 @@ async function abrirHojeAnimal(aid, passo) {
         : c.ped ? '' : '<div class="mini-bts"><input id="hjMot" placeholder="Motivo para liberar antes" style="flex:1;min-width:180px"><button class="btn sec2" data-acao="hj-pedir" data-id="' + aid + '" data-v="' + esc(c.numero) + '">Pedir liberação a ' + esc((E.ph.rtNome || 'responsável técnico').split(' ')[0]) + '</button></div>') : '<p class="nota">Repouso de 2 h completo. Pode seguir para a produção.</p>') +
       ((pode('producao') || pode('estoque') || pode('admin')) ? '<div class="mini-bts"><button class="btn" data-acao="hj-producao">Abrir a produção</button></div>' : '') + '</div>';
   }
-  const fichaH = c ? '' : '<div class="mini-bts"><button class="btn" data-acao="hj-ficha" data-id="' + aid + '">' + (x.rasc ? 'Continuar a ficha de doação' : 'Iniciar a ficha de doação') + '</button></div>';
+  const fichaH = c && x.reg ? '' : '<div class="mini-bts"><button class="btn" data-acao="hj-ficha" data-id="' + aid + '">' + (x.rasc ? 'Continuar a ficha de doação' : 'Iniciar a ficha de doação') + '</button></div>';
   abrirFolha(an.nome + (x.ag && x.ag.hora ? ' · ' + x.ag.hora : ''), '<div class="hj-r">' + cab + '</div>' + fichaH + citH + prodH +
     (pend.length ? '<div class="hj-s"><h3>Pendências abertas</h3>' + pend.map(p => '<p class="hj-p"><b>' + esc(p.texto) + '</b><small>' + esc('para ' + p.paraNome + (p.prazo ? ' · prazo ' + br(p.prazo) : '')) + '</small></p>').join('') + '</div>' : '') +
     (rev && rev.nota ? '<div class="hj-s"><h3>Revisão do cadastro</h3><p class="hj-p"><b>' + esc(rev.nota) + '</b><small>' + esc(rev.por || '') + '</small></p></div>' : '') +
@@ -7460,6 +7463,9 @@ async function abrirModulo(nome, aid, rid) {
     // fichas de doação com coleta: código, doador, volume de ST, lote e validade da bolsa, segmento
     E.ponte.doacoes = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}, f = d.ficha || {}, a = animalDe(r.animalId) || {};
       return { numero: String(d.numero || f.numero || '').trim(), data: r.data, animalId: r.animalId, nome: a.nome || '', volume: f.volume || '', lote: f.lote || '', validade: f.validade || '', seguimento: f.seguimento || '', naoColetado: !!d.naoColetado, fim: f.fim || '', assinadoEm: r.assinadoEm || '' }; });
+    // a ficha ainda não finalizada não bloqueia nada: a coleta já feita entra na produção pela ficha em andamento
+    andamentoDe().forEach(fa => { const f = fa.ficha || {}, n = String(fa.numero || f.numero || '').trim(); if (!n || f.clinico || f.tempo === 'NC' || E.ponte.doacoes.some(x => x.numero.replace(/\s/g, '') === n.replace(/\s/g, ''))) return;
+      const a = animalDe(fa.animalId) || {}; E.ponte.doacoes.push({ numero: n, data: fa.data, animalId: fa.animalId, nome: a.nome || '', volume: f.volume || '', lote: f.lote || '', validade: f.validade || '', seguimento: f.seguimento || '', naoColetado: false, fim: f.fim || '', assinadoEm: fa.atualizadoEm || '', andamento: true }); });
     E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, tipoSanguineo: tipagemDe(a).tipoSanguineo, dal: tipagemDe(a).dal }));
     E.ponte.usuario = E.u.nome; E.ponte.admin = pode('admin');
   }

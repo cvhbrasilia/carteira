@@ -3467,6 +3467,20 @@ init();
     // salvar antes de terminar: grava a ficha em andamento no painel
     salvar = async function (silencioso) {
       if (!temConteudo(S)) { toast("Preencha pelo menos o número da doação ou o nome do animal antes de salvar."); return false; }
+      // primeira vez que salva (normalmente logo depois da coleta): início e fim entram sozinhos se estiverem vazios.
+      // Fim é a hora de agora (conta o repouso de 2 h); início é a hora da etiqueta da doação, ou o fim menos o tempo de coleta
+      if (!S.srvId && !S.ass) {
+        const hm = (d) => pad(d.getHours()) + ":" + pad(d.getMinutes()), agora = new Date(), auto = [];
+        if (!S.fim || S.fim === "NI") { S.fim = hm(agora); syncText("fim"); auto.push("fim " + S.fim); }
+        if (!S.inicio || S.inicio === "NI") {
+          const m = /(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/.exec(S.etq || ""), t = parseFloat(String(S.tempo || "").replace(",", "."));
+          let ini = null;
+          if (m && m[3] + "-" + m[2] + "-" + m[1] === todayISO() && m[4] + ":" + m[5] <= S.fim) ini = m[4] + ":" + m[5];
+          else if (isFinite(t) && t > 0) ini = hm(new Date(agora.getTime() - t * 6e4));
+          if (ini) { S.inicio = ini; syncText("inicio"); auto.push("início " + ini); }
+        }
+        if (auto.length) { ["inicio", "fim"].forEach((k) => { try { wrapState(k); } catch (e) {} }); setTimeout(() => toast("Horário preenchido: " + auto.join(", ") + ". O repouso de 2 h conta a partir do fim.", 5000), 600); }
+      }
       try { guardarLocal(); } catch (e) {}
       try {
         const { lidos, duvidas, srvId, ...f } = JSON.parse(JSON.stringify(S));
