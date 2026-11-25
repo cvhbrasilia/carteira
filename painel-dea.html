@@ -951,7 +951,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125000557';
+  var VERSAO = '20261125003526';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -6932,6 +6932,8 @@ function sairModulo(b) {
   if (laudo && animalDe(laudo)) telaLaudos(laudo); else if (E.modAberto === null && eraLaudo) telaLaudos(null); else if (hist && animalDe(hist)) telaHistorico(hist); else if (receita && animalDe(receita)) telaReceitas(receita); else if (doador && animalDe(doador)) telaFichas(doador); else telaInicio();   // da ficha volta para o painel de doações do doador
   // o termo assinado entra na carteira pelo servidor: recarrega os dados em segundo plano
   if (eraTcle) api('painelDados', E.sessao).then(d => { E.d = d; E.u = d.usuario; }).catch(() => {});
+  // ficha de doação salva: se o vermífugo da doação ainda não está na carteira, abre o lançamento (a receita sai sozinha ao salvar)
+  if (doador && pode('carteiras')) { const x = vermParaConfirmar().find(v => v.an.id === doador && v.origem === 'ficha'); if (x) setTimeout(() => { if (E.modAberto) return; ACOES['verm-confirmar']({ dataset: { rid: x.r.id } }); }, 500); }
 }
 function guardarRegistro(salvo) { const i = E.d.registros.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.registros[i] = salvo; else E.d.registros.push(salvo); }
 const PONTE = {
@@ -7283,7 +7285,8 @@ function vermParaConfirmar() {
   E.d.animais.filter(a => a.ativo !== '0').forEach(a => {
     const regs = regsDe(a.id), ultV = regs.filter(r => r.tipo === 'vermifugo').map(r => r.data).sort().pop() || '';
     // só a doação mais recente de cada animal
-    regs.filter(r => r.tipo === 'doacao' && r.data >= lim && r.data > ultV && a.doador === '1' && pesoNum((r.dados || {}).peso) && !(r.dados || {}).naoColetado && !(r.dados || {}).vermDispensado)
+    // doação dos últimos 30 dias, ou ficha antiga lançada agora (a data da doação é antiga, mas o registro é recente)
+    regs.filter(r => r.tipo === 'doacao' && (r.data >= lim || String(r.assinadoEm || '').slice(0, 10) >= lim) && r.data > ultV && a.doador === '1' && pesoNum((r.dados || {}).peso) && !(r.dados || {}).naoColetado && !(r.dados || {}).vermDispensado)
       .sort((x, y) => (y.data || '').localeCompare(x.data || '')).slice(0, 1).forEach(r => out.push({ an: a, r, origem: 'ficha', data: r.data, peso: r.dados.peso, produto: 'Vermicanis Plus' }));
     regs.filter(r => r.tipo === 'receita' && r.data >= lim && r.data > ultV && !disp.includes(r.id)).forEach(r => {
       const it = ((r.dados || {}).docs || []).flatMap(d => d.itens || []).find(i => VERMIFUGOS.some(v => semAc(i.med || '').includes(semAc(v)))); if (!it) return;
