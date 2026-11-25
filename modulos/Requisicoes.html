@@ -41,6 +41,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(95,19,15,.25);bor
 .an-nm b i{font-style:normal;color:var(--verm)}
 .cmp{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--tinta2)}
 .opc{display:flex;gap:6px;flex-wrap:wrap}.opc button{flex:1;min-width:64px;border:1px solid var(--areia2);background:#fff;color:var(--vinho);border-radius:10px;padding:9px 10px;font:inherit;font-size:14.5px;cursor:pointer}
+.cito{margin-top:10px;border-top:1px dashed var(--areia2);padding-top:10px}.cito .ct{display:block;color:var(--vinho);font-size:15px;margin-bottom:6px}.cito .obr{font-style:normal;font-size:12px;color:#A83D3D;font-weight:700}
 .opc button[aria-pressed=true]{background:var(--vinho);color:#fff;border-color:var(--vinho);font-weight:700}.add input{flex:1}
 .rap{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 details.gr{border-top:1px solid var(--areia);padding:6px 0}details.gr summary{cursor:pointer;font-weight:700;color:var(--vinho);font-size:14px;padding:4px 0}details.gr summary small{color:var(--verm)}
@@ -324,9 +325,21 @@ const LABS = {
       { g: "Análise dermatológica", itens: [["ecto", "Pesquisa de ectoparasitas (sarna e fungo)"], ["malass", "Pesquisa de Malassezia (malassezia e bactéria)"], ["gramD", "Coloração de Gram (pele)"]] },
       { g: "Análise otológica", itens: [["cerumen", "Microscopia de cerúmen (ácaros, fungos e bactérias)"], ["gramO", "Coloração de Gram (ouvido)"]] },
       { g: "Análise microbiológica", itens: [["fungos", "Cultivo de fungos"], ["cultura", "Cultura bacteriana e antibiograma", "local"]] },
+      { g: "Análise citológica", itens: [["cito", "Análise citológica"]] },
     ],
   },
 };
+// verso do formulário do Citopet: dados da lesão, um por animal (a localização é obrigatória)
+const CITO = [
+  ["coleta", "Coleta", ["CAAF", "Imprint", "Swab", "Lavado", "Outra"]],
+  ["local", "Localização", null, "obrigatório"], ["tamanho", "Tamanho", null, "ex.: 2 x 1,5 cm"], ["tempo", "Tempo de evolução", null, "ex.: 3 meses"],
+  ["forma", "Forma", ["Arredondada", "Alongada", "Amorfa"]], ["caract", "Característica", ["Aderida", "Pedunculada", "Solta"]],
+  ["consist", "Consistência", ["Cística", "Macia", "Firme"]], ["irrig", "Irrigação", ["Escassa", "Moderada", "Abundante"]],
+  ["secrecao", "Secreção", ["Presente", "Ausente"]], ["odor", "Odor", ["Presente", "Ausente"]], ["ulcer", "Ulceração", ["Presente", "Ausente"]],
+  ["temp", "Temperatura", ["Quente", "Fria"]], ["dor", "Dor", ["Presente", "Ausente"]],
+];
+const temCito = (r) => r.exames.some((x) => exParte(x).id === "cito");
+const citoValor = (c, k) => k === "coleta" && c.coleta === "Outra" ? (String(c.coletaOutra || "").trim() || "Outra") : String(c[k] || "").trim();
 const exameDe = (lab, id) => { for (const G of LABS[lab].grupos) for (const it of G.itens) if (it[0] === id) return it; return null; };
 // exame guardado como "id" ou "id:local da coleta" (cavitário e cultura)
 const exParte = (x) => { const i = String(x).indexOf(":"); return i < 0 ? { id: String(x), local: "" } : { id: String(x).slice(0, i), local: String(x).slice(i + 1) }; };
@@ -443,7 +456,7 @@ function blocoTopo(r, y) {
 function caixaMarcada(x, y, t) {
   return [E.ret(x, y, t, t, { s: COR.TEXTO, lw: 0.8 }), E.lin(x + 1.8, y + 1.8, x + t - 1.8, y + t - 1.8, { s: COR.TEXTO, lw: 1 }), E.lin(x + t - 1.8, y + 1.8, x + 1.8, y + t - 1.8, { s: COR.TEXTO, lw: 1 })];
 }
-const CARD_H = 72, CARD_G = 6;
+const CARD_H0 = 72, CARD_H = CARD_H0, CARD_G = 6;
 // marcação [x] Positivo [ ] Negativo
 function marcas(x, y, rot, ops, val) {
   const el = [], t = 7.5; let xx = x;
@@ -454,12 +467,24 @@ function marcas(x, y, rot, ops, val) {
   }
   return { el, w: xx - x };
 }
-function cardAnimal(a, i, y) {
-  const el = [], x = PGX, w = PGW, nw = 34;
+// pares rótulo/valor distribuídos em linhas que cabem na largura (nada cortado)
+function emLinhas(pares, max, tam) {
+  const L = []; let cur = [], usado = 0;
+  const larg = (p) => largura(p[0] + "  ", tam * 0.82, true) + largura(String(p[1]), tam, p[2] && p[2].b), sep = largura("     ", tam);
+  for (const p of pares) { if (!p[1]) continue; const w = larg(p);
+    if (cur.length && usado + sep + w > max) { L.push(cur); cur = []; usado = 0; }
+    usado += (cur.length ? sep : 0) + w; cur.push(p); }
+  if (cur.length) L.push(cur); return L;
+}
+function citoLayout(a, max) {
+  const c = a.cito || {}, tam = 9.5;
+  const pares = CITO.map(([k, rot]) => [rot.toUpperCase(), citoValor(c, k), k === "local" ? { b: true } : null]);
+  const L = emLinhas(pares, max, tam), obs = String(c.obs || "").trim() ? quebrar("Obs.: " + String(c.obs).trim(), 9, false, max) : [];
+  return { L, obs, h: L.length || obs.length ? 24 + L.length * 13.5 + obs.length * 11.5 + 4 : 0 };
+}
+function cardAnimal(a, i, y, r) {
+  const el = [], x = PGX, w = PGW, nw = 34, ci = r && temCito(r) ? citoLayout(a, w - nw - 24) : { h: 0 };
   // borda forte e número grande: cada animal fica separado do outro, sem chance de trocar o tubo
-  el.push(E.selo(x, y, w, CARD_H, { s: COR.BORDO, lw: 1.4, r: 7 }));
-  el.push(E.lin(x + nw, y + 6, x + nw, y + CARD_H - 6, { s: COR.BEGE, lw: 0.8 }));
-  el.push(T(x + nw / 2, y + CARD_H / 2 + 7, String(i + 1), 20, { b: true, c: COR.BORDO, a: "m" }));
   const tx = x + nw + 12, max = w - nw - 24;
   // o número da doação vai junto do nome (STIVE 345-2), para o laboratório copiar assim no laudo
   let nome = String(a.nome || "").toUpperCase().trim(); const num = String(a.numero || "").trim(), lNum = num ? largura(" " + num, 14, true) : 0;
@@ -471,7 +496,17 @@ function cardAnimal(a, i, y) {
   const linhas = [[["ESPÉCIE", a.especie], ["RAÇA", a.raca], ["SEXO", a.sexo], [nasc ? "NASCIMENTO" : "IDADE", nasc || a.idade]], [["RESPONSÁVEL", a.resp], ["MICROCHIP", a.microchip]],
     ehGato(a.especie) ? [["TIPO SANGUÍNEO", a.grupo ? "Grupo " + a.grupo : "", { b: true }]] : [["DEA 1", pm(a.dea), { b: true }], ["DAL", pm(a.dal), { b: true }]]].filter((L) => L.some((x) => x[1]));
   linhas.forEach((L, k) => el.push(campos(tx, y + 33 + k * 14.25, max, L, 9.5)));
-  return el;
+  // com citologia, o quadro da lesão começa logo depois da última linha de dados do animal
+  const base = ci.h ? Math.max(44, 33 + linhas.length * 14.25 - 4) : CARD_H0, CARD_H = base + ci.h;
+  el.unshift(E.selo(x, y, w, CARD_H, { s: COR.BORDO, lw: 1.4, r: 7 }), E.lin(x + nw, y + 6, x + nw, y + CARD_H - 6, { s: COR.BEGE, lw: 0.8 }), T(x + nw / 2, y + base / 2 + 7, String(i + 1), 20, { b: true, c: COR.BORDO, a: "m" }));
+  if (ci.h) {
+    let yy = y + base - 2;
+    el.push(E.lin(tx, yy, x + w - 12, yy, { s: COR.BEGE, lw: 0.8 }));
+    el.push(T(tx, yy + 13, "ANÁLISE CITOLÓGICA", 7.5, { b: true, c: COR.VERMELHO })); yy += 26;
+    ci.L.forEach((L) => { el.push(campos(tx, yy, max, L, 9.5)); yy += 13.5; });
+    ci.obs.forEach((l) => { el.push(T(tx, yy, l, 9, { c: COR.TEXTO })); yy += 11.5; });
+  }
+  return { el, h: CARD_H };
 }
 function blocoAssinatura(r, y) {
   const v = VETS.find((x) => x.id === r.vetId) || vetPadrao() || {}, el = [], bw = 300, bx = PGX + PGW - bw, h = 70, sz = 52;
@@ -500,8 +535,8 @@ function paginasReq(r) {
     const to = blocoTopo(r, y); el.push(...to.el); y += to.h + 10;
     const n = r.animais.length;
     el.push(T(PGX, y + 8, "ANIMAIS" + (n ? " (" + n + ")" : ""), 8, { b: true, c: COR.VERMELHO })); y += 14;
-    const cabem = Math.max(1, Math.floor((PG.YMAX - ASS - y + CARD_G) / (CARD_H + CARD_G)));
-    for (let k = 0; k < cabem && i < n; k++, i++) { el.push(...cardAnimal(r.animais[i], i, y)); y += CARD_H + CARD_G; }
+    // cartões de altura variável (com a citologia ficam maiores): entram enquanto couberem; o primeiro da folha entra sempre
+    for (let k = 0; i < n; k++, i++) { const c = cardAnimal(r.animais[i], i, y, r); if (k && y + c.h > PG.YMAX - ASS) break; el.push(...c.el); y += c.h + CARD_G; }
     if (!n) { el.push(E.selo(PGX, y, PGW, CARD_H, { s: COR.LINHA, lw: 0.8, r: 7 })); el.push(T(PGX + PGW / 2, y + CARD_H / 2 + 4, "Nenhum animal nesta requisição", 10, { c: COR.MARROM2, a: "m" })); }
     el.push(...blocoAssinatura(r, PG.YMAX - ASS + 2).el);
     pags.push(el);
@@ -556,7 +591,14 @@ function cartaoAnimal(a, i, r) {
       <label class="larga">Microchip<input data-i="${i}" data-f="microchip" value="${esc(a.microchip)}" inputmode="numeric"></label>
       ${gato ? `<div class="larga cmp"><span>Tipo sanguíneo</span>${opc(i, "grupo", a.grupo, [["A", "A"], ["B", "B"], ["AB", "AB"]])}</div>`
         : `<div class="cmp"><span>DEA 1</span>${opc(i, "dea", a.dea, [["+", "Positivo"], ["-", "Negativo"]])}</div><div class="cmp"><span>DAL</span>${opc(i, "dal", a.dal, [["+", "Positivo"], ["-", "Negativo"]])}</div>`}
-    </div></details></div>`;
+    </div></details>${temCito(r) ? citoForm(a, i) : ""}</div>`;
+}
+function citoForm(a, i) {
+  const c = a.cito || {};
+  return `<div class="cito"><b class="ct">Análise citológica</b><div class="grade">${CITO.map(([k, rot, ops, ph]) => ops
+    ? `<div class="larga cmp"><span>${esc(rot)}</span><span class="opc">${ops.map((o) => `<button type="button" data-a="cset" data-i="${i}" data-cf="${k}" data-v="${esc(o)}" aria-pressed="${c[k] === o}">${esc(o)}</button>`).join("")}</span>${k === "coleta" && c.coleta === "Outra" ? `<input data-i="${i}" data-cf="coletaOutra" value="${esc(c.coletaOutra || "")}" placeholder="Qual coleta?" style="margin-top:6px">` : ""}</div>`
+    : `<label class="larga">${esc(rot)}${k === "local" ? ' <i class="obr">obrigatório</i>' : ""}<input data-i="${i}" data-cf="${k}" value="${esc(c[k] || "")}" placeholder="${esc(k === "local" ? "ex.: região axilar esquerda" : ph || "")}"></label>`).join("")}
+    <label class="larga">Observações da lesão<textarea data-i="${i}" data-cf="obs" rows="2" maxlength="400">${esc(c.obs || "")}</textarea></label></div></div>`;
 }
 function telaEditor() {
   estado.tela = "editor"; const r = estado.r, L = LABS[r.lab];
@@ -603,6 +645,7 @@ function validar(r) {
   if (!r.animais.length) return "Acrescente pelo menos um animal.";
   { const k = r.animais.findIndex((a) => !String(a.nome || "").trim()); if (k >= 0) return "Escreva o nome do animal " + (k + 1) + "."; }
   if (!r.exames.length) return "Marque pelo menos um exame.";
+  if (temCito(r)) { const k = r.animais.findIndex((a) => !String((a.cito || {}).local || "").trim()); if (k >= 0) return "Escreva a localização da lesão de " + (r.animais[k].nome || "animal " + (k + 1)) + " (obrigatório na análise citológica)."; }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r.data)) return "Informe a data da coleta.";
   return "";
 }
@@ -638,6 +681,7 @@ function ligar() {
     if (!r) return;
     if (a === "sobe" || a === "desce") { const i = +b.dataset.v, j = a === "sobe" ? i - 1 : i + 1; [r.animais[i], r.animais[j]] = [r.animais[j], r.animais[i]]; marcarSujo(true); return telaEditor(); }
     if (a === "set") { const an = r.animais[+b.dataset.i]; if (!an) return; const f = b.dataset.f, v = b.dataset.v; an[f] = an[f] === v && f !== "especie" ? "" : v; if (f === "especie") { an.dea = ""; an.dal = ""; an.grupo = ""; an.raca = ""; } an.aberto = true; marcarSujo(true); const sc = window.scrollY; telaEditor(); window.scrollTo(0, sc); return; }
+    if (a === "cset") { const an = r.animais[+b.dataset.i]; if (!an) return; const c = an.cito = an.cito || {}, f = b.dataset.cf, v = b.dataset.v; c[f] = c[f] === v ? "" : v; marcarSujo(true); const sc = window.scrollY; telaEditor(); window.scrollTo(0, sc); return; }
     if (a === "add-novo") { r.animais.push(cabVazio()); marcarSujo(true); telaEditor(); const d = document.querySelectorAll(".an")[r.animais.length - 1]; if (d) { d.scrollIntoView({ block: "center" }); const n = d.querySelector('[data-f="nome"]'); if (n) n.focus(); } return; }
     if (a === "tira") { r.animais.splice(+b.dataset.v, 1); marcarSujo(true); return telaEditor(); }
     if (a === "add-dia") { doacoesDoDia(r.data).forEach((d) => { const an = animalDe(d.animalId); if (an && !r.animais.some((x) => x.animalId === an.id)) r.animais.push(cabAnimal(an, r.data, d.numero)); }); marcarSujo(true); return telaEditor(); }
@@ -662,6 +706,7 @@ function ligar() {
   document.addEventListener("input", (ev) => {
     const t = ev.target, r = estado.r; if (!r) return;
     if (t.dataset.c) { r[t.dataset.c] = t.value; marcarSujo(true); if (t.dataset.c === "data" || t.dataset.c === "lab") { if (t.dataset.c === "data") r.animais.forEach((a) => { const an = animalDe(a.animalId); if (an && an.nascimento) a.idade = idadeEm(an.nascimento, r.data); }); return telaEditor(); } return agendarPrevia(); }
+    if (t.dataset.cf) { const a = r.animais[+t.dataset.i]; if (a) { (a.cito = a.cito || {})[t.dataset.cf] = t.value; marcarSujo(true); agendarPrevia(); } return; }
     if (t.dataset.f) { const a = r.animais[+t.dataset.i]; if (a) { a[t.dataset.f] = t.dataset.f === "nome" ? t.value.toUpperCase() : t.value; if (t.dataset.f === "nascimento") { a.idade = t.value ? idadeEm(t.value, r.data) : ""; const id = document.querySelector(`[data-i="${t.dataset.i}"][data-f="idade"]`); if (id) { id.value = a.idade; id.readOnly = !!t.value; } } marcarSujo(true); agendarPrevia(); } return; }
     if (t.dataset.loc) { const i = r.exames.findIndex((x) => exParte(x).id === t.dataset.loc); if (i >= 0) r.exames[i] = t.dataset.loc + (t.value.trim() ? ":" + t.value.replace(/:/g, " ").trim() : ""); marcarSujo(true); return agendarPrevia(); }
   });
