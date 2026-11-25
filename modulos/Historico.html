@@ -3119,9 +3119,10 @@ function montarDados() {
   // tipagem sanguínea: resultado, cruzes de positividade, método e foto do cartão
   const tipagens = [];
   for (const e of [...inc].filter((x) => x.tipagem && Object.keys(x.tipagem).length).sort(ord)) {
-    const f = (e.fotos || []).find((x) => x.tipo === "tipagem" && x.recorte) || null;
-    if (e.tipagem.dea1) tipagens.push({ sistema: "DEA 1", pos: e.tipagem.dea1 !== "-", grau: "", data: e.data, metodo: e.tipagem.metodo || "", foto: e.tipagem.dal ? null : f });
-    if (e.tipagem.dal) tipagens.push({ sistema: "DAL", pos: e.tipagem.dal !== "-", grau: e.tipagem.dalGrau || "", data: e.data, metodo: e.tipagem.metodo || "", foto: f });
+    const fs = (e.fotos || []).filter((x) => x.tipo === "tipagem" && x.recorte), f = fs.find((x) => !x.sistema) || null, fDea = fs.find((x) => x.sistema === "dea"), fDal = fs.find((x) => x.sistema === "dal");
+    // laudo de tipagem do painel: cada sistema com a sua foto (fita do DEA 1 e cartão do DAL) e as cruzes dos dois
+    if (e.tipagem.dea1) tipagens.push({ sistema: "DEA 1", pos: e.tipagem.dea1 !== "-", grau: e.tipagem.deaGrau || "", data: e.data, metodo: e.tipagem.metodoDea || e.tipagem.metodo || "", foto: fDea || (e.tipagem.dal ? null : f) });
+    if (e.tipagem.dal) tipagens.push({ sistema: "DAL", pos: e.tipagem.dal !== "-", grau: e.tipagem.dalGrau || "", data: e.data, metodo: e.tipagem.metodoDal || e.tipagem.metodo || "", foto: fDal || (fDea ? null : f) });
   }
   const labs = [...new Set(inc.map((e) => e.lab))].sort((x, y) => ORD_LAB.indexOf(x) - ORD_LAB.indexOf(y));
   if (medidas.length && !labs.includes("CVH")) labs.push("CVH");
@@ -3869,7 +3870,7 @@ async function reconstruirAntigo(doc, nome) {
       if (!data) return;
       const e = exame("CVH", data + (s.s.trim() === "DAL" ? " 2ª" : ""));
       e.data = data; e.tipagem = e.tipagem || {};
-      if (s.s.trim() === "DEA 1") e.tipagem.dea1 = pos ? "+" : "-"; else { e.tipagem.dal = pos ? "+" : "-"; const g = val("Intensidade") || val("Positividade"); if (g) e.tipagem.dalGrau = g.replace(/\s/g, ""); }
+      if (s.s.trim() === "DEA 1") { e.tipagem.dea1 = pos ? "+" : "-"; const g = val("Intensidade"); if (pos && g) e.tipagem.deaGrau = g.replace(/\s/g, ""); } else { e.tipagem.dal = pos ? "+" : "-"; const g = val("Intensidade") || val("Positividade"); if (g) e.tipagem.dalGrau = g.replace(/\s/g, ""); }
       e.tipagem.metodo = val("Método");
       const im = imgs.find((m) => m.y0 > s.y - 30 && m.y0 < fim);
       if (im) e.fotos.push({ titulo: s.s.trim() === "DAL" ? "Tipagem DAL" : "Tipagem sanguínea", tipo: "tipagem", recorte: im.url, rw: im.rw, rh: im.rh, alinhado: true });
@@ -4077,6 +4078,33 @@ async function lerHistorico(doc, nome) {
         } catch (e) { /* ficha incompleta: segue com as outras */ }
       }
       if (n) mensagem("info", n > 1 ? `${n} fichas de doação da carteira entraram no histórico.` : "1 ficha de doação da carteira entrou no histórico.");
+      revisarExames(); aplicarCadastro(); atualizar();
+    }
+    // laudos de tipagem do CVH salvos no painel: entram pelos dados do próprio laudo (resultado, cruzes, método e fotos)
+    if ((ctx.tipagensLaudo || []).length) {
+      let n = 0;
+      for (const L of ctx.tipagensLaudo) {
+        try {
+          const iso = String(L.data || "").match(/^(\d{4})-(\d{2})-(\d{2})/), data = iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : normalizarData(L.data);
+          const tp = {}, pos = (o) => /^p/i.test(String(o.res || "")), mt = (o) => String(o.metodo || "").replace(/\s*\(?ALVEDIA LAB TEST\)?\.?$/i, "").trim();
+          if (L.dea1 && L.dea1.on && L.dea1.res) { tp.dea1 = pos(L.dea1) ? "+" : "-"; if (pos(L.dea1) && L.dea1.grau) tp.deaGrau = L.dea1.grau; tp.metodoDea = mt(L.dea1); }
+          if (L.dal && L.dal.on && L.dal.res) { tp.dal = pos(L.dal) ? "+" : "-"; if (pos(L.dal) && L.dal.grau) tp.dalGrau = L.dal.grau; tp.metodoDal = mt(L.dal); }
+          if (L.grupo) { tp.felino = L.grupo; tp.metodo = L.metodoGato || ""; }
+          if (!Object.keys(tp).length || !dataValida(data)) continue;
+          // o mesmo resultado reaberto do histórico salvo sai, e fica o do laudo (com as fotos)
+          estado.exames = estado.exames.filter((e) => !(e.fonte === "reaberto" && e.tipagem && Object.keys(e.tipagem).length && e.data === data && !Object.keys(e.valores || {}).length));
+          if (estado.exames.some((e) => e.chave === "TL" + L.id)) continue;
+          const ex = { lab: "CVH", equip: "Tipagem sanguínea", fonte: "laudo", valores: {}, pct: {}, refs: {}, refsPct: {}, avisos: [], quali: [], tipagem: tp, data, hora: "", numero: "", chave: "TL" + L.id,
+            cab: { nome: estado.animal.nome || "", idade: "", especie: estado.animal.especie || "", sexo: estado.animal.sexo || "", raca: estado.animal.raca || "", chip: "", responsavel: "", vet: "", registro: "" } };
+          const e = processarItens("Laudo de tipagem de " + data, "laudo-tipagem-" + L.id, null, ex); if (!e) continue; n++;
+          for (const fo of L.fotos || []) {
+            try { const r = await ponte("lerPdf", fo.id), url = "data:image/jpeg;base64," + r.base64, im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+              const foto = { titulo: fo.alvo === "dal" ? "Tipagem DAL" : "Tipagem DEA 1", tipo: "tipagem", sistema: fo.alvo, inteira: url, w: im.naturalWidth, h: im.naturalHeight, corte: { x: 0, y: 0, w: 1, h: 1 }, alinhado: true };
+              await aplicarCorte(foto); e.fotos.push(foto); } catch (_) { /* foto fora do Drive: segue sem ela */ }
+          }
+        } catch (e) { /* laudo incompleto: segue com os outros */ }
+      }
+      if (n) mensagem("info", n > 1 ? `${n} laudos de tipagem do painel entraram no histórico.` : "1 laudo de tipagem do painel entrou no histórico.");
       revisarExames(); aplicarCadastro(); atualizar();
     }
     // laudos da IDEXX e da TECSA salvos na seção Laudos de exames: o PDF original entra sozinho, sem repetir o que já está no histórico

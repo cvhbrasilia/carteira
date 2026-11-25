@@ -2409,7 +2409,12 @@ function blocoCartao(c, x, w, cel) {
   const rotW = c.rotW || 78, larguraTxt = w - 32 - (im && !abaixo ? fw + 16 : 0) - (tb ? twT + 18 : 0);
   const det = []; (c.linhas || []).forEach(([rot, val, dest]) => { if (!val) return; if (val === "\u00a0") return det.push([rot, "", false]); quebrar(val, dest ? 10 : 8.8, !!dest, larguraTxt - rotW).forEach((l, i) => det.push([i ? "" : rot, l, dest])); });
   const wSelo = c.res ? largura(c.res, c.tamRes || 8.6, true) + 18 : 0, selBaixo = !!(c.titulo && c.res && 22 + largura(c.titulo, tamT, true) + wSelo > w - 10);
-  const tit0 = (c.tamT ? 40 : 46) + (selBaixo ? (c.tamRes ? 24 : 19) : 0), hTxt = Math.max((c.titulo ? tit0 : 18) + det.reduce((s, d) => s + (d[2] ? 15 : 13), 0) + (det.length ? 6 : 0), tb ? thT + 14 : 0);
+  // informações secundárias (método, kit) em letra pequena, na frente do título e do resultado
+  const xInfo = c.info && c.info.length && !selBaixo ? 30 + largura(c.titulo || "", tamT, true) + wSelo + 10 : 0, wInfo = w - 12 - xInfo - (tb ? twT + 18 : 0), tamI = 6.6, lhI = 8.6;
+  const infoLs = xInfo && wInfo > 80 ? c.info.flatMap((t2) => quebrar(t2, tamI, false, wInfo)) : [];
+  // sem espaço na frente do título: volta para as linhas do cartão, em letra pequena
+  if (c.info && c.info.length && !infoLs.length) c.info.forEach((t2) => quebrar(t2, 7.4, false, larguraTxt).forEach((l) => det.push(["", l, false])));
+  const tit0 = Math.max((c.tamT ? 40 : 46) + (selBaixo ? (c.tamRes ? 24 : 19) : 0), infoLs.length ? 18 + infoLs.length * lhI : 0), hTxt = Math.max((c.titulo ? tit0 : 18) + det.reduce((s, d) => s + (d[2] ? 15 : 13), 0) + (det.length ? 6 : 0), tb ? thT + 14 : 0);
   const h = abaixo ? hTxt + (im ? fh + 12 : 0) : Math.max(hTxt, im ? fh + 24 : 0, c.titulo ? (c.tamT ? (det.length ? 54 : 40) : 62) : 0);
   return { h: h + 10, el: (y) => {
     const e = [E.ret(x, y, w, h, { f: COR.CLARO }), E.ret(x, y, 3, h, { f: COR.BORDO })];
@@ -2419,6 +2424,7 @@ function blocoCartao(c, x, w, cel) {
     det.forEach(([rot, val, dest]) => { e.push(T(x + 16, yy, rot, 8.6, { c: COR.MARROM2 }), T(x + 16 + rotW, yy, val, dest ? 10 : 8.8, { b: !!dest, c: dest ? COR.BORDO : COR.TEXTO })); yy += dest ? 15 : 13; });
     if (im) { const fx = abaixo ? x + 16 : x + w - 12 - fw, fy = abaixo ? y + hTxt : y + (h - fh) / 2; e.push(E.img(fotoK, fx, fy, fw, fh), E.ret(fx, fy, fw, fh, { s: COR.BEGE, lw: 0.6 })); }
     if (tb) e.push(E.img(c.tubo, x + w - 14 - twT, y + 8, twT, thT));
+    if (infoLs.length) { const y0 = y + Math.max(11, 22 - (infoLs.length * lhI) / 2) + tamI; infoLs.forEach((l, i) => e.push(T(x + xInfo, y0 + i * lhI, l, tamI, { c: COR.MARROM2 }))); }
     return e; } };
 }
 
@@ -2573,6 +2579,9 @@ function blocosTipagem(x, w, cel) {
   if (tuboTip && cartoes.length) { cartoes[0].tubo = tuboTip; if (plasmaTip) cartoes[0].linhas.push(["Plasma", plasmaTip]); }
   // classificação DAVR (DAL versus raça): no laudo sai só a sigla, no cartão do DAL
   if (!felino() && t.davr && cartoes.length) { const alvo = cartoes.find((c) => c.titulo === "DAL") || cartoes[0]; alvo.linhas.push(["", siglaDavr()]); }
+  // A4: método, kit e DAVR em letra pequena na frente do resultado; no cartão fica só a intensidade
+  if (!cel && !felino()) cartoes.forEach((c) => { const sec = c.linhas.filter(([r, v]) => (r === "Método" || r === "Kit" || r === "") && v), m = sec.filter(([r]) => r === "Método").map((l) => l[1]), k = sec.filter(([r]) => r !== "Método").map((l) => l[1]).join("  ·  ");
+    c.info = [...m, ...(k ? [k] : [])]; c.linhas = c.linhas.filter(([r]) => r !== "Método" && r !== "Kit" && r !== ""); });
   const lado = !cel && t.diagrama && sistemasCompat().length;
   const ambos = !felino() && t.dea1.on && t.dal.on, paras = String(t.nota || "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
   // DEA 1 e DAL juntos, com o texto padrão: cada sistema com o seu parágrafo logo abaixo; se não couber numa folha, o DAL começa na segunda
@@ -3636,8 +3645,12 @@ async function salvar() {
 }
 // fotos do plasma e dos cartões de gel ficam guardadas com o laudo (privadas), mesmo as que não saem no PDF
 function fotosParaGuardar() {
-  if (estado.tipo !== "compat") return [];
-  const so = estado.fotoSo || {}, L = [];
+  const L = [];
+  // fita do DEA 1 e cartão do DAL: guardados com o laudo para entrarem no Histórico Laboratorial
+  const tp = tipAtual(); if (tp && !felino()) [["dea", "dea1", "Fita do DEA 1 "], ["dal", "dal", "Cartão do DAL "]].forEach(([k, s2, rot]) => { const f = estado.fotos[k]; if (f && tp[s2] && tp[s2].on && /^data:image\/jpeg;base64,/.test(f.url || "")) L.push({ alvo: k, nome: rot + (estado.paciente.nome || "") + " " + (estado.exame.data || "") + ".jpg", b64: f.url.split(",")[1], noLaudo: true }); });
+  if (estado.tipo === "tipagem" && estado.fotos.tubo && /^data:image\/jpeg;base64,/.test(estado.fotos.tubo.url || "")) L.push({ alvo: "tubo", nome: "Foto do plasma " + (estado.paciente.nome || "") + " " + (estado.exame.data || "") + ".jpg", b64: estado.fotos.tubo.url.split(",")[1], noLaudo: !(estado.fotoSo || {}).tubo });
+  if (estado.tipo !== "compat") return L;
+  const so = estado.fotoSo || {};
   Object.keys(estado.fotos || {}).filter((k) => k === "tubo" || /^gel\d+$/.test(k)).forEach((k) => {
     const f = estado.fotos[k]; if (!f || !/^data:image\/jpeg;base64,/.test(f.url || "")) return;
     const p = /^gel(\d+)$/.exec(k), bolsa = p ? ((estado.t.provas[+p[1]] || {}).doador || (estado.t.provas[+p[1]] || {}).bolsa || "bolsa " + (+p[1] + 1)) : "";
