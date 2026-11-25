@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125162022">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261125162942">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -275,7 +275,8 @@ button{cursor:pointer}
 .ctn-giro .lado{position:absolute;inset:0;width:100%;height:100%;border-radius:2.9%/4.6%;box-shadow:0 6px 22px rgba(95,19,15,.22);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;-webkit-user-drag:none}
 .ctn-giro .vs{transform:rotateY(180deg)}
 .ctn-pg .cartao{padding:14px}.ctn-inst{text-align:center;margin-top:14px}
-.ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}.ctn-fmenu{margin:12px 0 4px;padding:12px;border:1px solid #E3D6C8;border-radius:12px;background:#FBF8F4}.ctn-fmenu>b{display:block;color:#5F130F;margin-bottom:8px}
+.ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}.ctn-bx{display:flex;flex-direction:column;gap:8px;margin-top:10px}.ctn-bx .btn{width:100%}
+.ctn-fmenu{margin:12px 0 4px;padding:12px;border:1px solid #E3D6C8;border-radius:12px;background:#FBF8F4}.ctn-fmenu>b{display:block;color:#5F130F;margin-bottom:8px}
 .ficha .val{font-size:.86em}
 .mono{font-family:var(--mono);letter-spacing:.03em}
 .prox{display:flex;flex-direction:column;gap:.42em;list-style:none}
@@ -1041,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125162022';
+  var VERSAO = '20261125162942';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2948,7 +2949,24 @@ function ctnVerso(R, D) {
 }
 async function ctnGerar(an, fotoAnimal) { const R = await ctnRecursos(), D = await ctnDados(an, fotoAnimal); return { frente: ctnFrente(R, D), verso: ctnVerso(R, D), D }; }
 const ctnBlob = cv => new Promise(ok => cv.toBlob(ok, 'image/png'));
-async function ctnBaixar(an, C) {
+// baixar: pergunta se quer as imagens (frente e verso) ou o PDF (duas páginas no tamanho de um cartão, 85,6 × 54 mm)
+function ctnBaixar(an, C) {
+  return new Promise(ok => {
+    let m = $('#ctnBxM'); if (!m) { m = document.createElement('div'); m.id = 'ctnBxM'; m.className = 'ctn-modal'; document.body.appendChild(m); }
+    m.innerHTML = '<div class="caixa" role="dialog" aria-modal="true"><h3>Baixar a carteirinha</h3><p class="nota">Frente e verso de ' + esc(an.nome) + '.</p><div class="ctn-bx"><button class="btn" data-c="img">Imagem</button><button class="btn" data-c="pdf">PDF</button><button class="btn sec2" data-c="nao">Cancelar</button></div></div>';
+    m.hidden = false;
+    m.onclick = async ev => { const b = ev.target.closest('[data-c]'); if (!b && ev.target !== m) return; const c = b ? b.dataset.c : 'nao'; m.hidden = true;
+      try { if (c === 'img') await ctnBaixarImg(an, C); else if (c === 'pdf') await ctnBaixarPdf(an, C); } catch (e) { toast(e.message, 5000); } ok(); };
+  });
+}
+async function ctnBaixarPdf(an, C) {
+  if (!window.PDFLib) await carregarScript(LIB_PDF);
+  const pdf = await PDFLib.PDFDocument.create(), W = 85.6 / 25.4 * 72, H = 54 / 25.4 * 72;
+  pdf.setTitle('Carteirinha do doador ' + an.nome); pdf.setAuthor('CVH - Centro Veterinário de Hemoterapia');
+  for (const cv of [C.frente, C.verso]) { const img = await pdf.embedPng(bytesDeUrl(cv.toDataURL('image/png'))), pg = pdf.addPage([W, H]); pg.drawImage(img, { x: 0, y: 0, width: W, height: H }); }
+  await entregarDados('Carteirinha do doador ' + an.nome + '.pdf', await pdf.save(), 'application/pdf');
+}
+async function ctnBaixarImg(an, C) {
   const base = 'Carteirinha do doador ' + an.nome, fs = await Promise.all([ctnBlob(C.frente), ctnBlob(C.verso)]);
   const arqs = [new File([fs[0]], base + ' (frente).png', { type: 'image/png' }), new File([fs[1]], base + ' (verso).png', { type: 'image/png' })];
   if (ehCelular() && navigator.canShare && navigator.canShare({ files: arqs })) { try { await navigator.share({ files: arqs }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
@@ -2960,7 +2978,7 @@ async function abrirCarteirinha(aid) {
   (E.modo === 'carteirinha' ? abrirPaginaCtn : abrirFolha)('Carteirinha do doador', '<p class="nota" id="ctnSt">Montando a carteirinha de ' + esc(an.nome) + '…</p><div class="ctn-prev" id="ctnPrev"></div>' +
     '<div class="ctn-fmenu" id="ctnFMenu" hidden><b>Foto da carteirinha</b><div class="mini-bts"><button class="btn" id="ctnFoto">' + (ctnFoto(an) ? 'Trocar a foto' : 'Colocar a foto') + '</button>' + (ctnFoto(an) ? '<button class="btn sec2" id="ctnEnq">Enquadrar a foto</button>' + (E.modo === 'painel' ? '<button class="btn sec2" id="ctnTira">Remover a foto</button>' : '') : '') + '<button class="btn sec2" id="ctnFFecha">Cancelar</button></div>' +
 '<p class="nota">A foto pode ser tirada na hora ou escolhida da galeria. Ela entra na carteirinha do jeito que foi tirada, e o recorte é escolhido arrastando o quadro, como nas fotos dos laudos.</p></div>' +
-'<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button>' + (ctnLink(an) ? (E.modo === 'carteirinha' ? '' : '<button class="btn sec2" id="ctnIcone">Ícone da carteirinha</button>') + '<button class="btn sec2" id="ctnLink">Copiar o link</button>' : '') + '</div><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
+'<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button>' + (ctnLink(an) ? (E.modo === 'carteirinha' ? '' : '<button class="btn sec2" id="ctnIcone">Ícone da carteirinha</button>') + (E.modo === 'carteirinha' && !new URLSearchParams(location.search).get('de') ? '' : '<button class="btn sec2" id="ctnLink">Copiar o link</button>') : '') + '</div><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
     let C = null;
     const montar = async (fotoNova) => {
       $('#ctnSt').textContent = 'Montando a carteirinha…'; $('#ctnBaixar').disabled = true;
@@ -2972,7 +2990,7 @@ async function abrirCarteirinha(aid) {
     if ($('#ctnEnq')) $('#ctnEnq').onclick = async () => { const f = ctnFoto(animalDe(aid)); $('#ctnSt').textContent = 'Abrindo a foto…';
       try { const im = E.modo === 'painel' ? await ctnArquivo(f.id) : C && C.D.foto; if (!im) throw new Error('Espere a carteirinha terminar de montar.'); $('#ctnSt').textContent = '';
         ctnCorte(im, f, async (corte, rot) => { if (E.modo === 'painel') atualizarAnimal(await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, corte, rot })); else atualizarAnimal(Object.assign({ id: aid }, await (E.modo === 'carteirinha' ? api('carteirinhaFoto', E.ct, { corte, rot }) : api('carteiraFoto', E.token, aid, { corte, rot })))); abrirCarteirinha(aid); }); } catch (e) { $('#ctnSt').textContent = e.message; } };
-    $('#ctnBaixar').onclick = ev => salvando(ev.currentTarget, () => ctnBaixar(animalDe(aid), C));
+    $('#ctnBaixar').onclick = () => ctnBaixar(animalDe(aid), C);
     $('#ctnFoto').onclick = () => $('#ctnArq').click();
     $('#ctnFFecha').onclick = () => { $('#ctnFMenu').hidden = true; };
     // abre a página só da carteirinha numa aba nova, para adicionar à tela de início
