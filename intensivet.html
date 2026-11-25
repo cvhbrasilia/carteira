@@ -11,8 +11,10 @@
   if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
   // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
   var r = q.get('r') || '';
-  if (!window.CVH_PAINEL && !q.get('painel') && !(q.get('v') && String(q.get('v')).replace(/\s/g, '').length >= 8)) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  if (!window.CVH_PAINEL && !window.CVH_CTN && !q.get('painel') && !(q.get('v') && String(q.get('v')).replace(/\s/g, '').length >= 8)) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
   window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  // carteirinha do doador com ícone próprio: link ?c=CÓDIGO (só a carteirinha, sem a carteira de saúde); a instalada lembra o código
+  if (window.CVH_CTN) { var c = q.get('c') || ''; try { if (c) localStorage.setItem('cvh_ct', c); else c = localStorage.getItem('cvh_ct') || ''; } catch (e) {} window.BOOT = { modo: c ? 'carteirinha' : 'nenhum', token: '', ct: c }; }
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
   function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
@@ -45,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125143741';
+  var VERSAO = '20261125145052';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {

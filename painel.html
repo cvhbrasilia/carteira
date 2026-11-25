@@ -274,6 +274,7 @@ button{cursor:pointer}
 .ctn-giro{position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
 .ctn-giro .lado{position:absolute;inset:0;width:100%;height:100%;border-radius:2.9%/4.6%;box-shadow:0 6px 22px rgba(95,19,15,.22);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;-webkit-user-drag:none}
 .ctn-giro .vs{transform:rotateY(180deg)}
+.ctn-pg .cartao{padding:14px}.ctn-inst{text-align:center;margin-top:14px}
 .ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}.ctn-fmenu{margin:12px 0 4px;padding:12px;border:1px solid #E3D6C8;border-radius:12px;background:#FBF8F4}.ctn-fmenu>b{display:block;color:#5F130F;margin-bottom:8px}
 .ficha .val{font-size:.86em}
 .mono{font-family:var(--mono);letter-spacing:.03em}
@@ -1004,8 +1005,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
   // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
   var r = q.get('r') || '';
-  if (!window.CVH_PAINEL && !q.get('painel') && !(q.get('v') && String(q.get('v')).replace(/\s/g, '').length >= 8)) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  if (!window.CVH_PAINEL && !window.CVH_CTN && !q.get('painel') && !(q.get('v') && String(q.get('v')).replace(/\s/g, '').length >= 8)) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
   window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  // carteirinha do doador com ícone próprio: link ?c=CÓDIGO (só a carteirinha, sem a carteira de saúde); a instalada lembra o código
+  if (window.CVH_CTN) { var c = q.get('c') || ''; try { if (c) localStorage.setItem('cvh_ct', c); else c = localStorage.getItem('cvh_ct') || ''; } catch (e) {} window.BOOT = { modo: c ? 'carteirinha' : 'nenhum', token: '', ct: c }; }
   var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
   function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
   // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
@@ -1038,7 +1041,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125143741';
+  var VERSAO = '20261125145052';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -1071,7 +1074,7 @@ const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const raiz = $('#raiz');
-const E = { modo: BOOT.modo, token: BOOT.token, sessao: null, u: null, modulo: 'carteiras', modHtml: {}, ponte: null, d: null, animal: null, livro: null, previa: false, imp: null };
+const E = { modo: BOOT.modo, token: BOOT.token, ct: BOOT.ct || '', sessao: null, u: null, modulo: 'carteiras', modHtml: {}, ponte: null, d: null, animal: null, livro: null, previa: false, imp: null };
 // sessão guardada: no aparelho (manter conectado) ou só nesta aba
 try { E.sessao = localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s'); } catch (_) {}
 
@@ -2869,7 +2872,7 @@ async function ctnDados(an, fotoAnimal) {
   let d, v, cpf, dea, dal, foto, meta;
   if (resp) {
     // carteira do responsável: o servidor manda o laudo de tipagem e as fotos
-    const r = await api('carteiraCarteirinha', E.token, an.id);
+    const r = E.modo === 'carteirinha' ? await api('carteirinhaPublica', E.ct) : await api('carteiraCarteirinha', E.token, an.id);
     d = r.laudo || { codigo: r.codigo, cadastro: true }; v = (r.laudo || r).vet || {}; cpf = r.cpf || ''; meta = r.foto || {};
     [dea, dal, foto] = await Promise.all([gato ? null : ctnDeB64(r.dea), gato ? null : ctnDeB64(r.dal), fotoAnimal ? Promise.resolve(fotoAnimal) : ctnDeB64(r.foto)]);
   } else {
@@ -2954,10 +2957,10 @@ async function ctnBaixar(an, C) {
 // folha da carteirinha no painel: prévia da frente e do verso, foto do animal e download
 async function abrirCarteirinha(aid) {
   const an = animalDe(aid); if (!an) return;
-  abrirFolha('Carteirinha do doador', '<p class="nota" id="ctnSt">Montando a carteirinha de ' + esc(an.nome) + '…</p><div class="ctn-prev" id="ctnPrev"></div>' +
+  (E.modo === 'carteirinha' ? abrirPaginaCtn : abrirFolha)('Carteirinha do doador', '<p class="nota" id="ctnSt">Montando a carteirinha de ' + esc(an.nome) + '…</p><div class="ctn-prev" id="ctnPrev"></div>' +
     '<div class="ctn-fmenu" id="ctnFMenu" hidden><b>Foto da carteirinha</b><div class="mini-bts"><button class="btn" id="ctnFoto">' + (ctnFoto(an) ? 'Trocar a foto' : 'Colocar a foto') + '</button>' + (ctnFoto(an) ? '<button class="btn sec2" id="ctnEnq">Enquadrar a foto</button>' + (E.modo === 'painel' ? '<button class="btn sec2" id="ctnTira">Remover a foto</button>' : '') : '') + '<button class="btn sec2" id="ctnFFecha">Cancelar</button></div>' +
 '<p class="nota">A foto pode ser tirada na hora ou escolhida da galeria. Ela entra na carteirinha do jeito que foi tirada, e o recorte é escolhido arrastando o quadro, como nas fotos dos laudos.</p></div>' +
-'<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button>' + (ctnLink(an) ? '<button class="btn sec2" id="ctnLink">Copiar o link</button>' : '') + '</div><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
+'<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button>' + (ctnLink(an) ? (E.modo === 'carteirinha' ? '' : '<button class="btn sec2" id="ctnIcone">Ícone da carteirinha</button>') + '<button class="btn sec2" id="ctnLink">Copiar o link</button>' : '') + '</div><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
     let C = null;
     const montar = async (fotoNova) => {
       $('#ctnSt').textContent = 'Montando a carteirinha…'; $('#ctnBaixar').disabled = true;
@@ -2968,11 +2971,13 @@ async function abrirCarteirinha(aid) {
     montar();
     if ($('#ctnEnq')) $('#ctnEnq').onclick = async () => { const f = ctnFoto(animalDe(aid)); $('#ctnSt').textContent = 'Abrindo a foto…';
       try { const im = E.modo === 'painel' ? await ctnArquivo(f.id) : C && C.D.foto; if (!im) throw new Error('Espere a carteirinha terminar de montar.'); $('#ctnSt').textContent = '';
-        ctnCorte(im, f, async (corte, rot) => { if (E.modo === 'painel') atualizarAnimal(await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, corte, rot })); else atualizarAnimal(Object.assign({ id: aid }, await api('carteiraFoto', E.token, aid, { corte, rot }))); abrirCarteirinha(aid); }); } catch (e) { $('#ctnSt').textContent = e.message; } };
+        ctnCorte(im, f, async (corte, rot) => { if (E.modo === 'painel') atualizarAnimal(await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, corte, rot })); else atualizarAnimal(Object.assign({ id: aid }, await (E.modo === 'carteirinha' ? api('carteirinhaFoto', E.ct, { corte, rot }) : api('carteiraFoto', E.token, aid, { corte, rot })))); abrirCarteirinha(aid); }); } catch (e) { $('#ctnSt').textContent = e.message; } };
     $('#ctnBaixar').onclick = ev => salvando(ev.currentTarget, () => ctnBaixar(animalDe(aid), C));
     $('#ctnFoto').onclick = () => $('#ctnArq').click();
     $('#ctnFFecha').onclick = () => { $('#ctnFMenu').hidden = true; };
-    if ($('#ctnLink')) $('#ctnLink').onclick = async () => { toast(await copiar(ctnLink(animalDe(aid))) ? 'Link da carteirinha copiado. Ele abre a carteira de saúde já na carteirinha.' : 'Não consegui copiar o link.', 3500); };
+    // abre a página só da carteirinha numa aba nova, para adicionar à tela de início
+    if ($('#ctnIcone')) $('#ctnIcone').onclick = async () => { const w = window.open('', '_blank'); try { const u = await ctnLinkUrl(animalDe(aid)); if (w) w.location = u; else location.href = u; } catch (e) { if (w) w.close(); toast(e.message, 5000); } };
+    if ($('#ctnLink')) $('#ctnLink').onclick = ev => salvando(ev.currentTarget, async () => { const u = await ctnLinkUrl(animalDe(aid)); toast(await copiar(u) ? 'Link da carteirinha copiado. Ele abre só a carteirinha, que pode virar um ícone no celular.' : 'Não consegui copiar o link.', 4500); });
     if ($('#ctnTira')) $('#ctnTira').onclick = ev => salvando(ev.currentTarget, async () => { const s = await api('animalFoto', E.sessao, aid, null); atualizarAnimal(s); abrirCarteirinha(aid); });
     $('#ctnArq').onchange = async ev => {
       const f = ev.target.files && ev.target.files[0]; if (!f) return;
@@ -2985,7 +2990,7 @@ async function abrirCarteirinha(aid) {
         ctnCorte(im, null, async (corte, rot) => {
           let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
           if (E.modo === 'painel') { const r = await api('salvarArquivo', E.sessao, aid, 'Foto da carteirinha ' + nome, mime, btoa(bin), true); atualizarAnimal(await api('animalFoto', E.sessao, aid, { id: r.id, nome, corte, rot })); }
-          else atualizarAnimal(Object.assign({ id: aid }, await api('carteiraFoto', E.token, aid, { b64: btoa(bin), mime, nome, corte, rot })));
+          else atualizarAnimal(Object.assign({ id: aid }, await (E.modo === 'carteirinha' ? api('carteirinhaFoto', E.ct, { b64: btoa(bin), mime, nome, corte, rot }) : api('carteiraFoto', E.token, aid, { b64: btoa(bin), mime, nome, corte, rot }))));
           abrirCarteirinha(aid);
         });
       } catch (e) { $('#ctnSt').textContent = 'Não consegui guardar a foto. ' + e.message; }
@@ -3000,9 +3005,29 @@ function ctnAbrir(D) {
   return { rot: /^L-/.test(D.codigo) ? 'Abrir o laudo da tipagem' : 'Abrir a verificação da carteirinha', url: urlVerifCarteira(D.codigo) };
 }
 // link da carteira de saúde que abre direto na carteirinha (o mesmo link do responsável, com o animal)
+// link da carteirinha com ícone próprio (carteirinha.html?c=): abre só a carteirinha, sem a carteira de saúde
 function ctnLink(an) {
-  if (E.modo === 'painel') { const rp = respDe(an); return rp && rp.token && (E.d.config || {}).urlApp ? linkDe(rp) + '&carteirinha=' + encodeURIComponent(an.id) : ''; }
-  return respPode() ? location.origin + location.pathname + '?r=' + encodeURIComponent(E.token) + '&carteirinha=' + encodeURIComponent(an.id) : '';
+  if (E.modo === 'carteirinha') return true;
+  if (E.modo === 'painel') return pode('carteiras') || pode('cadastro') || pode('fichas');
+  return respPode();
+}
+async function ctnLinkUrl(an) {
+  const ct = E.modo === 'carteirinha' ? E.ct : E.modo === 'painel' ? await api('ctnLinkPainel', E.sessao, an.id) : await api('ctnLinkCarteira', E.token, an.id);
+  const base = String(((E.d && E.d.config) || {}).urlApp || (location.origin + location.pathname)).replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+  return base + 'carteirinha.html?c=' + encodeURIComponent(ct);
+}
+// página da carteirinha (link próprio): só a carteirinha, com foto, enquadramento, download e o laudo pelo QR
+function abrirPaginaCtn(titulo, html, montar) {
+  const an = (E.d.animais || [])[0] || {}, inst = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  raiz.innerHTML = '<main class="tela tela-media ctn-pg"><div class="tela-c"><header class="topo"><div class="t"><span>CVH · Clube do Doador</span><b>Carteirinha de ' + esc(an.nome || '') + '</b></div></header><section class="cartao" id="ctnPgC">' + html + '</section>' +
+    (inst ? '' : '<p class="nota ctn-inst">Para ter a carteirinha como ícone no celular: no iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início. No Android, abra o menu do navegador e toque em Adicionar à tela inicial.</p>') + '</div></main>';
+  if (montar) montar($('#ctnPgC'));
+}
+async function iniciarCarteirinha() {
+  carregando('Abrindo a carteirinha');
+  let r; try { r = await api('carteirinhaPublica', E.ct); } catch (e) { return telaMsg('Carteirinha do doador', e.message); }
+  E.d = { animais: [r.animal], responsaveis: [], registros: [], responsavel: r.responsavel || {}, config: {} };
+  abrirCarteirinha(r.animal.id);
 }
 // cartão que vira: toque ou arraste para o lado e aparece o verso (o cartão acompanha o dedo)
 function ctnCartaoVira(p, fr, vs, abrir, naFoto) {
@@ -9068,6 +9093,7 @@ document.addEventListener('click', e => {
 if (document.fonts) document.fonts.addEventListener('loadingdone', () => { if (E.livro && !E.livro.ocupado && $('#folha').hidden) reabrir(); });
 function iniciar() {
 if (E.modo === 'responsavel') iniciarResponsavel();
+else if (E.modo === 'carteirinha') iniciarCarteirinha();
 else if (E.modo === 'painel') iniciarPainel();
 else if (E.modo === 'demo') raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>Carteira de Saúde CVH</h1><p>Demonstração com dados de exemplo. Nada aqui é salvo.</p><button class="btn" data-acao="demo-resp" style="min-width:260px">Ver como o responsável</button><button class="btn sec2" data-acao="demo-painel" style="min-width:260px">Ver o painel (qualquer PIN)</button></div></main>';
 else telaMsg('Carteira de Saúde CVH', 'Abra pelo link enviado pelo CVH.');
