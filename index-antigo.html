@@ -1035,7 +1035,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125134314';
+  var VERSAO = '20261125134603';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -7364,8 +7364,8 @@ async function abrirModulo(nome, aid, rid) {
   if (nome === 'camaras' || nome === 'clinicas') E.contaVer = '';
   if (nome === 'requisicoes') {
     // coletas (fichas salvas e em andamento) e o cadastro, para montar o cabeçalho de cada animal na requisição
-    const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => { const d = r.dados || {}; return { animalId: r.animalId, data: r.data, numero: String(d.numero || (d.ficha || {}).numero || '').trim(), vetNome: r.vetNome || '', vetCrmv: r.vetCrmv || '' }; });
-    andamentoDe().forEach(f => { if (!f.animalId || !f.data) return; const n = String(f.numero || (f.ficha || {}).numero || '').trim(); if (!doa.some(x => x.animalId === f.animalId && x.data === f.data)) doa.push({ animalId: f.animalId, data: f.data, numero: n, andamento: true }); });
+    const doa = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => { const d = r.dados || {}; return { animalId: r.animalId, data: r.data, numero: String(d.numero || (d.ficha || {}).numero || '').trim(), vetNome: r.vetNome || '', vetCrmv: r.vetCrmv || '', etq: String((d.ficha || {}).etq || '') }; });
+    andamentoDe().forEach(f => { if (!f.animalId || !f.data) return; const n = String(f.numero || (f.ficha || {}).numero || '').trim(); if (!doa.some(x => x.animalId === f.animalId && x.data === f.data)) doa.push({ animalId: f.animalId, data: f.data, numero: n, andamento: true, etq: String((f.ficha || {}).etq || '') }); });
     const corte = somaDiasIso(hoje(), -90); E.ponte.doacoes = doa.filter(x => x.data >= corte);
     E.ponte.animais = E.d.animais.filter(a => a.ativo !== '0' || doa.some(x => x.animalId === a.id)).map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip || '', nascimento: a.nascimento || '', idade: a.nascimento ? idade(a.nascimento) : '', resp: (respDe(a) || {}).nome || '', doador: a.doador === '1', tipoSanguineo: tipagemDe(a).tipoSanguineo, dal: tipagemDe(a).dal }));
     E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.usuario = E.u.nome;
