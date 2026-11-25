@@ -863,6 +863,18 @@ function touched(k){
   schedule();
 }
 function setV(k,v){if(S[k]===v)return;S[k]=v;touched(k);}
+// lote da bolsa: a validade digitada uma vez fica guardada; o mesmo lote depois preenche a validade sozinho
+const chaveLote=l=>String(l||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function lotesConhecidos(){let o={};try{o=JSON.parse(localStorage.getItem('cvh_lotes')||'{}')||{};}catch(e){o={};}return Object.assign({},window.CVH_LOTES||{},o);}
+function loteValidade(){
+  const l=chaveLote(S.lote);if(l.length<4||(S.validade&&S.validade!=='NI'))return;
+  const v=lotesConhecidos()[l];if(!v)return;
+  S.validade=v;syncText('validade');wrapState('validade');touched('validade');toast('Validade '+v+' preenchida pelo lote '+S.lote+'.',3500);
+}
+function loteGuardar(){
+  const l=chaveLote(S.lote),v=String(S.validade||'');if(l.length<4||!/^\d{2}\/\d{2}$/.test(v))return;
+  try{const o=JSON.parse(localStorage.getItem('cvh_lotes')||'{}')||{};o[l]=v;localStorage.setItem('cvh_lotes',JSON.stringify(o));}catch(e){}
+}
 
 /* ================= eventos ================= */
 function bind(){
@@ -874,6 +886,8 @@ function bind(){
     if(k==='validade'){const m=mascMes(e.target.value);if(m!==e.target.value)e.target.value=m;}
     S[k]=e.target.value;
     if(k==='numero'&&S.numero&&!S.etq){S.etq=nowFull();syncText('etq');}
+    if(k==='lote'){loteValidade();loteGuardar();}
+    if(k==='validade')loteGuardar();
     if(k==='raca')acShow();
     wrapState(k);touched(k);
     if(k==='numero')drawEtq();
@@ -3424,6 +3438,7 @@ init();
   async function comecar() {
     ctx = window.CVH_CTX || null;
     if (!ctx) { try { ctx = await ponte("contexto"); } catch (e) { ctx = null; } }
+    if (ctx && ctx.lotes) window.CVH_LOTES = ctx.lotes;
     if (!ctx) { toast("Não consegui receber os dados do painel. Volte ao painel e abra o animal de novo.", 8000); return; }
     // o painel abre a ficha escondida só para gerar os PDFs de uma ficha já salva (nada é gravado neste aparelho)
     if (ctx.soPdf) {

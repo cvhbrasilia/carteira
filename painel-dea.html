@@ -1036,7 +1036,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125133955';
+  var VERSAO = '20261125134314';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -7325,7 +7325,10 @@ async function abrirModulo(nome, aid, rid) {
   E.ponte = { animal: an ? { nome: an.nome, especie: an.especie, sexo: an.sexo, raca: an.raca, microchip: an.microchip, tipoSanguineo: tipagemDe(an).tipoSanguineo, dal: tipagemDe(an).dal, nascimento: an.nascimento, doador: an.doador === '1' } : null,
     responsavel: { nome: rp.nome || '', cpf: rp.cpf || '' }, vet: v ? { nome: v.nome, crmv: v.crmv, rubrica: v.rubrica || '' } : null, temGemini: !!E.d.config.temGemini, fichas: an ? fichasDe(aid) : [],
     racasExtra: { cao: racasExtra(false), gato: racasExtra(true) }, aba: E.abrirAba || '' }; E.abrirAba = '';
-  if (nome === 'fichas') { E.ponte.urlVerificacao = (E.d.config || {}).urlExec || ''; E.ponte.rascunhos = an ? andamentoDe(aid) : []; E.ponte.abrir = E.fichaAbrir || null; E.fichaAbrir = null;
+  if (nome === 'fichas') { E.ponte.urlVerificacao = (E.d.config || {}).urlExec || '';
+    // lotes de bolsa já usados e a validade de cada um (o mais recente vale)
+    E.ponte.lotes = {}; [...E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').sort((a, b) => String(a.data).localeCompare(b.data)).map(r => ((r.dados || {}).ficha || {})), ...andamentoDe().map(f => f.ficha || {})]
+      .forEach(f => { const l = String(f.lote || '').toUpperCase().replace(/[^A-Z0-9]/g, ''), v = String(f.validade || ''); if (l.length >= 4 && /^\d{2}\/\d{2}$/.test(v)) E.ponte.lotes[l] = v; }); E.ponte.rascunhos = an ? andamentoDe(aid) : []; E.ponte.abrir = E.fichaAbrir || null; E.fichaAbrir = null;
     // quem não é médico veterinário salva a ficha assinada pelo médico veterinário escolhido, com o nome de quem liberou
     if (!v) { E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.liberador = { nome: E.u.nome }; }
     // à prova de erros: o que a ficha precisa conferir antes de ir para a carteira (intervalo, impedimentos e pendências do doador)
