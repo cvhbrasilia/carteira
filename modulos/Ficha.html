@@ -309,6 +309,7 @@ textarea:focus{border-color:var(--verm);box-shadow:0 0 0 3px rgba(168,61,61,.12)
 .mb .nv-fot .ft{background:#EEE5DB;border:1px solid #E0D3C3;border-radius:8px;padding:6px;margin-bottom:8px}.mb .nv-fot .ft img{height:86px;width:auto;display:block;border-radius:3px}
 .mb .nv-fot small{font-size:10px;color:#7A6A63;line-height:1.3}.mb .nv-fot b{font-size:13.5px;font-weight:700;color:#5F130F;line-height:1.25;margin-top:2px}
 .mb .idb{padding:4px 14px 6px}.mb .idb .rw{padding:8px 0 7px}.mb .idb .c3{gap:0}.mb .idb .c3>div{padding:0 10px}.mb .idb .c3>div:first-child{padding-left:0}.mb .idb .c3>div+div{border-left:1px solid #DCCDBC}
+.mb .r1mc{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.mb .r1mc .mcr{text-align:right;flex:none}.mb .r1mc .mcr .mcbc{margin-left:auto}
 .mb .ilb{font-size:8.5px}.mb .ivl{font-size:13px}.mb .mcbc{height:20px;margin-top:4px}
 .mb .lsm{display:flex;align-items:center;justify-content:center}.mb .lsm .figs{flex:none;gap:26px;padding:2px 22px 2px 4px}.mb .lsm .lg{flex:1;min-width:0;display:flex;justify-content:center;align-self:stretch;align-items:center;border-left:1px solid #D8C9B8;padding-left:12px}.mb .lsm .okb{margin:0;font-size:11.5px;padding:6px 16px 6px 8px}.mb .lsm .lgl{margin:0}
 .mb .sbar{padding:6px 12px;margin-bottom:8px}.mb .sbar b{font-size:15px}
@@ -1190,6 +1191,7 @@ function nvTriagem(mob){
 function nvColeta(mob){
   const T=coletaTabs();if(!T.length)return '';
   const tit={'Horário e volume':'Horários e volume'};
+  if(S.clinico)return `<div class="blk">${barHTML('Horário da triagem','')}<div class="nv-kv">${T[0].r.map(x=>`<div class="r"><span class="k">Início e fim</span><span class="v">${esc(x.v)}</span></div>`).join('')}</div></div>`;
   return `<div class="blk">${barHTML('Coleta',mob?'':'Horários, volume e bolsa')}<div class="nv-2" style="grid-template-columns:repeat(${Math.min(2,T.length)},minmax(0,1fr))">${T.map(x=>`<div>${nvKV(Object.assign({},x,{t:tit[x.t]||x.t}))}</div>`).join('')}</div></div>`;
 }
 /* ================= onda do SpO₂ (foto do monitor) ================= */
@@ -1322,7 +1324,7 @@ function fPlasma(){const p=[];const c=sv('plCor'),a=sv('plAsp'),h=sv('plHem'),l=
   if(c)p.push(c);if(a)p.push(p.length?a.toLowerCase():a);if(h&&h!=='Ausente')p.push('hemólise '+h.toLowerCase());if(l&&l!=='Ausente')p.push('lipemia '+l);if(o)p.push(o);
   const t=p.join(', ');return t?t[0].toUpperCase()+t.slice(1):'';}
 function coletaTabs(){
-  if(S.clinico)return [];
+  if(S.clinico){const r=[lin('Início e fim da triagem',fTriagem())].filter(Boolean);return r.length?[{t:'Horário',r}]:[];}
   const nc=S.tempo==='NC';
   return [{t:'Horário e volume',r:[lin('Início e fim da triagem',fTriagem()),nc?{l:'Tempo de coleta',v:'Não coletado',h:'<i>Não coletado</i>'}:lin('Tempo de coleta',nu('tempo'),'min'),nc?{l:'Volume coletado',v:'-'}:lin('Volume coletado',nu('volume'),'mL')].filter(Boolean)},
           {t:'Bolsa',r:(nc?[{l:'Lote',v:'-'},{l:'Validade',v:'-'},{l:'Seguimento',v:'-'}]:[lin('Lote',sv('lote')),lin('Validade',fVal()),lin('Seguimento',sv('seguimento'))]).filter(Boolean)}].filter(t=>t.r.length);
@@ -2705,8 +2707,12 @@ function idHTMLMob(){
   const g=idGrupos(),todos=[...g.r2,...g.r3],pega=l=>todos.find(x=>x.l===l);
   const cel=x=>`<div><div class="ilb">${x.l}</div><div class="ivl">${unH(x.v)}</div>${x.bc?`<img class="mcbc" src="${x.bc}" alt="">`:''}</div>`;
   const lin=ls=>{const r=ls.map(pega).filter(Boolean);return r.length?`<div class="rw c3" style="grid-template-columns:repeat(3,minmax(0,1fr))">${r.map(cel).join('')}</div>`:'';};
-  const r1=g.nome||g.tipo?`<div class="rw r1"><div><div class="ilb">Animal</div><div class="nm">${esc(g.nome)}${g.tipo?`<span class="tp">${esc(g.tipo)}</span>`:''}</div></div></div>`:'';
-  const h=r1+lin(['Idade','Sexo','Peso'])+lin(['Raça','Responsável','Microchip']);
+  const mc=pega('Microchip');
+  const mcH=mc?`<div class="mcr"><div class="ilb">Microchip</div><div class="ivl">${unH(mc.v)}</div>${mc.bc?`<img class="mcbc" src="${mc.bc}" alt="">`:''}</div>`:'';
+  const r1=g.nome||g.tipo||mc?`<div class="rw r1 r1mc"><div><div class="ilb">Animal</div><div class="nm">${esc(g.nome)}${g.tipo?`<span class="tp">${esc(g.tipo)}</span>`:''}</div></div>${mcH}</div>`:'';
+  const rr=['Raça','Responsável'].map(pega).filter(Boolean);
+  const r3=rr.length?`<div class="rw c3" style="grid-template-columns:repeat(3,minmax(0,1fr))">${rr.map((x,i)=>i===1?cel(x).replace('<div>','<div style="grid-column:span 2">'):cel(x)).join('')}</div>`:'';
+  const h=r1+lin(['Idade','Sexo','Peso'])+r3;
   return h?`<div class="blk idb">${h}</div>`:'';
 }
 function lesColMob(){
