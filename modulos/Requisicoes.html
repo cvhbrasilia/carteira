@@ -734,7 +734,7 @@ function telaEditor() {
     </div>`}
     <div class="cx acoes-fim">
       <button type="button" class="btn" data-a="imprimir">${ehProt(r) ? "Imprimir no papel azul" : "Imprimir no papel timbrado"}</button>
-      ${ehProt(r) ? "" : `<button type="button" class="btn sec" data-a="a5">Imprimir em A5 (com o timbrado)</button><button type="button" class="btn sec" data-a="digital">PDF digital (com o timbrado)</button>`}
+      ${ehProt(r) ? "" : `<button type="button" class="btn sec" data-a="a5">Imprimir no papel timbrado A5</button><button type="button" class="btn sec" data-a="digital">PDF digital (com o timbrado)</button>`}
       <button type="button" class="btn sec" data-a="salvar">Salvar sem imprimir</button>
       ${r.id ? `<button type="button" class="lnk" data-a="apagar">Apagar esta requisição</button>` : ""}
       <p class="st" id="st"></p>
@@ -771,14 +771,14 @@ async function baixar(imp, a5) {
   st.className = "st"; st.textContent = "Gerando o PDF…";
   try {
     const prot = ehProt(r); if (prot) imp = true;
-    // A5: a folha inteira do A4 (timbrado atual e conteúdo) reduzida ao tamanho A5, para folha branca
+    // A5: só o conteúdo, na posição do timbrado atual reduzido ao A5 (o papel A5 já vem timbrado; timbrado no arquivo só no PDF digital)
     const ymax0 = PG.YMAX;
     let pags; try { pags = paginasReq(r); } finally { PG.YMAX = ymax0; }
-    const bytes = await gerarPDF(imp && !prot ? emCinza(pags) : pags, a5 || !imp, (prot ? "Protocolo de envio de amostras " : "Requisição de exames ") + LABS[r.lab].nome + " " + br(r.data), a5 ? { W: PG.W, H: PG.H, escala: 0.70711 } : { W: PG.W, H: PG.H });
+    const bytes = await gerarPDF(imp && !prot ? emCinza(pags) : pags, !imp, (prot ? "Protocolo de envio de amostras " : "Requisição de exames ") + LABS[r.lab].nome + " " + br(r.data), a5 ? { W: PG.W, H: PG.H, escala: 0.70711 } : { W: PG.W, H: PG.H });
     const nome = (prot ? "Protocolo " : "Requisição ") + LABS[r.lab].nome + " " + br(r.data).replace(/\//g, "-") + (a5 ? " A5" : imp && !prot ? " impressão" : "") + ".pdf";
     await salvar(imp);
     await ponte("baixar", nome, b64De(bytes));
-    st.textContent = a5 ? "Pronta em A5, com o timbrado. Imprima em folha A5 branca, com A5 escolhido como papel na impressora e escala 100% (tamanho real), sem ajustar à página." : ehProt(r) ? "Pronto. Imprima no papel azul, em preto e branco." : imp ? "Pronta. Imprima no papel timbrado, em preto e branco." : "PDF digital pronto.";
+    st.textContent = a5 ? "Pronta em A5. Imprima no papel timbrado A5, com A5 escolhido como papel na impressora e escala 100% (tamanho real), sem ajustar à página." : ehProt(r) ? "Pronto. Imprima no papel azul, em preto e branco." : imp ? "Pronta. Imprima no papel timbrado, em preto e branco." : "PDF digital pronto.";
     const t = $(".topo-ed .nota"); if (t && r.impressoEm) t.textContent = "Impressa em " + br(r.impressoEm) + " às " + r.impressoEm.slice(11, 16);
   } catch (e) { st.className = "st erro"; st.textContent = "Não consegui gerar. " + (e.message || e); }
 }
