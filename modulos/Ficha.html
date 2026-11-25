@@ -3569,7 +3569,7 @@ init();
       const y = topo + H + pad; c.fillStyle = "#EEE5DB"; c.fillRect(0, y, W, L); c.fillStyle = "#C49A6C"; c.fillRect(0, y, W, 4);
       const bx = pad, by = y + 24, bw = 170, bh = L - 48; c.fillStyle = "#5F130F"; c.beginPath(); if (c.roundRect) c.roundRect(bx, by, bw, bh, 16); else c.rect(bx, by, bw, bh); c.fill();
       c.fillStyle = "#FFFFFF"; c.font = "bold 50px 'Proza Libre', Georgia, serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ACD", bx + bw / 2, by + bh / 2 + 2);
-      c.textAlign = "left"; c.textBaseline = "alphabetic"; c.fillStyle = "#5F130F"; c.font = "bold 40px 'Proza Libre', Georgia, serif"; c.fillText("Doação " + (S.numero || ""), bx + bw + 30, y + 56);
+      c.textAlign = "left"; c.textBaseline = "alphabetic"; c.fillStyle = "#5F130F"; c.font = "bold 40px 'Proza Libre', Georgia, serif"; c.fillText(S.clinico ? "Atendimento clínico" : "Doação " + (S.numero || ""), bx + bw + 30, y + 56);
       c.fillStyle = "#3A2A26"; c.font = "32px 'Proza Libre', Georgia, serif"; c.fillText(String(S.animal || "").toUpperCase() + (S.data ? "  ·  " + isoBR(S.data) : ""), bx + bw + 30, y + 102);
       c.textAlign = "right"; c.fillStyle = "#A83D3D"; c.font = "bold 26px 'Proza Libre', Georgia, serif"; c.fillText("Autocontrole do doador" + (S.acDoa ? " · " + S.acDoa.toLowerCase() : ""), W - pad, y + 56);
       c.fillStyle = "#7A6A63"; c.font = "24px 'Proza Libre', Georgia, serif"; c.fillText("CVH · uso interno", W - pad, y + 102);
@@ -3578,7 +3578,7 @@ init();
     document.addEventListener("change", async (ev) => {
       const id = ev.target && ev.target.id; if (id !== "acFotoGel" && id !== "acFotoPla") return; const k = id === "acFotoGel" ? "gel" : "pla";
       const file = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (!file) return;
-      if (!S.numero || !S.animal) { toast("Preencha o número da doação e o nome do animal antes das fotos, para a etiqueta sair completa."); return; }
+      if ((!S.numero && !S.clinico) || !S.animal) { toast(S.clinico ? "Preencha o nome do animal antes das fotos, para a etiqueta sair completa." : "Preencha o número da doação e o nome do animal antes das fotos, para a etiqueta sair completa."); return; }
       const tx = $(k === "gel" ? "#acFotoGelTx" : "#acFotoPlaTx"); tx.textContent = "Guardando...";
       try {
         const tr = await tratarFoto(k, file); if (!tr) { acFotoPintar(); return; }
@@ -3586,10 +3586,10 @@ init();
         // o tubo do plasma entra na ficha (triagem laboratorial); ficha assinada pede assinatura de novo
         if (k === "pla") { S.plasmaImg = await tuboPequeno(tr.url); touched("plasmaImg"); syncAll(); }
         if (k === "gel") { S.gelImg = await tuboPequeno(tr.url); touched("gelImg"); syncAll(); }
-        const r1 = await ponte("acFoto", { nome: (k === "gel" ? "ACD gel " : "ACD plasma ") + S.numero + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await bl.arrayBuffer())) });
+        const r1 = await ponte("acFoto", { nome: (k === "gel" ? "ACD gel " : "ACD plasma ") + (S.clinico ? "atendimento" : S.numero) + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await bl.arrayBuffer())) });
         S.acFotos = Object.assign({}, S.acFotos || {}, { [k]: { id: r1.id } });
         const folha = await montarFolha();
-        if (folha) { const r2 = await ponte("acFoto", { nome: "ACD " + S.numero + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await folha.arrayBuffer())) }); S.acFoto = { id: r2.id, nome: r2.nome || "" }; acLocal.folha = URL.createObjectURL(folha); }
+        if (folha) { const r2 = await ponte("acFoto", { nome: "ACD " + (S.clinico ? "atendimento" : S.numero) + " " + S.animal + ".jpg", b64: b64De(new Uint8Array(await folha.arrayBuffer())) }); S.acFoto = { id: r2.id, nome: r2.nome || "" }; acLocal.folha = URL.createObjectURL(folha); }
         dirty = true; $("#bSalvar").classList.add("dirty"); acFotoPintar(); toast("Foto guardada na folha do autocontrole.");
       } catch (e) { toast("Não consegui guardar a foto. " + ((e && e.message) || "")); acFotoPintar(); }
     });
