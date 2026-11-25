@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125161715">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125162022">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1041,7 +1041,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125161715';
+  var VERSAO = '20261125162022';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2976,7 +2976,8 @@ async function abrirCarteirinha(aid) {
     $('#ctnFoto').onclick = () => $('#ctnArq').click();
     $('#ctnFFecha').onclick = () => { $('#ctnFMenu').hidden = true; };
     // abre a página só da carteirinha numa aba nova, para adicionar à tela de início
-    if ($('#ctnIcone')) $('#ctnIcone').onclick = async () => { const w = window.open('', '_blank'); try { const u = await ctnLinkUrl(animalDe(aid)); if (w) w.location = u; else location.href = u; } catch (e) { if (w) w.close(); toast(e.message, 5000); } };
+    // abre na mesma janela, com o caminho de volta para o painel ou a carteira
+    if ($('#ctnIcone')) $('#ctnIcone').onclick = ev => salvando(ev.currentTarget, async () => { const u = await ctnLinkUrl(animalDe(aid)); try { sessionStorage.setItem('cvh_ctn_volta', location.href); } catch (_) {} location.href = u + '&de=' + (E.modo === 'painel' ? 'painel' : 'carteira'); });
     if ($('#ctnLink')) $('#ctnLink').onclick = ev => salvando(ev.currentTarget, async () => { const u = await ctnLinkUrl(animalDe(aid)); toast(await copiar(u) ? 'Link da carteirinha copiado. Ele abre só a carteirinha, que pode virar um ícone no celular.' : 'Não consegui copiar o link.', 4500); });
     if ($('#ctnTira')) $('#ctnTira').onclick = ev => salvando(ev.currentTarget, async () => { const s = await api('animalFoto', E.sessao, aid, null); atualizarAnimal(s); abrirCarteirinha(aid); });
     $('#ctnArq').onchange = async ev => {
@@ -3019,8 +3020,13 @@ async function ctnLinkUrl(an) {
 // página da carteirinha (link próprio): só a carteirinha, com foto, enquadramento, download e o laudo pelo QR
 function abrirPaginaCtn(titulo, html, montar) {
   const an = (E.d.animais || [])[0] || {}, inst = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  raiz.innerHTML = '<main class="tela tela-media ctn-pg"><div class="tela-c"><header class="topo"><div class="t"><span>CVH · Clube do Doador</span><b>Carteirinha de ' + esc(an.nome || '') + '</b></div></header><section class="cartao" id="ctnPgC">' + html + '</section>' +
-    (inst ? '' : '<p class="nota ctn-inst">Para ter a carteirinha como ícone no celular: no iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início. No Android, abra o menu do navegador e toque em Adicionar à tela inicial.</p>') + '</div></main>';
+  // aberta pelo painel ou pela carteira: botão de voltar; dentro do app instalado, o ícone se cria pelo Safari
+  const de = new URLSearchParams(location.search).get('de') || '';
+  const volta = de ? '<div class="barra" style="padding:0"><button class="pill" data-acao="ctn-voltar">‹ ' + (de === 'painel' ? 'Painel' : 'Carteira de saúde') + '</button></div>' : '';
+  const dica = inst && de ? 'Para ter o ícone do Cartão doador: toque em Copiar o link, abra o link no Safari e lá toque em Compartilhar e depois em Adicionar à Tela de Início.'
+    : inst ? '' : 'Para ter o Cartão doador como ícone no celular: no iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início. No Android, abra o menu do navegador e toque em Adicionar à tela inicial.';
+  raiz.innerHTML = '<main class="tela tela-media ctn-pg"><div class="tela-c">' + volta + '<header class="topo"><div class="t"><span>CVH · Clube do Doador</span><b>Carteirinha de ' + esc(an.nome || '') + '</b></div></header><section class="cartao" id="ctnPgC">' + html + '</section>' +
+    (dica ? '<p class="nota ctn-inst">' + dica + '</p>' : '') + '</div></main>';
   if (montar) montar($('#ctnPgC'));
 }
 async function iniciarCarteirinha() {
@@ -8744,6 +8750,7 @@ const ACOES = {
   'alerta-perfil': b => { E.pfDeAlertas = !!document.querySelector('#listaAl'); perfilAnimal(b.dataset.id); },
   'link-temp': () => telaLinkTemp(E.animal),
   'auditoria-animal': () => telaAuditoria(E.animal),
+  'ctn-voltar': () => { let v = ''; try { v = sessionStorage.getItem('cvh_ctn_volta') || ''; } catch (_) {} if (history.length > 1 && document.referrer) history.back(); else location.href = v || (new URLSearchParams(location.search).get('de') === 'painel' ? 'painel.html' : './'); },
   'pd-filtro': b => { E.pdFiltro = b.dataset.v; pintarPendencias(); },
   'pd-foto': b => { const u = E.pdFotoCache[b.dataset.id]; if (!u) return toast('A foto ainda está carregando.'); abrirFolha('Foto da pendência', '<img src="' + u + '" alt="" style="width:100%;height:auto;border-radius:12px;display:block">'); },
   'hj-abrir': b => abrirHojeAnimal(b.dataset.id),
