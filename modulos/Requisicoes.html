@@ -390,10 +390,13 @@ function cabAnimal(an, data, numero) {
 const ehGato = (e) => /fel|gat/i.test(e || "");
 // animal sem cadastro: tudo em branco, para preencher tocando nas opções
 const cabVazio = () => ({ animalId: "", nome: "", numero: "", especie: "Canina", raca: "", sexo: "", nascimento: "", idade: "", resp: "", microchip: "", dea: "", dal: "", grupo: "", aberto: true });
-const doacoesDoDia = (data) => DOACOES.filter((d) => d.data === data).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt-BR", { numeric: true }));
+// no Pra hoje, a equipe responde se o doador vai para o Citopet; quem não vai fica fora da requisição do dia
+const foraCitopet = (data, aid) => ((estado.citopet || {})[data] || {})[aid] === "nao";
+const nForaDia = (data) => DOACOES.filter((d) => d.data === data && foraCitopet(data, d.animalId)).length;
+const doacoesDoDia = (data) => DOACOES.filter((d) => d.data === data && !foraCitopet(data, d.animalId)).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt-BR", { numeric: true }));
 
 // ---------- estado ----------
-const estado = { tela: "lista", lista: [], carregou: false, r: null, modo: "imp" };
+const estado = { tela: "lista", lista: [], carregou: false, r: null, modo: "imp", citopet: {} };
 function novaReq(o) {
   const v = vetPadrao();
   return Object.assign({ id: "", lab: "citopet", data: hojeISO(), origem: "", animais: [], exames: LABS.citopet.rotina.slice(), obs: "", vetId: v ? v.id : "", impressoEm: "", impressoPor: "" }, o || {});
@@ -403,6 +406,7 @@ function reqDoDia(data) {
   const animais = doacoesDoDia(data).map((d) => { const an = animalDe(d.animalId); return an ? cabAnimal(an, data, d.numero) : null; }).filter(Boolean);
   if (salva) {
     const r = novaReq(JSON.parse(JSON.stringify(salva))); if (!r.vetId) r.vetId = (vetPadrao() || {}).id || "";
+    r.animais = r.animais.filter((a) => !foraCitopet(data, a.animalId));
     // coleta nova no mesmo dia depois de salvar: entra no fim da folha
     animais.forEach((a) => { if (!r.animais.some((x) => x.animalId === a.animalId)) { a.novo = true; r.animais.push(a); } });
     return r;
@@ -566,7 +570,7 @@ function telaLista() {
     ${estado.carregou ? "" : `<p class="nota">Carregando as requisições salvas…</p>`}
     <h2>Coletas</h2>
     ${dias.length ? dias.map((d) => { const L = doacoesDoDia(d), s = estado.lista.find((r) => r.origem === "doacao:" + d), novos = s ? L.filter((x) => !(s.animais || []).some((a) => a.animalId === x.animalId)).length : 0;
-      return `<button type="button" class="dia" data-a="dia" data-v="${d}"><span class="dt"><b>${br(d).slice(0, 5)}</b><small>${diaSem(d)}</small></span><span class="dd"><b>${L.length} ${L.length === 1 ? "doador" : "doadores"}</b><small>${esc(L.map((x) => (animalDe(x.animalId) || {}).nome || "").filter(Boolean).join(", "))}</small>${situ(s, novos)}</span><span class="vai">›</span></button>`; }).join("") : `<p class="vazio-p">Nenhuma coleta ainda. Assim que a ficha de doação for feita, a requisição do dia aparece aqui pronta.</p>`}
+      return `<button type="button" class="dia" data-a="dia" data-v="${d}"><span class="dt"><b>${br(d).slice(0, 5)}</b><small>${diaSem(d)}</small></span><span class="dd"><b>${L.length} ${L.length === 1 ? "doador" : "doadores"}</b><small>${esc(L.map((x) => (animalDe(x.animalId) || {}).nome || "").filter(Boolean).join(", "))}${nForaDia(d) ? " · " + nForaDia(d) + " sem Citopet hoje" : ""}</small>${situ(s, novos)}</span><span class="vai">›</span></button>`; }).join("") : `<p class="vazio-p">Nenhuma coleta ainda. Assim que a ficha de doação for feita, a requisição do dia aparece aqui pronta.</p>`}
     <h2>Outras requisições</h2>
     ${outras.length ? outras.map((r) => `<button type="button" class="dia" data-a="abrir" data-v="${esc(r.id)}"><span class="dt"><b>${br(r.data).slice(0, 5)}</b><small>${br(r.data).slice(6)}</small></span><span class="dd"><b>${esc((r.animais || []).map((a) => a.nome).join(", ") || "Sem animal")}</b><small>${esc(r.exames.map((x) => exNome(r.lab, x).replace(/ \(.*\)$/, "")).join(", "))}</small>${situ(r)}</span><span class="vai">›</span></button>`).join("") : `<p class="vazio-p">Nenhuma ainda. Use + Nova requisição para pedir outros exames.</p>`}
   </div>`;
@@ -724,6 +728,7 @@ function ligar() {
 window.CVH_VOLTAR = () => { if (estado.tela === "editor") { telaLista(); return true; } return false; };
 async function iniciar() {
   ligar(); telaLista();
+  try { estado.citopet = await req("reqCitopetDias") || {}; } catch (e) { estado.citopet = {}; }
   try { estado.lista = await req("reqListar"); } catch (e) { toast("Não consegui carregar as requisições salvas. " + (e.message || e), 6000); }
   estado.carregou = true; if (estado.tela === "lista") telaLista();
 }

@@ -37,6 +37,7 @@ button{cursor:pointer}
 .lin .t{min-width:0}
 .lin .t b{display:block;color:var(--vinho)}
 .lin .t small{display:block;color:var(--tinta2);font-size:12.5px}
+.trava{border:1.5px solid #E2B04A;background:#FBF0DC;border-radius:12px;padding:12px 14px;margin:8px 0 12px;display:flex;flex-direction:column;gap:6px}.trava b{color:#7A4E0B}.trava small{color:#5c4a2a;font-size:13px}.trava .ped{color:#7A4E0B}.trava input{width:100%}.trava .btn{align-self:flex-start}
 .chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:700;background:var(--areia);color:var(--vinho);white-space:nowrap}
 .chip.ok{background:#E3EFE6;color:var(--ok)}.chip.al{background:#F6DADA;color:#8A1D14}.chip.av{background:#FBF0DC;color:#7A4E0B}.chip.ne{background:#f1ece6;color:#7a6a62}
 .unid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:10px 4px;border-top:1px solid #f0e8df}
@@ -195,6 +196,31 @@ function lembrarAmostra(coleta, k) {
     '<div class="bts">' + (nome ? '<button type="button" class="btn sec" data-a="copiar" data-v="' + esc(nome) + '">Copiar o nome</button>' : '') + '<button type="button" class="btn" data-ok>OK</button></div></div>';
   document.body.appendChild(ov); ov.querySelector("[data-ok]").onclick = () => ov.remove();
 }
+// repouso mínimo de 2 h antes de centrifugar, contado do fim da triagem registrado na ficha (sem ele, da assinatura da ficha)
+S.ph = { lib: {}, ped: {}, citopet: {}, souRT: false, rtNome: "" };
+function carregarPH() { return est("estHojeDados").then((r) => { S.ph = r || S.ph; if (S.prodAberta) abrirProducao(S.prodAberta); }).catch(() => {}); }
+function repouso(coleta) {
+  const d = doacao(coleta) || {}; let ref = null;
+  if (d.fim && /^\d{1,2}:\d{2}$/.test(d.fim) && d.data) ref = new Date(d.data + "T" + d.fim.padStart(5, "0") + ":00");
+  else if (d.assinadoEm) ref = new Date(d.assinadoEm);
+  if (!ref || isNaN(ref)) return null;
+  const ate = new Date(ref.getTime() + 2 * 36e5);
+  return { ref, ate, falta: ate.getTime() - Date.now(), lib: S.ph.lib[coleta] || null, ped: S.ph.ped[coleta] || null };
+}
+const hm = (t) => p2(t.getHours()) + ":" + p2(t.getMinutes());
+function travaHtml(coleta) {
+  const R = repouso(coleta); if (!R) return "";
+  if (R.lib) return '<p class="nota"><span class="chip av">Liberada antes das 2 h</span> por ' + esc(R.lib.por) + (R.lib.motivo ? ". Motivo: " + esc(R.lib.motivo) : "") + (R.lib.pedidoPor ? " (pedido de " + esc(R.lib.pedidoPor) + ")" : "") + "</p>";
+  if (R.falta <= 0) return "";
+  // quando completar as 2 h, a tela libera sozinha
+  clearTimeout(S.tTrava); S.tTrava = setTimeout(() => { if (S.prodAberta === coleta) abrirProducao(coleta); }, Math.min(R.falta + 1500, 2147483000));
+  const min = Math.ceil(R.falta / 6e4), falta = min >= 60 ? Math.floor(min / 60) + " h " + p2(min % 60) + " min" : min + " min";
+  return '<div class="trava"><b>Repouso mínimo de 2 h</b><small>Coleta registrada às ' + hm(R.ref) + '. A centrifugação fica liberada às <b>' + hm(R.ate) + "</b> (faltam " + falta + ").</small>" +
+    (R.ped ? '<small class="ped">Pedido de liberação enviado por ' + esc(R.ped.por) + " às " + esc(String(R.ped.em).slice(11, 16)) + ". Motivo: " + esc(R.ped.motivo) + (S.ph.souRT ? "" : ". Aguardando " + esc((S.ph.rtNome || "o responsável técnico").split(" ")[0]) + ".") + "</small>" : "") +
+    (S.ph.souRT ? '<label>Motivo (opcional)</label><input type="text" id="libMot" maxlength="300" value="' + esc(R.ped ? R.ped.motivo : "") + '"><button class="btn" data-a="pLiberar">Liberar agora</button>'
+      : R.ped ? "" : '<label>Motivo para liberar antes</label><input type="text" id="libMot" maxlength="300" placeholder="ex.: só CH e PFC, sem plaquetas"><button class="btn sec" data-a="pPedirLib">Pedir liberação a ' + esc((S.ph.rtNome || "o responsável técnico").split(" ")[0]) + "</button>") + "</div>";
+}
+const travada = (coleta) => { const R = repouso(coleta); return !!(R && !R.lib && R.falta > 0); };
 function abrirProducao(coleta) {
   const p = S.prod.find((x) => x.coleta === coleta) || { coleta, etapa: "peso_st", dados: {} }, d = doacao(coleta) || {}, a = animalDe(d.animalId || p.animal_id);
   S.prodAberta = coleta;
@@ -206,9 +232,9 @@ function abrirProducao(coleta) {
   if (et === "peso_st") corpo = '<h2>Peso do conjunto completo de ST</h2><p class="nota">Tudo o que vai à balança na entrada da produção: bolsa de coleta com o sangue, bolsa de SAG com a solução, bolsa das plaquetas, plástico, manguitos e conexões.</p>' +
     '<label>Peso bruto do conjunto (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoST" value="' + esc(D.pesoST ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoST">Foto</button></div><label>Micro-hematócrito do ST (%) <small>opcional, pode entrar depois</small></label><input type="number" inputmode="decimal" id="pHtST" value="' + esc(D.htST ?? "") + '">' +
     '<p class="nota">Amostra do ST na IDEXX: <b>ST_BOLSA ' + esc(coleta) + '</b> <button type="button" class="btn sec peq" data-a="copiar" data-v="ST_BOLSA ' + esc(coleta) + '">Copiar</button></p>' + '<button class="btn grande" data-a="pSalvar" data-v="peso_st">Confirmar peso e seguir</button>';
-  else if (et === "centrifugacao") corpo = "<h2>Centrifugações e transferência</h2>" +
-    [["c1", "Primeira centrifugação concluída e porção das plaquetas separada"], ["c2", "Segunda centrifugação concluída"], ["tp", "Plasma remanescente transferido para a bolsa das plaquetas"]].map(([k, t]) => '<div class="lin"><div class="t"><b>' + t + "</b><small>" + (D[k] ? "feito " + esc(hora(D[k])) : "pendente") + "</small></div>" + (D[k] ? '<span class="chip ok">feito</span>' : '<button class="btn peq" data-a="pMarca" data-v="' + k + '">Feito</button>') + "</div>").join("") +
-    (D.c1 && D.c2 && D.tp ? '<button class="btn grande" data-a="pAvanca" data-v="ch_sem_sag" style="margin-top:12px">Pesar o CH sem SAG</button>' : "");
+  else if (et === "centrifugacao") { const tv = !D.c1 && travada(coleta); corpo = "<h2>Centrifugações e transferência</h2>" + (D.c1 ? "" : travaHtml(coleta)) +
+    [["c1", "Primeira centrifugação concluída e porção das plaquetas separada"], ["c2", "Segunda centrifugação concluída"], ["tp", "Plasma remanescente transferido para a bolsa das plaquetas"]].map(([k, t]) => '<div class="lin"><div class="t"><b>' + t + "</b><small>" + (D[k] ? "feito " + esc(hora(D[k])) : "pendente") + "</small></div>" + (D[k] ? '<span class="chip ok">feito</span>' : tv ? '<span class="chip ne">aguardando</span>' : '<button class="btn peq" data-a="pMarca" data-v="' + k + '">Feito</button>') + "</div>").join("") +
+    (D.c1 && D.c2 && D.tp ? '<button class="btn grande" data-a="pAvanca" data-v="ch_sem_sag" style="margin-top:12px">Pesar o CH sem SAG</button>' : ""); }
   else if (et === "ch_sem_sag" || et === "ch_com_sag") {
     const c = sag(D);
     corpo = '<h2>SAGcalculadora</h2><div class="grade"><div><label>Peso do CH sem SAG (g)</label><div class="peso"><input type="number" inputmode="decimal" id="pPesoCH" value="' + esc(D.pesoCHsem ?? "") + '"><button type="button" class="btn sec peq" data-a="foto" data-v="pPesoCH">Foto</button></div></div><div><label>Micro-Ht do CH sem SAG (%) <small>opcional</small></label><input type="number" inputmode="decimal" id="pHtCH" value="' + esc(D.htCHsem ?? "") + '"></div></div>' +
@@ -1140,7 +1166,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "monLink") { b.disabled = true; const w = window.open("", "_blank"); try { const t = await est("estMonLink", { unidade: v }), url = (ORIGEM || (await ponte("origem")) || "") + "monitoramento.html?m=" + t; if (w) w.location = url; } catch (e) { if (w) w.close(); toast(e.message); } finally { b.disabled = false; } return; }
   if (a === "filtro") { S.aba = "estoque"; if (["CH", "CP", "PFC", "CRIO"].includes(v)) { S.f.comp = v; S.f.sit = "disponivel"; } else { S.f.comp = ""; S.f.sit = v; } pintar(); return; }
   if (a === "f") { S.f[b.dataset.c] = v; pintar(); return; }
-  if (a === "prod") return abrirProducao(v);
+  if (a === "prod") { carregarPH(); return abrirProducao(v); }
   if (a === "uni") return abrirUnidade(v);
   if (a === "uAcao") return acaoUnidade(v);
   if (a === "camera") return abrirCamera();
@@ -1249,7 +1275,9 @@ document.addEventListener("click", async (ev) => {
   try {
     b.disabled = true;
     if (a === "pSalvar" && v === "peso_st") { const p = num($("#pPesoST").value); if (p == null || p <= 0) throw new Error("Informe o peso do conjunto em gramas."); await salvarProd(c, "centrifugacao", { pesoST: p, htST: num($("#pHtST").value), volumeST: num((doacao(c) || {}).volume) }, "Peso do ST registrado."); }
-    if (a === "pMarca") await salvarProd(c, "centrifugacao", { [v]: new Date().toISOString() });
+    if (a === "pMarca") { if (travada(c)) throw new Error("Repouso mínimo de 2 h ainda não completou."); await salvarProd(c, "centrifugacao", { [v]: new Date().toISOString() }); }
+    if (a === "pPedirLib") { const m = ($("#libMot").value || "").trim(); if (m.length < 3) throw new Error("Explique o motivo do pedido."); const r = await est("estLiberacaoPedir", c, m, (doacao(c) || {}).animalId || ""); S.ph.lib = r.lib; S.ph.ped = r.ped; toast("Pedido enviado."); abrirProducao(c); }
+    if (a === "pLiberar") { const r = await est("estLiberar", c, ($("#libMot").value || "").trim()); S.ph.lib = r.lib; S.ph.ped = r.ped; toast("Produção liberada."); abrirProducao(c); }
     if (a === "pAvanca") await salvarProd(c, v, {});
     if (a === "pSalvar" && v === "ch") {
       const D = { pesoCHsem: num($("#pPesoCH").value), htCHsem: num($("#pHtCH").value), sagAdicionado: num($("#pSagAd").value), pesoCHfinal: num($("#pPesoFinal").value), htCHfinal: num($("#pHtFinal").value) };
@@ -1289,6 +1317,7 @@ async function atualizarSozinho() { if (!podeAtualizar()) return; try { const y 
 setInterval(atualizarSozinho, 25000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) atualizarSozinho(); });
 async function iniciar() {
+  carregarPH();
   try { const r = await est("estDados"); S.at = r.atendimentos || []; S.rem = r.remessas || []; S.eq = r.equipamentos || []; S.ap = r.aparelhos || []; S.prod = r.producao; S.uni = r.unidades; S.ev = r.eventos; S.P = r.params; S.admin = r.admin; pintar();
     // vindo da HemoCalculadora (14.2): abre a bolsa escolhida já no fracionamento, com o volume da dose e da margem
     if (CTX.embalar && CTX.embalar.unidade) embalagem(CTX.embalar);

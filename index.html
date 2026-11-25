@@ -657,6 +657,12 @@ a.btn{text-decoration:none}
 .au-d{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:#5F130F;background:#EEE5DB;border-radius:8px;padding:5px 10px;margin:12px 0 4px}
 .au-i{display:flex;gap:10px;padding:8px 2px 8px 10px;border-left:3px solid #C6B098;margin:4px 0}.au-i.novo{border-left-color:#C49A6C}.au-i.del{border-left-color:#A83D3D}.au-i.ent{border-left-color:#EEE5DB;opacity:.75}
 .au-i time{font-variant-numeric:tabular-nums;color:#7a6a62;font-size:12.5px;min-width:38px;padding-top:1px}.au-i b{display:block;color:#5F130F;font-size:14px}.au-i span{display:block;font-size:13.5px;color:#2b2320}.au-i small{display:block;font-size:12px;color:#7a6a62;word-break:break-word}.au-i em{font-style:normal;font-size:11.5px;color:#8A5A2B;font-weight:700}
+.hj-i{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid rgba(110,30,30,.12);border-radius:14px;padding:12px;margin:0 0 8px;font:inherit;color:inherit;cursor:pointer}
+.hj-h{flex:none;width:3.4em;text-align:center;font-weight:800;color:#5F130F;font-size:17px;line-height:1.1}.hj-h small{font-size:10.5px;font-weight:600;color:#8A7A70}.hj-c{flex:1;min-width:0}.hj-c>b{display:block;color:#5F130F;font-size:16px}.hj-c>b small{font-size:12px;color:#8A6A60;font-weight:600}
+.hj-e{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.hj-e em{font-style:normal;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px}.hj-ok{background:#E3EFE6;color:#2E6B3F}.hj-av{background:#FBF0DC;color:#7A4E0B}.hj-al{background:#F6DADA;color:#8A1D14}.hj-ne{background:#F1ECE6;color:#7A6A62}.hj-v{color:#C49A6C;font-size:22px}
+.hj-r{border:1px solid #E3D6C8;border-radius:12px;padding:6px 12px;margin-bottom:12px}.hj-l{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #F1EAE2}.hj-l:last-child{border-bottom:0}.hj-l span{color:#8A7A70;font-size:13px}.hj-l b{text-align:right;color:#2B2320}
+.hj-s{margin:14px 0 0}.hj-s h3{font-size:14px;color:#A83D3D;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}.hj-p{margin:0 0 8px}.hj-p b{display:block}.hj-p small{display:block;color:#8A7A70;font-size:12.5px}.hj-q{font-size:19px;font-weight:700;color:#5F130F;margin:4px 0}
+.opc-hj{display:flex;gap:8px}.opc-hj button{flex:1;border:1px solid #C6B098;background:#fff;color:#5F130F;border-radius:10px;padding:10px;font:inherit;font-weight:700;cursor:pointer}.opc-hj button[aria-pressed=true]{background:#5F130F;color:#fff;border-color:#5F130F}
 .pd-eq{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:4px 0 12px}.pd-eq button.ci-k{font:inherit;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}.pd-eq button.ci-k.on{background:#F7EFE6;border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
 .pd-i{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--linha)}.pd-i:first-child{border-top:0}
 .pd-ck{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid #C6B098;background:#fff;color:#fff;font-weight:800;cursor:pointer;margin-top:1px}.pd-i.feita .pd-ck{background:#5F130F;border-color:#5F130F}.pd-i.atr .pd-ck{border-color:#A83D3D}
@@ -1029,7 +1035,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125130703';
+  var VERSAO = '20261125131747';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4457,7 +4463,7 @@ const MODS = [
   { k: 'clinicas', perm: ['transporte', 'estoque', 'receptores', 'laudos'], t: 'Clínicas', d: 'Cadastro único das clínicas: endereço, contatos e médicos veterinários', ic: svgIc('<g stroke-width="1.3"><path d="M3.4 20.6V6.9M13.4 20.6V6.2"/><path d="M2 7.4C5.3 4.3 10.6 3.6 14.6 5.4"/><path d="M2.6 12.3c3.7-1.1 8.4-1.1 11.6 0"/><path d="M5.5 20.6v-6.4h5.9v6.4M8.45 14.2v6.4"/><path d="M13.4 10.4c3-1 6.4-.8 8.9.9M21.6 11v9.6"/><rect x="14.9" y="14.6" width="5.3" height="3.6" rx=".4"/><path d="M1.6 20.8h21"/><path d="M8.45 6.9v3.2M6.85 8.5h3.2" stroke-width="1.6"/></g>') },
   { k: 'transporte', perm: 'transporte', t: 'Motoboy', d: 'Rotas do dia, pedidos, clínicas e destinos, quilometragem e combustível', ic: svgIc('<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-7h4l2 4M12 10H9"/>') },
   { k: 'inteligencia', perm: 'inteligencia', t: 'Central de inteligência', d: 'Aptos, pendências, tipos sanguíneos e evolução do clube', ic: svgIc('<path d="M4 20V10M9.500 20V4M15 20v-7M20.500 20v-4"/><path d="M3 20.500h18"/>') },
-  { k: 'pendencias', perm: 'pendencias', t: 'Pendências', d: 'Tarefas da equipe, com responsável e prazo', ic: svgIc('<path d="M9 5h10M9 12h10M9 19h10"/><path d="M3.500 5l1.300 1.300L7 4M3.500 12l1.300 1.300L7 11M3.500 19l1.300 1.300L7 18"/>') },
+  { k: 'pendencias', perm: 'pendencias', t: 'Pendências e Pra hoje', d: 'Tarefas da equipe e o roteiro dos doadores do dia', ic: svgIc('<path d="M9 5h10M9 12h10M9 19h10"/><path d="M3.500 5l1.300 1.300L7 4M3.500 12l1.300 1.300L7 11M3.500 19l1.300 1.300L7 18"/>') },
   { k: 'auditoria', perm: 'auditoria', t: 'Histórico de alterações', d: 'Quem criou, alterou ou apagou cada coisa, e quando', ic: svgIc('<circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/><path d="M3.500 4.500v3.500H7"/>') },
   { k: 'relatorios', perm: 'relatorios', t: 'Relatórios', d: 'Doações, doadores ativos e tipos sanguíneos, em planilha ou PDF', ic: svgIc('<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 17v-3M12 17v-6M15 17v-4"/>') },
   { k: 'lixeira', perm: 'admin', t: 'Lixeira', d: 'Tudo o que foi apagado nos últimos 30 dias, com quem apagou; restaurar com um toque', ic: svgIc('<path d="M4.5 6.5h15M9.5 6.5V4.8c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3v1.7M6.3 6.5l.9 12.6c.1 1 .9 1.4 1.7 1.4h6.2c.8 0 1.6-.4 1.7-1.4l.9-12.6"/><path d="M9.6 14.6a2.6 2.6 0 1 0 .9-2.4M9.4 10.9v1.6h1.6"/>') },
@@ -5865,7 +5871,7 @@ async function receptorDoPedido(atId, chave) {
 async function telaPendencias(filtro) {
   E.livro = null; fecharFolha(); E.pdFiltro = filtro || E.pdFiltro || 'minhas';
   carregando('Carregando as pendências');
-  let R; try { R = await api('pendenciasListar', E.sessao); } catch (e) { toast(e.message, 8000); return telaHome(); }
+  let R; try { [R] = await Promise.all([api('pendenciasListar', E.sessao), carregarPH()]); } catch (e) { toast(e.message, 8000); return telaHome(); }
   E.pd = R; E.d.pendencias = R.lista.filter(p => p.paraId === E.u.id && !p.feitoEm).length;
   pintarPendencias();
 }
@@ -5878,9 +5884,10 @@ function pintarPendencias() {
   const chip = (v, t) => '<button class="filtro' + (f === v ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + v + '">' + t + ' <b>' + grupos[v].length + '</b></button>';
   const porPessoa = {}; if (adm) ab.forEach(p => { (porPessoa[p.paraNome] = porPessoa[p.paraNome] || { n: 0, at: 0, id: p.paraId }).n++; if (p.prazo && p.prazo < h) porPessoa[p.paraNome].at++; });
   raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
-    '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Pendências</b></div><button class="pill escura" data-acao="pd-nova">+ Nova</button></header>' +
-    '<p class="nota">Tarefas passadas de uma pessoa para outra, com prazo. Cada um vê as suas e as que criou. O administrador vê todas.</p>' +
-    (adm && Object.keys(porPessoa).length ? '<div class="pd-eq">' + Object.keys(porPessoa).sort().map(n => '<button type="button" class="ci-k' + (f === 'p:' + porPessoa[n].id ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + (f === 'p:' + porPessoa[n].id ? 'todas' : 'p:' + porPessoa[n].id) + '" style="--c:' + (porPessoa[n].at ? '#A83D3D' : '#C49A6C') + '"><b>' + porPessoa[n].n + '</b><span>' + esc(n.split(' ')[0]) + '</span><small>' + (porPessoa[n].at ? porPessoa[n].at + (porPessoa[n].at === 1 ? ' atrasada' : ' atrasadas') : 'em dia') + '</small></button>').join('') + '</div>' : '') +
+    '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>' + (f === 'hoje' ? 'Pra hoje' : 'Pendências') + '</b></div><button class="pill escura" data-acao="pd-nova">+ Nova</button></header>' +
+    (f === 'hoje' ? '' : '<p class="nota">Tarefas passadas de uma pessoa para outra, com prazo. Cada um vê as suas e as que criou. O administrador vê todas.</p>') +
+    (adm || podeHoje() ? '<div class="pd-eq">' + (podeHoje() ? (() => { const L = hojeLista(); return '<button type="button" class="ci-k hj' + (f === 'hoje' ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + (f === 'hoje' ? 'minhas' : 'hoje') + '" style="--c:#5F130F"><b>' + L.length + '</b><span>Pra hoje</span><small>' + (L.length ? L.length === 1 ? 'doador' : 'doadores' : 'nada agendado') + '</small></button>'; })() : '') + (adm ? Object.keys(porPessoa).sort().map(n => '<button type="button" class="ci-k' + (f === 'p:' + porPessoa[n].id ? ' on' : '') + '" data-acao="pd-filtro" data-v="' + (f === 'p:' + porPessoa[n].id ? 'todas' : 'p:' + porPessoa[n].id) + '" style="--c:' + (porPessoa[n].at ? '#A83D3D' : '#C49A6C') + '"><b>' + porPessoa[n].n + '</b><span>' + esc(n.split(' ')[0]) + '</span><small>' + (porPessoa[n].at ? porPessoa[n].at + (porPessoa[n].at === 1 ? ' atrasada' : ' atrasadas') : 'em dia') + '</small></button>').join('') : '') + '</div>' : '') +
+    (f === 'hoje' ? praHojeHtml() + '</div></main>' : '') + (f === 'hoje' ? '' :
     '<div class="filtros">' + chip('minhas', 'Para mim') + chip('criadas', 'Que eu passei') + (adm ? chip('todas', 'Todas') : '') + chip('feitas', 'Concluídas') + '</div>' +
     (pFil ? '<p class="nota" style="margin:0 0 8px">Pendências abertas de <b>' + esc(((E.pd.equipe || []).find(u => u.id === pFil) || {}).nome || (ab.find(p => p.paraId === pFil) || {}).paraNome || '') + '</b>. Toque no card de novo para ver todas.</p>' : '') +
     '<section class="cartao">' + (l.length ? l.map(p => { const an = p.animalId ? animalDe(p.animalId) : null, atr = !p.feitoEm && p.prazo && p.prazo < h, hj = !p.feitoEm && p.prazo === h, meu = adm || p.criadoPorId === E.u.id;
@@ -5889,7 +5896,75 @@ function pintarPendencias() {
         '<small>' + esc([p.paraId === E.u.id ? 'Para mim' : 'Para ' + p.paraNome, p.criadoPorId === E.u.id ? 'criada por mim' : 'de ' + p.criadoPor, 'em ' + br(String(p.criadoEm).slice(0, 10))].join(' · ')) + '</small>' +
         '<span class="pd-ms">' + (p.prazo ? '<em class="pd-pz' + (atr ? ' atr' : hj ? ' hj' : '') + '">' + (atr ? 'Atrasada, prazo ' : hj ? 'Vence hoje, ' : 'Prazo ') + br(p.prazo) + '</em>' : '') + (an ? '<button class="pd-an" data-acao="abrir-animal" data-id="' + an.id + '">' + esc(an.nome) + ' ›</button>' : '') + (p.feitoEm ? '<em class="pd-pz">Concluída por ' + esc(p.feitoPor) + ' em ' + br(String(p.feitoEm).slice(0, 10)) + '</em>' : '') + '</span></div>' +
         (meu || podePri ? '<div class="pd-bt">' + (podePri ? '<button class="pd-pbt' + (p.prioridade ? ' on' : '') + '" data-acao="pd-prioridade" data-id="' + p.id + '">' + (p.prioridade ? 'Tirar prioridade' : '▲ Prioridade') + '</button>' : '') + (meu && !p.feitoEm ? '<button data-acao="pd-editar" data-id="' + p.id + '">Editar</button>' : '') + (meu ? '<button data-acao="pd-apagar" data-id="' + p.id + '">Apagar</button>' : '') + '</div>' : '') + '</div>'; }).join('')
-      : '<p class="vazio-p">' + (pFil ? 'Nenhuma pendência aberta para esta pessoa.' : f === 'minhas' ? 'Nenhuma pendência para você.' : f === 'feitas' ? 'Nenhuma pendência concluída nos últimos 30 dias.' : 'Nenhuma pendência aqui.') + '</p>') + '</section></div></main>';
+      : '<p class="vazio-p">' + (pFil ? 'Nenhuma pendência aberta para esta pessoa.' : f === 'minhas' ? 'Nenhuma pendência para você.' : f === 'feitas' ? 'Nenhuma pendência concluída nos últimos 30 dias.' : 'Nenhuma pendência aqui.') + '</p>') + '</section></div></main>');
+}
+/* ── Pra hoje: roteiro do dia dos doadores (agenda, ficha, Citopet, repouso de 2 h e produção) ── */
+const podeHoje = () => pode('admin') || pode('fichas') || pode('producao') || pode('estoque');
+E.ph = { citopet: {}, lib: {}, ped: {}, souRT: false, rtNome: '' };
+function carregarPH() { return podeHoje() ? api('estHojeDados', E.sessao).then(r => { E.ph = r || E.ph; }).catch(() => {}) : Promise.resolve(); }
+// doadores do dia: agendados para doação hoje e quem já tem ficha ou coleta de hoje (mesmo sem agendamento)
+function hojeLista() {
+  const h = hoje(), M = new Map(), add = (aid, o) => { if (!aid || !animalDe(aid)) return; M.set(aid, Object.assign(M.get(aid) || { aid }, o)); };
+  ((E.d && E.d.agenda) || []).filter(a => a.data === h && a.tipo === 'doacao' && a.status !== 'cancelado').forEach(a => add(a.animalId, { ag: a }));
+  andamentoDe().filter(f => f.data === h || String(f.atualizadoEm || '').slice(0, 10) === h).forEach(f => add(f.animalId, { rasc: f }));
+  ((E.d && E.d.registros) || []).filter(r => r.tipo === 'doacao' && r.data === h && r.excluido !== '1').forEach(r => add(r.animalId, { reg: r }));
+  return [...M.values()].sort((a, b) => String((a.ag || {}).hora || '99').localeCompare(String((b.ag || {}).hora || '99')) || String(animalDe(a.aid).nome).localeCompare(animalDe(b.aid).nome));
+}
+// coleta de hoje: número, fim da triagem e repouso de 2 h (contado do fim da triagem; sem ele, da assinatura da ficha)
+function hojeColeta(x) {
+  if (!x.reg) return null;
+  const d = x.reg.dados || {}, f = d.ficha || {}, numero = String(d.numero || f.numero || '').replace(/\s/g, ''), nc = !!(d.naoColetado || f.tempo === 'NC' || f.clinico);
+  let ref = null; if (/^\d{1,2}:\d{2}$/.test(f.fim || '')) ref = new Date(x.reg.data + 'T' + f.fim.padStart(5, '0') + ':00'); else if (x.reg.assinadoEm) ref = new Date(x.reg.assinadoEm);
+  const ate = ref && !isNaN(ref) ? new Date(ref.getTime() + 2 * 36e5) : null;
+  return { numero, nc, ref, ate, falta: ate ? ate.getTime() - Date.now() : 0, lib: E.ph.lib[numero] || null, ped: E.ph.ped[numero] || null };
+}
+const hhmm = t => p2(t.getHours()) + ':' + p2(t.getMinutes());
+function hojeEtapas(x) {
+  const c = hojeColeta(x), cit = (E.ph.citopet[hoje()] || {})[x.aid], e = [];
+  e.push(c ? (c.nc ? ['ne', 'Sem coleta'] : ['ok', 'Coleta ' + c.numero]) : x.rasc ? ['av', 'Ficha em andamento'] : ['ne', 'Ficha não iniciada']);
+  e.push(cit === 'sim' ? ['ok', 'Vai para o Citopet'] : cit === 'nao' ? ['ne', 'Sem Citopet'] : ['av', 'Citopet?']);
+  if (c && !c.nc) e.push(c.lib ? ['ok', 'Liberada antes por ' + c.lib.por.split(' ')[0]] : !c.ate ? ['ne', 'Repouso sem horário'] : c.falta > 0 ? [c.ped ? 'al' : 'av', (c.ped ? 'Pedido de liberação · ' : 'Repouso até ') + hhmm(c.ate)] : ['ok', 'Liberada para produção']);
+  return e;
+}
+function praHojeHtml() {
+  const L = hojeLista();
+  return '<p class="nota" style="margin:0 0 8px">Doadores de hoje, na ordem da agenda. Toque no doador para ver o resumo e seguir para a ficha e a produção.</p><section class="cartao">' +
+    (L.length ? L.map(x => { const an = animalDe(x.aid), t = tipoTxt(an);
+      return '<button type="button" class="hj-i" data-acao="hj-abrir" data-id="' + x.aid + '"><span class="hj-h">' + (x.ag && x.ag.hora ? esc(x.ag.hora) : '<small>sem<br>agenda</small>') + '</span><span class="hj-c"><b>' + esc(an.nome) + (t ? ' <small>' + esc(t) + '</small>' : '') + '</b><span class="hj-e">' +
+        hojeEtapas(x).map(([k, v]) => '<em class="hj-' + k + '">' + esc(v) + '</em>').join('') + '</span></span><span class="hj-v">›</span></button>'; }).join('')
+      : '<p class="vazio-p">Nenhuma doação agendada para hoje e nenhuma ficha de hoje ainda.</p>') + '</section>';
+}
+async function abrirHojeAnimal(aid, passo) {
+  const x = hojeLista().find(y => y.aid === aid) || { aid }, an = animalDe(aid); if (!an) return;
+  const c = hojeColeta(x), cit = (E.ph.citopet[hoje()] || {})[aid], rp = respDe(an) || {};
+  // pergunta do Citopet antes de abrir a ficha
+  if (passo === 'citopet') return abrirFolha('Ficha de doação de ' + an.nome, '<p class="hj-q">Vai para o Citopet hoje?</p><p class="nota">Quem vai entra sozinho na requisição do dia. Quem não vai fica fora.</p><div class="mini-bts"><button class="btn" data-acao="hj-cit-ficha" data-id="' + aid + '" data-v="sim">Sim, vai</button><button class="btn sec2" data-acao="hj-cit-ficha" data-id="' + aid + '" data-v="nao">Não vai</button></div>');
+  const pend = ((E.pd && E.pd.lista) || []).filter(p => p.animalId === aid && !p.feitoEm);
+  const ant = ((E.d && E.d.registros) || []).filter(r => r.tipo === 'doacao' && r.animalId === aid && r.excluido !== '1' && r.data < hoje()).sort((a, b) => b.data.localeCompare(a.data))[0];
+  const fa = ant ? ((ant.dados || {}).ficha || {}) : {}, obs = ant ? [['Observações iniciais', fa.obsIni], ['Observações da doação', fa.obsDoa], ['Demais observações', fa.obsDemais]].filter(o => o[1]) : [];
+  let rev = (E.rev || {})[aid]; if (rev === undefined && pode('admin')) { try { rev = (await api('revisaoListar', E.sessao) || {})[aid]; } catch (_) { rev = null; } }
+  const ex = examesRecentes(aid);
+  const linha = (r, v) => v ? '<div class="hj-l"><span>' + r + '</span><b>' + v + '</b></div>' : '';
+  const cab = linha('Horário', x.ag && x.ag.hora ? esc(x.ag.hora) + (x.ag.obs ? ' <small>· ' + esc(x.ag.obs) + '</small>' : '') : 'Sem agendamento') + linha('Tipo sanguíneo', esc(tipoTxt(an))) + linha('Raça', esc(an.raca)) +
+    linha('Idade', an.nascimento ? esc(idade(an.nascimento)) : '') + linha('Último peso', pesoAtual(aid) ? esc(pesoAtual(aid)) + ' kg' : '') + linha('Responsável', esc(rp.nome || '')) + linha('Última doação', ant ? br(ant.data) + ((ant.dados || {}).numero ? ' · nº ' + esc(ant.dados.numero) : '') : 'Primeira doação');
+  const citH = '<div class="hj-s"><h3>Citopet hoje</h3><div class="opc-hj">' + [['sim', 'Vai'], ['nao', 'Não vai']].map(([v, t]) => '<button type="button" data-acao="hj-cit" data-id="' + aid + '" data-v="' + (cit === v ? '' : v) + '" aria-pressed="' + (cit === v) + '">' + t + '</button>').join('') + '</div></div>';
+  let prodH = '';
+  if (c && !c.nc) {
+    prodH = '<div class="hj-s"><h3>Produção da coleta ' + esc(c.numero) + '</h3>' + (c.lib ? '<p class="nota">Liberada antes das 2 h por ' + esc(c.lib.por) + (c.lib.motivo ? '. Motivo: ' + esc(c.lib.motivo) : '') + '.</p>' : !c.ate ? '<p class="nota">A ficha não tem o fim da triagem. Confira o horário da coleta antes de centrifugar.</p>' : c.falta > 0 ? '<p class="nota">Repouso mínimo de 2 h. Coleta às ' + hhmm(c.ref) + ', centrifugação liberada às <b>' + hhmm(c.ate) + '</b>.' + (c.ped ? ' Pedido de liberação de ' + esc(c.ped.por) + ': ' + esc(c.ped.motivo) + '.' : '') + '</p>' +
+      (E.ph.souRT ? '<div class="mini-bts"><input id="hjMot" placeholder="Motivo (opcional)" value="' + esc(c.ped ? c.ped.motivo : '') + '" style="flex:1;min-width:180px"><button class="btn" data-acao="hj-liberar" data-id="' + aid + '" data-v="' + esc(c.numero) + '">Liberar agora</button></div>'
+        : c.ped ? '' : '<div class="mini-bts"><input id="hjMot" placeholder="Motivo para liberar antes" style="flex:1;min-width:180px"><button class="btn sec2" data-acao="hj-pedir" data-id="' + aid + '" data-v="' + esc(c.numero) + '">Pedir liberação a ' + esc((E.ph.rtNome || 'responsável técnico').split(' ')[0]) + '</button></div>') : '<p class="nota">Repouso de 2 h completo. Pode seguir para a produção.</p>') +
+      ((pode('producao') || pode('estoque') || pode('admin')) ? '<div class="mini-bts"><button class="btn" data-acao="hj-producao">Abrir a produção</button></div>' : '') + '</div>';
+  }
+  const fichaH = c ? '' : '<div class="mini-bts"><button class="btn" data-acao="hj-ficha" data-id="' + aid + '">' + (x.rasc ? 'Continuar a ficha de doação' : 'Iniciar a ficha de doação') + '</button></div>';
+  abrirFolha(an.nome + (x.ag && x.ag.hora ? ' · ' + x.ag.hora : ''), '<div class="hj-r">' + cab + '</div>' + fichaH + citH + prodH +
+    (pend.length ? '<div class="hj-s"><h3>Pendências abertas</h3>' + pend.map(p => '<p class="hj-p"><b>' + esc(p.texto) + '</b><small>' + esc('para ' + p.paraNome + (p.prazo ? ' · prazo ' + br(p.prazo) : '')) + '</small></p>').join('') + '</div>' : '') +
+    (rev && rev.nota ? '<div class="hj-s"><h3>Revisão do cadastro</h3><p class="hj-p"><b>' + esc(rev.nota) + '</b><small>' + esc(rev.por || '') + '</small></p></div>' : '') +
+    (obs.length ? '<div class="hj-s"><h3>Observações da última coleta (' + br(ant.data) + ')</h3>' + obs.map(o => '<p class="hj-p"><small>' + o[0] + '</small><b>' + esc(o[1]) + '</b></p>').join('') + '</div>' : '') +
+    (ex.length ? '<div class="hj-s"><h3>Exames para avaliar</h3>' + cExames(ex) + '</div>' : ''));
+}
+async function hojeCitopet(aid, v) {
+  try { E.ph.citopet = await api('estHojeCitopet', E.sessao, hoje(), aid, v || ''); } catch (e) { toast(e.message, 5000); return false; }
+  return true;
 }
 function formPendencia(p, aid) {
   p = p || { paraId: E.u.id, animalId: aid || '' };
@@ -7288,7 +7363,7 @@ async function abrirModulo(nome, aid, rid) {
   if (nome === 'estoque' || nome === 'producao') {
     // fichas de doação com coleta: código, doador, volume de ST, lote e validade da bolsa, segmento
     E.ponte.doacoes = E.d.registros.filter(r => r.tipo === 'doacao' && r.excluido !== '1').map(r => { const d = r.dados || {}, f = d.ficha || {}, a = animalDe(r.animalId) || {};
-      return { numero: String(d.numero || f.numero || '').trim(), data: r.data, animalId: r.animalId, nome: a.nome || '', volume: f.volume || '', lote: f.lote || '', validade: f.validade || '', seguimento: f.seguimento || '', naoColetado: !!d.naoColetado }; });
+      return { numero: String(d.numero || f.numero || '').trim(), data: r.data, animalId: r.animalId, nome: a.nome || '', volume: f.volume || '', lote: f.lote || '', validade: f.validade || '', seguimento: f.seguimento || '', naoColetado: !!d.naoColetado, fim: f.fim || '', assinadoEm: r.assinadoEm || '' }; });
     E.ponte.animais = E.d.animais.map(a => ({ id: a.id, nome: a.nome, especie: a.especie, tipoSanguineo: a.tipoSanguineo, dal: a.dal || '' }));
     E.ponte.usuario = E.u.nome; E.ponte.admin = pode('admin');
   }
@@ -8597,6 +8672,13 @@ const ACOES = {
   'link-temp': () => telaLinkTemp(E.animal),
   'auditoria-animal': () => telaAuditoria(E.animal),
   'pd-filtro': b => { E.pdFiltro = b.dataset.v; pintarPendencias(); },
+  'hj-abrir': b => abrirHojeAnimal(b.dataset.id),
+  'hj-cit': async b => { if (await hojeCitopet(b.dataset.id, b.dataset.v)) { pintarPendencias(); abrirHojeAnimal(b.dataset.id); } },
+  'hj-ficha': b => { const aid = b.dataset.id; if (!(E.ph.citopet[hoje()] || {})[aid]) return abrirHojeAnimal(aid, 'citopet'); fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', aid); },
+  'hj-cit-ficha': async b => { const aid = b.dataset.id; if (!(await hojeCitopet(aid, b.dataset.v))) return; fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', aid); },
+  'hj-producao': () => { fecharFolha(); E.modulo = 'producao'; abrirModulo('producao'); },
+  'hj-pedir': b => salvando(b, async () => { const m = vl('hjMot'); if (m.length < 3) throw new Error('Explique o motivo do pedido.'); const r = await api('estLiberacaoPedir', E.sessao, b.dataset.v, m, b.dataset.id); E.ph.lib = r.lib; E.ph.ped = r.ped; toast('Pedido enviado.'); pintarPendencias(); abrirHojeAnimal(b.dataset.id); }),
+  'hj-liberar': b => salvando(b, async () => { const r = await api('estLiberar', E.sessao, b.dataset.v, vl('hjMot')); E.ph.lib = r.lib; E.ph.ped = r.ped; toast('Produção liberada.'); pintarPendencias(); abrirHojeAnimal(b.dataset.id); }),
   'pd-nova': () => formPendencia(),
   'rec-novo': () => formReceptor(null),
   'rec-sug': b => formReceptor(null, juntarRec(E.recSug[+b.dataset.v] || [])),
