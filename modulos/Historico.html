@@ -1268,9 +1268,9 @@ function paginas(D, a) {
   ]);
 }
 function numericas(D, pags, ox, aberta) {
-  const H = D.params.filter((p) => p.s === "H"), B = D.params.filter((p) => p.s === "B");
+  const H = D.params.filter((p) => p.s === "H" && !p.zerado), B = D.params.filter((p) => p.s === "B" && !p.zerado);
   const temPPT = H.some((p) => p.k === "ppt");
-  const Cg = D.params.filter((p) => p.s === "C");
+  const Cg = D.params.filter((p) => p.s === "C" && !p.zerado);
   const grupos = [["Hemograma", temPPT ? "Eritrograma, leucograma, plaquetas e proteína plasmática total" : "Eritrograma, leucograma e plaquetas", H],
     ["Bioquímica sérica", "Função hepática, função renal e proteínas séricas", B], ["Coagulação", "Perfil de coagulação", Cg]];
   for (const [gi, [tit, sub, lista]] of grupos.entries()) {
@@ -1923,7 +1923,7 @@ function paginasMobile(D, a) {
   // ---------- parâmetros: gráfico e tabela vertical (uma data por linha) ----------
   const grupos = [["Hemograma", "H"], ["Bioquímica sérica", "B"], ["Coagulação", "C"]];
   for (const [tit, s] of grupos) {
-    const lista = D.params.filter((p) => p.s === s);
+    const lista = D.params.filter((p) => p.s === s && !p.zerado);
     if (!lista.length) continue;
     nova(); titSecao(tit, "");
     lista.forEach((p0) => {
@@ -2400,7 +2400,7 @@ function gerarDocx(D, a, anexo = null) {
     if (MAPA.hemograma && MAPA.hemograma === MAPA.tipagem) corpo.push(espaco(16)); else quebra();
   }
   if (temNum) {
-  const H = D.params.filter((p) => p.s === "H"), B = D.params.filter((p) => p.s === "B"), Cg = D.params.filter((p) => p.s === "C"), porPag = D.datas.length <= 16 ? 2 : 1;
+  const H = D.params.filter((p) => p.s === "H" && !p.zerado), B = D.params.filter((p) => p.s === "B" && !p.zerado), Cg = D.params.filter((p) => p.s === "C" && !p.zerado), porPag = D.datas.length <= 16 ? 2 : 1;
   const temPPT = H.some((p) => p.k === "ppt");
   [["Hemograma", temPPT ? "Eritrograma, leucograma, plaquetas e proteína plasmática total" : "Eritrograma, leucograma e plaquetas", H],
    ["Bioquímica sérica", "Função hepática, função renal e proteínas séricas", B], ["Coagulação", "Perfil de coagulação", Cg]].forEach(([t, s, lista]) => {
@@ -3034,9 +3034,10 @@ function montarDados() {
     const pv = datas.map((d) => (P[d] && P[d].valores[p.k]) || null);
     const sv = datas.map((d) => (S[d] && estado.idexx[p.k] && S[d].valores[p.k]) || null);
     const temCVH = ["ht", "hb", "ppt"].includes(p.k) && medidas.some((m) => m[p.k] != null);
-    // linha sem nenhum valor (vazio ou zero em todos os exames, como basófilos e bastonetes) não entra no histórico
+    if (!pv.some(Boolean) && !sv.some(Boolean) && !temCVH) continue;
+    // sem nenhum valor (zero ou vazio em todos os exames, como basófilos e bastonetes): fica só na tabela geral, sem gráfico
     const temValor = (o) => !!o && (o.v == null || Number.isNaN(o.v) ? !!String(o.txt || "").trim() && !/^[-–—\s0.,]*$/.test(String(o.txt)) : o.v !== 0);
-    if (!pv.some(temValor) && !sv.some(temValor) && !temCVH) continue;
+    const zerado = !pv.some(temValor) && !sv.some(temValor) && !temCVH;
     const comRef = [...prim].reverse().find((e) => e.refs[p.k]);
     let ref = comRef ? comRef.refs[p.k] : null;
     if (!ref && labP === "Citopet" && norm(estado.animal.especie).startsWith("canin")) ref = REF_PADRAO[p.k];
@@ -3082,7 +3083,7 @@ function montarDados() {
       if (!plasmaCVH.some(Boolean)) plasmaCVH = null;
     }
     if (!pv.some(Boolean) && !sv.some(Boolean) && !(tv && tv.some(Boolean))) continue;
-    params.push({ ...p, nome, pv, sv, ref, refSec, pc, refPct, agreg, amostraLinha, amostraRot, notas, tv, nomeTer, plasmaCVH });
+    params.push({ ...p, nome, pv, sv, ref, refSec, pc, refPct, agreg, amostraLinha, amostraRot, notas, tv, nomeTer, plasmaCVH, zerado });
   }
   // exames complementares (PCR, sorologias e testes rápidos), com qualquer laboratório
   const qual = inc.filter((e) => (e.quali || []).length).sort(ord);
