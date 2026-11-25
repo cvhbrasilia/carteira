@@ -1215,7 +1215,13 @@ function extrairOnda(img) {
   if (!best || best.s < 200) return null;
   const { y0, y1 } = best;
   // em cada coluna, os trechos vermelhos (falhas de até 2 pixels são ignoradas)
-  const runs = []; for (let x = 0; x < W; x++) { const R = []; let a = -1, ult = -9; for (let y = y0; y <= y1; y++) if (M[y * W + x]) { if (a < 0 || y - ult > Math.max(3, Math.round(k * 1.5))) { if (a >= 0) R.push([a, ult]); a = y; } ult = y; } if (a >= 0) R.push([a, ult]); runs.push(R.filter((r) => r[1] - r[0] >= 1)); }
+  // em cada coluna, os trechos vermelhos; o traço do monitor pode ter o meio mais claro (brilho): primeiro mede a borda,
+  // depois junta as duas bordas num trecho só, para seguir o meio da linha e não uma das bordas
+  const trechos = (tol) => { const out = []; for (let x = 0; x < W; x++) { const R = []; let a = -1, ult = -9; for (let y = y0; y <= y1; y++) if (M[y * W + x]) { if (a < 0 || y - ult > tol) { if (a >= 0) R.push([a, ult]); a = y; } ult = y; } if (a >= 0) R.push([a, ult]); out.push(R.filter((r) => r[1] - r[0] >= 1)); } return out; };
+  const borda = (() => { const d = trechos(2).flat().map(([a, b]) => b - a).sort((p, q) => p - q); return d.length ? d[Math.floor(d.length * 0.35)] : 3; })();
+  const runs = trechos(Math.max(3, Math.round(borda * 0.9)));
+  // luminância do fundo da tela (mediana da faixa): o traço é mais claro que o fundo, inclusive o meio claro da linha
+  const fundoLum = (() => { const v = []; for (let y = y0; y <= y1; y += 3) for (let x = 0; x < W; x += 5) { const i4 = (y * W + x) * 4; v.push((px[i4] * 2 + px[i4 + 1] + px[i4 + 2]) / 4); } v.sort((p, q) => p - q); return (v[Math.floor(v.length * 0.5)] || 40) + 12; })();
   const com = runs.map((R) => R.length > 0);
   let x0 = com.indexOf(true), x1 = W - 1 - com.slice().reverse().indexOf(true);
   { let rr = [], s = -1, vaz = 0; for (let x = 0; x < W; x++) { if (com[x]) { if (s < 0) s = x; vaz = 0; } else if (s >= 0 && ++vaz > W * 0.04) { rr.push([s, x - vaz]); s = -1; vaz = 0; } } if (s >= 0) rr.push([s, W - 1]);
@@ -1229,13 +1235,14 @@ function extrairOnda(img) {
     const c = prev == null ? R.reduce((m, r) => (r[1] - r[0] > m[1] - m[0] ? r : m)) : R.reduce((m, r) => { const d = (q) => (prev < q[0] ? q[0] - prev : prev > q[1] ? prev - q[1] : 0); return d(r) < d(m) ? r : m; });
     esc.push(c); prev = (c[0] + c[1]) / 2;
   }
-  const longo = (c) => c && c[1] - c[0] > esp * 2.2;
+  const longo = (c) => c && c[1] - c[0] > esp * 3.5;
   // traço normal: o centro do traço em cada coluna. Subida ou descida (colunas seguidas com o traço muito comprido):
   // vira um risco só, de uma ponta à outra, no sentido em que a onda vai; pico estreito sobe e desce
   const pts = []; let ult = null;
   for (let i = 0; i < esc.length; i++) {
     const c = esc[i]; if (!c) continue; const x = x0 + i;
-    if (!longo(c)) { const m = (c[0] + c[1]) / 2; pts.push([x, m]); ult = m; continue; }
+    // centro do traço pela intensidade do vermelho (mais preciso que o meio do trecho): guarda a dobrinha da onda
+    if (!longo(c)) { let sw = 0, sy = 0; const e2 = Math.round(esp * 0.8); for (let y = Math.max(y0, c[0] - e2); y <= Math.min(y1, c[1] + e2); y++) { const i4 = (y * W + x) * 4, lum = (px[i4] * 2 + px[i4 + 1] + px[i4 + 2]) / 4, w = Math.max(0, lum - fundoLum) + Math.max(0, S[y * W + x] - lim * 0.3); sw += w * w; sy += w * w * y; } const m = sw ? sy / sw : (c[0] + c[1]) / 2; pts.push([x, m]); ult = m; continue; }
     let j = i; while (j + 1 < esc.length && longo(esc[j + 1])) j++;
     const bl = esc.slice(i, j + 1), top = Math.min(...bl.map((q) => q[0])) + esp / 2, bot = Math.max(...bl.map((q) => q[1])) - esp / 2;
     const depois = esc.slice(j + 1).find(Boolean), yd = depois ? (depois[0] + depois[1]) / 2 : null, ya = ult != null ? ult : yd != null ? yd : (top + bot) / 2;
@@ -1250,7 +1257,7 @@ function extrairOnda(img) {
     const iv = reta(ext(1)), ip = reta(ext(-1)), inc = iv != null && ip != null ? (iv + ip) / 2 : iv != null ? iv : ip;
     if (inc != null && Math.abs(inc) > 0.01 && Math.abs(inc) < 0.5) pts.forEach((p2) => { p2[1] -= inc * (p2[0] - x0); }); }
   // traço suave como no monitor: média ponderada com os vizinhos próximos (sem achatar subidas)
-  { const sig = Math.max(1.5, esp * 0.3), ys = pts.map((p2) => p2[1]);
+  { const sig = Math.max(1, esp * 0.06), ys = pts.map((p2) => p2[1]);
     pts.forEach((p2, i) => { let s2 = 0, w2 = 0; for (let j = Math.max(0, i - 12); j <= Math.min(pts.length - 1, i + 12); j++) { const dx = pts[j][0] - p2[0]; if (Math.abs(dx) > sig * 3) continue; const w = Math.exp(-(dx * dx) / (2 * sig * sig)); s2 += ys[j] * w; w2 += w; } if (w2) p2[1] = s2 / w2; }); }
   const yt = Math.min(...pts.map((q) => q[1])), yb = Math.max(...pts.map((q) => q[1]));
   const N = ([x, y]) => [Math.round((x - x0) / Math.max(1, x1 - x0) * 1000), Math.round((y - yt) / Math.max(1, yb - yt) * 1000)];
@@ -1259,7 +1266,7 @@ function extrairOnda(img) {
   const dp = (P, e) => { if (P.length < 3) return P; let dm = 0, im = 0; const [ax, ay] = P[0], [bx, by] = P[P.length - 1], L = Math.hypot(bx - ax, by - ay) || 1;
     for (let i = 1; i < P.length - 1; i++) { const d = Math.abs((by - ay) * P[i][0] - (bx - ax) * P[i][1] + bx * ay - by * ax) / L; if (d > dm) { dm = d; im = i; } }
     return dm > e ? dp(P.slice(0, im + 1), e).slice(0, -1).concat(dp(P.slice(im), e)) : [P[0], P[P.length - 1]]; };
-  const fin = partes.filter((q) => q.length > 2).map((q) => dp(q.map(N), 0.8));
+  const fin = partes.filter((q) => q.length > 2).map((q) => dp(q.map(N), 0.5));
   return { tracado: fin.map((q) => q.map((xy) => xy.join(",")).join(" ")).join("|"), proporcao: Math.round((x1 - x0) / Math.max(1, yb - yt) * 100) / 100 };
 }
 function ondaSvg(o, cor, fundo) {
