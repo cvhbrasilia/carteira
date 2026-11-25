@@ -1748,7 +1748,11 @@ const CIT_MAPA = [
   ["^(Gama|GGT)", "GGT", "Bioquímica", "U/L", 1], ["^Colesterol", "Colesterol", "Bioquímica", "mg/dL", 1], ["^Triglic", "Triglicerídeos", "Bioquímica", "mg/dL", 1],
   ["^F[óo]sforo", "Fósforo", "Bioquímica", "mg/dL", 1], ["^C[áa]lcio", "Cálcio", "Bioquímica", "mg/dL", 1], ["^Pot[áa]ssio", "Potássio", "Eletrólitos", "mmol/L", 1], ["^S[óo]dio", "Sódio", "Eletrólitos", "mmol/L", 1],
 ].map(([re, nome, grupo, un, f]) => ({ re: new RegExp(re, "i"), nome, grupo, un, f }));
-const nBr = (s) => { s = String(s || "").trim(); return s === "" ? null : parseFloat(s.replace(/\./g, "").replace(",", ".")); };   // 7.920.000 · 57,83 · 1165
+// número do laudo: 7.920.000 e 13.300 (ponto de milhar), 57,83 (vírgula decimal) e também 17.6 (ponto decimal, que alguns laudos usam)
+const nBr = (s) => { s = String(s || "").trim(); if (s === "") return null;
+  if (/,/.test(s)) return parseFloat(s.replace(/\./g, "").replace(",", "."));
+  if (/^\d{1,3}(\.\d{3})+$/.test(s)) return parseFloat(s.replace(/\./g, ""));
+  return parseFloat(s); };
 const RX_CIT = /^([A-Za-zÀ-ÿ/ ()]+?)\s*\.*\s*:\s*([<>]?)\s*(\d[\d.,]*)\s*([^\s\d(][^\s(]*)?(?:\s+(\d[\d,]*)\s*%)?\s*(?:\(\s*(\d[\d.,]*)\s*a\s*(\d[\d.,]*)\s*([^)\s]*))?/;
 const RX_CIT_OBS = /^([A-Za-zÀ-ÿ/ ]+?):\s*(\d[\d.,]*)\s*\(\s*Refer[êe]ncia:\s*(\d[\d.,]*)\s*a\s*(\d[\d.,]*)\s*([^)]*)\)/i;
 function lerCitopetLaudo(paginas) {
@@ -2192,6 +2196,8 @@ function aplicarLeitura(lidos) {
     if (c.chip && an.microchip && c.chip !== String(an.microchip).replace(/\D/g, "")) av.push("O microchip do PDF é diferente do cadastro.");
   }
   if (lidos.length > 1 && new Set(lidos.map((r) => r.data)).size > 1) av.push("Os PDFs escolhidos têm datas diferentes. Confira se são da mesma coleta.");
+  // valor muito fora da referência (10 vezes, por exemplo): quase sempre é ponto ou vírgula lido errado no PDF
+  linhas.forEach((l) => { if (l.v == null || l.rmax == null || !(l.rmax > 0)) return; if (l.v > l.rmax * 6 || (l.rmin > 0 && l.v < l.rmin / 6)) av.push(`Confira o valor de ${l.nome}: ${String(l.v).replace(".", ",")} ${l.un || ""} está muito fora da referência (${String(l.rmin).replace(".", ",")} a ${String(l.rmax).replace(".", ",")}). Pode ser ponto ou vírgula lido errado no PDF.`); });
   estado.avisos = av; estado.lido = true;
 }
 function aplicarTecsa(r, nomeArq) {
@@ -3555,7 +3561,7 @@ function montarForm0() {
       `<div class="cx"><h3>Resultado da IDEXX ou do Citopet</h3><p class="nota">Escolha o PDF que o VetLab Station gera (ProCyte, Catalyst e outros) ou o laudo do Citopet. Hemograma e bioquímica da mesma coleta podem entrar juntos, escolhendo os dois arquivos. No Citopet, o número da doação junto do nome do animal liga o laudo à coleta.</p>
         <button type="button" class="btn" data-a="pdf">${estado.lido ? "Trocar o PDF" : "Escolher o PDF da IDEXX ou do Citopet"}</button><input type="file" id="arq" accept="application/pdf" multiple hidden>
         <p class="st" id="stLer"></p>${estado.lido ? `<p class="nota">Lido: ${esc(estado.arquivos.join(", "))} · ${estado.linhas.length} resultados${estado.exame.doacao ? " · doação " + esc(estado.exame.doacao) : ""}.</p>` : ""}
-        ${estado.avisos.map((a) => `<p class="aviso">${esc(a)} Confira se o PDF é mesmo deste animal.</p>`).join("")}${caixaSugestao()}${caixaOutroPdf()}</div>` +
+        ${estado.avisos.map((a) => `<p class="aviso">${esc(a)}${/^Confira o valor/.test(a) ? "" : " Confira se o PDF é mesmo deste animal."}</p>`).join("")}${caixaSugestao()}${caixaOutroPdf()}</div>` +
       (!estado.lido ? "" : caixaExame() + caixaPaciente() +
       `<div class="cx"><h3>Resultados</h3><p class="nota">Valores lidos do PDF. Confira e corrija se precisar. Em vermelho, fora da referência.</p><div class="rcab"><span>Exame</span><span>Resultado</span><span></span><span>Referência</span></div>
         ${GRUPO_ORD.filter((g) => estado.linhas.some((l) => l.grupo === g)).map((g) => `<div class="rg">${esc(g)}</div>` + estado.linhas.filter((l) => l.grupo === g).map(linhaForm).join("")).join("")}</div>
