@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125220632">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125221053">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1052,7 +1052,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125220632';
+  var VERSAO = '20261125221053';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -3060,7 +3060,7 @@ function abrirPaginaCtn(titulo, html, montar) {
 }
 async function iniciarCarteirinha() {
   carregando('Abrindo a carteirinha');
-  let r; try { r = await api('carteirinhaPublica', E.ct); } catch (e) { return telaMsg('Carteirinha do doador', e.message); }
+  let r; try { r = await api('carteirinhaPublica', E.ct); } catch (e) { return /SUSPENSO/.test(e.message) ? telaSuspenso('') : telaMsg('Carteirinha do doador', e.message); }
   E.d = { animais: [r.animal], responsaveis: [], registros: [], responsavel: r.responsavel || {}, config: {} };
   abrirCarteirinha(r.animal.id);
 }
@@ -3551,6 +3551,7 @@ async function dadosNovos() {
   buscandoNovos = true;
   try {
     const d = noPainel ? await api('painelDados', E.sessao) : await api('carteiraPublica', E.token);
+    if (!noPainel && d && d.suspenso && !E.comoResp) return telaSuspenso((d.responsavel || {}).nome);
     const marca = x => JSON.stringify([x.registros, x.animais, x.responsaveis, x.agenda, x.exames]);
     if (!d || marca(d) === marca(E.d) || !podeRepintar()) return;
     const home = !!$('.mods'), livro = !!$('#livro'), aid = E.animal;
@@ -3564,6 +3565,7 @@ async function iniciarResponsavel() {
   carregando('Abrindo a carteira');
   try { E.d = await api('carteiraPublica', E.token); }
   catch (e) { return telaMsg('Não foi possível abrir', e.message); }
+  if (E.d.suspenso) return telaSuspenso((E.d.responsavel || {}).nome);
   if (!E.d.animais.length) return telaMsg('Carteira vazia', 'Ainda não há animais cadastrados neste link.');
   // link do e-mail de confirmação do cartão em papel: abre o animal na página de dados
   const cq = new URLSearchParams(location.search).get('cartao'), ca = cq && E.d.animais.find(a => a.id === cq);
@@ -3758,6 +3760,10 @@ async function pdfCarteira() {
   } catch (e) { m.remove(); st('Não foi possível gerar o PDF. ' + e.message); }
 }
 function carregando(m) { raiz.innerHTML = '<div class="carregando"><i></i><span>' + esc(m || 'Carregando') + '</span></div>'; }
+// acesso suspenso pelo CVH: o link abre só este aviso (os exames e documentos já recebidos continuam com o responsável)
+function telaSuspenso(nome) {
+  raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>Acesso encerrado</h1><p>' + (nome ? 'Olá, ' + esc(nome) + '. ' : '') + 'O acesso digital a esta carteira de saúde e ao cartão doador foi encerrado. Eles fazem parte dos benefícios do Clube do Doador do CVH, para quem segue participando das doações.</p><p>Os exames, as vacinas e os documentos que você já recebeu continuam sendo seus.</p><p>Para voltar ao Clube do Doador, fale com o CVH.</p><a class="btn" target="_blank" rel="noopener" href="https://wa.me/5561982372772" style="margin-top:12px">Falar com o CVH</a></div></main>';
+}
 function telaMsg(t, m) { raiz.innerHTML = '<main class="tela"><div class="tela-c login"><i class="lg-vert"></i><h1>' + esc(t) + '</h1><p>' + esc(m) + '</p></div></main>'; }
 
 /* ═════════════ painel: acesso ═════════════ */
@@ -7327,6 +7333,7 @@ async function verComoResponsavel(rid) {
   const r = E.d.responsaveis.find(x => x.id === rid); if (!r || !r.token) return toast('Este responsável ainda não tem link.');
   carregando('Abrindo como o responsável vê');
   let d; try { d = await api('carteiraPublica', r.token); } catch (e) { telaResp(rid); return toast(e.message, 4000); }
+  if (d.suspenso) { telaResp(rid); return toast('O acesso deste responsável está suspenso. Devolva o acesso para ver a carteira como ele vê.', 5000); }
   if (!d.animais.length) { telaResp(rid); return toast('Ainda não há animais neste link.'); }
   E.salvo = { d: E.d, token: E.token, resp: rid };
   E.modo = 'responsavel'; E.token = r.token; E.d = d; E.comoResp = true; E.previa = false;
@@ -7352,6 +7359,9 @@ function telaResp(id) {
     '<div class="link-box"><input id="link" readonly value="' + esc(link) + '" aria-label="Link da carteira"><button class="btn peq" data-acao="copiar-link">Copiar</button></div>' +
     '<div class="acoes">' + (r.telefone ? '<a class="btn sec2 peq" target="_blank" rel="noopener" data-libera="' + r.id + '" href="' + esc(linkWhats(r, ans, link)) + '">Enviar por WhatsApp</a>' : '') + '<button class="btn sec2 peq" data-acao="copiar-zap" data-libera="' + r.id + '" data-href="' + esc(linkWhats(r, ans, link)) + '">Copiar mensagem</button>' + '<button class="btn sec2 peq" data-acao="como-resp">Abrir como responsável</button><button class="btn sec2 peq" data-acao="trocar-link">Trocar o link</button></div>' +
     '<p class="nota">Use Trocar o link se o link foi parar com quem não deve. O link antigo para de abrir na hora, e o responsável precisa receber o link novo.</p>' +
+    (() => { let a = null; try { a = r.acessoSuspenso ? JSON.parse(r.acessoSuspenso) : null; } catch (_) { a = r.acessoSuspenso ? {} : null; }
+      return a ? '<div class="av-i" style="margin-top:10px;border-color:#A83D3D"><b style="color:#A83D3D">Acesso suspenso</b><small>Desde ' + esc(brHora(a.em || '')) + (a.por ? ', por ' + esc(a.por) : '') + (a.motivo ? '. Motivo: ' + esc(a.motivo) : '') + '. O link e o cartão doador abrem só o aviso de acesso encerrado, e os e-mails automáticos param.</small><button class="btn sec2 peq" data-acao="resp-acesso" data-v="0" style="margin-top:6px">Devolver o acesso</button></div>'
+        : '<div style="margin-top:10px"><button class="btn sec2 peq" data-acao="resp-acesso" data-v="1">Suspender o acesso (deixou o Clube do Doador)</button></div>'; })() +
     (r.emailsLiberados ? '<div class="av-i ok" style="margin-top:10px"><b>E-mails automáticos liberados</b><small>Lembretes e avisos da carteira vão para ' + esc(r.email || 'o e-mail do responsável (sem e-mail cadastrado)') + (/^\d{4}-/.test(r.emailsLiberados) ? ', desde ' + esc(brHora(r.emailsLiberados)) : '') + '.</small><button class="btn sec2 peq" data-acao="emails-resp" data-v="0" style="margin-top:6px">Pausar os e-mails</button></div>'
       : '<div class="av-i novo" style="margin-top:10px"><b>E-mails automáticos aguardando a carteira ficar pronta</b><small>Lembretes e avisos ainda não vão para o responsável, só para o CVH. Libere quando terminar de lançar tudo. Enviar o link pelo WhatsApp ou copiar a mensagem também libera.</small><button class="btn peq" data-acao="emails-resp" data-v="1" style="margin-top:6px">Carteira pronta: liberar os e-mails</button></div>') +
     '</section>' : '') +
@@ -9201,6 +9211,15 @@ const ACOES = {
   'juntar-resumos': b => juntarResumos(b.dataset.id, b),
   'ficha-na-carteira': b => { const r = regPorId(b.dataset.id); if (!r) return; fecharFolha(); E.previa = false; abrirCarteira(r.animalId, r.id); },
   previa: () => { E.previa = !E.previa; fecharFolha(); reabrir(0); },
+  'resp-acesso': async b => {
+    const r = E.d.responsaveis.find(x => x.id === E.resp); if (!r) return;
+    const sus = b.dataset.v === '1'; let motivo = '';
+    if (sus) { motivo = prompt('Suspender o acesso de ' + r.nome + ' à carteira digital e ao cartão doador.\n\nOs exames e documentos já enviados continuam com o responsável; só o acesso pelo link para, e os e-mails automáticos param. Dá para devolver depois.\n\nMotivo (por exemplo: parou de doar, não responde):', 'Deixou de participar do Clube do Doador'); if (motivo == null) return; }
+    else if (!confirm('Devolver o acesso de ' + r.nome + ' à carteira digital e ao cartão doador? O mesmo link volta a abrir.')) return;
+    b.disabled = true;
+    try { r.acessoSuspenso = await api('responsavelAcesso', E.sessao, r.id, sus, motivo); telaResp(r.id); toast(sus ? 'Acesso suspenso. O link agora abre só o aviso de acesso encerrado.' : 'Acesso devolvido. O mesmo link volta a abrir a carteira.', 5000); }
+    catch (e) { b.disabled = false; toast(e.message, 6000); }
+  },
   'trocar-link': async b => {
     const r = E.d.responsaveis.find(x => x.id === E.resp); if (!r) return;
     if (!confirm('Trocar o link da carteira de ' + r.nome + '?\n\nO link antigo para de abrir na hora, inclusive no celular do responsável e nos QR Codes já entregues. Depois envie o link novo para ele.')) return;
