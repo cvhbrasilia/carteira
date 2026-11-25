@@ -11,6 +11,8 @@ html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.4 -app
 .lista h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--verm);margin:22px 0 8px}
 .dia{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid var(--areia2);border-radius:14px;padding:11px 12px;margin-bottom:8px;font:inherit;color:inherit;cursor:pointer}
 .dia:hover{border-color:var(--bege)}
+.obs-tc{display:block;margin-top:8px;font-size:13px;font-weight:700;color:var(--vinho)}.obs-tc input{width:100%;margin-top:4px}
+.dia.tc{margin:-4px 0 12px 28px;width:calc(100% - 28px);padding:8px 12px;background:#FBF8F4}.dia.tc .dt small{font-weight:800;color:var(--vinho);font-size:11px}
 .dt{flex:0 0 58px;text-align:center;border-right:1px solid var(--areia);padding-right:10px}.dt b{display:block;font-size:18px;color:var(--vinho)}.dt small{color:var(--tinta2);font-size:12px}
 .dd{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.dd small{color:var(--tinta2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dd .ok{font-size:12.5px;color:#2F7D4F;font-weight:700}.dd .pend{font-size:12.5px;color:#8a5a20;font-weight:700}.dd .novo{font-size:12.5px;color:var(--verm);font-weight:700}
@@ -408,6 +410,17 @@ function novaReq(o) {
   const v = vetPadrao();
   return Object.assign({ id: "", lab: "citopet", data: hojeISO(), origem: "", animais: [], exames: LABS.citopet.rotina.slice(), obs: "", vetId: v ? v.id : "", impressoEm: "", impressoPor: "" }, o || {});
 }
+// protocolo do TECSA do dia: todas as coletas do dia (com ou sem Citopet), com a etiqueta e uma observação por coleta
+function tecsaDoDia(data) {
+  const salva = estado.lista.find((r) => r.origem === "tecsa:" + data);
+  const animais = DOACOES.filter((d) => d.data === data).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt-BR", { numeric: true })).map((d) => { const an = animalDe(d.animalId); return an ? Object.assign(cabAnimal(an, data, d.numero), { etq: d.etq || "", obs: "" }) : null; }).filter(Boolean);
+  if (salva) {
+    const r = novaReq(JSON.parse(JSON.stringify(salva))); if (!r.vetId) r.vetId = (vetPadrao() || {}).id || "";
+    animais.forEach((a) => { const j = r.animais.find((x) => x.animalId === a.animalId); if (!j) { a.novo = true; r.animais.push(a); } else { if (!j.numero) j.numero = a.numero; if (!j.etq) j.etq = a.etq; } });
+    return r;
+  }
+  return novaReq({ data, origem: "tecsa:" + data, lab: "tecsa", exames: LABS.tecsa.rotina.slice(), animais });
+}
 function reqDoDia(data) {
   const salva = estado.lista.find((r) => r.origem === "doacao:" + data);
   const animais = doacoesDoDia(data).map((d) => { const an = animalDe(d.animalId); return an ? cabAnimal(an, data, d.numero) : null; }).filter(Boolean);
@@ -554,11 +567,13 @@ function etiquetaEl(a, x, y, w, h) {
   // a etiqueta do Clube de Doadores, maior e em cinza bem claro (sem gastar tinta); sem número, fica o espaço para colar a etiqueta
   const el = [E.selo(x, y, w, h, { f: "#F2F2F2", s: "#C8C8C8", lw: 0.6, r: 8 })], cx = x + w / 2, num = String(a.numero || "").trim();
   if (!num) { el.push(T(cx, y + h / 2 + 3, "Colar a etiqueta", 9, { c: "#9A9A9A", a: "m" })); return el; }
-  el.push(T(cx, y + 15, "CVH", 9, { b: true, c: "#222222", a: "m" }));
-  el.push(T(cx, y + 34, num, 18, { b: true, c: "#000000", a: "m" }));
-  const bw = Math.min(w - 36, 150); el.push(...desenhaBarras(num, cx - bw / 2, y + 40, bw, 24));
-  el.push(T(cx, y + h - 17, "CLUBE DE DOADORES", 8, { b: true, c: "#222222", a: "m" }));
-  if (a.etq) el.push(T(cx, y + h - 6, a.etq, 7.5, { c: "#333333", a: "m" }));
+  // CVH, número grande, código de barras, CLUBE DE DOADORES e data e hora da etiqueta, distribuídos na altura
+  const k = h / 80;
+  el.push(T(cx, y + 12 * k, "CVH", 8.5, { b: true, c: "#222222", a: "m" }));
+  el.push(T(cx, y + 30 * k, num, 17, { b: true, c: "#000000", a: "m" }));
+  const bw = Math.min(w - 40, 140); el.push(...desenhaBarras(num, cx - bw / 2, y + 35 * k, bw, 18 * k));
+  el.push(T(cx, y + 63 * k, "CLUBE DE DOADORES", 7.5, { b: true, c: "#222222", a: "m" }));
+  if (a.etq) el.push(T(cx, y + 73 * k, a.etq, 7.5, { c: "#333333", a: "m" }));
   return el;
 }
 function caixaEsp(x, y, rot, on) {
@@ -573,7 +588,7 @@ function paginasTecsa(r) {
     // cabeçalho: logo do CVH, título e laboratório
     const hC = 62, wL = 150, wR = 110;
     el.push(E.ret(PRX, y, PRW, hC, { s: K, lw: 1.2 }), E.lin(PRX + wL, y, PRX + wL, y + hC, { s: K, lw: 1.2 }), E.lin(PRX + PRW - wR, y, PRX + PRW - wR, y + hC, { s: K, lw: 1.2 }));
-    el.push(E.img("logoCinza", PRX + 10, y + (hC - 26.5) / 2, 130, 26.5));
+    el.push(E.img("logoCinza", PRX + 8, y + (hC - 27.6) / 2, 135, 27.6));
     el.push(T(PRX + wL + (PRW - wL - wR) / 2, y + 28, "PROTOCOLO DE ENVIO DE AMOSTRAS", 12.5, { b: true, c: K, a: "m" }), T(PRX + wL + (PRW - wL - wR) / 2, y + 45, "LABORATÓRIO DE APOIO", 10, { b: true, c: K, a: "m" }));
     el.push(T(PRX + PRW - wR / 2, y + 30, "TECSA", 14, { b: true, c: K, a: "m" }), T(PRX + PRW - wR / 2, y + 45, tP > 1 ? "Folha " + (pg + 1) + " de " + tP : "", 8.5, { c: K, a: "m" }));
     y += hC + 8;
@@ -581,8 +596,9 @@ function paginasTecsa(r) {
     el.push(E.ret(PRX, y, 190, 28, { s: K, lw }), T(PRX + 8, y + 11, "Data:", 8.5, { b: true, c: K }), T(PRX + 46, y + 21, br(r.data), 14, { b: true, c: K }));
     y += 36;
     // dados fixos (iguais em todo envio)
-    const cel = (x, w, rot, val, yy, h) => [E.ret(x, yy, w, h, { s: K, lw }), E.txt(x + 7, yy + h / 2 + 3.5, [seg(rot + " ", 9.5, { b: true, c: K }), seg(val, 9.5, { c: K })])];
-    const c4 = [PRW * 0.22, PRW * 0.2, PRW * 0.23, PRW * 0.35];
+    // célula com rótulo e valor; o texto diminui se não couber
+    const cel = (x, w, rot, val, yy, h) => { let t = 9.5; while (t > 6.5 && largura(rot + " ", t, true) + largura(val, t) > w - 12) t -= 0.25; return [E.ret(x, yy, w, h, { s: K, lw }), E.txt(x + 6, yy + h / 2 + 3.5, [seg(rot + " ", t, { b: true, c: K }), seg(val, t, { c: K })])]; };
+    const c4 = [PRW * 0.2, PRW * 0.19, PRW * 0.22, PRW * 0.39];
     let xx = PRX; [["Responsável:", "CVH"], ["Banco de sangue:", "CVH"], ["Tel:", "(61) 98237-2772"], ["E-mail:", "bancodesangue@cvh.vet.br"]].forEach(([a, b], i) => { el.push(...cel(xx, c4[i], a, b, y, 26)); xx += c4[i]; }); y += 26;
     xx = PRX; [["Idade:", "2 ANOS"], ["Raça:", "SRD"], ["Cor:", "Caramelo"], ["Médico veterinário:", (v.nome || "") + (v.crmv ? " " + v.crmv : "")]].forEach(([a, b], i) => { el.push(...cel(xx, c4[i], a, b, y, 26)); xx += c4[i]; }); y += 26;
     el.push(E.ret(PRX, y, PRW, 30, { s: K, lw }), E.txt(PRX + 7, y + 18.5, [seg("Cód. exame:   ", 9.5, { b: true, c: K }), seg("Felino: ", 9.5, { b: true, c: K }), seg("PSB fiv/felv/myc/bart", 9.5, { c: K }), seg("        Canino: ", 9.5, { b: true, c: K }), seg("PSB ehr/bab/ana/myc/leish/diro", 9.5, { c: K })]));
@@ -649,7 +665,7 @@ function telaLista() {
   estado.tela = "lista"; estado.r = null; marcarSujo(false);
   // as coletas entram na lista a partir do início do módulo (25/11/2026); as anteriores não aparecem
   const dias = [...new Set(DOACOES.map((d) => d.data).filter((d) => d >= INICIO_REQ))].sort().reverse();
-  const outras = estado.lista.filter((r) => !/^doacao:/.test(r.origem || "")).sort((a, b) => (b.data + b.atualizadoEm).localeCompare(a.data + a.atualizadoEm));
+  const outras = estado.lista.filter((r) => !/^(doacao|tecsa):/.test(r.origem || "")).sort((a, b) => (b.data + b.atualizadoEm).localeCompare(a.data + a.atualizadoEm));
   const situ = (s, nNovos) => s ? (s.impressoEm ? `<span class="ok">Impressa${s.impressoPor ? " por " + esc(String(s.impressoPor).split(" ")[0]) : ""} em ${br(s.impressoEm)} às ${s.impressoEm.slice(11, 16)}</span>` : `<span class="pend">Salva, ainda não impressa</span>`) + (nNovos ? ` <span class="novo">${nNovos === 1 ? "1 coleta nova" : nNovos + " coletas novas"} depois disso</span>` : "") : `<span class="pend">Pronta para imprimir</span>`;
   $("#app").innerHTML = `<div class="lista">
     <header class="cab"><div><span class="sob">Laboratório Citopet</span><h1>Requisição de exames</h1></div><button type="button" class="btn" data-a="nova">+ Nova requisição</button></header>
@@ -657,7 +673,7 @@ function telaLista() {
     ${estado.carregou ? "" : `<p class="nota">Carregando as requisições salvas…</p>`}
     <h2>Coletas</h2>
     ${dias.length ? dias.map((d) => { const L = doacoesDoDia(d), s = estado.lista.find((r) => r.origem === "doacao:" + d), novos = s ? L.filter((x) => !(s.animais || []).some((a) => a.animalId === x.animalId)).length : 0;
-      return `<button type="button" class="dia" data-a="dia" data-v="${d}"><span class="dt"><b>${br(d).slice(0, 5)}</b><small>${diaSem(d)}</small></span><span class="dd"><b>${L.length} ${L.length === 1 ? "doador" : "doadores"}</b><small>${esc(L.map((x) => (animalDe(x.animalId) || {}).nome || "").filter(Boolean).join(", "))}${nForaDia(d) ? " · " + nForaDia(d) + " sem Citopet hoje" : ""}</small>${situ(s, novos)}</span><span class="vai">›</span></button>`; }).join("") : `<p class="vazio-p">Nenhuma coleta ainda. Assim que a ficha de doação for feita, a requisição do dia aparece aqui pronta.</p>`}
+      return `<button type="button" class="dia" data-a="dia" data-v="${d}"><span class="dt"><b>${br(d).slice(0, 5)}</b><small>${diaSem(d)}</small></span><span class="dd"><b>${L.length} ${L.length === 1 ? "doador" : "doadores"}</b><small>${esc(L.map((x) => (animalDe(x.animalId) || {}).nome || "").filter(Boolean).join(", "))}${nForaDia(d) ? " · " + nForaDia(d) + " sem Citopet hoje" : ""}</small>${situ(s, novos)}</span><span class="vai">›</span></button>${(() => { const n = DOACOES.filter((x) => x.data === d).length, st = estado.lista.find((r) => r.origem === "tecsa:" + d); return `<button type="button" class="dia tc" data-a="diaTecsa" data-v="${d}"><span class="dt"><small>TECSA</small></span><span class="dd"><b>Protocolo de envio · ${n} ${n === 1 ? "amostra" : "amostras"}</b>${situ(st)}</span><span class="vai">›</span></button>`; })()}`; }).join("") : `<p class="vazio-p">Nenhuma coleta ainda. Assim que a ficha de doação for feita, a requisição do dia aparece aqui pronta.</p>`}
     <h2>Outras requisições</h2>
     ${outras.length ? outras.map((r) => `<button type="button" class="dia" data-a="abrir" data-v="${esc(r.id)}"><span class="dt"><b>${br(r.data).slice(0, 5)}</b><small>${br(r.data).slice(6)}</small></span><span class="dd"><b>${esc((r.animais || []).map((a) => a.nome).join(", ") || "Sem animal")}</b><small>${esc(r.exames.map((x) => exNome(r.lab, x).replace(/ \(.*\)$/, "")).join(", "))}</small>${situ(r)}</span><span class="vai">›</span></button>`).join("") : `<p class="vazio-p">Nenhuma ainda. Use + Nova requisição para pedir outros exames.</p>`}
   </div>`;
@@ -682,7 +698,7 @@ function cartaoAnimal(a, i, r) {
       <label class="larga">Microchip<input data-i="${i}" data-f="microchip" value="${esc(a.microchip)}" inputmode="numeric"></label>
       ${gato ? `<div class="larga cmp"><span>Tipo sanguíneo</span>${opc(i, "grupo", a.grupo, [["A", "A"], ["B", "B"], ["AB", "AB"]])}</div>`
         : `<div class="cmp"><span>DEA 1</span>${opc(i, "dea", a.dea, [["+", "Positivo"], ["-", "Negativo"]])}</div><div class="cmp"><span>DAL</span>${opc(i, "dal", a.dal, [["+", "Positivo"], ["-", "Negativo"]])}</div>`}
-    </div></details>${temCito(r) ? citoForm(a, i) : ""}</div>`;
+    </div></details>${ehProt(r) ? `<label class="obs-tc">Observação desta amostra<input data-i="${i}" data-f="obs" value="${esc(a.obs || "")}" maxlength="160" placeholder="opcional"></label>` : ""}${temCito(r) ? citoForm(a, i) : ""}</div>`;
 }
 function citoForm(a, i) {
   const c = a.cito || {};
@@ -708,20 +724,20 @@ function telaEditor() {
       <div class="add"><input id="addAn" list="anL" placeholder="Acrescentar animal do cadastro" autocomplete="off"><datalist id="anL">${lista.map((a) => `<option value="${esc(a.nome)}">${esc([a.resp, a.doador ? "doador" : ""].filter(Boolean).join(" · "))}</option>`).join("")}</datalist><button type="button" class="btn mini" data-a="add">Acrescentar</button></div>
       <button type="button" class="btn sec mini" data-a="add-novo" style="margin-top:8px">+ Animal sem cadastro (digitar)</button>
     </div>
-    <div class="cx"><h3>Exames (${r.exames.length})</h3>
+    ${ehProt(r) ? `<div class="cx"><h3>Protocolo de envio de amostras</h3><p class="nota">Cabeçalho fixo (responsável CVH, 2 anos, SRD, caramelo) e os códigos de exame do TECSA. Cada coleta sai com a etiqueta e a espécie marcada. Escreva a observação de cada amostra no cartão do animal. Imprima no papel azul, em preto e branco.</p></div>` : `<div class="cx"><h3>Exames (${r.exames.length})</h3>
       <div class="rap"><button type="button" class="btn sec mini" data-a="rotina">Rotina do doador</button><button type="button" class="btn sec mini" data-a="limpar">Desmarcar todos</button></div>
       ${L.grupos.map((G) => `<details class="gr"${G.itens.some((it) => r.exames.some((x) => exParte(x).id === it[0])) || G.g === "Análise hematológica" || G.g === "Análise bioquímica" ? " open" : ""}><summary>${esc(G.g)} <small>${G.itens.filter((it) => r.exames.some((x) => exParte(x).id === it[0])).length || ""}</small></summary><div class="exs">${G.itens.map((it) => { const x = r.exames.find((e) => exParte(e).id === it[0]);
         return `<label class="ex"><input type="checkbox" data-ex="${it[0]}"${x ? " checked" : ""}><span>${esc(it[1])}</span></label>${it[2] && x ? `<input class="loc" data-loc="${it[0]}" placeholder="Local da coleta" value="${esc(exParte(x).local)}">` : ""}`; }).join("")}</div></details>`).join("")}
       <label style="margin-top:10px">Observações (outros exames ou recados para o laboratório)<textarea data-c="obs" rows="2" maxlength="600">${esc(r.obs)}</textarea></label>
-    </div>
+    </div>`}
     <div class="cx acoes-fim">
-      <button type="button" class="btn" data-a="imprimir">Imprimir no papel timbrado</button>
-      <button type="button" class="btn sec" data-a="digital">PDF digital (com o timbrado)</button>
+      <button type="button" class="btn" data-a="imprimir">${ehProt(r) ? "Imprimir no papel azul" : "Imprimir no papel timbrado"}</button>
+      ${ehProt(r) ? "" : `<button type="button" class="btn sec" data-a="digital">PDF digital (com o timbrado)</button>`}
       <button type="button" class="btn sec" data-a="salvar">Salvar sem imprimir</button>
       ${r.id ? `<button type="button" class="lnk" data-a="apagar">Apagar esta requisição</button>` : ""}
       <p class="st" id="st"></p>
     </div></div>
-    <div class="lado"><div class="barra-prev"><span class="nota">Prévia</span><div id="modo-prev"><button type="button" data-a="modo" data-v="imp" aria-pressed="${estado.modo === "imp"}">Papel timbrado</button><button type="button" data-a="modo" data-v="dig" aria-pressed="${estado.modo === "dig"}">Digital</button></div></div><div id="previa"></div></div>
+    <div class="lado"><div class="barra-prev"><span class="nota">Prévia</span><div id="modo-prev"${ehProt(r) ? " hidden" : ""}><button type="button" data-a="modo" data-v="imp" aria-pressed="${estado.modo === "imp"}">Papel timbrado</button><button type="button" data-a="modo" data-v="dig" aria-pressed="${estado.modo === "dig"}">Digital</button></div></div><div id="previa"></div></div>
   </div>`;
   renderPrevia();
 }
@@ -767,6 +783,7 @@ function ligar() {
     const a = b.dataset.a, r = estado.r;
     if (a === "nova") { estado.r = novaReq(); return telaEditor(); }
     if (a === "dia") { estado.r = reqDoDia(b.dataset.v); return telaEditor(); }
+    if (a === "diaTecsa") { estado.r = tecsaDoDia(b.dataset.v); return telaEditor(); }
     if (a === "abrir") { const s = estado.lista.find((x) => x.id === b.dataset.v); if (!s) return; estado.r = novaReq(JSON.parse(JSON.stringify(s))); if (!estado.r.vetId) estado.r.vetId = (vetPadrao() || {}).id || ""; return telaEditor(); }
     if (a === "voltar") return telaLista();
     if (a === "modo") { estado.modo = b.dataset.v; document.querySelectorAll("#modo-prev button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === estado.modo))); return renderPrevia(); }
@@ -797,7 +814,7 @@ function ligar() {
   });
   document.addEventListener("input", (ev) => {
     const t = ev.target, r = estado.r; if (!r) return;
-    if (t.dataset.c) { r[t.dataset.c] = t.value; marcarSujo(true); if (t.dataset.c === "data" || t.dataset.c === "lab") { if (t.dataset.c === "data") r.animais.forEach((a) => { const an = animalDe(a.animalId); if (an && an.nascimento) a.idade = idadeEm(an.nascimento, r.data); }); return telaEditor(); } return agendarPrevia(); }
+    if (t.dataset.c) { r[t.dataset.c] = t.value; marcarSujo(true); if (t.dataset.c === "data" || t.dataset.c === "lab") { if (t.dataset.c === "lab") r.exames = LABS[r.lab].rotina.slice(); if (t.dataset.c === "data") r.animais.forEach((a) => { const an = animalDe(a.animalId); if (an && an.nascimento) a.idade = idadeEm(an.nascimento, r.data); }); return telaEditor(); } return agendarPrevia(); }
     if (t.dataset.cf) { const a = r.animais[+t.dataset.i]; if (a) { (a.cito = a.cito || {})[t.dataset.cf] = t.value; marcarSujo(true); agendarPrevia(); } return; }
     if (t.dataset.f) { const a = r.animais[+t.dataset.i]; if (a) { a[t.dataset.f] = t.dataset.f === "nome" ? t.value.toUpperCase() : t.value; if (t.dataset.f === "nascimento") { a.idade = t.value ? idadeEm(t.value, r.data) : ""; const id = document.querySelector(`[data-i="${t.dataset.i}"][data-f="idade"]`); if (id) { id.value = a.idade; id.readOnly = !!t.value; } } marcarSujo(true); agendarPrevia(); } return; }
     if (t.dataset.loc) { const i = r.exames.findIndex((x) => exParte(x).id === t.dataset.loc); if (i >= 0) r.exames[i] = t.dataset.loc + (t.value.trim() ? ":" + t.value.replace(/:/g, " ").trim() : ""); marcarSujo(true); return agendarPrevia(); }
