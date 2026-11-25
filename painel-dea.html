@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125190741">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261125192644">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1042,7 +1042,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125190741';
+  var VERSAO = '20261125192644';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -4096,11 +4096,13 @@ async function baixarCert(aid, id, fmt, b, modo) {
   const t0 = b ? b.innerHTML : ''; if (b) { b.disabled = true; b.textContent = 'Gerando…'; }
   try {
     const base = 'Certificado ' + c.an.nome + ' ' + c.data;
-    if (fmt === 'a4' && modo !== 'enviar') {
+    if (fmt === 'a4') {
       if (!window.PDFLib) await carregarScript(LIB_PDF);
       const url = await certImagem(c, 'a4', 'jpg'), pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(bytesDeUrl(url));
       pdf.addPage([841.89, 595.28]).drawImage(img, { x: 0, y: 0, width: 841.89, height: 595.28 }); pdf.setTitle((c.tipo === 'aposentadoria' ? 'Certificado de aposentadoria · ' : 'Certificado de doação · ') + c.an.nome);
-      entregarBlob(new Blob([await pdf.save()], { type: 'application/pdf' }), base + '.pdf');
+      const blob = new Blob([await pdf.save()], { type: 'application/pdf' }), arq = typeof File === 'function' ? new File([blob], base + '.pdf', { type: 'application/pdf' }) : null;
+      if (modo === 'enviar' && arq && navigator.canShare && navigator.canShare({ files: [arq] })) { try { await navigator.share({ files: [arq], title: 'Certificado de doação' }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      entregarBlob(blob, base + '.pdf');
     } else {
       const url = await certImagem(c, fmt, 'png'), blob = new Blob([bytesDeUrl(url)], { type: 'image/png' }), nome = base + (fmt === 'feed' ? ' (feed).png' : fmt === 'story' ? ' (stories).png' : '.png');
       const arq = typeof File === 'function' ? new File([blob], nome, { type: 'image/png' }) : null;
@@ -4131,8 +4133,10 @@ function botoesCert(c, ed, naFolha, fmtAtual) {
   // primeiro visualizar: fora da prévia, os botões abrem a prévia de cada formato; na prévia, baixar ou enviar o formato que está na tela
   const ver = (fmt, t, s) => '<button class="btn sec2 peq" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + fmt + '">' + t + (s ? '<small>' + s + '</small>' : '') + '</button>';
   const f = fmtAtual || 'a4', podeEnviar = typeof navigator.share === 'function';
-  const acoes = naFolha ? '<button class="btn peq" data-acao="cert-baixar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + f + '">Baixar ' + (f === 'a4' ? 'o PDF' : f === 'feed' ? 'para o feed' : 'para os stories') + '</button>' +
-    (podeEnviar ? '<button class="btn sec2 peq" data-acao="cert-baixar" data-m="enviar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + f + '">Enviar</button>' : '')
+  // na prévia: as três versões para baixar (a que está na tela em destaque) e enviar a que está na tela
+  const baixa = (k, t) => '<button class="btn ' + (k === f ? '' : 'sec2 ') + 'peq" data-acao="cert-baixar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + k + '">' + t + '</button>';
+  const acoes = naFolha ? '<p class="nota" style="width:100%;margin:0">Baixar</p>' + baixa('a4', 'PDF') + baixa('feed', 'Feed') + baixa('story', 'Stories') +
+    (podeEnviar ? '<button class="btn sec2 peq" data-acao="cert-baixar" data-m="enviar" data-aid="' + aid + '" data-id="' + c.id + '" data-v="' + f + '">Enviar ' + (f === 'a4' ? 'a imagem' : f === 'feed' ? 'o feed' : 'os stories') + ' (WhatsApp, Instagram)</button>' : '')
     : ver('a4', 'PDF digital', 'A4 para imprimir') + ver('feed', 'Feed', '1080 × 1350') + ver('story', 'Stories', '1080 × 1920');
   const rp = respDe(c.an) || {}, tel = String(rp.telefone || '').replace(/\D/g, ''), w = ed && tel ? 'https://wa.me/' + (tel.length <= 11 ? '55' + tel : tel) + '?text=' + encodeURIComponent('Olá, ' + (rp.nome || '').split(' ')[0] + '! ' + (c.tipo === 'aposentadoria' ? 'O certificado de aposentadoria de ' : 'O certificado da doação de sangue de ') + c.an.nome + (c.tipo === 'aposentadoria' ? '' : ' (' + br(c.data) + ')') + ' já está na carteira de saúde, na aba Certificados, com versões para imprimir e para postar no feed e nos stories. Muito obrigado por fazer parte do Clube do Doador!' + (rp.token ? '\n\n' + linkDe(rp) : '')) : '';
   return '<div class="ct-bts">' +
@@ -4219,7 +4223,7 @@ function paginasCert(an) {
   const out = [];
   // 5 certificados por página (a primeira também, com o texto de abertura)
   for (let i = 0, por = 5; i < l.length; i += por) out.push(pagina(an, '<div class="sec"><h2>Certificados</h2></div>' + (i ? '' : '<p class="lt-int">Um certificado para cada doação, com versão para imprimir e imagens para postar.</p>') +
-    l.slice(i, i + por).map(c => '<article class="ct-cart" data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + (c.tipo === 'aposentadoria' ? 'Aposentadoria' : 'Doação de sangue') + '</small><b>' + dataLonga(c.data) + '</b><span class="ct-lks"><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">PDF</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="feed">Feed</button><button data-acao="cert-baixar" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="story">Stories</button></span></div></article>').join('')));
+    l.slice(i, i + por).map(c => '<article class="ct-cart" data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">' + seloAno(c.ano) + '<div><small>' + (c.tipo === 'aposentadoria' ? 'Aposentadoria' : 'Doação de sangue') + '</small><b>' + dataLonga(c.data) + '</b><span class="ct-lks"><button data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="a4">PDF</button><button data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="feed">Feed</button><button data-acao="cert-ver" data-aid="' + an.id + '" data-id="' + c.id + '" data-v="story">Stories</button></span></div></article>').join('')));
   return out;
 }
 
