@@ -2640,8 +2640,8 @@ const DAVR = [["CP", "Compatível com padrão", "raça com características feno
 const siglaDavr = () => { const t = estado.t; return t.davr ? "DAVR-" + t.davr + (t.davr === "SP" && String(t.davrRaca || "").trim() ? " " + t.davrRaca.trim() : "") : ""; };
 function blocosTipagem(x, w, cel) {
   const t = estado.t, B = [secTit(x, w, "Tipagem sanguínea " + (felino() ? "felina" : "canina"), t.material ? "Material  " + t.material : "")];
-  // foto do plasma (opcional, só na tipagem): o tubo entra no primeiro cartão, à direita, com a linha do aspecto do plasma
-  const cartoes = [], tuboTip = estado.tipo === "tipagem" && IMG_DIN.fotoTubo ? "fotoTubo" : null, plasmaTip = t.plasma ? t.plasma : "";
+  // foto do plasma (opcional): só na tipagem sozinha. Com a prova de compatibilidade no mesmo laudo, o plasma sai só na prova
+  const cartoes = [], tuboTip = estado.tipo === "tipagem" && !SUB && IMG_DIN.fotoTubo ? "fotoTubo" : null, plasmaTip = t.plasma ? t.plasma : "";
   if (felino()) cartoes.push({ titulo: "Grupo " + t.grupo, res: "", linhas: [["Sistema", "AB"], ["Método", t.metodoGato], ["Kit", loteTxt(t.loteG, t.validadeG)]] });
   else {
     if (t.dea1.on) cartoes.push({ titulo: "DEA 1", res: t.dea1.res, pos: t.dea1.res === "Positivo", foto: "fotoDea", linhas: [["Intensidade", t.dea1.res === "Positivo" ? t.dea1.grau : "", true], ["Método", t.dea1.metodo], ["Kit", loteTxt(t.dea1.lote, t.dea1.validade)]] });
