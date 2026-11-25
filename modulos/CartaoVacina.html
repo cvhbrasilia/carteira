@@ -372,24 +372,24 @@ const FOLHAS = [
 ];
 
 // ---------- desenho das folhas (conteúdo dentro da área do papel timbrado) ----------
-const X0 = PG.X, W0 = PG.CW, LIN = "#C6B098", ROT = "#9A7448";
+const X0 = PG.X, W0 = PG.CW, LIN = "#9C8266", ROT = "#7A5530";
 function dataEmBranco(x, y, tam) {
   // __/__/____ desenhado em linhas, com as barras
   const el = [], w1 = 14, w3 = 24, g = 7; let xx = x;
-  [w1, w1, w3].forEach((w, i) => { el.push(E.lin(xx, y, xx + w, y, { s: LIN, lw: 0.7 })); xx += w; if (i < 2) { el.push(T(xx + 1.5, y - 1.5, "/", tam || 9, { c: LIN })); xx += g; } });
+  [w1, w1, w3].forEach((w, i) => { el.push(E.lin(xx, y, xx + w, y, { s: LIN, lw: 0.9 })); xx += w; if (i < 2) { el.push(T(xx + 1.5, y - 1.5, "/", tam || 9, { c: LIN })); xx += g; } });
   return { el, w: xx - x };
 }
 function rotulo(x, y, t, o) { return T(x, y, t.toUpperCase(), 6.6, Object.assign({ b: true, c: ROT }, o || {})); }
 function cabecalho(a, y) {
   // nome em destaque, tipagem à direita; embaixo os dados do cadastro (o mesmo padrão dos laudos e da requisição)
   const el = [], h = 100, v = vetPadrao(), tip = tipagemTxt(a);
-  el.push(E.selo(X0, y, W0, h, { f: "#FBF8F4", s: "#E2D6C8", lw: 0.8, r: 9 }));
+  el.push(E.selo(X0, y, W0, h, { f: "#F5ECE2", s: "#C6B098", lw: 0.9, r: 9 }));
   el.push(E.ret(X0, y + 10, 3, 24, { f: COR.VERMELHO }));
   el.push(T(X0 + 14, y + 29, String(a.nome || "").toUpperCase(), 19, { b: true, c: COR.BORDO }));
   if (tip) el.push(T(X0 + W0 - 14, y + 27, tip, 10, { b: true, c: COR.VERMELHO, a: "e" }));
   const col = (x, yy, r, val, w) => { let t = String(val || "-"); while (t.length > 2 && largura(t, 9.5) > w) t = t.slice(0, -2) + "…"; return [rotulo(x, yy, r), T(x, yy + 12, t, 9.5, { c: COR.TEXTO })]; };
   const c1 = X0 + 14, cw = (W0 - 28) / 4;
-  el.push(E.lin(X0 + 14, y + 40, X0 + W0 - 14, y + 40, { s: "#E2D6C8", lw: 0.6 }));
+  el.push(E.lin(X0 + 14, y + 40, X0 + W0 - 14, y + 40, { s: "#C6B098", lw: 0.7 }));
   [["Espécie", a.especie], ["Raça", a.raca], ["Sexo", a.sexo], ["Nascimento", a.nascimento ? br(a.nascimento) + (idadeHoje(a.nascimento) ? " (" + idadeHoje(a.nascimento) + ")" : "") : ""]]
     .forEach(([r, val], i) => el.push(...col(c1 + i * cw, y + 54, r, val, cw - 8)));
   [["Microchip", a.microchip, 1], ["Responsável", a.resp, 1.4], ["Médico veterinário", (v.nome || "") + (v.crmv ? " · " + v.crmv : ""), 1.6]].reduce((x, [r, val, k]) => { el.push(...col(x, y + 82, r, val, cw * k - 8)); return x + cw * k; }, c1);
@@ -407,8 +407,8 @@ function linhasFolha(f, y) {
   if (f.k === "obs") {
     // observações: data à esquerda e linhas para escrever
     const lh = 24, nL = Math.floor((yF - y) / lh);
-    for (let i = 0; i < nL; i++) { const yy = y + (i + 1) * lh; el.push(E.lin(X0, yy, X0 + W0, yy, { s: i % 5 === 4 ? "#C6B098" : "#E2D6C8", lw: 0.6 })); }
-    el.push(E.lin(X0 + 62, y + 6, X0 + 62, y + nL * lh, { s: "#E8C9C2", lw: 0.7 }));
+    for (let i = 0; i < nL; i++) { const yy = y + (i + 1) * lh; el.push(E.lin(X0, yy, X0 + W0, yy, { s: i % 5 === 4 ? "#9C8266" : "#B9A48C", lw: 0.8 })); }
+    el.push(E.lin(X0 + 62, y + 6, X0 + 62, y + nL * lh, { s: "#C98A80", lw: 0.9 }));
     el.push(rotulo(X0, y + 16, "Data"), rotulo(X0 + 70, y + 16, "Anotação"));
     return el;
   }
@@ -416,23 +416,23 @@ function linhasFolha(f, y) {
   for (let i = 0; i < n; i++) {
     const yy = y + i * h, cx = X0 + 8;
     // linha do registro: faixa clara alternada, número da linha e os campos
-    if (i % 2 === 0) el.push(E.selo(X0, yy + 2, W0, h - 4, { f: "#FBF8F4", r: 8 }));
-    el.push(E.lin(X0 + 6, yy + h, X0 + W0 - 6, yy + h, { s: "#E2D6C8", lw: 0.6 }));
+    if (i % 2 === 0) el.push(E.selo(X0, yy + 2, W0, h - 4, { f: "#F5ECE2", r: 8 }));
+    el.push(E.lin(X0 + 6, yy + h, X0 + W0 - 6, yy + h, { s: "#C6B098", lw: 0.8 }));
     if (f.k === "vacina") {
       // vacinado em (esquerda), espaço das etiquetas (meio), médico veterinário e revacinar em (direita)
       el.push(rotulo(cx, yy + 16, "Vacinado em")); el.push(...dataEmBranco(cx, yy + 32).el);
       const ex = X0 + 112, ew = 200, eh = h - 16;
-      el.push(E.selo(ex, yy + 8, ew, eh, { s: "#D9C9B6", lw: 0.6, r: 6 }));
-      el.push(T(ex + ew / 2, yy + 8 + eh / 2 + 2.5, "etiquetas da vacina", 7, { i: true, c: "#C9B8A4", a: "m" }));
+      el.push(E.selo(ex, yy + 8, ew, eh, { s: "#B39B80", lw: 0.8, r: 6 }));
+      el.push(T(ex + ew / 2, yy + 8 + eh / 2 + 2.5, "etiquetas da vacina", 7, { i: true, c: "#A08A72", a: "m" }));
       const rx = X0 + 326;
-      el.push(rotulo(rx, yy + 16, "Médico veterinário")); el.push(E.lin(rx, yy + 34, X0 + W0 - 8, yy + 34, { s: LIN, lw: 0.7 }));
+      el.push(rotulo(rx, yy + 16, "Médico veterinário")); el.push(E.lin(rx, yy + 34, X0 + W0 - 8, yy + 34, { s: LIN, lw: 0.9 }));
       { const dx = X0 + W0 - 8 - 66; el.push(rotulo(dx - largura("REVACINAR EM", 6.6, true) - 6, yy + h - 18, "Revacinar em")); el.push(...dataEmBranco(dx, yy + h - 17).el); }
     } else {
       const prod = f.k === "vermifugo" ? "Vermífugo" : "Ectoparasiticida";
       el.push(rotulo(cx, yy + 16, f.k === "vermifugo" ? "Vermifugado em" : "Data")); el.push(...dataEmBranco(cx, yy + 32).el);
-      const px = X0 + 112; el.push(rotulo(px, yy + 16, prod)); el.push(E.lin(px, yy + 34, px + 170, yy + 34, { s: LIN, lw: 0.7 }));
-      const kx = X0 + 296; el.push(rotulo(kx, yy + 16, "Peso")); el.push(E.lin(kx, yy + 34, kx + 34, yy + 34, { s: LIN, lw: 0.7 })); el.push(T(kx + 36, yy + 33, "kg", 7.5, { c: ROT }));
-      const rx = X0 + 352; el.push(rotulo(rx, yy + 16, "Médico veterinário")); el.push(E.lin(rx, yy + 34, X0 + W0 - 8, yy + 34, { s: LIN, lw: 0.7 }));
+      const px = X0 + 112; el.push(rotulo(px, yy + 16, prod)); el.push(E.lin(px, yy + 34, px + 170, yy + 34, { s: LIN, lw: 0.9 }));
+      const kx = X0 + 296; el.push(rotulo(kx, yy + 16, "Peso")); el.push(E.lin(kx, yy + 34, kx + 34, yy + 34, { s: LIN, lw: 0.9 })); el.push(T(kx + 36, yy + 33, "kg", 7.5, { c: ROT }));
+      const rx = X0 + 352; el.push(rotulo(rx, yy + 16, "Médico veterinário")); el.push(E.lin(rx, yy + 34, X0 + W0 - 8, yy + 34, { s: LIN, lw: 0.9 }));
       if (f.k === "vermifugo") { el.push(rotulo(cx, yy + h - 12, "Reforço em")); el.push(...dataEmBranco(cx + 50, yy + h - 11).el); }
       { const dx = X0 + W0 - 8 - 66; el.push(rotulo(dx - largura("PRÓXIMO EM", 6.6, true) - 6, yy + h - 12, "Próximo em")); el.push(...dataEmBranco(dx, yy + h - 11).el); }
     }
