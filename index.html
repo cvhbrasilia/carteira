@@ -195,8 +195,8 @@ button{cursor:pointer}
 .ficha{background:var(--areia);border-radius:.4em;padding:.85em .9em;display:grid;grid-template-columns:1fr 1fr;gap:.75em .8em;position:relative;overflow:hidden}
 .ficha::before{content:"";position:absolute;left:0;right:0;top:0;height:.2em;background:var(--vermelho)}
 .ficha .larga{grid-column:1/-1}
-.ficha.com-ctn .larga{padding-right:11.2em}
-.ctn-mini{position:absolute;right:.9em;bottom:.85em;width:10.4em;height:6.56em;display:flex;border:0;padding:0;border-radius:.55em;overflow:hidden;box-shadow:0 2px 8px rgba(95,19,15,.22);cursor:pointer;font:inherit;text-align:left;z-index:1}
+.ficha.com-ctn .larga{padding-right:9.6em}
+.ctn-mini{position:absolute;right:.9em;bottom:.85em;width:8.6em;height:5.43em;display:flex;border:0;padding:0;border-radius:.55em;overflow:hidden;box-shadow:0 2px 8px rgba(95,19,15,.22);cursor:pointer;font:inherit;text-align:left;z-index:1}
 .ctn-m-l{flex:0 0 37%;background:#5F130F;color:#C6B098;display:flex;align-items:center;justify-content:center}.ctn-m-l svg{width:1.7em;height:1.7em}
 .ctn-m-r{flex:1;background:#EEE5DB;display:flex;flex-direction:column;justify-content:center;padding:0 .55em;line-height:1.15}
 .ctn-m-r small{font-size:.54em;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D;font-weight:700}.ctn-m-r b{font-size:.78em;color:#5F130F}.ctn-m-r i{font-style:normal;font-size:.62em;color:#A83D3D;margin-top:.3em;font-weight:700}
@@ -208,7 +208,7 @@ button{cursor:pointer}
 .ctn-modal .botoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.ctn-modal .esp{flex:1}
 .ctn-pos{background:#F7F2EC;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px}.ctn-pos b{color:#5F130F;font-size:14px}.ctn-pos label{display:flex;flex-direction:column;font-size:12.5px;color:#6b5a52;gap:2px}.ctn-pos input{width:100%;accent-color:#5F130F}
 .ctn-mini-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}.ctn-mini.pronta .ctn-m-l,.ctn-mini.pronta .ctn-m-r{visibility:hidden}
-.ctn-baixar{position:absolute;right:.4em;bottom:.4em;z-index:2;background:#5F130F;color:#fff;font-size:.8em;font-weight:700;letter-spacing:.04em;padding:.35em .8em;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.35);display:none}.ctn-mini.pronta .ctn-baixar{display:block}
+.ctn-baixar{position:absolute;right:.35em;bottom:.35em;z-index:2;background:#5F130F;color:#fff;font-size:.68em;font-weight:700;letter-spacing:.04em;padding:.35em .8em;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.35);display:none}.ctn-mini.pronta .ctn-baixar{display:block}
 .ctn-prev{display:flex;flex-direction:column;gap:10px;margin:8px 0 12px}.ctn-prev img{width:100%;height:auto;border-radius:12px;box-shadow:0 2px 10px rgba(95,19,15,.18)}
 .ficha .val{font-size:.86em}
 .mono{font-family:var(--mono);letter-spacing:.03em}
@@ -965,7 +965,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125060536';
+  var VERSAO = '20261125061244';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
