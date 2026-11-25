@@ -200,6 +200,12 @@ button{cursor:pointer}
 .ctn-m-l{flex:0 0 37%;background:#5F130F;color:#C6B098;display:flex;align-items:center;justify-content:center}.ctn-m-l svg{width:1.7em;height:1.7em}
 .ctn-m-r{flex:1;background:#EEE5DB;display:flex;flex-direction:column;justify-content:center;padding:0 .55em;line-height:1.15}
 .ctn-m-r small{font-size:.54em;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D;font-weight:700}.ctn-m-r b{font-size:.78em;color:#5F130F}.ctn-m-r i{font-style:normal;font-size:.62em;color:#A83D3D;margin-top:.3em;font-weight:700}
+.ctn-modal{position:fixed;inset:0;background:rgba(43,35,32,.6);display:flex;align-items:center;justify-content:center;z-index:200;padding:14px}.ctn-modal[hidden]{display:none}
+.ctn-modal .caixa{background:#fff;border-radius:16px;padding:16px;max-width:620px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}.ctn-modal h3{margin:0 0 4px;color:#5F130F;font-size:17px}
+.ctn-modal .area{position:relative;margin:10px auto;touch-action:none;user-select:none;-webkit-user-select:none}.ctn-modal canvas{display:block;border-radius:6px}
+.ctn-modal .moldura{position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.45);cursor:move;touch-action:none}
+.ctn-modal .alca{position:absolute;width:24px;height:24px;background:#fff;border:2px solid #5F130F;border-radius:50%}.ctn-modal .alca[data-c=nw]{left:-13px;top:-13px}.ctn-modal .alca[data-c=ne]{right:-13px;top:-13px}.ctn-modal .alca[data-c=sw]{left:-13px;bottom:-13px}.ctn-modal .alca[data-c=se]{right:-13px;bottom:-13px}
+.ctn-modal .botoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.ctn-modal .esp{flex:1}
 .ctn-pos{background:#F7F2EC;border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px}.ctn-pos b{color:#5F130F;font-size:14px}.ctn-pos label{display:flex;flex-direction:column;font-size:12.5px;color:#6b5a52;gap:2px}.ctn-pos input{width:100%;accent-color:#5F130F}
 .ctn-prev{display:flex;flex-direction:column;gap:10px;margin:8px 0 12px}.ctn-prev img{width:100%;height:auto;border-radius:12px;box-shadow:0 2px 10px rgba(95,19,15,.18)}
 .ficha .val{font-size:.86em}
@@ -957,7 +963,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125044517';
+  var VERSAO = '20261125050153';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2697,8 +2703,8 @@ async function ctnRecursos() {
   if (CTN_REC) return CTN_REC;
   const fs = [['400', 'Carlito-Regular'], ['700', 'Carlito-Bold']].map(([w, n]) => new FontFace('Carteirinha CVH', 'url(carteirinha/' + n + '.ttf)', { weight: w }));
   await Promise.all(fs.map(f => f.load().then(x => document.fonts.add(x))));
-  const [frente, verso] = await Promise.all([ctnImg('carteirinha/frente.png'), ctnImg('carteirinha/verso.png')]);
-  return CTN_REC = { frente, verso };
+  const [frente, verso, selo] = await Promise.all([ctnImg('carteirinha/frente.png'), ctnImg('carteirinha/verso.png'), ctnImg('carteirinha/selo.png')]);
+  return CTN_REC = { frente, verso, selo };
 }
 const ctnLaudo = aid => laudosDe(aid).find(r => r.excluido !== '1' && ehTipLaudo(r.dados || {}));
 const ctnFoto = an => { try { const f = JSON.parse(an.foto || ''); return f && f.id ? f : null; } catch (_) { return null; } };
@@ -2715,6 +2721,13 @@ function ctnTxt(x, c, t, px, peso, cor, o = {}) {
 function ctnLarg(x, t, px, peso, sp) { x.font = peso + ' ' + px + 'px "Carteirinha CVH"'; return sp ? [...t].reduce((s, ch) => s + x.measureText(ch).width, 0) + sp * ([...t].length - 1) : x.measureText(t).width; }
 // maior tamanho (até o padrão) que cabe na largura
 const ctnCabe = (x, t, px, peso, max, min, spEm) => { let p = px; while (p > min && ctnLarg(x, t, p, peso, (spEm || 0) * p) > max) p -= 1; return p; };
+// foto girada (só quando o celular salvou de lado); as cores e os pixels continuam os mesmos
+function ctnGirada(im, rot) {
+  const r = ((+rot || 0) % 360 + 360) % 360;
+  if (!r) return im;   // imagem solta: width e height são os do arquivo
+  const c = document.createElement('canvas'), lado = r === 90 || r === 270; c.width = lado ? im.naturalHeight : im.naturalWidth; c.height = lado ? im.naturalWidth : im.naturalHeight;
+  const g = c.getContext('2d'); g.translate(c.width / 2, c.height / 2); g.rotate(r * Math.PI / 180); g.drawImage(im, -im.naturalWidth / 2, -im.naturalHeight / 2); return c;
+}
 // recorte "cover" da foto do animal dentro da moldura (sem mexer nas cores)
 function ctnCover(x, im, rx, ry, rw, rh, pos) {
   const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, k = Math.max(rw / iw, rh / ih), sw = rw / k, sh = rh / k;
@@ -2772,12 +2785,16 @@ async function ctnDados(an, fotoAnimal) {
   const v = d.vet || vetDe(L) || {};
   return { nome: an.nome || '', raca: an.raca || '', sexo: an.sexo || '', nasc: an.nascimento || '', chip: an.microchip || '', gato,
     dea1: t.dea1 && t.dea1.on && t.dea1.res ? t.dea1.res : '', dal: t.dal && t.dal.on && t.dal.res ? t.dal.res : '', grupo: gato ? (t.grupo || an.tipoSanguineo || '') : '',
-    fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || '', cpf: rp.cpf || '', vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', pos: (ctnFoto(an) || {}).pos || null };
+    fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || '', cpf: rp.cpf || '', vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', corte: (ctnFoto(an) || {}).corte || null, rot: +((ctnFoto(an) || {}).rot || 0) };
 }
 function ctnFrente(R, D) {
   const cv = document.createElement('canvas'); cv.width = CTN.W; cv.height = CTN.H; const x = cv.getContext('2d');
   x.drawImage(R.frente, 0, 0, CTN.W, CTN.H);
-  if (D.foto) { x.save(); x.beginPath(); x.rect(103, 385, 538, 718); x.clip(); ctnCover(x, D.foto, 103, 385, 538, 718, D.pos); x.restore(); }
+  if (D.foto) { x.save(); x.beginPath(); x.rect(103, 385, 538, 718); x.clip();
+    const src = ctnGirada(D.foto, D.rot), q = D.corte; if (q) x.drawImage(src, q.x * src.width, q.y * src.height, q.w * src.width, q.h * src.height, 103, 385, 538, 718); else ctnCover(x, src, 103, 385, 538, 718);
+    x.restore(); }
+  // carimbo do CVH em vermelho claro, por cima da foto, saindo pelo canto de baixo à esquerda (como nas carteirinhas antigas)
+  if (R.selo) { x.save(); x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.565; x.translate(66, 1148); x.rotate(-14 * Math.PI / 180); x.drawImage(R.selo, -390.5, -390.5, 781, 781); x.restore(); }
   ctnTxt(x, [843, 163], 'CARTEIRINHA DO DOADOR', 57, 700, CTN.VERM, { sp: 7 });
   const nome = D.nome.toUpperCase(), pn = ctnCabe(x, nome, 198, 700, 640, 70, 0.055);
   ctnTxt(x, [843, 423], nome, pn, 700, CTN.ESC, { sp: pn * 0.055 });
@@ -2838,9 +2855,8 @@ async function ctnBaixar(an, C) {
 async function abrirCarteirinha(aid) {
   const an = animalDe(aid); if (!an) return;
   abrirFolha('Carteirinha do doador', '<p class="nota" id="ctnSt">Montando a carteirinha de ' + esc(an.nome) + '…</p><div class="ctn-prev" id="ctnPrev"></div>' +
-    '<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button><button class="btn sec2" id="ctnFoto">' + (ctnFoto(an) ? 'Trocar a foto' : 'Colocar a foto') + '</button>' + (ctnFoto(an) ? '<button class="btn sec2" id="ctnTira">Remover a foto</button>' : '') + '</div>' +
-    (ctnFoto(an) ? '<div class="ctn-pos"><b>Enquadrar a foto</b><label>Para os lados<input type="range" id="ctnPx" min="0" max="100" value="' + Math.round(((ctnFoto(an).pos || {}).x ?? 0.5) * 100) + '"></label><label>Para cima e para baixo<input type="range" id="ctnPy" min="0" max="100" value="' + Math.round(((ctnFoto(an).pos || {}).y ?? 0.4) * 100) + '"></label><button class="btn sec2" id="ctnPosOk" hidden>Guardar o enquadramento</button></div>' : '') +
-    '<p class="nota">A foto pode ser tirada na hora ou escolhida da galeria. Ela entra na carteirinha do jeito que foi tirada, só recortada no formato da moldura.</p><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
+    '<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button><button class="btn sec2" id="ctnFoto">' + (ctnFoto(an) ? 'Trocar a foto' : 'Colocar a foto') + '</button>' + (ctnFoto(an) ? '<button class="btn sec2" id="ctnEnq">Enquadrar a foto</button><button class="btn sec2" id="ctnTira">Remover a foto</button>' : '') + '</div>' +
+'<p class="nota">A foto pode ser tirada na hora ou escolhida da galeria. Ela entra na carteirinha do jeito que foi tirada; o recorte é escolhido arrastando o quadro, como nas fotos dos laudos.</p><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
     let C = null;
     const montar = async (fotoNova) => {
       $('#ctnSt').textContent = 'Montando a carteirinha…'; $('#ctnBaixar').disabled = true;
@@ -2849,28 +2865,64 @@ async function abrirCarteirinha(aid) {
       catch (e) { if ($('#ctnSt')) $('#ctnSt').textContent = e.message; }
     };
     montar();
-    // enquadramento: mexe só na posição do recorte, a foto continua a mesma
-    let tPos = 0;
-    const posNova = () => { const f = ctnFoto(animalDe(aid)); if (!f || !C) return; C.D.pos = { x: $('#ctnPx').value / 100, y: $('#ctnPy').value / 100 }; clearTimeout(tPos); tPos = setTimeout(() => { ctnRecursos().then(R => { C.frente = ctnFrente(R, C.D); const i = $('#ctnPrev img'); if (i) i.src = C.frente.toDataURL('image/jpeg', 0.85); }); }, 60); $('#ctnPosOk').hidden = false; };
-    if ($('#ctnPx')) { $('#ctnPx').oninput = posNova; $('#ctnPy').oninput = posNova;
-      $('#ctnPosOk').onclick = ev => salvando(ev.currentTarget, async () => { const f = ctnFoto(animalDe(aid)); const s = await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, pos: C.D.pos }); atualizarAnimal(s); ev.currentTarget.hidden = true; toast('Enquadramento guardado.'); }); }
+    if ($('#ctnEnq')) $('#ctnEnq').onclick = async () => { const f = ctnFoto(animalDe(aid)); $('#ctnSt').textContent = 'Abrindo a foto…'; try { const im = await ctnArquivo(f.id); $('#ctnSt').textContent = ''; ctnCorte(im, f, async (corte, rot) => { const s2 = await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, corte, rot }); atualizarAnimal(s2); abrirCarteirinha(aid); }); } catch (e) { $('#ctnSt').textContent = e.message; } };
     $('#ctnBaixar').onclick = ev => salvando(ev.currentTarget, () => ctnBaixar(animalDe(aid), C));
     $('#ctnFoto').onclick = () => $('#ctnArq').click();
     if ($('#ctnTira')) $('#ctnTira').onclick = ev => salvando(ev.currentTarget, async () => { const s = await api('animalFoto', E.sessao, aid, null); atualizarAnimal(s); abrirCarteirinha(aid); });
     $('#ctnArq').onchange = async ev => {
       const f = ev.target.files && ev.target.files[0]; if (!f) return;
-      $('#ctnSt').textContent = 'Guardando a foto…';
+      $('#ctnSt').textContent = 'Abrindo a foto…';
       try {
         let bytes = new Uint8Array(await f.arrayBuffer()), mime = (f.type || '').toLowerCase(), nome = f.name || 'foto.jpg';
         // HEIC e outros formatos que o servidor não guarda viram JPEG na qualidade máxima
         if (!/^image\/(jpeg|png|webp)$/.test(mime)) { const im = await ctnImg(URL.createObjectURL(f)), cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext('2d').drawImage(im, 0, 0); const b = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 1)); bytes = new Uint8Array(await b.arrayBuffer()); mime = 'image/jpeg'; nome = nome.replace(/\.\w+$/, '') + '.jpg'; }
-        let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-        const r = await api('salvarArquivo', E.sessao, aid, 'Foto da carteirinha ' + nome, mime, btoa(bin), true);
-        const s = await api('animalFoto', E.sessao, aid, { id: r.id, nome });
-        atualizarAnimal(s); abrirCarteirinha(aid);
+        const im = await ctnImg(URL.createObjectURL(new Blob([bytes], { type: mime }))); $('#ctnSt').textContent = ''; ev.target.value = '';
+        ctnCorte(im, null, async (corte, rot) => {
+          let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+          const r = await api('salvarArquivo', E.sessao, aid, 'Foto da carteirinha ' + nome, mime, btoa(bin), true);
+          const s = await api('animalFoto', E.sessao, aid, { id: r.id, nome, corte, rot });
+          atualizarAnimal(s); abrirCarteirinha(aid);
+        });
       } catch (e) { $('#ctnSt').textContent = 'Não consegui guardar a foto. ' + e.message; }
     };
   });
+}
+// recorte da foto como nos laudos: arrasta o quadro e os cantos (o quadro mantém o formato da moldura da carteirinha)
+function ctnCorte(im, f, usar) {
+  const A = 538 / 718; let m = $('#ctnCorteM');
+  if (!m) { m = document.createElement('div'); m.id = 'ctnCorteM'; m.className = 'ctn-modal'; document.body.appendChild(m); }
+  m.innerHTML = '<div class="caixa" role="dialog" aria-modal="true"><h3>Enquadrar a foto</h3><p class="nota">Arraste o quadro e os cantos para escolher o que entra na moldura. Use Girar se a foto estiver de lado.</p><div class="area"><canvas></canvas><div class="moldura"><span class="alca" data-c="nw"></span><span class="alca" data-c="ne"></span><span class="alca" data-c="sw"></span><span class="alca" data-c="se"></span></div></div>' +
+    '<div class="botoes"><button class="btn sec2" data-c="girar">Girar</button><span class="esp"></span><button class="btn sec2" data-c="cancelar">Cancelar</button><button class="btn" data-c="usar">Usar este recorte</button></div></div>';
+  m.hidden = false;
+  const st = { rot: +((f && f.rot) || 0), q: null, W: 0, H: 0 }, cv = m.querySelector('canvas'), mold = m.querySelector('.moldura'), area = m.querySelector('.area');
+  const pos = () => { const q = st.q; mold.style.left = q.x + 'px'; mold.style.top = q.y + 'px'; mold.style.width = q.w + 'px'; mold.style.height = q.h + 'px'; };
+  const desenhar = (corte) => {
+    const src = ctnGirada(im, st.rot), maxW = Math.min(560, innerWidth - 60), maxH = Math.max(240, Math.min(520, innerHeight - 250)), e = Math.min(maxW / src.width, maxH / src.height, 1);
+    st.W = Math.round(src.width * e); st.H = Math.round(src.height * e); cv.width = st.W; cv.height = st.H; cv.getContext('2d').drawImage(src, 0, 0, st.W, st.H); area.style.width = st.W + 'px'; area.style.height = st.H + 'px';
+    if (corte) st.q = { x: corte.x * st.W, y: corte.y * st.H, w: corte.w * st.W, h: corte.h * st.H };
+    else { let w = st.W * 0.9, h = w / A; if (h > st.H * 0.9) { h = st.H * 0.9; w = h * A; } st.q = { x: (st.W - w) / 2, y: (st.H - h) / 2, w, h }; }
+    pos();
+  };
+  desenhar(f && f.corte);
+  let arr = null;
+  mold.onpointerdown = ev => { ev.preventDefault(); arr = { c: ev.target.dataset.c || 'mover', x: ev.clientX, y: ev.clientY, q: Object.assign({}, st.q) }; try { mold.setPointerCapture(ev.pointerId); } catch (_) {} };
+  mold.onpointermove = ev => {
+    if (!arr) return; const dx = ev.clientX - arr.x, dy = ev.clientY - arr.y, q = Object.assign({}, arr.q), min = 40;
+    if (arr.c === 'mover') { q.x = Math.max(0, Math.min(st.W - q.w, q.x + dx)); q.y = Math.max(0, Math.min(st.H - q.h, q.y + dy)); }
+    else {
+      // o canto oposto fica parado; o quadro cresce ou diminui no formato da moldura
+      const oeste = /w/.test(arr.c), norte = /n/.test(arr.c), ax = oeste ? q.x + q.w : q.x, ay = norte ? q.y + q.h : q.y;
+      const dw = oeste ? -dx : dx, dh = norte ? -dy : dy;
+      let w = Math.max(min, q.w + Math.max(dw, dh * A));
+      w = Math.min(w, oeste ? ax : st.W - ax, (norte ? ay : st.H - ay) * A); const h = w / A;
+      q.w = w; q.h = h; q.x = oeste ? ax - w : ax; q.y = norte ? ay - h : ay;
+    }
+    st.q = q; pos();
+  };
+  mold.onpointerup = mold.onpointercancel = () => { arr = null; };
+  m.querySelector('[data-c=girar]').onclick = () => { st.rot = (st.rot + 90) % 360; desenhar(null); };
+  m.querySelector('[data-c=cancelar]').onclick = () => { m.hidden = true; };
+  m.querySelector('[data-c=usar]').onclick = ev => salvando(ev.currentTarget, async () => { const q = st.q; await usar({ x: q.x / st.W, y: q.y / st.H, w: q.w / st.W, h: q.h / st.H }, st.rot); m.hidden = true; });
 }
 function atualizarAnimal(s) { if (!s || !s.id) return; const i = E.d.animais.findIndex(a => a.id === s.id); if (i >= 0) E.d.animais[i] = Object.assign({}, E.d.animais[i], s); }
 
