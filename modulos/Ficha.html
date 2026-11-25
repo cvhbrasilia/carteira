@@ -1195,55 +1195,63 @@ function nvColeta(mob){
 /* ================= onda do SpO₂ (foto do monitor) ================= */
 // extrai o traçado vermelho da pletismografia (SpO2) da foto do monitor: coluna a coluna, os pixels vermelhos viram uma linha
 function extrairOnda(img) {
-  const k = Math.min(1, 1600 / Math.max(img.width, img.height)), W = Math.round(img.width * k), H = Math.round(img.height * k);
-  const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const cx = cv.getContext("2d"); cx.drawImage(img, 0, 0, W, H);
-  const px = cx.getImageData(0, 0, W, H).data, M = new Uint8Array(W * H);
-  for (let i = 0, j = 0; j < W * H; i += 4, j++) { const r = px[i], g = px[i + 1], b = px[i + 2]; M[j] = r > 120 && r - g > 55 && r - b > 45 ? 1 : 0; }
+  const k = Math.min(1600 / Math.max(img.width, img.height), Math.max(1, 900 / img.width)), W = Math.round(img.width * k), H = Math.round(img.height * k);
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const cx = cv.getContext("2d"); cx.imageSmoothingQuality = "high"; cx.drawImage(img, 0, 0, W, H);
+  const px = cx.getImageData(0, 0, W, H).data, S = new Int16Array(W * H), M = new Uint8Array(W * H);
+  // vermelho em relação ao verde e ao azul (o traço pode estar escuro, borrado ou rosado); o limite se ajusta à foto
+  const hist = new Int32Array(256);
+  for (let i = 0, j = 0; j < W * H; i += 4, j++) { const r = px[i], g = px[i + 1], b = px[i + 2], s = r < 45 ? 0 : r - Math.max(g, b); S[j] = s; if (s > 0) hist[Math.min(255, s)]++; }
+  let tot = 0; for (let v = 255; v > 0; v--) tot += hist[v]; let acc = 0, p995 = 0; for (let v = 255; v > 0; v--) { acc += hist[v]; if (acc >= tot * 0.004 + 50) { p995 = v; break; } }
+  const lim = Math.max(18, Math.min(55, p995 * 0.38));
+  for (let j = 0; j < W * H; j++) M[j] = S[j] >= lim ? 1 : 0;
   // faixa da onda: linhas com pixels vermelhos, agrupadas (falhas de até 8 linhas); fica o grupo com mais pixels
   const lin = new Int32Array(H); for (let y = 0; y < H; y++) { let n = 0; for (let x = 0; x < W; x++) n += M[y * W + x]; lin[y] = n; }
   let best = null, cur = null, gap = 0;
   for (let y = 0; y < H; y++) {
     if (lin[y] >= 2) { if (!cur) cur = { y0: y, y1: y, s: 0 }; cur.y1 = y; cur.s += lin[y]; gap = 0; }
-    else if (cur && ++gap > 8) { if (!best || cur.s > best.s) best = cur; cur = null; gap = 0; }
+    else if (cur && ++gap > Math.max(8, H * 0.02)) { if (!best || cur.s > best.s) best = cur; cur = null; gap = 0; }
   }
   if (cur && (!best || cur.s > best.s)) best = cur;
   if (!best || best.s < 200) return null;
   const { y0, y1 } = best;
-  // colunas: de cada coluna, o pixel vermelho mais alto e o mais baixo
-  const col = []; for (let x = 0; x < W; x++) { let a = -1, b = -1; for (let y = y0; y <= y1; y++) if (M[y * W + x]) { if (a < 0) a = y; b = y; } col.push(a < 0 ? null : [a, b]); }
-  // pedaço principal: ignora pontos soltos longe da onda (mais de 40 colunas de vazio)
-  let x0 = col.findIndex(Boolean), x1 = W - 1 - col.slice().reverse().findIndex(Boolean);
-  { let runs = [], s = -1, vaz = 0; for (let x = 0; x < W; x++) { if (col[x]) { if (s < 0) s = x; vaz = 0; } else if (s >= 0 && ++vaz > 40) { runs.push([s, x - vaz]); s = -1; vaz = 0; } } if (s >= 0) runs.push([s, W - 1]);
-    runs.sort((p, q) => (q[1] - q[0]) - (p[1] - p[0])); if (runs.length) { const r0 = runs[0]; x0 = r0[0]; x1 = r0[1]; for (const r of runs.slice(1)) if (r[1] - r[0] > (r0[1] - r0[0]) * 0.15) { x0 = Math.min(x0, r[0]); x1 = Math.max(x1, r[1]); } } }
-  const esp = (() => { const d = col.slice(x0, x1 + 1).filter(Boolean).map(([a, b]) => b - a).sort((p, q) => p - q); return d.length ? d[Math.floor(d.length * 0.3)] : 2; })();
-  const yt = Math.min(...col.slice(x0, x1 + 1).filter(Boolean).map((c) => c[0])), yb = Math.max(...col.slice(x0, x1 + 1).filter(Boolean).map((c) => c[1]));
-
-  const N = (x, y) => [Math.round((x - x0) / Math.max(1, x1 - x0) * 1000), Math.round((y - yt) / Math.max(1, yb - yt) * 1000)];
-  // o monitor liga cada amostra à anterior por um risco vertical: em cada coluna, a linha sai de onde parou e vai até a outra ponta;
-  // colunas seguidas com o mesmo risco (linha grossa) continuam no mesmo sentido, sem voltar
-  const partes = []; let p = null, prev = null, dir = 0, antes = null, vazio = 0;
-  const sobre = (r, s) => { const i = Math.min(r[1], s[1]) - Math.max(r[0], s[0]); return i / Math.max(1, Math.min(r[1] - r[0], s[1] - s[0])); };
+  // em cada coluna, os trechos vermelhos (falhas de até 2 pixels são ignoradas)
+  const runs = []; for (let x = 0; x < W; x++) { const R = []; let a = -1, ult = -9; for (let y = y0; y <= y1; y++) if (M[y * W + x]) { if (a < 0 || y - ult > Math.max(3, Math.round(k * 1.5))) { if (a >= 0) R.push([a, ult]); a = y; } ult = y; } if (a >= 0) R.push([a, ult]); runs.push(R.filter((r) => r[1] - r[0] >= 1)); }
+  const com = runs.map((R) => R.length > 0);
+  let x0 = com.indexOf(true), x1 = W - 1 - com.slice().reverse().indexOf(true);
+  { let rr = [], s = -1, vaz = 0; for (let x = 0; x < W; x++) { if (com[x]) { if (s < 0) s = x; vaz = 0; } else if (s >= 0 && ++vaz > W * 0.04) { rr.push([s, x - vaz]); s = -1; vaz = 0; } } if (s >= 0) rr.push([s, W - 1]);
+    rr.sort((p, q) => (q[1] - q[0]) - (p[1] - p[0])); if (rr.length) { const r0 = rr[0]; x0 = r0[0]; x1 = r0[1]; for (const r of rr.slice(1)) if (r[1] - r[0] > (r0[1] - r0[0]) * 0.15) { x0 = Math.min(x0, r[0]); x1 = Math.max(x1, r[1]); } } }
+  // espessura do traço: trechos curtos mais comuns
+  const esp = (() => { const d = runs.slice(x0, x1 + 1).flat().map(([a, b]) => b - a).sort((p, q) => p - q); return d.length ? Math.max(2, d[Math.floor(d.length * 0.35)]) : 2; })();
+  // segue a linha coluna a coluna: em cada coluna, o trecho mais perto de onde estava
+  const esc = []; let prev = null;
   for (let x = x0; x <= x1; x++) {
-    const c = col[x]; if (!c) { if (p && ++vazio > 1) { partes.push(p); p = null; prev = null; dir = 0; antes = null; } continue; } vazio = 0;
-    if (!p) p = [];
-    const [a, b] = c, A = a + esp / 2, Bb = b - esp / 2;
-    if (b - a <= esp + 1) { const y = (a + b) / 2; if (prev != null && Math.abs(y - prev) > esp) dir = Math.sign(y - prev); p.push(N(x, y)); prev = y; }
-    else {
-      let alvo;
-      if (prev == null) { p.push(N(x, A)); prev = A; alvo = Bb; }
-      else if (antes && sobre(antes, c) > 0.7 && dir) alvo = dir > 0 ? Bb : A;
-      else alvo = Math.abs(prev - a) <= Math.abs(prev - b) ? Bb : A;
-      const ent = Math.min(Bb, Math.max(A, prev));
-      if (Math.abs(alvo - prev) > 0.5) { if (Math.abs(ent - prev) > 0.5) p.push(N(x, ent)); p.push(N(x, alvo)); dir = Math.sign(alvo - prev); prev = alvo; }
-    }
-    antes = c;
+    const R = runs[x]; if (!R.length) { esc.push(null); continue; }
+    const c = prev == null ? R.reduce((m, r) => (r[1] - r[0] > m[1] - m[0] ? r : m)) : R.reduce((m, r) => { const d = (q) => (prev < q[0] ? q[0] - prev : prev > q[1] ? prev - q[1] : 0); return d(r) < d(m) ? r : m; });
+    esc.push(c); prev = (c[0] + c[1]) / 2;
   }
-  if (p) partes.push(p);
-  // simplifica (Douglas-Peucker) sem mudar o desenho
+  const longo = (c) => c && c[1] - c[0] > esp * 2.2;
+  // traço normal: o centro do traço em cada coluna. Subida ou descida (colunas seguidas com o traço muito comprido):
+  // vira um risco só, de uma ponta à outra, no sentido em que a onda vai; pico estreito sobe e desce
+  const pts = []; let ult = null;
+  for (let i = 0; i < esc.length; i++) {
+    const c = esc[i]; if (!c) continue; const x = x0 + i;
+    if (!longo(c)) { const m = (c[0] + c[1]) / 2; pts.push([x, m]); ult = m; continue; }
+    let j = i; while (j + 1 < esc.length && longo(esc[j + 1])) j++;
+    const bl = esc.slice(i, j + 1), top = Math.min(...bl.map((q) => q[0])) + esp / 2, bot = Math.max(...bl.map((q) => q[1])) - esp / 2;
+    const depois = esc.slice(j + 1).find(Boolean), yd = depois ? (depois[0] + depois[1]) / 2 : null, ya = ult != null ? ult : yd != null ? yd : (top + bot) / 2;
+    const ini = Math.abs(ya - bot) < Math.abs(ya - top) ? bot : top, fim = yd == null ? (ini === bot ? top : bot) : Math.abs(yd - bot) < Math.abs(yd - top) ? bot : top;
+    if (ini === fim) pts.push([x, ini], [x0 + Math.round((i + j) / 2), ini === bot ? top : bot], [x0 + j, fim]); else pts.push([x, ini], [x0 + j, fim]);
+    ult = fim; i = j;
+  }
+  if (pts.length < 3) return null;
+  const yt = Math.min(...pts.map((q) => q[1])), yb = Math.max(...pts.map((q) => q[1]));
+  const N = ([x, y]) => [Math.round((x - x0) / Math.max(1, x1 - x0) * 1000), Math.round((y - yt) / Math.max(1, yb - yt) * 1000)];
+  // falhas curtas na linha (reflexo, traço apagado) são ligadas; falhas longas separam o traçado
+  const partes = [[pts[0]]]; for (let i = 1; i < pts.length; i++) { if (pts[i][0] - pts[i - 1][0] > W * 0.05) partes.push([]); partes[partes.length - 1].push(pts[i]); }
   const dp = (P, e) => { if (P.length < 3) return P; let dm = 0, im = 0; const [ax, ay] = P[0], [bx, by] = P[P.length - 1], L = Math.hypot(bx - ax, by - ay) || 1;
     for (let i = 1; i < P.length - 1; i++) { const d = Math.abs((by - ay) * P[i][0] - (bx - ax) * P[i][1] + bx * ay - by * ax) / L; if (d > dm) { dm = d; im = i; } }
     return dm > e ? dp(P.slice(0, im + 1), e).slice(0, -1).concat(dp(P.slice(im), e)) : [P[0], P[P.length - 1]]; };
-  const fin = partes.filter((q) => q.length > 2).map((q) => dp(q, 1.2));
+  const fin = partes.filter((q) => q.length > 2).map((q) => dp(q.map(N), 1.2));
   return { tracado: fin.map((q) => q.map((xy) => xy.join(",")).join(" ")).join("|"), proporcao: Math.round((x1 - x0) / Math.max(1, yb - yt) * 100) / 100 };
 }
 function ondaSvg(o, cor, fundo) {
