@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126010520">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126011548">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126010520';
+  var VERSAO = '20261126011548';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -7750,6 +7750,13 @@ function sairModulo(b) {
   // ficha de doação salva: se o vermífugo da doação ainda não está na carteira, abre o lançamento (a receita sai sozinha ao salvar)
   if (doador && pode('carteiras')) { const x = vermParaConfirmar().find(v => v.an.id === doador && v.origem === 'ficha'); if (x) setTimeout(() => { if (E.modAberto) return; ACOES['verm-confirmar']({ dataset: { rid: x.r.id } }); }, 500); }
 }
+// o servidor passa a tipagem do laudo para o cadastro; aqui o painel aberto acompanha sem recarregar
+function tipagemLocal(aid, d) {
+  const an = animalDe(aid); d = d || {}; const t = d.tipoLaudo === 'tipagem' ? d.detalhe : d.tipoLaudo === 'compat' ? (d.detalhe || {}).tipagem : null; if (!an || !t) return;
+  const res = x => x && (x.on === true || x.on === '1') && /^(pos|neg)/i.test(x.res || '') ? (/^pos/i.test(x.res) ? 'Positivo' : 'Negativo') : '';
+  if (an.especie === 'Felina') { if (/^(A|B|AB)$/.test(t.grupo || '')) an.tipoSanguineo = t.grupo; }
+  else { if (res(t.dea1)) an.tipoSanguineo = 'DEA 1 ' + res(t.dea1); if (res(t.dal)) an.dal = res(t.dal); }
+}
 function guardarRegistro(salvo) { const i = E.d.registros.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.registros[i] = salvo; else E.d.registros.push(salvo); }
 const PONTE = {
   // controle de qualidade: o módulo chama só as funções qc… do servidor
@@ -7930,7 +7937,7 @@ const PONTE = {
     if (antigo && !origens.length && (antigo.dados || {}).origens) o.dados = Object.assign({}, o.dados, { origens: antigo.dados.origens });
     const envio = antigo ? Object.assign({ carteira: true, historico: !!(antigo.dados || {}).origens }, (antigo.dados || {}).envio || {}) : { carteira: false, historico: false };
     const salvo = await api('salvarRegistro', E.sessao, { id: antigo ? antigo.id : '', animalId: an.id, tipo: 'laudo', grupo: 'laudo', data: o.data, proxima: '', vetId: o.vetId || '', dados: Object.assign({}, o.dados, { a4, cel, envio }, edicao ? { edicao } : {}) });
-    guardarRegistro(salvo);
+    guardarRegistro(salvo); tipagemLocal(an.id, salvo.dados || o.dados);
     if (o.rascunhoId) { try { await api('laudoRascunhoApagar', E.sessao, o.rascunhoId); E.rascunhos = null; } catch (_) {} }
     if (!antigo && salvo && salvo.id) api('laudoAvisarPronto', E.sessao, salvo.id).catch(() => {});
     // carteira e histórico: pelos botões Enviar (painel de laudos e lista de laudos do animal); correção de laudo já no histórico atualiza sozinha
