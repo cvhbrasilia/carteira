@@ -3999,12 +3999,16 @@ async function guardarEdicao(silencioso) {
 }
 // pedido da Intensivet: paciente receptor, solicitante, clínica e as bolsas reservadas para a prova
 function aplicarPedido(p) {
-  estado.receptor = true; estado.pedidoId = p.id; Object.assign(estado.paciente, p.paciente || {}); estado.resp.nome = p.resp || estado.resp.nome;
+  estado.receptor = true; estado.pedidoId = p.semAtendimento ? null : p.id; Object.assign(estado.paciente, p.paciente || {}); estado.resp.nome = p.resp || estado.resp.nome;
   const k = CTX.tipo && TIPOS[CTX.tipo] ? CTX.tipo : "compat"; iniciarTipo(k);
   if (p.solNome) { estado.exame.solicitante = p.solNome; estado.exame.solicitanteCrmv = p.solCrmv || ""; } else estado.exame.solicitante = p.solicitante || ""; estado.exame.clinica = p.clinica || "";
   if (k === "requisicao" && p.req) { estado.t.linhas = p.req.linhas || []; estado.t.solicitante = p.req.solicitante || null; if (p.req.assinatura) estado.fotos.assSol = p.req.assinatura; estado.exame.data = p.req.data || estado.exame.data; estado.exame.hora = p.req.hora || ""; }
   if (k === "compat" && p.htReceptor && !String(estado.t.htReceptor || "").trim()) estado.t.htReceptor = p.htReceptor;
-  if (k === "compat" && (p.provas || []).length) estado.t.provas = p.provas.map((x) => Object.assign({ bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }, { bolsa: x.bolsa || "", doador: x.doador || "" }));
+  if (k === "compat" && (p.provas || []).length) estado.t.provas = p.provas.map((x) => Object.assign({ bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }, { bolsa: x.bolsa || "", doador: x.doador || "" }, x.maior ? { maior: x.maior } : {}));
+  // tipagem do receptor lançada no HemoPlusVet (DEA 1, DAL, grupos A, B e AB): já vem marcada, falta conferir e pôr as fotos
+  const tp = tipAtual(); if (tp && (p.tipagemHP || []).length) { const R = {}; p.tipagemHP.forEach((x) => { R[semAc(x.exame)] = /posit/i.test(x.resultado) ? "Positivo" : /negat/i.test(x.resultado) ? "Negativo" : ""; });
+    if (tp.dea1) { tp.dea1.on = !!R["dea 1"]; if (R["dea 1"]) tp.dea1.res = R["dea 1"]; } if (tp.dal) { tp.dal.on = !!R.dal; if (R.dal) tp.dal.res = R.dal; }
+    const g = ["ab", "a", "b"].find((k) => R[k] === "Positivo"); if (g) tp.grupo = g.toUpperCase(); }
   estado.exame.titulo = tituloPadrao();
 }
 /* leitor de código de barras (USB ou Bluetooth): digita o código e um Enter em poucos milissegundos; o painel bipa e preenche */
@@ -4165,7 +4169,7 @@ if (CTX.edicao && CTX.edicao.texto) {
 } else if (CTX.pedido && CTX.pedido.id) aplicarPedido(CTX.pedido);
 else if (CTX.tipo && TIPOS[CTX.tipo]) iniciarTipo(CTX.tipo);
 montarForm(); ligar(); renderPrevia();
-if (CTX.pedido && CTX.pedido.id && !avisoAbertura) avisoAbertura = "Laudo do pedido " + CTX.pedido.id + " da " + (CTX.pedido.clinica || "Intensivet") + ". Paciente, solicitante" + ((CTX.pedido.provas || []).length && estado.tipo === "compat" ? " e bolsas da prova" : "") + " já preenchidos. Confira.";
+if (CTX.pedido && CTX.pedido.id && !avisoAbertura) avisoAbertura = (CTX.pedido.rotulo || "Laudo do pedido " + CTX.pedido.id + " da " + (CTX.pedido.clinica || "Intensivet")) + ". Paciente, solicitante" + ((CTX.pedido.provas || []).length && estado.tipo === "compat" ? " e bolsas da prova" : "") + " já preenchidos. Confira.";
 if (avisoAbertura) { $("#st").className = "st"; $("#st").textContent = avisoAbertura; }
 // laudo que chegou sozinho do laboratório (TECSA, Citopet ou IDEXX): abre o PDF original e preenche o laudo do CVH
 if (CTX.pdfLab && CTX.pdfLab.id) OFERTA = (CTX.pdfLab.feitos || []).slice();
