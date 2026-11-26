@@ -1256,14 +1256,15 @@ async function zplPequena(u, n) {
   const tipos = tipoTxt(a).split("·").map((t) => t.trim().replace(/\s+([+−-])$/, "$1").replace(/-$/, "−")).filter(Boolean);
   const W = 400, H = 194, X = 24, R = 390, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const c = cv.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, W, H); c.fillStyle = "#000"; c.textBaseline = "alphabetic";
-  const fonte = (px) => "bold " + px + "px Arial, 'Liberation Sans', Helvetica, sans-serif";
+  // mesma família de letra das etiquetas do HemoPlus (Tahoma), traço normal; só o número da bolsa em negrito
+  const fonte = (px, n) => (n ? "bold " : "") + px + "px Tahoma, Verdana, 'DejaVu Sans', sans-serif";
   const selo = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("Não consegui abrir o selo")); i.src = "etiqueta-selo.png"; });
   const sh = Math.round(112 * selo.naturalHeight / selo.naturalWidth); c.drawImage(selo, X, 14, 112, sh);
   // número da bolsa: "580" "-" "0" bem juntos (o traço desenhado curto), espaço e o hemocomponente
   const [num, comp] = [u.id.split(" ")[0], u.id.split(" ").slice(1).join(" ")], partes = num.split("-");
-  let fs = 56; const larg = (f) => { c.font = fonte(f); return partes.reduce((t, p) => t + c.measureText(p).width, 0) + (partes.length - 1) * (f * 0.26 + 6) + (comp ? f * 0.3 + c.measureText(comp).width : 0); };
+  let fs = 56; const larg = (f) => { c.font = fonte(f, 1); return partes.reduce((t, p) => t + c.measureText(p).width, 0) + (partes.length - 1) * (f * 0.26 + 6) + (comp ? f * 0.3 + c.measureText(comp).width : 0); };
   while (fs > 30 && larg(fs) > R - (X + 124)) fs -= 2;
-  c.font = fonte(fs); let x = X + 124; const yb = 14 + Math.round(fs * 0.86);
+  c.font = fonte(fs, 1); let x = X + 124; const yb = 14 + Math.round(fs * 0.86);
   partes.forEach((p, k) => { c.fillText(p, x, yb); x += c.measureText(p).width; if (k < partes.length - 1) { const t = Math.max(4, Math.round(fs * 0.12)); c.fillRect(Math.round(x + 3), Math.round(yb - fs * 0.36), Math.round(fs * 0.26), t); x += fs * 0.26 + 6; } });
   if (comp) c.fillText(comp, x + fs * 0.3, yb);
   // validade
