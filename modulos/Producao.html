@@ -585,7 +585,10 @@ function telaHoje() {
   const passa = (u) => { if (!ativos.length) return true; const k = tiposBolsa(u), grupos = {};
     ativos.forEach((a) => { const g = a.slice(0, a.indexOf(":")); (grupos[g] = grupos[g] || []).push(a); });
     return Object.values(grupos).every((L) => L.some((a) => k.includes(a))); };
-  return abas + telaHojeLista(soAb(P, (x) => x.c), soAb(cvh).filter(passa), soAb(intv).filter(passa), soAb(caminho).filter(passa), ab, filtroTipos([...soAb(cvh), ...soAb(intv), ...soAb(caminho)]));
+  // o filtro vale também para as bolsas do Resolver hoje (aguardando liberação, validade etc.); o que não é bolsa continua aparecendo
+  const bolsaDe = (x) => x.a === "uni" ? S.uni.find((y) => y.id === x.v) : null, Pab = soAb(P, (x) => x.c);
+  const naTela = [...new Map([...Pab.map(bolsaDe).filter(Boolean), ...soAb(cvh), ...soAb(intv), ...soAb(caminho)].map((u) => [u.id, u])).values()];
+  return abas + telaHojeLista(Pab.filter((x) => { const u = bolsaDe(x); return !u || passa(u); }), soAb(cvh).filter(passa), soAb(intv).filter(passa), soAb(caminho).filter(passa), ab, filtroTipos(naTela));
 }
 // tipos do doador da bolsa, como chaves do filtro: cão (DEA 1 e DAL) e gato (A, B, AB)
 function tiposBolsa(u) {

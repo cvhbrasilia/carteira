@@ -3362,6 +3362,7 @@ init();
     (T.pend || []).forEach((p) => avisos.push("Pendência do doador: " + p + "."));
     if (nc) return { graves, avisos };   // sem coleta: registrar a inaptidão é o certo, nada bloqueia
     if (T.aposentado) graves.push("O doador está aposentado.");
+    else if (T.afastado) graves.push("O doador está afastado temporariamente (" + String(T.afastado).toLowerCase() + ").");
     else if (T.doador === false) graves.push("O animal não está marcado como doador no cadastro.");
     (T.imp || []).forEach((p) => graves.push("Impedimento laboratorial: " + p + "."));
     const meses = T.intervaloMeses || 3, ant = (T.doacoes || []).filter((d) => d.data && d.data < iso && !(S.numero && d.numero === S.numero)).map((d) => d.data).sort().pop();

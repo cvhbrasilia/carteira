@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261125234448">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126000706">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1053,7 +1053,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261125234448';
+  var VERSAO = '20261126000706';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
@@ -2882,14 +2882,14 @@ async function ctnCodigoAnimal(id) { const h = [...new Uint8Array(await crypto.s
 const ctnDeB64 = o => o && o.b64 ? ctnImg('data:' + (/^image\//.test(o.mime || '') ? o.mime : 'image/jpeg') + ';base64,' + o.b64).catch(() => null) : Promise.resolve(null);
 async function ctnDados(an, fotoAnimal) {
   const gato = /fel|gat/i.test(an.especie || ''), resp = E.modo !== 'painel';
-  let d, v, cpf, dea, dal, foto, meta;
+  let d, v, cpf, dea, dal, foto, meta, clube = '';
   if (resp) {
     // carteira do responsável: o servidor manda o laudo de tipagem e as fotos
     const r = E.modo === 'carteirinha' ? await api('carteirinhaPublica', E.ct) : await api('carteiraCarteirinha', E.token, an.id);
-    d = r.laudo || { codigo: r.codigo, cadastro: true }; v = (r.laudo || r).vet || {}; cpf = r.cpf || ''; meta = r.foto || {};
+    d = r.laudo || { codigo: r.codigo, cadastro: true }; v = (r.laudo || r).vet || {}; cpf = r.cpf || ''; meta = r.foto || {}; clube = r.clube || '';
     [dea, dal, foto] = await Promise.all([gato ? null : ctnDeB64(r.dea), gato ? null : ctnDeB64(r.dal), fotoAnimal ? Promise.resolve(fotoAnimal) : ctnDeB64(r.foto)]);
   } else {
-    const rp = respDe(an) || {}, L = ctnLaudo(an.id); cpf = rp.cpf || ''; meta = ctnFoto(an) || {};
+    const rp = respDe(an) || {}, L = ctnLaudo(an.id); cpf = rp.cpf || ''; meta = ctnFoto(an) || {}; clube = clubeStatus(an);
     // sem laudo de tipagem feito no app: tipagem do cadastro, sem as fotos do teste, assinatura do médico veterinário padrão e o código do próprio doador
     if (!L) { const vp = (E.d.vets || []).find(x => x.padrao === '1') || (E.d.vets || [])[0] || {}; d = { codigo: await ctnCodigoAnimal(an.id), cadastro: true }; v = vp; }
     else { d = L.dados || {}; v = d.vet || vetDe(L) || {}; }
@@ -2899,9 +2899,20 @@ async function ctnDados(an, fotoAnimal) {
   }
   let t = (d.tipoLaudo === 'tipagem' ? d.detalhe : (d.detalhe || {}).tipagem) || {}; const rp = respDe(an) || {};
   if (d.cadastro) { const ts = String(an.tipoSanguineo || ''); t = gato ? { grupo: /^(A|B|AB)$/.test(ts) ? ts : '' } : { dea1: /dea 1/i.test(ts) ? { on: true, res: /pos/i.test(ts) ? 'Positivo' : 'Negativo' } : null, dal: /^(pos|neg)/i.test(an.dal || '') ? { on: true, res: /^pos/i.test(an.dal) ? 'Positivo' : 'Negativo' } : null }; }
-  return { nome: an.nome || '', raca: an.raca || '', sexo: an.sexo || '', nasc: an.nascimento || '', chip: an.microchip || '', gato,
+  return { nome: an.nome || '', raca: an.raca || '', sexo: an.sexo || '', nasc: an.nascimento || '', chip: an.microchip || '', gato, clube,
     dea1: t.dea1 && t.dea1.on && t.dea1.res ? t.dea1.res : '', dal: t.dal && t.dal.on && t.dal.res ? t.dal.res : '', grupo: gato ? (t.grupo || an.tipoSanguineo || '') : '',
     fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || (E.d.responsavel || {}).nome || '', cpf, vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', celId: d.cel ? (d.cel.id || (typeof d.cel === 'string' ? d.cel : '')) : '', corte: meta.corte || null, rot: +(meta.rot || 0) };
+}
+// situação no Clube do Doador na carteirinha: ativo ou aposentado; afastado, arquivado ou não doador não mostra nada
+const clubeStatus = an => { if (!an || an.doador !== '1') return ''; if (an.aposentadoEm) return 'aposentado'; return an.ativo !== '0' && !an.afastadoMotivo ? 'ativo' : ''; };
+// ícone discreto antes do texto: círculo com visto (ativo) ou medalha com fita (aposentado), só em traço
+function ctnIconeClube(x, cx, cy, r, tipo) {
+  x.save(); x.lineWidth = r * 0.16; x.lineCap = 'round'; x.lineJoin = 'round';
+  if (tipo === 'ativo') { x.strokeStyle = '#3E8E5B'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke(); x.beginPath(); x.moveTo(cx - r * 0.45, cy + r * 0.02); x.lineTo(cx - r * 0.1, cy + r * 0.36); x.lineTo(cx + r * 0.48, cy - r * 0.3); x.stroke(); }
+  else { x.strokeStyle = '#8F8379'; const my = cy - r * 0.28, mr = r * 0.62; x.beginPath(); x.arc(cx, my, mr, 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.moveTo(cx - mr * 0.55, my + mr * 0.85); x.lineTo(cx - mr * 0.85, cy + r * 1.05); x.lineTo(cx - mr * 0.3, cy + r * 0.82); x.lineTo(cx, cy + r * 1.08);
+    x.lineTo(cx + mr * 0.3, cy + r * 0.82); x.lineTo(cx + mr * 0.85, cy + r * 1.05); x.lineTo(cx + mr * 0.55, my + mr * 0.85); x.stroke(); }
+  x.restore();
 }
 function ctnFrente(R, D) {
   const cv = document.createElement('canvas'); cv.width = CTN.W; cv.height = CTN.H; const x = cv.getContext('2d');
@@ -2914,12 +2925,15 @@ function ctnFrente(R, D) {
   ctnTxt(x, [843, 163], 'CARTEIRINHA DO DOADOR', 57, 700, CTN.VERM, { sp: 7 });
   const nome = D.nome.toUpperCase(), pn = ctnCabe(x, nome, 198, 700, 640, 70, 0.055);
   ctnTxt(x, [843, 423], nome, pn, 700, CTN.ESC, { sp: pn * 0.055 });
+  // situação no Clube do Doador logo abaixo do nome, pequena e discreta (só ativo ou aposentado)
+  const dy = D.clube ? 34 : 0;
+  if (D.clube) { ctnIconeClube(x, 868, 466, 19, D.clube); const fem = /^f/i.test(D.sexo || ''); ctnTxt(x, [900, 481], D.clube === 'aposentado' ? (fem ? 'Doadora aposentada' : 'Doador aposentado') : (fem ? 'Doadora ativa' : 'Doador ativo'), 44, 400, '#7A6A60'); }
   // raça · sexo (o ponto em dourado)
   { const pr = ctnCabe(x, D.raca + ' · ' + D.sexo, 68, 400, 640, 40); let xx = 847;
-    if (D.raca) xx += ctnTxt(x, [xx, 529], D.raca, pr, 400, CTN.ESC);
-    if (D.raca && D.sexo) xx += ctnTxt(x, [xx, 529], ' · ', pr, 400, CTN.OURO);
-    if (D.sexo) ctnTxt(x, [xx, 529], D.sexo, pr, 400, CTN.ESC); }
-  if (D.nasc) { ctnTxt(x, [1510, 427], 'NASCIMENTO', 46, 700, CTN.VERM, { sp: 6.5 }); ctnTxt(x, [1512, 529], ctnData(D.nasc), 68, 400, CTN.ESC); }
+    if (D.raca) xx += ctnTxt(x, [xx, 529 + dy], D.raca, pr, 400, CTN.ESC);
+    if (D.raca && D.sexo) xx += ctnTxt(x, [xx, 529 + dy], ' · ', pr, 400, CTN.OURO);
+    if (D.sexo) ctnTxt(x, [xx, 529 + dy], D.sexo, pr, 400, CTN.ESC); }
+  if (D.nasc) { ctnTxt(x, [1510, 427], 'NASCIMENTO', 46, 700, CTN.VERM, { sp: 6.5 }); ctnTxt(x, [1512, 529 + dy], ctnData(D.nasc), 68, 400, CTN.ESC); }
   x.fillStyle = CTN.LINHA; x.fillRect(840, 607, 1088, 4); x.fillRect(840, 717, 1088, 4);
   ctnTxt(x, [844, 676], 'MICROCHIP', 48, 700, CTN.VERM, { sp: 3.7 });
   ctnTxt(x, [1164, 674], D.chip || 'não informado', ctnCabe(x, D.chip || 'não informado', 67, 400, 760, 40), 400, CTN.ESC);
@@ -3132,7 +3146,7 @@ function ctnCorte(im, f, usar) {
 const CTN_MINI = {};
 async function ctnMiniatura(bt) {
   const aid = bt.dataset.id, an = animalDe(aid); if (!an) return;
-  const ch = aid + '|' + (an.foto || '') + '|' + (E.modo === 'painel' ? ((ctnLaudo(aid) || {}).id || an.tipoSanguineo + an.dal) : '');
+  const ch = aid + '|' + (an.foto || '') + '|' + clubeStatus(an) + (an.clube || '') + '|' + (E.modo === 'painel' ? ((ctnLaudo(aid) || {}).id || an.tipoSanguineo + an.dal) : '');
   let u = CTN_MINI[aid] && CTN_MINI[aid].ch === ch ? CTN_MINI[aid].url : null;
   if (!u) {
     try { const R = await ctnRecursos(), D = await ctnDados(an), f = ctnFrente(R, D), c = document.createElement('canvas'); c.width = 460; c.height = Math.round(460 * CTN.H / CTN.W); c.getContext('2d').drawImage(f, 0, 0, c.width, c.height); u = c.toDataURL('image/jpeg', 0.86); CTN_MINI[aid] = { ch, url: u }; }
@@ -4411,7 +4425,8 @@ function statusDoador(an) {
   const intervalo = libera && somaDiasIso(libera, -TOLERANCIA_DIAS) > h;
   if (intervalo) mot.push('Intervalo entre doações');
   const ult12 = doa.filter(r => r.data >= somaDiasIso(h, -365)).length;
-  const sit = imp.length ? 'imp' : pend.length ? 'pend' : intervalo ? 'intervalo' : 'apto';
+  const afa = !!(an.afastadoMotivo && !an.aposentadoEm); if (afa) mot.push('Afastado temporariamente');
+  const sit = imp.length || afa ? 'imp' : pend.length ? 'pend' : intervalo ? 'intervalo' : 'apto';
   return { an, sit, imp, pend, mot: [...new Set(mot)], ult: ult ? ult.data : '', libera, nDoa: doa.length, ult12, vacVenc: pv.some(p => p.tipo === 'vacina') };
 }
 const SIT_INT = { apto: ['Aptos para doar', '#2F7D4F'], intervalo: ['Aguardando intervalo', '#C49A6C'], pend: ['Com pendências', '#D08A2E'], imp: ['Possível impedimento', '#A83D3D'] };
@@ -5490,6 +5505,7 @@ function triagemDoador(aid) {
   const an = animalDe(aid); if (!an) return '';
   const regs = regsDe(aid), h = hoje(), imp = [], pend = [], info = [];
   if (an.ativo === '0' || an.aposentadoMotivo) imp.push('Doador aposentado' + (an.aposentadoMotivo ? ': ' + an.aposentadoMotivo : '') + '.');
+  if (an.afastadoMotivo && !an.aposentadoMotivo) imp.push('Afastado temporariamente: ' + an.afastadoMotivo.toLowerCase() + (an.afastadoEm ? ', desde ' + br(an.afastadoEm) : '') + '.');
   if (pode('admin') && E.alertas) {
     const meus = ativos(E.alertas).filter(a => a.animalId === aid);
     meus.filter(a => a.nivel !== 'normal' || a.situacao === 'impedimento').forEach(a => imp.push((a.situacao === 'impedimento' ? 'Impedimento marcado: ' : a.nivel === 'super' ? 'Super alerta: ' : '') + a.titulo + ' (' + br(a.data) + ').'));
@@ -7565,7 +7581,7 @@ async function abrirModulo(nome, aid, rid) {
     // à prova de erros: o que a ficha precisa conferir antes de ir para a carteira (intervalo, impedimentos e pendências do doador)
     E.ponte.admin = pode('admin');
     if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
-      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
+      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, afastado: an.aposentadoEm ? '' : (an.afastadoMotivo || ''), intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
         vacinas: regsDe(aid).filter(r => r.tipo === 'vacina' && r.excluido !== '1').map(r => ({ data: r.data, produtos: produtos(r) })),
         doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })) }; } }
   if (nome === 'tcle') {
@@ -8296,16 +8312,17 @@ function abrirFormAnimal(a) {
     campo('aTipo', 'Tipo sanguíneo', '<select id="aTipo"></select>') + '<div class="campo" id="aDalBox"><label for="aDal">DAL</label>' + sel('aDal', ['Não tipado', 'Positivo', 'Negativo'], a.dal || 'Não tipado') + '</div>' + campo('aChip', 'Microchip', inp('aChip', a.microchip, 'inputmode="numeric"')) +
     '<label class="check larga"><input type="checkbox" id="aDoador"' + (a.doador === '1' ? ' checked' : '') + '> Participa do Clube do Doador</label>' +
     '<div class="larga" id="aApoBox"' + (a.doador === '1' ? '' : ' hidden') + '><div class="grade">' +
-    campo('aApo', 'Situação no Clube do Doador', '<select id="aApo"><option value="">Doador ativo</option>' + MOTIVOS_APO.map(m => '<option value="' + esc(m) + '"' + (m === a.aposentadoMotivo ? ' selected' : '') + '>Aposentado: ' + esc(m.toLowerCase()) + '</option>').join('') +
+    campo('aApo', 'Situação no Clube do Doador', '<select id="aApo"><option value="">Doador ativo</option>' + MOTIVOS_AFA.map(m => '<option value="afa:' + esc(m) + '"' + (!a.aposentadoMotivo && m === a.afastadoMotivo ? ' selected' : '') + '>Afastado temporariamente: ' + esc(m.toLowerCase()) + '</option>').join('') +
+      (!a.aposentadoMotivo && a.afastadoMotivo && !MOTIVOS_AFA.includes(a.afastadoMotivo) ? '<option selected value="afa:' + esc(a.afastadoMotivo) + '">Afastado temporariamente: ' + esc(a.afastadoMotivo) + '</option>' : '') + MOTIVOS_APO.map(m => '<option value="' + esc(m) + '"' + (m === a.aposentadoMotivo ? ' selected' : '') + '>Aposentado: ' + esc(m.toLowerCase()) + '</option>').join('') +
       (a.aposentadoMotivo && !MOTIVOS_APO.includes(a.aposentadoMotivo) ? '<option selected value="' + esc(a.aposentadoMotivo) + '">Aposentado: ' + esc(a.aposentadoMotivo) + '</option>' : '') + '</select>', 'larga') +
-    '<div class="campo" data-apo>' + '<label for="aApoEm">Aposentado em</label>' + inp('aApoEm', a.aposentadoEm || hoje(), 'type="date"') + '</div>' +
+    '<div class="campo" data-apo>' + '<label for="aApoEm" id="aApoEmR">Aposentado em</label>' + inp('aApoEm', a.aposentadoEm || a.afastadoEm || hoje(), 'type="date"') + '</div>' +
     '<div class="campo larga" data-apo>' + '<label for="aApoObs">Observação (só aparece no painel)</label>' + inp('aApoObs', a.aposentadoObs, 'autocomplete="off"') + '</div>' +
     '</div></div>' +
     (a.id ? '<label class="check larga"><input type="checkbox" id="aArq"' + (a.ativo === '0' ? ' checked' : '') + '> Arquivar (some do link do responsável)</label>' : '') + '</div>' +
     '<button class="btn" id="bSalvar">Salvar</button>' + (a.id && pode('admin') ? '<button class="btn perigo" id="bExcluirAn">Excluir animal</button>' : ''), () => {
       const tipos = () => { const e = vl('aEsp'); $('#aTipo').innerHTML = TIPOS[e].map(t => '<option' + (t === (a.tipoSanguineo || '') ? ' selected' : '') + '>' + t + '</option>').join(''); };
       $('#aEsp').onchange = () => { tipos(); $('#aDalBox').hidden = vl('aEsp') !== 'Canina'; }; tipos(); $('#aDalBox').hidden = vl('aEsp') !== 'Canina';
-      const apo = () => { $('#aApoBox').hidden = !$('#aDoador').checked; $$('[data-apo]').forEach(x => x.hidden = !vl('aApo')); };
+      const apo = () => { $('#aApoBox').hidden = !$('#aDoador').checked; const afa = /^afa:/.test(vl('aApo')); $$('[data-apo]').forEach(x => x.hidden = !vl('aApo') || (afa && x.querySelector('#aApoObs'))); $('#aApoEmR').textContent = afa ? 'Afastado desde' : 'Aposentado em'; };
       $('#aDoador').onchange = apo; $('#aApo').onchange = apo; apo();
       const bx = $('#bExcluirAn');
       if (bx) bx.onclick = () => excluirCadastro('animal', a);
@@ -8313,7 +8330,8 @@ function abrirFormAnimal(a) {
         const tipo = vl('aTipo'), nasc = nascISO(vl('aNasc'));
         if (nasc === null) throw new Error('Confira o nascimento. Use dd/mm/aaaa, mm/aaaa ou só o ano com 4 dígitos.');
         const salvo = await api('salvarAnimal', E.sessao, { id: a.id, responsavelId: a.responsavelId, nome: vl('aNome'), especie: vl('aEsp'), sexo: vl('aSexo'), raca: vl('aRaca'), nascimento: nasc, tipoSanguineo: tipo === 'Não tipado' ? '' : tipo, dal: vl('aEsp') === 'Canina' && vl('aDal') !== 'Não tipado' ? vl('aDal') : '', microchip: vl('aChip'), doador: $('#aDoador').checked,
-          aposentadoMotivo: $('#aDoador').checked ? vl('aApo') : '', aposentadoEm: vl('aApoEm'), aposentadoObs: vl('aApoObs'), ativo: !($('#aArq') && $('#aArq').checked) });
+          aposentadoMotivo: $('#aDoador').checked && !/^afa:/.test(vl('aApo')) ? vl('aApo') : '', aposentadoEm: vl('aApoEm'), aposentadoObs: vl('aApoObs'),
+          afastadoMotivo: $('#aDoador').checked && /^afa:/.test(vl('aApo')) ? vl('aApo').slice(4) : '', afastadoEm: vl('aApoEm'), ativo: !($('#aArq') && $('#aArq').checked) });
         const i = E.d.animais.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.animais[i] = salvo; else E.d.animais.push(salvo);
         fecharFolha();
         E.previa = false;
@@ -8322,6 +8340,7 @@ function abrirFormAnimal(a) {
       });
     });
 }
+const MOTIVOS_AFA = ['Tratamento', 'Cirurgia', 'Gestação ou cio', 'Peso abaixo do mínimo', 'A pedido do responsável', 'Outro motivo'];
 const MOTIVOS_APO = ['Idade', 'Doença crônica', 'Doença infecciosa', 'Peso abaixo do mínimo', 'Comportamento na coleta', 'A pedido do responsável', 'Óbito', 'Outro motivo'];
 async function excluirCadastro(tipo, o) {
   const ans = tipo === 'resp' ? E.d.animais.filter(a => a.responsavelId === o.id) : [o];
