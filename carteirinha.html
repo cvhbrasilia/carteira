@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126123525">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126124234">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126123525';
+  var VERSAO = '20261126124234';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6333,8 +6333,12 @@ function calcTransfusao(o) {
   return { vol, bolsa, htCom, n: bolsa ? vol / bolsa : null };
 }
 const TX_FIM = '\n\nImportante fazer a tipagem antes da primeira transfusão e a compatibilidade a cada CH transfundido';
+// Ht muito baixo ou fora da faixa do aparelho (provável maquinograma sem patologista clínico ou erro pré-analítico): não estima o Ht depois da transfusão
+const htDuvidosoTx = o => { const h = numTx(o.rec); return !!o.htForaFaixa || (h != null && h < 5); };
 function msgTransfusao(o, r, tipo) {
   const f0 = x => String(Math.round(x)), faixa = ht => { const b = Math.round(ht); return (b - 2) + ' a ' + b + '%'; };
+  // volume limitado a 22 mL/kg ou Ht duvidoso: sem a estimativa do Ht, só o volume máximo
+  if (r.limitado || htDuvidosoTx(o)) return 'O ideal seria fazer 1 CH de no máximo ' + f0(Math.round(r.vol / 5) * 5) + 'ml, inicialmente, e após a transfusão, seria recomendado repetir os exames pra reavaliar a necessidade de novas transfusões' + TX_FIM;
   if (tipo === 'varias') {
     const n = Math.max(2, Math.min(4, Math.ceil(r.vol / r.bolsa - 0.15)));
     return Array.from({ length: n }, (_, i) => (i + 1) + ' CH de ' + f0(r.bolsa) + 'ml pra uns ' + faixa(r.htCom((i + 1) * r.bolsa))).join('\n') +
@@ -6346,7 +6350,7 @@ function msgTransfusao(o, r, tipo) {
 // nota interna da calculadora: só aparece para o médico veterinário padrão do CVH (Plínio), nunca na mensagem
 const txSouEu = () => { const v = vetLogado(); return !!(v && v.padrao === '1'); };
 function notaInternaTx(T, r) {
-  const peso = numTx(T.peso), gato = T.esp === 'Gato', vol = r.vol, mlkg = Math.round(vol / peso * 10) / 10, volemia = numTx(T.fator) || (gato ? 70 : 90);
+  const peso = numTx(T.peso), gato = T.esp === 'Gato', vol = r.volCalc || r.vol, mlkg = Math.round(vol / peso * 10) / 10, volemia = numTx(T.fator) || (gato ? 70 : 90);
   const n1 = x => String(Math.round(x * 10) / 10).replace('.', ','), n0 = x => String(Math.round(x));
   let nivel, txt;
   if (mlkg <= 10) { nivel = 'prev'; txt = 'Dentro da dose habitual de CH por transfusão (6 a 10 mL/kg).'; }
@@ -6379,7 +6383,17 @@ function calcComp(T) {
   if (T.comp === 'PFC') { const d = numTx(T.pfcDose) || 10, b = numTx(T.pfcBolsa) || 200, vol = Math.round(peso * d / 10) * 10 || peso * d; return { vol, dose: d, nb: Math.max(1, Math.ceil(vol / b - 0.15)), b }; }
   if (T.comp === 'CRIO') { const kg = numTx(T.crioKg) || 10, n = Math.max(1, Math.ceil(peso / kg - 0.1)); return { n, kg }; }
   if (T.chModo === 'cirurgia') return calcReservaCir(T);
-  return calcTransfusao(Object.assign({}, T, { rec: htUsado(T) }));
+  return limite22(T, calcTransfusao(Object.assign({}, T, { rec: htUsado(T) })));
+}
+// dose máxima de CH em 24 h: 22 mL/kg (BSA, CH de 10 a 22 mL/kg/dia no paciente normovolêmico). Acima disso o cálculo fica limitado
+// a 22 mL/kg para todos; só o médico veterinário padrão do CVH pode escolher usar o volume da meta
+const CH_MAX_KG = 22;
+function limite22(T, r) {
+  const peso = numTx(T.peso); if (!r || !peso) return r;
+  const max = peso * CH_MAX_KG; if (r.vol <= max + 0.05) return r;
+  r.volCalc = r.vol; r.acima22 = true;
+  if (T.semLimite22 && txSouEu()) return r;
+  r.vol = max; r.limitado = true; if (r.bolsa) r.n = r.vol / r.bolsa; return r;
 }
 // reserva de CH para cirurgia: estimativa para sangramento ou intercorrência, de 20 a 25 mL/kg conforme o Ht do receptor
 // (Ht de 30% ou mais: 20 mL/kg; Ht de 20% ou menos: 25 mL/kg; entre os dois, proporcional)
@@ -6763,12 +6777,14 @@ function alertasTx(T, r) {
   if (peso != null && (peso < 0.3 || peso > 100)) L.push(['Confira o peso', n1h(peso) + ' kg parece digitado errado.']);
   if (T.comp === 'CH') {
     const rec = numTx(htUsado(T)), des = numTx(T.des), doa = numTx(T.doa), fat = numTx(T.fator);
-    if (rec != null && (rec < 3 || rec > 75)) L.push(['Confira o hematócrito do receptor', n1h(rec) + '% parece digitado errado.']);
+    if (rec != null && (rec < 5 || T.htForaFaixa)) L.push(['Hematócrito duvidoso', (T.htForaFaixa ? 'Ht fora da faixa do aparelho (' + n1h(rec) + '%)' : 'Ht de ' + n1h(rec) + '%') + ': provável maquinograma sem avaliação de patologista clínico ou erro pré-analítico. A mensagem não estima o Ht depois da transfusão.']);
+    else if (rec != null && rec > 75) L.push(['Confira o hematócrito do receptor', n1h(rec) + '% parece digitado errado.']);
     if (!r.reserva && des != null && doa != null && des >= doa) L.push(['Meta impossível', 'O Ht desejado (' + n1h(des) + '%) não pode ser igual ou maior que o Ht do CH (' + n1h(doa) + '%).']);
     if (!r.reserva && des != null && des > (gato ? 30 : 35)) L.push(['Ht desejado alto', n1h(des) + '% está acima do usual para ' + (gato ? 'gato' : 'cão') + '. Confira a meta.']);
     if (!r.reserva && rec != null && rec >= (gato ? 25 : 30)) L.push(['Confira a indicação', 'O receptor já está com Ht de ' + n1h(rec) + '%.']);
     if (fat != null && ((gato && fat > 80) || (!gato && fat < 80))) L.push(['Fator da espécie trocado?', 'Fator ' + n0h(fat) + ' mL/kg para ' + (gato ? 'gato (o usual é 70)' : 'cão (o usual é 90)') + '.']);
-    if (peso && r.vol && r.vol / peso > (gato ? 15 : 20)) L.push(['Dose alta', n0h(r.vol) + ' mL para ' + n1h(peso) + ' kg (' + n0h(r.vol / peso) + ' mL/kg). Risco de sobrecarga de volume. Considere fracionar e monitorar.']);
+    if (r.acima22) L.push(['Risco de sobrecarga circulatória (TACO)', 'Para chegar ao Ht desejado seriam ' + n0h(r.volCalc) + ' mL (' + n1h(r.volCalc / peso) + ' mL/kg). O máximo em 24 horas é ' + CH_MAX_KG + ' mL/kg, ≈ ' + n0h(peso * CH_MAX_KG) + ' mL para ' + n1h(peso) + ' kg (BSA: CH de 10 a 22 mL/kg/dia). ' + (r.limitado ? 'O cálculo foi limitado a ' + n0h(r.vol) + ' mL. Transfundir e reavaliar o Ht antes de uma nova transfusão.' : 'Usando o volume da meta, por escolha do médico veterinário.')]);
+    else if (peso && r.vol && r.vol / peso > (gato ? 15 : 20)) L.push(['Dose alta', n0h(r.vol) + ' mL para ' + n1h(peso) + ' kg (' + n0h(r.vol / peso) + ' mL/kg). Risco de sobrecarga de volume. Considere fracionar e monitorar.']);
   }
   if (T.comp === 'PFC' && r.dose && r.dose > 30) L.push(['Dose alta', n0h(r.dose) + ' mL/kg de plasma. Risco de sobrecarga de volume.']);
   return L.map(([t, d]) => '<div class="av-i obrig"><b>' + esc(t) + '</b><small>' + esc(d) + '</small></div>').join('');
@@ -6796,7 +6812,7 @@ function telaTransfusao() {
     '<section class="cartao" id="txRes"></section></div></main>';
   const ids = { txResMlkg: 'resMlkg', txPeso: 'peso', txRec: 'rec', txHb: 'hb', txDes: 'des', txDoa: 'doa', txFator: 'fator', txBolsa: 'bolsa', txPlq: 'plq', txCpKg: 'cpKg', txCpVol: 'cpVol', txPfcDose: 'pfcDose', txTp: 'tp', txTtpa: 'ttpa', txPfcBolsa: 'pfcBolsa', txFib: 'fib', txCrioKg: 'crioKg' };
   const ligar = () => {
-    Object.keys(ids).forEach(id => { const el = $('#' + id); if (el) el.oninput = () => { T[ids[id]] = el.value; pinta(); }; });
+    Object.keys(ids).forEach(id => { const el = $('#' + id); if (el) el.oninput = () => { T[ids[id]] = el.value; if (ids[id] === 'rec') T.htForaFaixa = false; pinta(); }; });
     document.querySelectorAll('.hc-modo [data-modo]').forEach(b => b.onclick = () => { T.chModo = b.dataset.modo; $('#hcCampos').innerHTML = campos(); ligar(); pinta(); });
     { const r0 = $('#txRec'), m0 = $('#txResMlkg'); if (r0 && m0) r0.addEventListener('input', () => { m0.placeholder = String(mlkgReserva(numTx(htUsado(T)))).replace('.', ','); }); }
     document.querySelectorAll('.hc-sit [data-sit]').forEach(b => b.onclick = () => { T.sit = b.dataset.sit; document.querySelectorAll('.hc-sit [data-sit]').forEach(x => x.classList.toggle('on', x === b)); pinta(); });
@@ -6807,7 +6823,7 @@ function telaTransfusao() {
     if (!r) { box.innerHTML = (T.comp === 'CH' ? caixaHb(T) : '') + '<p class="vazio-p">' + (T.comp === 'CH' && T.chModo !== 'cirurgia' && numTx(T.des) != null && numTx(htUsado(T)) != null && numTx(T.des) <= numTx(htUsado(T)) ? 'O hematócrito desejado precisa ser maior que o do receptor. Para reservar bolsa para uma cirurgia, use Reserva para cirurgia.' : T.comp === 'CH' ? 'Preencha o peso e o hematócrito do receptor.' : 'Preencha o peso.') + '</p>'; ligarHb(); return; }
     let topo;
     if (T.comp === 'CH') { const sug = r.bolsa && r.vol > r.bolsa * 1.15 ? 'varias' : 'uma', tipo = T.tipo === 'auto' ? sug : T.tipo;
-      topo = caixaHb(T) + alertasTx(T, r) + (r.reserva ? '<div class="av-i novo"><b>Reserva para cirurgia · ' + String(r.mlkg).replace('.', ',') + ' mL/kg</b><small>' + (numTx(T.resMlkg) ? 'Dose escolhida à mão (sugestão pelo Ht: ' + String(r.sugerido).replace('.', ',') + ' mL/kg).' : r.rec != null ? 'Sugestão pelo Ht de ' + n1h(r.rec) + '%.' : 'Sem o Ht do receptor, usa 20 mL/kg.') + (r.rec != null ? ' Se usar a bolsa toda, o Ht iria para uns ' + n1h(r.htCom(r.vol)) + '%.' : '') + '</small></div>' : '') + '<div class="tx-vol"><small>' + (r.reserva ? 'Volume da reserva' : 'Volume calculado') + '' + (T.usarHb && numTx(T.hb) ? ' (Ht pela Hb, ' + n1h(numTx(T.hb) * 3) + '%)' : '') + '</small><b>' + String(r.vol.toFixed(1)).replace('.', ',') + ' <i>mL</i></b><span>' + String((r.vol / numTx(T.peso)).toFixed(1)).replace('.', ',') + ' mL/kg' + (r.n ? ' · ' + String(r.n.toFixed(1)).replace('.', ',') + ' CH de ' + Math.round(r.bolsa) + ' mL' : '') + '</span></div>' +
+      topo = caixaHb(T) + alertasTx(T, r) + (r.reserva ? '<div class="av-i novo"><b>Reserva para cirurgia · ' + String(r.mlkg).replace('.', ',') + ' mL/kg</b><small>' + (numTx(T.resMlkg) ? 'Dose escolhida à mão (sugestão pelo Ht: ' + String(r.sugerido).replace('.', ',') + ' mL/kg).' : r.rec != null ? 'Sugestão pelo Ht de ' + n1h(r.rec) + '%.' : 'Sem o Ht do receptor, usa 20 mL/kg.') + (r.rec != null ? ' Se usar a bolsa toda, o Ht iria para uns ' + n1h(r.htCom(r.vol)) + '%.' : '') + '</small></div>' : '') + (r.acima22 && txSouEu() ? '<label class="hc-chk" style="margin:6px 0 10px"><input type="checkbox" id="txSemLim"' + (T.semLimite22 ? ' checked' : '') + '> Usar o volume da meta (' + n0h(r.volCalc) + ' mL), acima de ' + CH_MAX_KG + ' mL/kg</label>' : '') + '<div class="tx-vol"><small>' + (r.reserva ? 'Volume da reserva' : r.limitado ? 'Volume limitado a ' + CH_MAX_KG + ' mL/kg' : 'Volume calculado') + '' + (T.usarHb && numTx(T.hb) ? ' (Ht pela Hb, ' + n1h(numTx(T.hb) * 3) + '%)' : '') + '</small><b>' + String(r.vol.toFixed(1)).replace('.', ',') + ' <i>mL</i></b><span>' + String((r.vol / numTx(T.peso)).toFixed(1)).replace('.', ',') + ' mL/kg' + (r.n ? ' · ' + String(r.n.toFixed(1)).replace('.', ',') + ' CH de ' + Math.round(r.bolsa) + ' mL' : '') + '</span></div>' +
         (txSouEu() && !r.reserva ? notaInternaTx(Object.assign({}, T, { rec: htUsado(T) }), r) : '') + (pode(['estoque', 'producao']) ? '<div id="txEst"></div>' : '') + '<h3>Mensagem</h3>' + (r.reserva ? '' : '<div class="filtros"><button class="filtro' + (tipo === 'uma' ? ' on' : '') + '" data-tx="uma">1 CH</button><button class="filtro' + (tipo === 'varias' ? ' on' : '') + '" data-tx="varias">Mais de 1 CH</button></div>'); }
     else { const big = T.comp === 'PFC' ? n0h(r.vol) + ' <i>mL</i>' : r.n + ' <i>' + (T.comp === 'CP' ? 'CP' : r.n === 1 ? 'unidade' : 'unidades') + '</i>', sub = T.comp === 'PFC' ? n0h(r.dose) + ' mL/kg · ' + r.nb + (r.nb === 1 ? ' bolsa' : ' bolsas') + ' de ' + n0h(r.b) + ' mL' : T.comp === 'CP' ? '±' + n0h(r.vu) + ' mL cada' + (r.n > 1 ? ', ±' + n0h(r.vol) + ' mL no total' : '') + ' · 1 a cada ' + n0h(r.kg) + ' kg' : '1 a cada ' + n0h(r.kg) + ' kg';
       const av = T.sit === 'grave' ? '' : '<div class="av-i ' + (T.sit === 'sem' ? 'obrig' : 'novo') + '"><b>' + (T.sit === 'sem' ? 'Sem sangramento não há indicação' : 'Cirurgia programada') + '</b><small>' + (T.sit === 'sem' ? (T.comp === 'CP' ? 'Contagem baixa de plaquetas sem sangramento não justifica a transfusão, inclusive na TIM - trombocitopenia imunomediada.' : T.comp === 'PFC' ? 'Tempos de coagulação prolongados sem sangramento não justificam o plasma.' : 'Fibrinogênio baixo sem sangramento não justifica o crioprecipitado.') : 'Deixar reservado e usar só se houver sangramento. Se não sangrar, descartar.') + '</small></div>';
@@ -6823,7 +6839,7 @@ function telaTransfusao() {
     ligarHb();
     if (T.comp === 'CH' && $('#txEst')) bolsasTx(Object.assign({}, T, { rec: htUsado(T) }), r);
   };
-  const ligarHb = () => { const c = $('#hcUsarHb'); if (c) c.onchange = () => { T.usarHb = c.checked; pinta(); }; };
+  const ligarHb = () => { const c = $('#hcUsarHb'); if (c) c.onchange = () => { T.usarHb = c.checked; pinta(); }; const l = $('#txSemLim'); if (l) l.onchange = () => { T.semLimite22 = l.checked; pinta(); }; };
   document.querySelectorAll('.tx-esp .filtro').forEach(b => b.onclick = () => { T.esp = b.dataset.esp; T.fator = String(TX_FATOR[T.esp]); if (T.comp === 'PFC' && !E.txDoseMexida) T.pfcDose = T.esp === 'Gato' ? '8' : '10'; const f = $('#txFator'); if (f) f.value = T.fator; const d = $('#txPfcDose'); if (d) d.value = T.pfcDose; pinta(); });
   document.querySelectorAll('.hc-comp [data-comp]').forEach(b => b.onclick = () => { T.comp = b.dataset.comp; if (T.comp === 'PFC' && T.esp === 'Gato' && T.pfcDose === '10') T.pfcDose = '8'; document.querySelectorAll('.hc-comp [data-comp]').forEach(x => x.classList.toggle('on', x === b)); $('#hcCampos').innerHTML = campos(); ligar(); pinta(); });
   $('#hcIa').onclick = () => telaHemoIA();
@@ -6954,6 +6970,7 @@ function telaHemoIA() {
     const s = v => String(v).replace('.', ',');
     Object.assign(T, { comp: V.ht != null || V.hb != null ? 'CH' : V.plaquetas != null ? 'CP' : V.fibrinogenio != null ? 'CRIO' : 'PFC', rec: V.ht != null ? s(V.ht) : T.rec, hb: V.hb != null ? s(V.hb) : T.hb, plq: V.plaquetas != null ? s(V.plaquetas) : T.plq, tp: V.tp != null ? s(V.tp) : T.tp, ttpa: V.ttpa != null ? s(V.ttpa) : T.ttpa, fib: V.fibrinogenio != null ? s(V.fibrinogenio) : T.fib });
     if (V.ht == null && V.hb != null) T.usarHb = true;
+    T.htForaFaixa = !!((V.abaixo || []).includes('ht') || (V.acima || []).includes('ht'));
     const lim = k => (V.abaixo || []).includes(k) ? '< ' : (V.acima || []).includes(k) ? '> ' : '';
     const lista = [['Ht', V.ht, '%'], ['Hb', V.hb, ' g/dL'], ['plaquetas', V.plaquetas, ' mil/µL'], ['TP', V.tp, ' s'], ['TTPa', V.ttpa, ' s'], ['fibrinogênio', V.fibrinogenio, ' mg/dL']].filter(x => x[1] != null).map(x => x[0] + ' ' + (x[0] === 'Ht' ? lim('ht') : '') + s(x[1]) + x[2]).join(', ') + (lim('ht') === '< ' ? '. O Ht ficou abaixo do limite do aparelho: o cálculo usa ' + s(V.ht) + '%' : '');
     telaTransfusao(); toast('Valores ' + como + '. ' + lista + '. Confira antes de seguir.', 8000);
@@ -7027,7 +7044,7 @@ function pintarHemoIA() {
   if (H.usarHb == null) H.usarHb = !!(R.htPelaHb && R.htPelaHb.usar);
   const ind = R.indicacoes || {}, linhas = [];
   // doses: as mesmas contas da HemoCalculadora simples
-  const base = Object.assign({ des: '26', doa: '65', bolsa: '250', esp: 'Cão', cpKg: '10', cpVol: '50', pfcDose: '10', pfcBolsa: '200', crioKg: '10' }, T, { peso: String(peso || ''), rec: String(H.usarHb && eq ? Math.round(eq * 10) / 10 : ht || ''), hb: '', usarHb: false }); if (!numTx(base.des)) base.des = '26'; if (!numTx(base.doa)) base.doa = '65'; if (!numTx(base.fator)) base.fator = String(TX_FATOR[base.esp] || TX_FATOR['Cão']);
+  const base = Object.assign({ des: '26', doa: '65', bolsa: '250', esp: 'Cão', cpKg: '10', cpVol: '50', pfcDose: '10', pfcBolsa: '200', crioKg: '10' }, T, { peso: String(peso || ''), rec: String(H.usarHb && eq ? Math.round(eq * 10) / 10 : ht || ''), hb: '', usarHb: false, htForaFaixa: !H.usarHb && ((R.abaixo || []).includes('ht') || (R.acima || []).includes('ht')) }); if (!numTx(base.des)) base.des = '26'; if (!numTx(base.doa)) base.doa = '65'; if (!numTx(base.fator)) base.fator = String(TX_FATOR[base.esp] || TX_FATOR['Cão']);
   const dose = (comp, sit) => { const X = Object.assign({}, base, { comp, sit }), r = calcComp(X); return r ? msgComp(X, r, sit) : ''; };
   const sitDe = s => s === 'indicado' ? 'grave' : s === 'reservar' ? 'cirurgia' : 'sem';
   ['CH', 'CP', 'PFC', 'CRIO'].forEach(c => { const i = ind[c] || {}; if (!i.situacao) return; const nome = { CH: 'Concentrado de hemácias', CP: 'Concentrado de plaquetas', PFC: 'Plasma fresco congelado', CRIO: 'Crioprecipitado' }[c], st = HC_SITU[i.situacao] || ['Avaliar', 'novo'];
