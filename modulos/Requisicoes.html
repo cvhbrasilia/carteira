@@ -403,11 +403,12 @@ const ehGato = (e) => /fel|gat/i.test(e || "");
 const cabVazio = () => ({ animalId: "", nome: "", numero: "", especie: "Canina", raca: "", sexo: "", nascimento: "", idade: "", resp: "", microchip: "", dea: "", dal: "", grupo: "", aberto: true });
 // no Pra hoje, a equipe responde se o doador vai para o Citopet; quem não vai fica fora da requisição do dia
 const foraCitopet = (data, aid) => ((estado.citopet || {})[data] || {})[aid] === "nao";
+const foraTecsa = (data, aid) => ((estado.tecsa || {})[data] || {})[aid] === "nao";
 const nForaDia = (data) => DOACOES.filter((d) => d.data === data && foraCitopet(data, d.animalId)).length;
 const doacoesDoDia = (data) => DOACOES.filter((d) => d.data === data && !foraCitopet(data, d.animalId)).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt-BR", { numeric: true }));
 
 // ---------- estado ----------
-const estado = { tela: "lista", lista: [], carregou: false, r: null, modo: "imp", citopet: {} };
+const estado = { tela: "lista", lista: [], carregou: false, r: null, modo: "imp", citopet: {}, tecsa: {} };
 function novaReq(o) {
   const v = vetPadrao();
   return Object.assign({ id: "", lab: "citopet", data: hojeISO(), origem: "", animais: [], exames: LABS.citopet.rotina.slice(), obs: "", vetId: v ? v.id : "", impressoEm: "", impressoPor: "" }, o || {});
@@ -415,9 +416,10 @@ function novaReq(o) {
 // protocolo do TECSA do dia: todas as coletas do dia (com ou sem Citopet), com a etiqueta e uma observação por coleta
 function tecsaDoDia(data) {
   const salva = estado.lista.find((r) => r.origem === "tecsa:" + data);
-  const animais = DOACOES.filter((d) => d.data === data).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt-BR", { numeric: true })).map((d) => { const an = animalDe(d.animalId); return an ? Object.assign(cabAnimal(an, data, d.numero), { etq: d.etq || "", obs: "" }) : null; }).filter(Boolean);
+  const animais = DOACOES.filter((d) => d.data === data && !foraTecsa(data, d.animalId)).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt-BR", { numeric: true })).map((d) => { const an = animalDe(d.animalId); return an ? Object.assign(cabAnimal(an, data, d.numero), { etq: d.etq || "", obs: "" }) : null; }).filter(Boolean);
   if (salva) {
     const r = novaReq(JSON.parse(JSON.stringify(salva))); if (!r.vetId) r.vetId = (vetPadrao() || {}).id || "";
+    r.animais = r.animais.filter((a) => !foraTecsa(data, a.animalId));
     animais.forEach((a) => { const j = r.animais.find((x) => x.animalId === a.animalId); if (!j) { a.novo = true; r.animais.push(a); } else { if (!j.numero) j.numero = a.numero; if (!j.etq) j.etq = a.etq; } });
     return r;
   }
@@ -839,9 +841,12 @@ function ligar() {
 window.CVH_VOLTAR = () => { if (estado.tela === "editor") { telaLista(); return true; } return false; };
 async function iniciar() {
   ligar(); telaLista();
-  try { estado.citopet = await req("reqCitopetDias") || {}; } catch (e) { estado.citopet = {}; }
+  try { const L = await req("reqLabDias") || {}; estado.citopet = L.citopet || {}; estado.tecsa = L.tecsa || {}; } catch (e) { try { estado.citopet = await req("reqCitopetDias") || {}; } catch (_) { estado.citopet = {}; } }
   try { estado.lista = await req("reqListar"); } catch (e) { toast("Não consegui carregar as requisições salvas. " + (e.message || e), 6000); }
-  estado.carregou = true; if (estado.tela === "lista") telaLista();
+  estado.carregou = true;
+  // aberta pelo Pra hoje: vai direto para a requisição do dia (Citopet ou protocolo do TECSA)
+  const ab = CTX.abrirReq; if (ab && ab.data) { estado.r = ab.lab === "tecsa" ? tecsaDoDia(ab.data) : reqDoDia(ab.data); return telaEditor(); }
+  if (estado.tela === "lista") telaLista();
 }
 iniciar();
 

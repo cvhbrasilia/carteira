@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126004327">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126010520">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126004327';
+  var VERSAO = '20261126010520';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6154,8 +6154,22 @@ function pintarPendencias0() {
 }
 /* ── Pra hoje: roteiro do dia dos doadores (agenda, ficha, Citopet, repouso de 2 h e produção) ── */
 const podeHoje = () => pode('admin') || pode('fichas') || pode('producao') || pode('estoque');
-E.ph = { citopet: {}, lib: {}, ped: {}, souRT: false, rtNome: '' };
-function carregarPH() { return podeHoje() ? api('estHojeDados', E.sessao).then(r => { E.ph = r || E.ph; }).catch(() => {}) : Promise.resolve(); }
+E.ph = { citopet: {}, tecsa: {}, ok: {}, req: {}, prod: {}, lib: {}, ped: {}, souRT: false, rtNome: '' };
+function carregarPH() { return podeHoje() ? Promise.all([api('estHojeDados', E.sessao).catch(() => null), api('estHojeProducao', E.sessao).catch(() => null)]).then(([r, p]) => { E.ph = Object.assign({ tecsa: {}, ok: {}, req: {} }, r || E.ph, { prod: p || E.ph.prod || {} }); }) : Promise.resolve(); }
+// Citopet e TECSA de cada doador do dia: pergunta (vai ou não), requisição a imprimir ou resolvido (não vai, já impressa, já enviada ou laudo já chegou)
+const LABS_HJ = [['citopet', 'Citopet'], ['tecsa', 'TECSA']];
+function laudoLabHoje(aid, lab, desde) {
+  const re = lab === 'tecsa' ? /tecsa/i : /citopet/i;
+  if (((E.d && E.d.registros) || []).some(r => r.tipo === 'laudo' && r.animalId === aid && r.excluido !== '1' && r.data >= desde && (lab === 'tecsa' ? (r.dados || {}).tipoLaudo === 'tecsa' : (r.dados || {}).tipoLaudo === 'idexx' && re.test(((r.dados || {}).exame || {}).labNome || '')))) return true;
+  return (E.resultados || []).some(r => r.animalId === aid && r.data >= desde && re.test(r.lab || ''));
+}
+function hojeLab(aid, lab) {
+  const h = hoje(), v = ((E.ph[lab] || {})[h] || {})[aid];
+  if (!v) return 'perg'; if (v === 'nao') return 'nao';
+  if ((((E.ph.ok || {})[h] || {})[aid] || {})[lab]) return 'feito';
+  const rq = (E.ph.req || {})[(lab === 'citopet' ? 'doacao:' : 'tecsa:') + h]; if (rq && (rq.aids || []).indexOf(aid) >= 0) return 'feito';
+  return laudoLabHoje(aid, lab, h) ? 'feito' : 'pend';
+}
 // doadores do dia: agendados para doação hoje e quem já tem ficha ou coleta de hoje (mesmo sem agendamento)
 function hojeLista() {
   const h = hoje(), M = new Map(), add = (aid, o) => { if (!aid || !animalDe(aid)) return; M.set(aid, Object.assign(M.get(aid) || { aid }, o)); };
@@ -6176,10 +6190,11 @@ function hojeColeta(x) {
 }
 const hhmm = t => p2(t.getHours()) + ':' + p2(t.getMinutes());
 function hojeEtapas(x) {
-  const c = hojeColeta(x), cit = (E.ph.citopet[hoje()] || {})[x.aid], e = [];
+  const c = hojeColeta(x), e = [], prod = c && c.numero ? (E.ph.prod || {})[c.numero] : '';
   e.push(c ? (c.nc ? ['ne', 'Sem coleta'] : ['ok', 'Coleta ' + c.numero]) : x.rasc ? ['av', 'Ficha em andamento'] : ['ne', 'Ficha não iniciada']);
   if (c && !x.reg) e.push(['av', 'Ficha em andamento']);
-  e.push(cit === 'sim' ? ['ok', 'Vai para o Citopet'] : cit === 'nao' ? ['ne', 'Sem Citopet'] : ['av', 'Citopet?']);
+  LABS_HJ.forEach(([k, n]) => { const st = hojeLab(x.aid, k); if (st === 'perg') e.push(['av', n + '?']); else if (st === 'pend') e.push(['av', 'Imprimir requisição ' + n]); });
+  if (prod === 'concluida') return e;
   if (c && !c.nc) e.push(c.lib ? ['ok', 'Liberada antes por ' + c.lib.por.split(' ')[0]] : !c.ate ? ['ne', 'Repouso sem horário'] : c.falta > 0 ? [c.ped ? 'al' : 'av', (c.ped ? 'Pedido de liberação · ' : 'Repouso até ') + hhmm(c.ate)] : ['ok', 'Liberada para produção']);
   return e;
 }
@@ -6193,9 +6208,11 @@ function praHojeHtml() {
 }
 async function abrirHojeAnimal(aid, passo) {
   const x = hojeLista().find(y => y.aid === aid) || { aid }, an = animalDe(aid); if (!an) return;
-  const c = hojeColeta(x), cit = (E.ph.citopet[hoje()] || {})[aid], rp = respDe(an) || {};
-  // pergunta do Citopet antes de abrir a ficha
-  if (passo === 'citopet') return abrirFolha('Ficha de doação de ' + an.nome, '<p class="hj-q">Vai para o Citopet hoje?</p><p class="nota">Quem vai entra sozinho na requisição do dia. Quem não vai fica fora.</p><div class="mini-bts"><button class="btn" data-acao="hj-cit-ficha" data-id="' + aid + '" data-v="sim">Sim, vai</button><button class="btn sec2" data-acao="hj-cit-ficha" data-id="' + aid + '" data-v="nao">Não vai</button></div>');
+  const c = hojeColeta(x), rp = respDe(an) || {}, prod = c && c.numero ? (E.ph.prod || {})[c.numero] : '';
+  const perg = (k, n, p) => { const v = ((E.ph[k] || {})[hoje()] || {})[aid]; return '<p class="hj-q" style="font-size:16px;margin-top:10px">Vai para o ' + n + ' hoje?</p><div class="opc-hj">' + [['sim', 'Vai'], ['nao', 'Não vai']].map(([w, t]) => '<button type="button" data-acao="hj-lab" data-id="' + aid + '" data-lab="' + k + '" data-p="' + p + '" data-v="' + (v === w ? '' : w) + '" aria-pressed="' + (v === w) + '">' + t + '</button>').join('') + '</div>'; };
+  // Citopet e TECSA antes de abrir a ficha
+  if (passo === 'labs') { const falta = LABS_HJ.some(([k]) => hojeLab(aid, k) === 'perg');
+    return abrirFolha('Ficha de doação de ' + an.nome, '<p class="nota">Quem vai entra sozinho na requisição do dia. Quem não vai fica fora.</p>' + LABS_HJ.map(([k, n]) => perg(k, n, 'labs')).join('') + '<div class="mini-bts" style="margin-top:14px"><button class="btn" data-acao="hj-abrir-ficha" data-id="' + aid + '"' + (falta ? ' disabled' : '') + '>Abrir a ficha</button></div>'); }
   const pend = ((E.pd && E.pd.lista) || []).filter(p => p.animalId === aid && !p.feitoEm);
   const ant = ((E.d && E.d.registros) || []).filter(r => r.tipo === 'doacao' && r.animalId === aid && r.excluido !== '1' && r.data < hoje()).sort((a, b) => b.data.localeCompare(a.data))[0];
   const fa = ant ? ((ant.dados || {}).ficha || {}) : {}, obs = ant ? [['Observações iniciais', fa.obsIni], ['Observações da doação', fa.obsDoa], ['Demais observações', fa.obsDemais]].filter(o => o[1]) : [];
@@ -6204,9 +6221,14 @@ async function abrirHojeAnimal(aid, passo) {
   const linha = (r, v) => v ? '<div class="hj-l"><span>' + r + '</span><b>' + v + '</b></div>' : '';
   const cab = linha('Horário', x.ag && x.ag.hora ? esc(x.ag.hora) + (x.ag.obs ? ' <small>· ' + esc(x.ag.obs) + '</small>' : '') : 'Sem agendamento') + linha('Tipo sanguíneo', esc(tipoTxt(an))) + linha('Raça', esc(an.raca)) +
     linha('Idade', an.nascimento ? esc(idade(an.nascimento)) : '') + linha('Último peso', pesoAtual(aid) ? esc(pesoAtual(aid)) + ' kg' : '') + linha('Responsável', esc(rp.nome || '')) + linha('Última doação', ant ? br(ant.data) + ((ant.dados || {}).numero ? ' · nº ' + esc(ant.dados.numero) : '') : 'Primeira doação');
-  const citH = '<div class="hj-s"><h3>Citopet hoje</h3><div class="opc-hj">' + [['sim', 'Vai'], ['nao', 'Não vai']].map(([v, t]) => '<button type="button" data-acao="hj-cit" data-id="' + aid + '" data-v="' + (cit === v ? '' : v) + '" aria-pressed="' + (cit === v) + '">' + t + '</button>').join('') + '</div></div>';
+  // laboratórios: só aparece o que falta (responder ou imprimir a requisição); o resolvido sai, e dá para rever
+  const rever = passo === 'rever', labsSt = LABS_HJ.map(([k, n]) => [k, n, hojeLab(aid, k)]);
+  const citH = (rever || labsSt.some(l => l[2] === 'perg' || l[2] === 'pend') ? '<div class="hj-s"><h3>Laboratórios</h3>' + labsSt.map(([k, n, st]) => rever || st === 'perg' ? perg(k, n, rever ? 'rever' : '') + (rever && (((E.ph.ok || {})[hoje()] || {})[aid] || {})[k] ? '<p class="nota">Marcada como enviada. <button class="lt-lk" style="font-size:inherit" data-acao="hj-ok" data-id="' + aid + '" data-lab="' + k + '" data-v="1">Desfazer</button></p>' : '')
+    : st === 'pend' ? '<p class="hj-q" style="font-size:16px;margin-top:10px">Requisição do ' + n + ' pronta para imprimir</p><div class="mini-bts">' + (pode('requisicoes') ? '<button class="btn" data-acao="hj-req" data-lab="' + k + '">Abrir requisição</button>' : '') + '<button class="btn sec2" data-acao="hj-ok" data-id="' + aid + '" data-lab="' + k + '">Já foi enviada</button></div>' : '').join('') + '</div>' : '') +
+    (!rever && labsSt.some(l => l[2] === 'nao' || l[2] === 'feito') ? '<p class="nota" style="margin-top:10px"><button class="lt-lk" style="font-size:inherit" data-acao="hj-lab-rever" data-id="' + aid + '">Rever Citopet e TECSA</button></p>' : '');
   let prodH = '';
-  if (c && !c.nc) {
+  // produção concluída: a coleta já virou bolsas, o aviso sai
+  if (c && !c.nc && prod !== 'concluida') {
     prodH = '<div class="hj-s"><h3>Produção da coleta ' + esc(c.numero) + '</h3>' + (c.lib ? '<p class="nota">Liberada antes das 2 h por ' + esc(c.lib.por) + (c.lib.motivo ? '. Motivo: ' + esc(c.lib.motivo) : '') + '.</p>' : !c.ate ? '<p class="nota">A ficha não tem o fim da triagem. Confira o horário da coleta antes de centrifugar.</p>' : c.falta > 0 ? '<p class="nota">Repouso mínimo de 2 h. Coleta às ' + hhmm(c.ref) + ', centrifugação liberada às <b>' + hhmm(c.ate) + '</b>.' + (c.ped ? ' Pedido de liberação de ' + esc(c.ped.por) + ': ' + esc(c.ped.motivo) + '.' : '') + '</p>' +
       (E.ph.souRT ? '<div class="mini-bts"><input id="hjMot" placeholder="Motivo (opcional)" value="' + esc(c.ped ? c.ped.motivo : '') + '" style="flex:1;min-width:180px"><button class="btn" data-acao="hj-liberar" data-id="' + aid + '" data-v="' + esc(c.numero) + '">Liberar agora</button></div>'
         : c.ped ? '' : '<div class="mini-bts"><input id="hjMot" placeholder="Motivo para liberar antes" style="flex:1;min-width:180px"><button class="btn sec2" data-acao="hj-pedir" data-id="' + aid + '" data-v="' + esc(c.numero) + '">Pedir liberação a ' + esc((E.ph.rtNome || 'responsável técnico').split(' ')[0]) + '</button></div>') : '<p class="nota">Repouso de 2 h completo. Pode seguir para a produção.</p>') +
@@ -6219,8 +6241,8 @@ async function abrirHojeAnimal(aid, passo) {
     (obs.length ? '<div class="hj-s"><h3>Observações da última coleta (' + br(ant.data) + ')</h3>' + obs.map(o => '<p class="hj-p"><small>' + o[0] + '</small><b>' + esc(o[1]) + '</b></p>').join('') + '</div>' : '') +
     (ex.length ? '<div class="hj-s"><h3>Exames para avaliar</h3>' + cExames(ex) + '</div>' : ''));
 }
-async function hojeCitopet(aid, v) {
-  try { E.ph.citopet = await api('estHojeCitopet', E.sessao, hoje(), aid, v || ''); } catch (e) { toast(e.message, 5000); return false; }
+async function hojeLabResp(aid, lab, v) {
+  try { E.ph[lab] = await api('estHojeLab', E.sessao, hoje(), aid, lab, v || ''); } catch (e) { toast(e.message, 5000); return false; }
   return true;
 }
 // fotos das pendências: reduzidas para JPEG (lado maior de 1600 px) antes de enviar; abertas só por quem vê a pendência
@@ -7663,6 +7685,7 @@ async function abrirModulo(nome, aid, rid) {
     E.ponte.animais = E.d.animais.filter(a => a.ativo !== '0' || doa.some(x => x.animalId === a.id)).map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, microchip: a.microchip || '', nascimento: a.nascimento || '', idade: a.nascimento ? idade(a.nascimento) : '', resp: (respDe(a) || {}).nome || '', doador: a.doador === '1', tipoSanguineo: tipagemDe(a).tipoSanguineo, dal: tipagemDe(a).dal }));
     E.ponte.vets = (E.d.vets || []).map(x => ({ id: x.id, nome: x.nome, crmv: x.crmv, padrao: x.padrao, rubrica: x.rubrica || '' })); E.ponte.usuario = E.u.nome;
     E.ponte.racasCao = RACAS_CAO.concat(racasExtra(false)); E.ponte.racasGato = RACAS_GATO.concat(racasExtra(true));
+    E.ponte.abrirReq = E.reqAbrir || null; E.reqAbrir = null;
   }
   if (nome === 'transporte') { E.ponte.abrirPedido = E.pedAbrir || null; E.pedAbrir = null; E.contaVer = ''; }
   if (nome === 'estoque' || nome === 'producao') { E.ponte.fracionar = E.fracAbrir || null; E.fracAbrir = null; E.ponte.embalar = E.embAbrir || null; E.embAbrir = null; }
@@ -9015,9 +9038,12 @@ const ACOES = {
   'pd-filtro': b => { E.pdFiltro = b.dataset.v; pintarPendencias(); },
   'pd-foto': b => { const u = E.pdFotoCache[b.dataset.id]; if (!u) return toast('A foto ainda está carregando.'); abrirFolha('Foto da pendência', '<img src="' + u + '" alt="" style="width:100%;height:auto;border-radius:12px;display:block">'); },
   'hj-abrir': b => abrirHojeAnimal(b.dataset.id),
-  'hj-cit': async b => { if (await hojeCitopet(b.dataset.id, b.dataset.v)) { pintarPendencias(); abrirHojeAnimal(b.dataset.id); } },
-  'hj-ficha': b => { const aid = b.dataset.id; if (!(E.ph.citopet[hoje()] || {})[aid]) return abrirHojeAnimal(aid, 'citopet'); fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', aid); },
-  'hj-cit-ficha': async b => { const aid = b.dataset.id; if (!(await hojeCitopet(aid, b.dataset.v))) return; fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', aid); },
+  'hj-lab': async b => { if (await hojeLabResp(b.dataset.id, b.dataset.lab, b.dataset.v)) { if (E.pdFiltro === 'hoje') pintarPendencias(); abrirHojeAnimal(b.dataset.id, b.dataset.p || undefined); } },
+  'hj-lab-rever': b => abrirHojeAnimal(b.dataset.id, 'rever'),
+  'hj-ok': async b => { try { E.ph.ok = await api('estHojeOk', E.sessao, hoje(), b.dataset.id, b.dataset.lab, !!b.dataset.v); } catch (e) { return toast(e.message, 5000); } if (E.pdFiltro === 'hoje') pintarPendencias(); abrirHojeAnimal(b.dataset.id, b.dataset.v ? 'rever' : undefined); },
+  'hj-req': b => { fecharFolha(); E.reqAbrir = { lab: b.dataset.lab, data: hoje() }; E.modulo = 'requisicoes'; abrirModulo('requisicoes'); },
+  'hj-ficha': b => { const aid = b.dataset.id; if (LABS_HJ.some(([k]) => hojeLab(aid, k) === 'perg')) return abrirHojeAnimal(aid, 'labs'); fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', aid); },
+  'hj-abrir-ficha': b => { fecharFolha(); E.modulo = 'fichas'; abrirModulo('fichas', b.dataset.id); },
   'hj-producao': () => { fecharFolha(); E.modulo = 'producao'; abrirModulo('producao'); },
   'hj-pedir': b => salvando(b, async () => { const m = vl('hjMot'); if (m.length < 3) throw new Error('Explique o motivo do pedido.'); const r = await api('estLiberacaoPedir', E.sessao, b.dataset.v, m, b.dataset.id); E.ph.lib = r.lib; E.ph.ped = r.ped; toast('Pedido enviado.'); pintarPendencias(); abrirHojeAnimal(b.dataset.id); }),
   'hj-liberar': b => salvando(b, async () => { const r = await api('estLiberar', E.sessao, b.dataset.v, vl('hjMot')); E.ph.lib = r.lib; E.ph.ped = r.ped; toast('Produção liberada.'); pintarPendencias(); abrirHojeAnimal(b.dataset.id); }),

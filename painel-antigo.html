@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126003526">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126004327">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -936,6 +936,7 @@ textarea{min-height:110px;resize:vertical;line-height:1.45}
 input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none;box-shadow:0 0 0 3px rgba(196,154,108,.25)}
 .check{display:flex;align-items:center;gap:10px;font-size:15px}
 .check input{width:22px;height:22px;min-height:0;accent-color:var(--vinho)}
+.st-box{display:flex;flex-direction:column;gap:12px}.st-op{align-items:flex-start}.st-op input{flex:none;margin-top:1px}.st-op small{color:var(--suave,#7A6A60);font-size:13px}.st-sub{margin:-4px 0 4px 32px}.st-sub[hidden]{display:none}.st-box .campo.larga{grid-column:1/-1}
 .etq-ed{border:1px solid var(--linha);border-left:4px solid var(--c,#6B6B68);border-radius:10px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#fff}
 .etq-ed .larga{grid-column:1/-1;display:flex;gap:8px}
 .etq-ed .larga select{flex:1}
@@ -1053,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126003526';
+  var VERSAO = '20261126004327';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3009,13 +3010,40 @@ async function ctnBaixarImg(an, C) {
   if (ehCelular() && navigator.canShare && navigator.canShare({ files: arqs })) { try { await navigator.share({ files: arqs }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
   for (const f of arqs) { const l = document.createElement('a'); l.href = URL.createObjectURL(f); l.download = f.name; document.body.appendChild(l); l.click(); l.remove(); await new Promise(r => setTimeout(r, 400)); }
 }
+// situação no Clube do Doador, mudada pela carteirinha no painel: ativo, afastado temporariamente (só aparece no painel) ou aposentado (medalha na carteirinha)
+function mudarStatusClube(aid) {
+  const an = animalDe(aid); if (!an) return;
+  const sit = an.aposentadoMotivo ? 'apo' : an.afastadoMotivo ? 'afa' : 'ativo';
+  const opc = (L, v) => L.map(m => '<option' + (m === v ? ' selected' : '') + '>' + esc(m) + '</option>').join('') + (v && !L.includes(v) ? '<option selected>' + esc(v) + '</option>' : '');
+  const radio = (v, t, d) => '<label class="check larga st-op"><input type="radio" name="stSit" value="' + v + '"' + (sit === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><small>' + d + '</small></span></label>';
+  abrirFolha('Status de ' + an.nome,
+    '<div class="st-box">' + radio('ativo', 'Doador ativo', 'Aparece na carteirinha com o check verde.') +
+    radio('afa', 'Afastado temporariamente', 'Tratamento, cirurgia, cio. Na carteirinha não aparece nada; no painel bloqueia a ficha de doação.') +
+    '<div class="grade st-sub" id="stAfa"><div class="campo"><label for="stAfaM">Motivo</label><select id="stAfaM">' + opc(MOTIVOS_AFA, an.afastadoMotivo) + '</select></div><div class="campo"><label for="stAfaEm">Afastado desde</label><input id="stAfaEm" type="date" value="' + esc(an.afastadoEm || hoje()) + '"></div></div>' +
+    radio('apo', 'Doador aposentado', 'Aparece na carteirinha com a medalha de ouro, para sempre.') +
+    '<div class="grade st-sub" id="stApo"><div class="campo"><label for="stApoM">Motivo</label><select id="stApoM">' + opc(MOTIVOS_APO, an.aposentadoMotivo) + '</select></div><div class="campo"><label for="stApoEm">Aposentado em</label><input id="stApoEm" type="date" value="' + esc(an.aposentadoEm || hoje()) + '"></div>' +
+    '<div class="campo larga"><label for="stApoObs">Observação (só aparece no painel)</label><input id="stApoObs" autocomplete="off" value="' + esc(an.aposentadoObs || '') + '"></div></div>' +
+    '<button class="btn" id="stSalvar">Salvar o status</button></div>', () => {
+      const ver = () => { const v = ($('input[name=stSit]:checked') || {}).value; $('#stAfa').hidden = v !== 'afa'; $('#stApo').hidden = v !== 'apo'; };
+      $$('input[name=stSit]').forEach(x => x.onchange = ver); ver();
+      $('#stSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
+        const v = ($('input[name=stSit]:checked') || {}).value, a = animalDe(aid);
+        const salvo = await api('salvarAnimal', E.sessao, { id: a.id, responsavelId: a.responsavelId, nome: a.nome, especie: a.especie, sexo: a.sexo, raca: a.raca, nascimento: a.nascimento, tipoSanguineo: a.tipoSanguineo, dal: a.dal, microchip: a.microchip, doador: true, ativo: a.ativo !== '0',
+          aposentadoMotivo: v === 'apo' ? vl('stApoM') : '', aposentadoEm: v === 'apo' ? vl('stApoEm') : '', aposentadoObs: v === 'apo' ? vl('stApoObs') : '',
+          afastadoMotivo: v === 'afa' ? vl('stAfaM') : '', afastadoEm: v === 'afa' ? vl('stAfaEm') : '' });
+        const i = E.d.animais.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.animais[i] = salvo;
+        toast(v === 'apo' ? 'Doador aposentado.' : v === 'afa' ? 'Doador afastado temporariamente.' : 'Doador ativo.');
+        abrirCarteirinha(aid);
+      });
+    });
+}
 // folha da carteirinha no painel: prévia da frente e do verso, foto do animal e download
 async function abrirCarteirinha(aid) {
   const an = animalDe(aid); if (!an) return;
   (E.modo === 'carteirinha' ? abrirPaginaCtn : abrirFolha)('Carteirinha do doador', '<p class="nota" id="ctnSt">Montando a carteirinha de ' + esc(an.nome) + '…</p><div class="ctn-prev" id="ctnPrev"></div>' +
     '<div class="ctn-fmenu" id="ctnFMenu" hidden><b>Foto da carteirinha</b><div class="mini-bts"><button class="btn" id="ctnFoto">' + (ctnFoto(an) ? 'Trocar a foto' : 'Colocar a foto') + '</button>' + (ctnFoto(an) ? '<button class="btn sec2" id="ctnEnq">Enquadrar a foto</button>' + (E.modo === 'painel' ? '<button class="btn sec2" id="ctnTira">Remover a foto</button>' : '') : '') + '<button class="btn sec2" id="ctnFFecha">Cancelar</button></div>' +
 '<p class="nota">A foto pode ser tirada na hora ou escolhida da galeria. Ela entra na carteirinha do jeito que foi tirada, e o recorte é escolhido arrastando o quadro, como nas fotos dos laudos.</p></div>' +
-'<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button>' + (ctnLink(an) ? (E.modo === 'carteirinha' ? '' : '<button class="btn sec2" id="ctnIcone">Ícone da carteirinha</button>') + (E.modo === 'carteirinha' && !new URLSearchParams(location.search).get('de') ? '' : '<button class="btn sec2" id="ctnLink">Copiar o link</button>') : '') + '</div><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
+'<div class="mini-bts"><button class="btn" id="ctnBaixar" disabled>Baixar carteirinha</button>' + (E.modo === 'painel' && (pode('cadastro') || pode('carteiras')) ? '<button class="btn sec2" id="ctnStatus">Mudar o status</button>' : '') + (ctnLink(an) ? (E.modo === 'carteirinha' ? '' : '<button class="btn sec2" id="ctnIcone">Ícone da carteirinha</button>') + (E.modo === 'carteirinha' && !new URLSearchParams(location.search).get('de') ? '' : '<button class="btn sec2" id="ctnLink">Copiar o link</button>') : '') + '</div><input type="file" id="ctnArq" accept="image/*" hidden>', async c => {
     let C = null;
     const montar = async (fotoNova) => {
       $('#ctnSt').textContent = 'Montando a carteirinha…'; $('#ctnBaixar').disabled = true;
@@ -3024,6 +3052,7 @@ async function abrirCarteirinha(aid) {
       catch (e) { if ($('#ctnSt')) $('#ctnSt').textContent = e.message; }
     };
     montar();
+    if ($('#ctnStatus')) $('#ctnStatus').onclick = () => mudarStatusClube(aid);
     if ($('#ctnEnq')) $('#ctnEnq').onclick = async () => { const f = ctnFoto(animalDe(aid)); $('#ctnSt').textContent = 'Abrindo a foto…';
       try { const im = E.modo === 'painel' ? await ctnArquivo(f.id) : C && C.D.foto; if (!im) throw new Error('Espere a carteirinha terminar de montar.'); $('#ctnSt').textContent = '';
         ctnCorte(im, f, async (corte, rot) => { if (E.modo === 'painel') atualizarAnimal(await api('animalFoto', E.sessao, aid, { id: f.id, nome: f.nome, corte, rot })); else atualizarAnimal(Object.assign({ id: aid }, await (E.modo === 'carteirinha' ? api('carteirinhaFoto', E.ct, { corte, rot }) : api('carteiraFoto', E.token, aid, { corte, rot })))); abrirCarteirinha(aid); }); } catch (e) { $('#ctnSt').textContent = e.message; } };
