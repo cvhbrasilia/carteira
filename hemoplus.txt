@@ -1,0 +1,53 @@
+$r = New-Object System.Collections.Generic.List[string]
+function L($t) { $r.Add([string]$t) }
+$p = @()
+L "== Computador: $env:COMPUTERNAME | $((Get-CimInstance Win32_OperatingSystem).Caption)"
+L "== Programas"
+foreach ($i in (Get-ItemProperty 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*','HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*','HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' -EA 0)) {
+  if ($i.DisplayName -match 'hemo|m4|firebird|interbase|sql|postgre|mysql|maria|access|java') { L "$($i.DisplayName) | $($i.DisplayVersion) | $($i.InstallLocation)"; if ($i.InstallLocation) { $p += $i.InstallLocation } }
+}
+L "== Servicos"
+foreach ($s in (Get-CimInstance Win32_Service -EA 0)) {
+  if (($s.Name + ' ' + $s.PathName) -match 'hemo|m4|firebird|interbase|sql|postgre|mysql|maria|apache|tomcat|nginx|node') { L "$($s.Name) | $($s.State) | $($s.PathName)" }
+}
+L "== Processos"
+foreach ($q in (Get-Process -EA 0)) {
+  if (($q.ProcessName + ' ' + $q.Path) -match 'hemo|m4|fbserver|fb_inet|firebird|ibserver|sqlservr|postgres|mysqld|java|httpd|tomcat') { L "$($q.ProcessName) | $($q.Path)"; if ($q.Path -match 'hemo|m4') { $p += (Split-Path $q.Path) } }
+}
+L "== Atalhos"
+$sh = New-Object -ComObject WScript.Shell
+foreach ($a in (Get-ChildItem "$env:PUBLIC\Desktop",([Environment]::GetFolderPath('Desktop')),"$env:ProgramData\Microsoft\Windows\Start Menu","$env:APPDATA\Microsoft\Windows\Start Menu" -Recurse -Include *.lnk,*.url -EA 0)) {
+  if ($a.Name -match 'hemo|m4') {
+    if ($a.Extension -eq '.lnk') { $k = $sh.CreateShortcut($a.FullName); L "$($a.Name) -> $($k.TargetPath) $($k.Arguments) | $($k.WorkingDirectory)"; if ($k.TargetPath) { $p += (Split-Path $k.TargetPath) } }
+    else { L "$($a.Name) -> $((Get-Content $a.FullName -EA 0 | Select-String '^URL=') -join ' ')" }
+  }
+}
+foreach ($b in @('C:\','D:\',$env:ProgramFiles,${env:ProgramFiles(x86)},$env:ProgramData,$env:APPDATA,$env:LOCALAPPDATA,[Environment]::GetFolderPath('MyDocuments'))) {
+  if ($b -and (Test-Path $b)) { foreach ($d in (Get-ChildItem $b -Directory -EA 0)) { if ($d.Name -match 'hemo|m4') { $p += $d.FullName } } }
+}
+$p = $p | Where-Object { $_ -and (Test-Path $_) } | Sort-Object -Unique
+L "== Arquivos de banco e configuracao"
+foreach ($d in $p) {
+  L "[$d]"
+  $f = Get-ChildItem $d -Recurse -File -EA 0
+  foreach ($x in ($f | Where-Object { $_.Extension -match '^\.(fdb|gdb|ib|mdb|accdb|db|db3|sqlite|sqlite3|mdf|ldf|dbf|bak|fbk)$' } | Select-Object -First 60)) { L ("  BANCO {0} | {1:N0} KB | {2:dd/MM/yyyy HH:mm}" -f $x.FullName.Substring($d.Length), ($x.Length/1KB), $x.LastWriteTime) }
+  foreach ($x in ($f | Where-Object { $_.Extension -match '^\.(exe|ini|conf|cfg|config)$' } | Select-Object -First 40)) { L ("  {0} | {1:N0} KB" -f $x.FullName.Substring($d.Length), ($x.Length/1KB)) }
+  foreach ($x in ($f | Where-Object { $_.Extension -match '^\.(ini|conf|cfg|config)$' } | Select-Object -First 12)) {
+    $linhas = Get-Content $x.FullName -EA 0 | Where-Object { $_ -match 'server|host|database|banco|path|caminho|driver|port|porta|provider|data source|dsn|url|\.(fdb|gdb|mdb|db)' -and $_ -notmatch 'senha|pass|pwd|user id|usuario|user=|token|chave|key|secret' } | Select-Object -First 15
+    if ($linhas) { L "  -- $($x.Name)"; foreach ($t in $linhas) { L "     $t" } }
+  }
+}
+L "== ODBC"
+foreach ($o in (Get-OdbcDsn -EA 0)) { L "$($o.Name) | $($o.DriverName) | $($o.Platform)" }
+L "== Portas abertas"
+$vistas = @{}
+foreach ($c in (Get-NetTCPConnection -State Listen -EA 0)) {
+  $n = (Get-Process -Id $c.OwningProcess -EA 0).ProcessName
+  if ($n -notmatch '^(svchost|System|lsass|wininit|services|spoolsv|Idle)$' -and -not $vistas["$($c.LocalPort)"]) { $vistas["$($c.LocalPort)"] = 1; L "$($c.LocalPort) | $n" }
+}
+$arq = Join-Path ([Environment]::GetFolderPath('Desktop')) 'HemoPlus diagnostico.txt'
+$r | Set-Content -Path $arq -Encoding UTF8
+$r -join "`r`n" | Set-Clipboard
+$r
+Write-Host ""
+Write-Host "Pronto. Resultado copiado e salvo em $arq" -ForegroundColor Green
