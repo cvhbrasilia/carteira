@@ -37,6 +37,7 @@ button{cursor:pointer}
 .lin{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0e8df}
 .lin:first-of-type{border-top:0}
 .lin .t{min-width:0}
+.lin.clic{cursor:pointer;border-radius:8px;padding-left:6px;padding-right:6px;margin:0 -6px}.lin.clic:hover{background:var(--areia)}
 .lin .t b{display:block;color:var(--vinho)}
 .lin .t small{display:block;color:var(--tinta2);font-size:12.5px}
 .trava{border:1.5px solid #E2B04A;background:#FBF0DC;border-radius:12px;padding:12px 14px;margin:8px 0 12px;display:flex;flex-direction:column;gap:6px}.trava b{color:#7A4E0B}.trava small{color:#5c4a2a;font-size:13px}.trava .ped{color:#7A4E0B}.trava input{width:100%}.trava .btn{align-self:flex-start}
@@ -591,7 +592,7 @@ function telaHojeProd() {
   const P = pendencias(), andam = S.prod.filter((p) => p.etapa !== "concluida"), hoje = hojeISO();
   const feitasHoje = S.prod.filter((p) => p.etapa === "concluida" && String(p.atualizado || "").slice(0, 10) === hoje);
   const congel = S.uni.filter((u) => ["PFC", "CRIO", "PPC"].includes(u.componente) && (u.dados || {}).congelamento && u.dados.congelamento.inicio && !(u.dados.congelamento.conferido && u.dados.congelamento.conferido.congelado));
-  return '<div class="cx"><h2>Para fazer hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente na bancada.</p>') + "</div>" +
+  return '<div class="cx"><h2>Para fazer hoje</h2>' + (P.length ? P.map((x) => '<div class="lin clic" data-a="' + x.a + '" data-v="' + esc(x.v) + '"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">Nada pendente na bancada.</p>') + "</div>" +
     '<div class="duas"><div class="cx"><h2>Congelando · ' + congel.length + "</h2>" + (congel.length ? listaAninhada(congel) : '<p class="vazio">Nenhum plasma ou CRIO congelando.</p>') + "</div>" +
     '<div class="cx"><h2>Produções concluídas hoje · ' + feitasHoje.length + "</h2>" + (feitasHoje.length ? feitasHoje.map((p) => '<div class="lin"><div class="t"><b>Coleta ' + esc(p.coleta) + "</b><small>" + esc(S.uni.filter((u) => u.coleta === p.coleta).map((u) => u.componente).join(", ")) + '</small></div><button class="btn sec peq" data-a="prod" data-v="' + esc(p.coleta) + '">Ver</button></div>').join("") : '<p class="vazio">Nenhuma ainda.</p>') + "</div></div>" +
     (() => { const Q = S.uni.filter((u) => u.situacao === "quarentena"), ab = S.agTab || "", n = (c) => Q.filter((u) => u.componente === c).length;
@@ -636,7 +637,7 @@ function filtroTipos(L) {
     (Object.values(T).some(Boolean) ? '<button data-a="hjTipo" data-v="">Limpar</button>' : "") + "</div>";
 }
 function telaHojeLista(P, cvh, intv, caminho, ab, filtro) {
-  return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">' + (ab ? "Nada pendente com " + esc(ab) + "." : "Nada pendente agora.") + '</p>') + "</div>" +
+  return '<div class="cx"><h2>Resolver hoje</h2>' + (P.length ? P.map((x) => '<div class="lin clic" data-a="' + x.a + '" data-v="' + esc(x.v) + '"><div class="t"><b>' + esc(x.t) + "</b><small>" + esc(x.s) + '</small></div><button class="btn peq ' + (x.n === 0 ? "" : "sec") + '" data-a="' + x.a + '" data-v="' + esc(x.v) + '">Abrir</button></div>').join("") : '<p class="vazio">' + (ab ? "Nada pendente com " + esc(ab) + "." : "Nada pendente agora.") + '</p>') + "</div>" +
     (filtro || "") + '<div class="duas"><div class="cx"><h2>Bolsas disponíveis no CVH · ' + cvh.length + "</h2>" + (cvh.length ? porComponente(cvh) : '<p class="vazio">Nenhuma bolsa disponível.</p>') + "</div>" +
     '<div class="cx"><h2>Bolsas na Intensivet · ' + intv.length + "</h2>" + (intv.length ? porComponente(intv) : '<p class="vazio">Nenhuma bolsa na Intensivet.</p>') + (caminho.length ? '<div class="grupo-t">Em trânsito · ' + caminho.length + "</div>" + listaAninhada(caminho) : "") + "</div></div>";
 }
