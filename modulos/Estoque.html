@@ -787,12 +787,16 @@ function entregaHtml(d) {
 // etiqueta de entrega da caixa (Brother 62 mm × 120 mm): destino, endereço, paciente, médico veterinário e o QR da caixa que a Intensivet (ou a clínica) lê
 async function dadosEntrega(r) {
   const at = (S.at || []).find((x) => x.remessa_id === r.id || x.id === ((r.dados || {}).atendimento)) || {}, ped = ((at.dados || {}).pedido) || {};
+  // sem o pedido completo, usa a reserva da primeira bolsa (paciente, tipagem e médico veterinário vindos do HemoPlusVet ou digitados)
+  const u0 = S.uni.find((x) => x.id === (r.unidades || [])[0]), R0 = u0 ? dadosReserva(u0) : {}, H0 = u0 ? ((((u0.dados || {}).reservaInfo) || {}).hp || ((u0.dados || {}).uso) || {}) : {}, V0 = H0.vet || {};
   let cli = null; try { const D = await ponte("trp", "cliDados"); const n = String(at.destino || r.destino || "").trim().toLowerCase(); cli = (D.clinicas || []).find((c) => String(c.nome || "").trim().toLowerCase() === n) || null; } catch (e) { cli = null; }
   return { nome: (cli && cli.nome) || at.destino || r.destino || "", endereco: [(cli && cli.endereco) || at.endereco || "", cli && cli.bairro].filter(Boolean).join(", "), cep: cli && cli.cep, telefone: cli && cli.telefone,
-    paciente: String(at.paciente || (ped.paciente || {}).nome || "").toUpperCase(), pacTipo: (() => { const P = ped.paciente || {}; return [P.dea1 ? "DEA 1 " + P.dea1 : "", P.dal ? "DAL " + P.dal : "", P.felino || ""].filter(Boolean).join(" · ").toUpperCase() || String(P.tipagem || "").toUpperCase(); })(),
-    vet: [(ped.vet || {}).nome || at.solicitante || "", (ped.vet || {}).crmv ? "CRMV " + ped.vet.crmv : ""].filter(Boolean).join(" · "),
+    paciente: String(at.paciente || (ped.paciente || {}).nome || R0.paciente || "").toUpperCase(), pacTipo: (() => { const P = ped.paciente || {}; return [P.dea1 ? "DEA 1 " + P.dea1 : "", P.dal ? "DAL " + P.dal : "", P.felino || ""].filter(Boolean).join(" · ").toUpperCase() || String(P.tipagem || "").toUpperCase() || R0.tipPac || ""; })(),
+    vet: [(ped.vet || {}).nome || at.solicitante || V0.nome || "", (ped.vet || {}).crmv ? "CRMV " + ped.vet.crmv : V0.crmv ? "CRMV " + V0.crmv : ""].filter(Boolean).join(" · "),
     envio: (r.unidades || []).map((id) => { const u = S.uni.find((x) => x.id === id); if (!u) return id; const t = [etqTipo(doadorDe(u).tipoSanguineo), etqDal(doadorDe(u).dal)].filter(Boolean).join(" · "); return (NOME_ETQ[u.componente] || u.componente) + (u.volume_ml != null ? " " + fmt(u.volume_ml) + " mL" : "") + (t ? " · " + t : ""); }).join(" + "),
-    qr: cli && cli.maps ? await qrHtml(cli.maps) : "", qrRot: "Leia para abrir no mapa", barra: barrasEtq(qrCaixa(r), 26, 2), barraRot: "CAIXA " + r.id };
+    qr: cli && cli.maps ? await qrHtml(cli.maps) : "", qrRot: "Leia para abrir no mapa",
+    // código de barras da caixa só para a Intensivet, que lê no app ao receber
+    ...(/intensivet/i.test(String((cli && cli.nome) || at.destino || r.destino || "")) ? { barra: barrasEtq(qrCaixa(r), 26, 2), barraRot: "CAIXA " + r.id } : {}) };
 }
 function blocoEntrega(r) {
   return '<div class="cx" style="margin-top:12px"><h2>Etiqueta de entrega da caixa ' + esc(r.id) + ' (Brother 62 mm × 120 mm)</h2><div id="entPrev"></div><div class="bts" style="align-items:center;flex-wrap:wrap"><span>Quantidade</span>' + qtdHtml("entQtd", 1) + '<button class="btn peq" data-a="entImp" data-v="' + esc(r.id) + '">Imprimir na Brother</button></div><p><small>Na janela de impressão, escolha a Brother, papel 62mm (contínuo, comprimento 120 mm no driver da Brother), margens Nenhuma. O QR abre o endereço no mapa do motoboy; o código de barras é o da caixa, lido no app da Intensivet ao receber.</small></p></div>';
@@ -975,16 +979,16 @@ function etqBolsaHtml(u) {
 }
 // etiqueta de reserva e liberação: dados do pedido, do cadastro do receptor e do HemoPlusVet; o que faltar é preenchido na hora
 function dadosReserva(u) {
-  const D = u.dados || {}, U = D.uso || {}, R = D.reservaInfo || {}, at = (S.at || []).find((x) => x.id === (D.atendimento || R.atendimento)) || {}, ped = ((at.dados || {}).pedido) || {}, P = ped.paciente || {}, UP = U.paciente || {};
+  const D = u.dados || {}, R = D.reservaInfo || {}, U = Object.assign({}, R.hp || {}, D.uso || {}), at = (S.at || []).find((x) => x.id === (D.atendimento || R.atendimento)) || {}, ped = ((at.dados || {}).pedido) || {}, P = ped.paciente || {}, UP = U.paciente || {};
   const rec = (S.rec || []).find((r) => r.id === UP.receptorId) || (S.rec || []).find((r) => String((r.dados || {}).nome || "").toLowerCase() === String(UP.nome || P.nome || at.paciente || "").toLowerCase()) || {}, RD = rec.dados || {};
   const a = doadorDe(u), tp = (U.tipagem || []).filter((x) => !/controle|não realizado/i.test(x.exame || "")).map((x) => String(x.exame + " " + x.resultado).toUpperCase());
   const tipPac = tp.length ? tp.join(" · ") : [P.dea1 ? "DEA 1 " + P.dea1 : "", P.dal ? "DAL " + P.dal : "", P.felino || ""].filter(Boolean).join(" · ").toUpperCase() || String(P.tipagem || "").toUpperCase();
   const pv = (U.prova || [])[0] || {};
   // reserva digitada à mão ("Thor (Maria)" ou "Thor - Maria"): nome do animal e responsável
   const para = String(R.para || u.reserva || "").replace(/^Atendimento \S+\s*·?\s*/i, "").replace(/^Prova de compatibilidade[^·]*·?\s*/i, "").trim(), mp = /^([^(·-]+?)\s*(?:[(·-]\s*([^)]+?)\)?)?$/.exec(para) || [];
-  return { paciente: String(UP.nome || P.nome || at.paciente || RD.nome || mp[1] || "").toUpperCase(), responsavel: UP.responsavel || (ped.responsavel || {}).nome || RD.responsavel || mp[2] || "", sexo: String(P.sexo || RD.sexo || "").slice(0, 1).toUpperCase(), especie: UP.especie || P.especie || RD.especie || "", raca: UP.raca || P.raca || RD.raca || "", idade: String(P.idade || RD.idade || "").replace(/\s*anos?$/i, ""),
+  return { paciente: String(UP.nome || P.nome || at.paciente || RD.nome || mp[1] || "").toUpperCase(), responsavel: UP.responsavel || (ped.responsavel || {}).nome || RD.responsavel || mp[2] || "", sexo: String(P.sexo || U.sexo || RD.sexo || "").slice(0, 1).toUpperCase(), especie: UP.especie || P.especie || RD.especie || "", raca: UP.raca || P.raca || RD.raca || "", idade: String(P.idade || U.idade || RD.idade || "").replace(/\s*anos?$/i, ""),
     registro: "", solicitacao: (U.hemoplus || {}).numsol ? String(U.hemoplus.numsol) : (at.id || ""), clinica: String(U.clinica || at.destino || RD.clinica || "").toUpperCase(), tipPac,
-    tipDoa: [etqTipo(a.tipoSanguineo), etqDal(a.dal)].filter(Boolean).join(" · "), prova: pv.resultado ? (/incomp/i.test(pv.resultado) ? "INCOMP" : "COMP") : "COMP", provaEm: horaLocal(pv.data || R.em || ""), liberadoPor: R.por || "", liberadoEm: horaLocal(R.em || U.retiradaEm || "") };
+    tipDoa: [etqTipo(a.tipoSanguineo), etqDal(a.dal)].filter(Boolean).join(" · "), prova: pv.resultado ? (/incomp/i.test(pv.resultado) ? "INCOMP" : "COMP") : "COMP", provaEm: horaLocal(pv.data || R.em || ""), liberadoPor: R.por === "HemoPlusVet" ? (R.liberadoPor || "") : (R.por || ""), liberadoEm: horaLocal(R.liberadoEm || R.em || U.retiradaEm || "") };
 }
 function etqReservaHtml(u, R, qr) {
   const comp = NOME_ETQ[u.componente] || u.componente, c = "padding:2px 6px", B = "1px solid #000", lab = "font-size:7.5px;line-height:1.1";
