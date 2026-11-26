@@ -111,7 +111,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261126222636">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261126223000">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1053,7 +1053,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126222636';
+  var VERSAO = '20261126223000';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -8967,10 +8967,11 @@ function telaEtqTubo() {
     const montar = async () => { const r = E.etSel; if (!r) return; const p = $('#etPrev');
       try { p.innerHTML = '<h3 style="margin:12px 0 0">Tubo ' + esc(r.numero) + ' · ' + esc(r.nome) + '</h3><div class="mini-bts" style="margin:8px 0">' + TESTES_TUBO.map(([k, rot]) => '<button class="mini' + (E.etTestes.includes(k) ? ' on' : '') + '" data-acao="et-teste" data-v="' + k + '" title="' + esc(rot) + '" style="' + (E.etTestes.includes(k) ? 'background:var(--vinho,#5F130F);color:#fff' : '') + '">' + k + '</button>').join('') + '</div>' + await previaTubo(r, E.etTestes, E.etQuando) +
         '<div class="acoes" style="align-items:center"><span>Quantidade</span><button class="btn sec2 peq" data-acao="et-menos">−</button><b id="etQtd" style="min-width:24px;text-align:center">' + (E.etQtd || 2) + '</b><button class="btn sec2 peq" data-acao="et-mais">+</button><button class="btn" data-acao="et-imprimir">Imprimir na Zebra pequena</button></div>'; } catch (e) { p.innerHTML = '<p class="nota">' + esc(e.message) + '</p>'; } };
-    const escolher = r => { E.etSel = r; E.etQuando = new Date(); montar(); };
+    // escolhido: a lista some (fica só o escolhido) e a prévia aparece logo abaixo, na tela
+    const escolher = async r => { E.etSel = r; E.etQuando = new Date(); L = [r]; pinta(); await montar(); const p = $('#etPrev'); if (p) p.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     const pinta = () => { $('#etLista').innerHTML = L.length ? L.map((x, i) => '<button class="venc" data-acao="et-escolher" data-i="' + i + '"><div class="t"><b>' + esc(x.numero) + ' · ' + esc(x.nome) + '</b><small>' + esc([x.responsavel, x.clinica].filter(Boolean).join(' · ')) + '</small></div></button>').join('') : '<p class="vazio-p">Nenhum receptor encontrado.</p>'; E.etLista = L; };
     const busca = async () => { try { L = await api('receptoresHemo', E.sessao, $('#etBusca').value.trim()); pinta(); } catch (e) { $('#etLista').innerHTML = '<p class="nota">' + esc(e.message) + '</p>'; } };
-    const i = $('#etBusca'); i.addEventListener('input', () => { clearTimeout(t); t = setTimeout(busca, 250); });
+    const i = $('#etBusca'); i.addEventListener('input', () => { clearTimeout(t); E.etSel = null; $('#etPrev').innerHTML = ''; t = setTimeout(busca, 250); });
     i.addEventListener('keydown', async e => { if (e.key !== 'Enter') return; e.preventDefault(); clearTimeout(t); await busca(); if (L.length === 1) escolher(L[0]); });
     $('#etCam').onclick = async () => { const x = await lerCodigoPainel('Leia o código de barras do tubo'); if (!x) return; i.value = String(x).trim(); clearTimeout(t); await busca(); if (L.length === 1) escolher(L[0]); else if (!L.length) toast('Nenhum receptor com o código ' + x + '.', 5000); };
     E.etEscolher = escolher; E.etMontar = montar; busca(); if (!('ontouchstart' in window)) setTimeout(() => i.focus(), 50);
@@ -8979,11 +8980,11 @@ function telaEtqTubo() {
 function telaEtqColeta() {
   abrirFolha('Etiqueta de coleta', '<p class="nota">Digite o número da doação, leia o código de barras ou busque pelo nome do animal. As coletas vêm do HemoPlus.</p><div style="display:flex;gap:8px;align-items:center"><input id="ecBusca" type="search" placeholder="Número, código de barras ou nome do animal" autocomplete="off" style="flex:1;min-width:0"><button class="btn sec2" id="ecCam" aria-label="Ler o código de barras com a câmera" title="Ler com a câmera" style="flex:none;padding:10px 12px;display:flex;align-items:center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M7 8v8M10 8v8M13 8v8M16 8v8"/></svg></button></div><div id="ecLista" style="margin-top:8px"></div><div id="ecPrev"></div>', c => {
     let t = null, L = [];
-    const escolher = async c0 => { E.ecSel = c0; const p = $('#ecPrev'); p.innerHTML = '<p class="nota">Montando a prévia…</p>';
+    const escolher = async c0 => { E.ecSel = c0; L = [c0]; pinta(); const p = $('#ecPrev'); p.innerHTML = '<p class="nota">Montando a prévia…</p>'; setTimeout(() => p.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
       try { p.innerHTML = '<h3 style="margin:12px 0 0">Coleta ' + esc(c0.numero) + ' · ' + esc(c0.doador) + '</h3>' + await previaColeta(c0) + '<div class="acoes" style="align-items:center"><span>Quantidade</span><button class="btn sec2 peq" data-acao="ec-menos">−</button><b id="ecQtd" style="min-width:24px;text-align:center">2</b><button class="btn sec2 peq" data-acao="ec-mais">+</button><button class="btn" data-acao="ec-imprimir">Imprimir na Zebra pequena</button></div>'; } catch (e) { p.innerHTML = '<p class="nota">' + esc(e.message) + '</p>'; } };
     const pinta = () => { $('#ecLista').innerHTML = L.length ? L.map((x, i) => '<button class="venc" data-acao="ec-escolher" data-i="' + i + '"><div class="t"><b>' + esc(x.numero) + ' · ' + esc(x.doador) + '</b><small>' + esc([x.responsavel, x.data ? new Date(x.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''].filter(Boolean).join(' · ')) + '</small></div></button>').join('') : '<p class="vazio-p">Nenhuma coleta encontrada.</p>'; E.ecLista = L; };
     const busca = async () => { try { L = await api('coletasHemo', E.sessao, $('#ecBusca').value.trim()); pinta(); } catch (e) { $('#ecLista').innerHTML = '<p class="nota">' + esc(e.message) + '</p>'; } };
-    const i = $('#ecBusca'); i.addEventListener('input', () => { clearTimeout(t); t = setTimeout(busca, 250); });
+    const i = $('#ecBusca'); i.addEventListener('input', () => { clearTimeout(t); E.ecSel = null; $('#ecPrev').innerHTML = ''; t = setTimeout(busca, 250); });
     // leitor de código de barras: digita o número e um Enter
     i.addEventListener('keydown', async e => { if (e.key !== 'Enter') return; e.preventDefault(); clearTimeout(t); await busca(); if (L.length === 1) escolher(L[0]); });
     $('#ecCam').onclick = async () => { const x = await lerCodigoPainel('Leia o código de barras da coleta'); if (!x) return; i.value = String(x).trim(); clearTimeout(t); await busca(); if (L.length === 1) escolher(L[0]); else if (!L.length) toast('Nenhuma coleta com o código ' + x + '.', 5000); };

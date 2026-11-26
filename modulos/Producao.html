@@ -1253,11 +1253,11 @@ async function zplBolsa(u, n) {
 }
 // etiqueta pequena (50 × 30 mm): selo e textos desenhados ponto a ponto (1 bit, sem cinza) para controlar o espaçamento;
 // sem hífens entre os dados (não confundir com o sinal de negativo), "580-0" junto, conteúdo 2 mm abaixo do corte de cima
-async function desenharPequena(u) {
+async function desenharPequena(u, k, tela) {
   const a = doadorDe(u), esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
   const tipos = tipoTxt(a).split("·").map((t) => t.trim().replace(/\s+([+−-])$/, "$1").replace(/-$/, "−")).filter(Boolean);
-  const W = 400, H = 194, X = 24, R = 390, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-  const c = cv.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, W, H); c.fillStyle = "#000"; c.textBaseline = "alphabetic";
+  k = k || 1; const W = 400, H = 194, X = 24, R = 390, cv = document.createElement("canvas"); cv.width = W * k; cv.height = H * k;
+  const c = cv.getContext("2d"); c.scale(k, k); c.fillStyle = "#fff"; c.fillRect(0, 0, W, H); c.fillStyle = "#000"; c.textBaseline = "alphabetic";
   // mesma família de letra das etiquetas do HemoPlus (Tahoma), traço normal; só o número da bolsa em negrito
   const fonte = (px, n) => "bold " + px + "px Tahoma, Verdana, 'DejaVu Sans', sans-serif";   // negrito em tudo: traço fino falha na térmica
   const selo = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("Não consegui abrir o selo")); i.src = "etiqueta-selo.png"; });
@@ -1277,15 +1277,15 @@ async function desenharPequena(u) {
   linha([esp].concat(tipos), 128, 30, 26);
   linha([vol, col ? "coleta " + col : ""].filter(Boolean), 162, 26, 26);
   // 1 bit: preto só onde o desenho é escuro (sem tons de cinza, que borram na térmica)
-  const px = c.getImageData(0, 0, W, H).data;
-  for (let o = 0; o < px.length; o += 4) { const v = px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 175 ? 0 : 255; px[o] = px[o + 1] = px[o + 2] = v; px[o + 3] = 255; }
-  c.putImageData(new ImageData(px, W, H), 0, 0);
+  if (!tela) { const px = c.getImageData(0, 0, W, H).data;
+    for (let o = 0; o < px.length; o += 4) { const v = px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 175 ? 0 : 255; px[o] = px[o + 1] = px[o + 2] = v; px[o + 3] = 255; }
+    c.putImageData(new ImageData(px, W, H), 0, 0); }
   return { cv, c, W, H, X };
 }
 // prévia na tela igual ao que a Zebra imprime: o mesmo desenho e o código de barras na mesma posição
 async function previaPequenaHtml(u) {
-  const { cv } = await desenharPequena(u), k = 378 / 400;
-  return '<div class="et" style="width:378px;height:227px;position:relative;padding:0;overflow:hidden"><img src="' + cv.toDataURL() + '" alt="" style="position:absolute;left:0;top:0;width:378px"><div style="position:absolute;left:' + (24 * k).toFixed(1) + "px;top:" + (198 * k).toFixed(1) + 'px">' + barrasEtq(u.id, 36 * k, zbarW(u.id) <= 370 ? 4 : 2) + "</div></div>";
+  const { cv } = await desenharPequena(u, 3, true), k = 378 / 400;
+  return '<div class="et" style="width:100%;max-width:378px;aspect-ratio:400/240;height:auto;position:relative;padding:0;overflow:hidden;container-type:inline-size"><img src="' + cv.toDataURL() + '" alt="" style="position:absolute;left:0;top:0;width:100%"><div style="position:absolute;left:6%;top:' + (198 / 2.4).toFixed(2) + '%;width:' + (zbarW(u.id) / 4 * (zbarW(u.id) <= 370 ? 1 : 0.5)).toFixed(2) + '%;height:' + (36 / 2.4).toFixed(2) + '%">' + barrasEtq(u.id, 36 * k, zbarW(u.id) <= 370 ? 4 : 2).replace(/style="display:block;width:[^"]*?;shape-rendering/, 'style="display:block;width:100%;height:100%;shape-rendering') + "</div></div>";
 }
 async function zplPequena(u, n) {
   const { c, W, H, X } = await desenharPequena(u);
