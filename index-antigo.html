@@ -111,7 +111,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261126192646">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261126195257">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1053,7 +1053,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126192646';
+  var VERSAO = '20261126195257';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -7911,6 +7911,8 @@ const PONTE = {
   // segmento da bolsa anotado na ficha de doação, pelo número da doação
   segmentos: () => { const m = {}; (E.d.registros || []).filter(r => r.tipo === 'doacao' && r.excluido !== '1').forEach(r => { const d = r.dados || {}, f = d.ficha || {}, n = String(d.numero || f.numero || '').trim(); if (n && String(f.seguimento || '').trim()) m[n] = String(f.seguimento).trim(); }); return m; },
   pedidoParaLaudo: o => montarPedidoLaudo(String((o || {}).id || ''), String((o || {}).tipo || 'compat')).then(r => { E.laudoPedido = null; return r; }),
+  // laudo de prova de compatibilidade ou de tipagem a partir da bolsa reservada (dados do HemoPlusVet), sem atendimento
+  laudoBolsa: o => { const p = (o || {}).pedido; if (!p || !p.id) throw new Error('Bolsa sem dados do paciente.'); setTimeout(() => { E.laudoPedido = Object.assign({}, p, { semAtendimento: true }); E.laudoReceptor = true; E.laudoTipo = (o || {}).tipo === 'tipagem' ? 'tipagem' : 'compat'; E.modulo = 'laudos'; abrirModulo('laudos', null); }, 0); return true; },
   laudoPedido: o => { setTimeout(() => laudoDoPedido(String((o || {}).id || ''), String((o || {}).tipo || 'compat'), (o || {}).escolhidas ? [].concat((o || {}).bolsas || []) : undefined), 0); return true; },
   hemocalcPreparo: id => { setTimeout(() => telaPreparoTx(String(id || '')), 0); return true; },
   // depois do laudo da prova: testes concluídos e preparo da bolsa testada (embalagem na caixa de isopor)

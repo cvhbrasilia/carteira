@@ -1001,7 +1001,7 @@ function barrasP(txt, h) { const M = 2 * 96 / 203, larg = code128Larg(txt), tot 
 function etqPequenaHtml(u, qr) {
   const a = doadorDe(u), esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a).replace(/\s+([+−])/g, "$1"), val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
   return '<div class="et pq"><div style="display:flex;gap:6px;align-items:center"><img src="etiqueta-selo.png" alt="CVH" style="width:42px;height:42px;display:block;flex:none"><div style="min-width:0;display:flex;flex-direction:column;gap:3px"><b style="font-size:20px;font-weight:800;line-height:1;white-space:nowrap;letter-spacing:.02em">' + esc(u.id) + '</b><b style="font-size:11.5px;font-weight:800;line-height:1;white-space:nowrap;letter-spacing:.03em">VAL. ' + esc(val) + "</b></div></div>" +
-    '<b style="font-size:11px;line-height:1.1;font-weight:800;white-space:nowrap;overflow:hidden;letter-spacing:.03em">' + esc(esp + (tipo ? " · " + tipo : "")) + '</b><b style="font-size:10px;line-height:1.1;font-weight:700;white-space:nowrap;overflow:hidden;letter-spacing:.03em">' + esc([vol, col ? "coleta " + col : ""].filter(Boolean).join(" · ")) + "</b>" +
+    '<b style="font-size:11px;line-height:1.1;font-weight:800;white-space:nowrap;overflow:hidden;letter-spacing:.03em">' + esc(esp + (tipo ? "   " + tipo.split("·").map((t) => t.trim()).join("   ") : "")).replace(/ {3}/g, "&nbsp;&nbsp;&nbsp;") + '</b><b style="font-size:10px;line-height:1.1;font-weight:700;white-space:nowrap;overflow:hidden;letter-spacing:.03em">' + esc([vol, col ? "coleta " + col : ""].filter(Boolean).join("   ")).replace(/ {3}/g, "&nbsp;&nbsp;&nbsp;") + "</b>" +
     '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:4px">' + barrasP(u.id, 22) + '<span class="q">' + qr + "</span></div></div>";
 }
 function etqBolsaHtml(u) {
@@ -1249,13 +1249,36 @@ async function zplBolsa(u, n) {
   z += zbox(24, yf, 752, 42) + zfb(24, yf + 7, 33, 33, 752, 1, "C", "NÃO ADICIONAR MEDICAMENTOS", 1) + zbox(24, yf + 46, 752, 36) + zfb(24, yf + 52, 26, 25, 752, 1, "C", "APÓS ROMPIMENTO DO LACRE INFUNDIR EM ATÉ 4 HORAS", 1);
   return z + "^CI0^PQ" + (n || 1) + "^XZ";
 }
+// etiqueta pequena (50 × 30 mm): selo e textos desenhados ponto a ponto (1 bit, sem cinza) para controlar o espaçamento;
+// sem hífens entre os dados (não confundir com o sinal de negativo), "580-0" junto, conteúdo 2 mm abaixo do corte de cima
 async function zplPequena(u, n) {
-  const a = doadorDe(u), esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a).replace(/\s+([+−])/g, "$1"), val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
-  const S0 = await zplImg("etiqueta-selo.png", 112), X = 24;   // 3 mm para a direita (sem ^LH, que ficaria valendo para o HemoPlus)
+  const a = doadorDe(u), esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
+  const tipos = tipoTxt(a).split("·").map((t) => t.trim().replace(/\s+([+−-])$/, "$1").replace(/-$/, "−")).filter(Boolean);
+  const W = 400, H = 194, X = 24, R = 390, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const c = cv.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, W, H); c.fillStyle = "#000"; c.textBaseline = "alphabetic";
+  const fonte = (px) => "bold " + px + "px Arial, 'Liberation Sans', Helvetica, sans-serif";
+  const selo = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("Não consegui abrir o selo")); i.src = "etiqueta-selo.png"; });
+  const sh = Math.round(112 * selo.naturalHeight / selo.naturalWidth); c.drawImage(selo, X, 14, 112, sh);
+  // número da bolsa: "580" "-" "0" bem juntos (o traço desenhado curto), espaço e o hemocomponente
+  const [num, comp] = [u.id.split(" ")[0], u.id.split(" ").slice(1).join(" ")], partes = num.split("-");
+  let fs = 56; const larg = (f) => { c.font = fonte(f); return partes.reduce((t, p) => t + c.measureText(p).width, 0) + (partes.length - 1) * (f * 0.26 + 6) + (comp ? f * 0.3 + c.measureText(comp).width : 0); };
+  while (fs > 30 && larg(fs) > R - (X + 124)) fs -= 2;
+  c.font = fonte(fs); let x = X + 124; const yb = 14 + Math.round(fs * 0.86);
+  partes.forEach((p, k) => { c.fillText(p, x, yb); x += c.measureText(p).width; if (k < partes.length - 1) { const t = Math.max(4, Math.round(fs * 0.12)); c.fillRect(Math.round(x + 3), Math.round(yb - fs * 0.36), Math.round(fs * 0.26), t); x += fs * 0.26 + 6; } });
+  if (comp) c.fillText(comp, x + fs * 0.3, yb);
+  // validade
+  let fv = 34; c.font = fonte(fv); while (fv > 22 && c.measureText("VAL. " + val).width > R - (X + 124)) { fv -= 1; c.font = fonte(fv); }
+  c.fillText("VAL. " + val, X + 124, 82 + Math.round(fv * 0.82));
+  // linhas de baixo: itens separados por espaço, sem hífen; encolhe até caber na largura
+  const linha = (itens, y, f0, vao) => { let f = f0; const tot = (ff) => { c.font = fonte(ff); return itens.reduce((t, s2) => t + c.measureText(s2).width, 0) + vao * (itens.length - 1); }; while (f > 16 && tot(f) > R - X) f -= 1; c.font = fonte(f); let xx = X; itens.forEach((s2) => { c.fillText(s2, xx, y + Math.round(f * 0.82)); xx += c.measureText(s2).width + vao; }); };
+  linha([esp].concat(tipos), 128, 30, 26);
+  linha([vol, col ? "coleta " + col : ""].filter(Boolean), 162, 26, 26);
+  // 1 bit: preto só onde o desenho é escuro (sem tons de cinza, que borram na térmica)
+  const px = c.getImageData(0, 0, W, H).data, bpr = W / 8; let hex = "";
+  for (let y = 0; y < H; y++) for (let b = 0; b < bpr; b++) { let v = 0; for (let k = 0; k < 8; k++) { const o = (y * W + b * 8 + k) * 4; if (px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 140) v |= 128 >> k; } hex += (v < 16 ? "0" : "") + v.toString(16).toUpperCase(); }
   let z = "^XA^CI28^PW400^LL240^LH0,0";
-  z += "^FO" + X + ",6" + S0.gf + "^FS" + zf(X + 122, 14, 52, 46, u.id) + zf(X + 122, 72, 32, 29, "VAL. " + val);
-  z += zf(X, 126, 30, 26, esp + (tipo ? " - " + tipo : "")) + zf(X, 160, 26, 23, [vol, col ? "coleta " + col : ""].filter(Boolean).join(" - "));
-  z += "^BY2,3,42^FO" + X + ",192^BCN,42,N,N,N^FD" + zt(u.id) + "^FS";
+  z += "^FO0,0^GFA," + bpr * H + "," + bpr * H + "," + bpr + "," + hex + "^FS";
+  z += "^BY" + (zbarW(u.id) <= W - X - 6 ? 2 : 1) + ",3,36^FO" + X + ",198^BCN,36,N,N,N^FD" + zt(u.id) + "^FS";   // código de barras inteiro dentro da etiqueta
   return z + "^CI0^PQ" + (n || 1) + "^XZ";
 }
 async function zplReserva(u, R, n) {
