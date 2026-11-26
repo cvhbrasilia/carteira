@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta property="og:type" content="website"><meta property="og:site_name" content="CVH - Centro Veterinário de Hemoterapia"><meta property="og:title" content="Estação recepção"><meta property="og:description" content="Recebimento e guarda das bolsas do CVH. Abra neste celular e adicione à tela de início."><meta property="og:image" content="https://carteira.cvh.vet.br/estacao-recepcao-192.png"><meta property="og:image:width" content="192"><meta property="og:image:height" content="192"><meta name="twitter:card" content="summary"><meta name="description" content="Recebimento e guarda das bolsas do CVH. Abra neste celular e adicione à tela de início.">
+<script>
+// Painel CVH · ligação das telas com o servidor novo (substitui o google.script.run)
+(function () {
+  var API = 'https://nrgloiiqppamxmmvcoyl.supabase.co/functions/v1/api', q = new URLSearchParams(location.search);
+  // mesmos endereços do Apps Script: ?painel=1, ?r=TOKEN (carteira), ?t=TOKEN (termo), ?v=CODIGO (verificação)
+  if (q.get('t') && !/termo\.html$/.test(location.pathname)) { location.replace('termo.html' + location.search); return; }
+  // links antigos do painel (?painel=1) abrem a página própria do painel, com ícone e nome do Painel CVH ao instalar
+  if (q.get('painel') && !window.CVH_PAINEL) { location.replace('painel.html'); return; }
+  // a carteira instalada no celular lembra o último animal aberto (como o site atual da carteira)
+  var r = q.get('r') || '';
+  if (!window.CVH_PAINEL && !window.CVH_CTN && !q.get('painel') && !(q.get('v') && String(q.get('v')).replace(/\s/g, '').length >= 8)) { try { if (r) localStorage.setItem('cvh_r', r); else r = localStorage.getItem('cvh_r') || ''; } catch (e) {} }
+  window.BOOT = { modo: (window.CVH_PAINEL || q.get('painel')) ? 'painel' : (r ? 'responsavel' : 'nenhum'), token: r };
+  // carteirinha do doador com ícone próprio: link ?c=CÓDIGO (só a carteirinha, sem a carteira de saúde); a instalada lembra o código
+  if (window.CVH_CTN) { var c = q.get('c') || ''; try { if (c) localStorage.setItem('cvh_ct', c); else c = localStorage.getItem('cvh_ct') || ''; } catch (e) {} window.BOOT = { modo: c ? 'carteirinha' : 'nenhum', token: '', ct: c }; }
+  var DRIVE = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([A-Za-z0-9_-]{10,})(?:\/view|\/preview)?(?:\?[^"'\s<]*)?/g;
+  function sessao() { try { return localStorage.getItem('cvh_s') || sessionStorage.getItem('cvh_s') || ''; } catch (e) { return ''; } }
+  // links de arquivos (antes no Google Drive) passam a abrir pelo servidor novo
+  // link de arquivo leva só a chave de arquivos (12 h), nunca a sessão do painel; sem a chave, cai na sessão (versões antigas)
+  function chaveArq() { try { return localStorage.getItem('cvh_fs') || ''; } catch (e) { return ''; } }
+  // fora do painel, o PDF leva a chave de PDFs da carteira (ou o código do termo): sem um link que ainda vale, o exame não abre
+  var CHAVE_R = '';
+  function linkResp() { try { var tt = new URLSearchParams(location.search).get('t') || ''; return (CHAVE_R ? '&fr=' + encodeURIComponent(CHAVE_R) : '') + (tt ? '&t=' + encodeURIComponent(tt) : ''); } catch (e) { return ''; } }
+  function arquivo(id) { if (!window.CVH_PAINEL) return API + '?arquivo=' + encodeURIComponent(id) + linkResp(); var f = chaveArq(), s = f ? '' : sessao(); return API + '?arquivo=' + encodeURIComponent(id) + (f ? '&fs=' + encodeURIComponent(f) : s ? '&s=' + encodeURIComponent(s) : ''); }
+  // links de arquivo do servidor chegam sem chave: cada tela põe a dela (painel: chave de arquivos; carteira: chave de PDFs)
+  var ARQ = new RegExp(API.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '\\?arquivo=([A-Za-z0-9_-]+)(?:&(?:s|fs|fr|t)=[^"&\\s#<]*)*', 'g');
+  function reescrever(x) {
+    if (typeof x === 'string') { if (x.indexOf('drive.google.com') >= 0) x = x.replace(DRIVE, function (_, id) { return arquivo(id); }); return x.indexOf('?arquivo=') >= 0 ? x.replace(ARQ, function (_, id) { return arquivo(id); }) : x; }
+    if (Array.isArray(x)) return x.map(reescrever);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = reescrever(x[k]); return o; }
+    return x;
+  }
+  function chamar(fn, args) {
+    args = JSON.parse(JSON.stringify(args || []));
+    if (fn === 'moduloHtml') {
+      // o servidor confere a permissão; o módulo vem do próprio site
+      return chamar('moduloArquivo', args).then(function (nome) {
+        return fetch('modulos/' + nome + '.html', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('Não consegui abrir o módulo.'); return r.text(); });
+      });
+    }
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (r) { return r.json().catch(function () { throw new Error('O servidor não respondeu (' + r.status + '). Tente de novo.'); }); },
+        function () { throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.'); })
+      .then(function (r) { if (!r.ok) throw new Error(r.erro || 'Erro no servidor.'); if (fn === 'carteiraPublica' && r.r && r.r.chaveArquivos) CHAVE_R = r.r.chaveArquivos; return reescrever(r.r); });
+  }
+  window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
+  // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
+  var VERSAO = '20261126121722';
+  // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
+  function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
+  if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
+  function conferirVersao() {
+    if (document.hidden) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+      v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      // o Cartão doador só mostra o cartão: troca de versão sozinho, sem pedir toque
+      if (window.CVH_CTN) { recarregar(v); return; }
+      var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
+      d.style.cssText = 'position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:12px;padding:8px 14px;font:600 13px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:min(94vw,620px);white-space:nowrap';
+      d.onclick = function () { recarregar(v); }; document.body.appendChild(d);
+    }).catch(function () {});
+  }
+  setInterval(conferirVersao, 180000);
+  document.addEventListener('visibilitychange', conferirVersao);
+  // ao abrir o app, o número vermelho do ícone some (os avisos foram vistos)
+  function limparIcone() { if (document.hidden) return; try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} try { navigator.serviceWorker && navigator.serviceWorker.getRegistration().then(function (r) { if (r && r.getNotifications) r.getNotifications().then(function (L) { L.forEach(function (n) { n.close(); }); }); }); } catch (e) {} }
+  document.addEventListener('visibilitychange', limparIcone); window.addEventListener('focus', limparIcone); setTimeout(limparIcone, 1500);
+  // notificações: o service worker só existe no painel
+  if (window.CVH_PAINEL && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+  // ?v= é a verificação de receita e laudo (código de 12 caracteres); nos links do painel e do motoboy, ?v=2 é só a versão da prévia do WhatsApp
+  if (q.get('v') && !window.CVH_PAINEL && String(q.get('v')).replace(/\s/g, '').length >= 8) {
+    chamar('verificacaoHtml', [q.get('v')]).then(function (h) { h = String(h).split('__API_URL__').join(API); document.open(); document.write(h); document.close(); },
+      function (e) { document.body.textContent = e.message; });
+  }
+})();
+
+</script>
+<script>
+// Painel CVH · campo de digitação sempre visível acima do teclado do celular (vale para todas as telas e módulos).
+// O iPhone não rola a tela quando o campo está no fim da página ou dentro de um módulo: aqui o sistema abre espaço
+// embaixo e sobe o campo para o meio da parte visível, e repete enquanto o teclado abre ou muda de tamanho.
+(function () {
+  if (window.__cvhTeclado) return; window.__cvhTeclado = 1;
+  var topo = window; try { if (window.top && window.top.document) topo = window.top; } catch (e) { topo = window; }
+  var vv = topo.visualViewport; if (!vv) return;
+  var ESPACO = 'cvh-kb-espaco', foco = null, tSai = null, tRola = null;
+  function campo(el) { return el && (/^(TEXTAREA|SELECT)$/.test(el.tagName) || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|file|range|color|hidden)$/i.test(el.type || ''))) || (el && el.isContentEditable); }
+  function rolador(el) {
+    for (var p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      // painéis que rolam de verdade (tela, folha, gaveta); tabelas com rolagem lateral ficam de fora
+      var s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowY) && p.clientHeight >= window.innerHeight * 0.4) return p;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  // altura que o teclado ocupa na tela do aparelho
+  function alturaTeclado() { return Math.max(0, topo.innerHeight - vv.height - vv.offsetTop); }
+  // posição do topo deste documento dentro da tela (módulos rodam numa moldura dentro do painel)
+  function deslocamento() { var y = 0, w = window; try { while (w !== topo && w.frameElement) { y += w.frameElement.getBoundingClientRect().top; w = w.parent; } } catch (e) {} return y; }
+  function abrirEspaco(r, h) {
+    var esp = r.querySelector(':scope > .' + ESPACO);
+    if (!esp) { esp = document.createElement('div'); esp.className = ESPACO; esp.setAttribute('aria-hidden', 'true'); esp.style.cssText = 'display:block;width:1px;pointer-events:none;flex:none'; (r === document.scrollingElement || r === document.documentElement ? document.body : r).appendChild(esp); }
+    esp.style.height = Math.round(h) + 'px';
+  }
+  function fecharEspaco() { var L = document.querySelectorAll('.' + ESPACO); for (var i = 0; i < L.length; i++) L[i].remove(); }
+  function ajustar() {
+    if (!foco || !document.contains(foco)) return;
+    var kb = alturaTeclado(); if (kb < 80) return; // sem teclado aberto (computador ou teclado externo)
+    var r = rolador(foco); abrirEspaco(r, kb + 40);
+    var b = foco.getBoundingClientRect(), off = deslocamento();
+    var visTopo = vv.offsetTop + 8, visFim = vv.offsetTop + vv.height - 12;
+    var cTopo = off + b.top, cFim = off + Math.min(b.bottom, b.top + 140);
+    // campo escondido pelo teclado ou acima da área visível: leva o campo para perto do meio da parte visível
+    if (cFim > visFim || cTopo < visTopo) {
+      var alvo = visTopo + (visFim - visTopo) * 0.38, delta = cTopo - alvo;
+      if (r === document.scrollingElement || r === document.documentElement) window.scrollBy(0, delta); else r.scrollTop += delta;
+    }
+  }
+  function agendar() { clearTimeout(tRola); ajustar(); tRola = setTimeout(ajustar, 120); setTimeout(ajustar, 320); setTimeout(ajustar, 650); }
+  document.addEventListener('focusin', function (e) { if (!campo(e.target)) return; clearTimeout(tSai); foco = e.target; agendar(); }, true);
+  document.addEventListener('focusout', function () { tSai = setTimeout(function () { if (!campo(document.activeElement)) { foco = null; fecharEspaco(); } }, 250); }, true);
+  // ao digitar (texto que quebra linha, sugestões que aparecem) o campo continua visível
+  document.addEventListener('input', function (e) { if (foco && e.target === foco) { clearTimeout(tRola); tRola = setTimeout(ajustar, 60); } }, true);
+  vv.addEventListener('resize', function () { if (foco) agendar(); });
+  vv.addEventListener('scroll', function () { if (foco) { clearTimeout(tRola); tRola = setTimeout(ajustar, 80); } });
+})();
+
+// Painel CVH · colar uma foto copiada (print, WhatsApp, Fotos) em qualquer campo de foto das telas e módulos.
+// Ao tocar num botão de foto, abre uma folha com "Colar a foto copiada" e "Tirar ou escolher foto";
+// a foto colada entra no mesmo campo, como se tivesse sido escolhida, sem nenhuma alteração.
+(function () {
+  if (window.__cvhColar) return; window.__cvhColar = 1;
+  var podeLer = !!(navigator.clipboard && navigator.clipboard.read) && typeof DataTransfer === 'function';
+  var deFoto = function (el) { return el && el.tagName === 'INPUT' && el.type === 'file' && /image/i.test(el.accept || '') && !el.hasAttribute('capture'); };
+  var css = '.cvh-colar{position:fixed;inset:0;background:rgba(43,35,32,.5);z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;font:16px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' +
+    '.cvh-colar .cx{background:#FBF8F4;width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -6px 30px rgba(0,0,0,.2)}' +
+    '@media (min-width:700px){.cvh-colar{align-items:center}.cvh-colar .cx{border-radius:18px}}' +
+    '.cvh-colar h3{margin:0 0 10px;color:#5F130F;font-size:17px}.cvh-colar button{display:block;width:100%;border:0;border-radius:12px;padding:14px;margin:0 0 8px;font:inherit;font-weight:700;cursor:pointer}' +
+    '.cvh-colar .p{background:#5F130F;color:#fff}.cvh-colar .s{background:#fff;color:#5F130F;border:1px solid #E2D6C8}.cvh-colar .c{background:none;color:#6b5a52;font-weight:400}' +
+    '.cvh-colar .st{font-size:13.5px;color:#A83D3D;min-height:18px;margin:2px 0 6px}';
+  var folha = null;
+  function fechar() { if (folha) { folha.remove(); folha = null; document.removeEventListener('paste', aoColar, true); } }
+  function entregar(inp, arqs) {
+    var dt = new DataTransfer(); arqs.forEach(function (f) { dt.items.add(f); });
+    inp.files = dt.files; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  var alvo = null;
+  function nomeArq(tipo) { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); }; return 'Foto colada ' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + 'h' + p(d.getMinutes()) + '.' + (/png/.test(tipo) ? 'png' : /webp/.test(tipo) ? 'webp' : 'jpg'); }
+  // Ctrl/Cmd+V com a folha aberta (computador)
+  function aoColar(ev) {
+    if (!alvo) return; var it = ev.clipboardData && ev.clipboardData.items ? [].slice.call(ev.clipboardData.items) : [], img = it.filter(function (i) { return i.kind === 'file' && /^image\//.test(i.type); })[0];
+    if (!img) return; ev.preventDefault(); var b = img.getAsFile(), inp = alvo; fechar(); entregar(inp, [new File([b], nomeArq(b.type), { type: b.type })]);
+  }
+  async function colar(inp, st) {
+    try {
+      var itens = await navigator.clipboard.read();
+      for (var i = 0; i < itens.length; i++) { var t = itens[i].types.filter(function (x) { return /^image\//.test(x); })[0]; if (t) { var b = await itens[i].getType(t); fechar(); entregar(inp, [new File([b], nomeArq(t), { type: t })]); return; } }
+      st.textContent = 'Não há foto copiada. Copie a foto (no WhatsApp, em Fotos ou num print) e toque em Colar de novo.';
+    } catch (e) { st.textContent = 'Não consegui colar. Permita colar quando o celular perguntar, ou use Tirar ou escolher foto.'; }
+  }
+  function abrir(inp) {
+    alvo = inp; fechar();
+    if (!document.getElementById('cvh-colar-css')) { var s = document.createElement('style'); s.id = 'cvh-colar-css'; s.textContent = css; document.head.appendChild(s); }
+    folha = document.createElement('div'); folha.className = 'cvh-colar';
+    var pdf = /pdf/i.test(inp.accept || '');
+    folha.innerHTML = '<div class="cx" role="dialog" aria-modal="true"><h3>Adicionar foto</h3><p class="st"></p>' +
+      (podeLer ? '<button class="p" data-c="colar">Colar a foto copiada</button>' : '') +
+      '<button class="s" data-c="escolher">' + (pdf ? 'Tirar foto ou escolher arquivo' : 'Tirar ou escolher foto') + '</button><button class="c" data-c="cancelar">Cancelar</button></div>';
+    document.body.appendChild(folha); document.addEventListener('paste', aoColar, true);
+    var st = folha.querySelector('.st');
+    folha.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-c]'); if (!b) { if (ev.target === folha) fechar(); return; }
+      var c = b.dataset.c;
+      if (c === 'cancelar') return fechar();
+      if (c === 'colar') return colar(inp, st);
+      if (c === 'escolher') { fechar(); inp.__cvhDireto = 1; inp.click(); }
+    });
+  }
+  // toque no campo de foto (pelo botão, pelo rótulo ou por .click() no código): a folha abre antes do seletor do celular
+  document.addEventListener('click', function (ev) {
+    var inp = ev.target; if (!deFoto(inp)) return;
+    if (inp.__cvhDireto) { inp.__cvhDireto = 0; return; }
+    ev.preventDefault(); ev.stopPropagation(); abrir(inp);
+  }, true);
+})();
+
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><script>(function(){var s="";try{s=new URLSearchParams(location.search).get("s")||"";if(s)localStorage.setItem("cvh_int_setor",s);else s=localStorage.getItem("cvh_int_setor")||"";}catch(e){}var p="estacao-"+(s==="internacao"?"internacao":"recepcao"),n=s==="internacao"?"Estação internação":s==="recepcao"?"Estação recepção":"Mini Estação CVH";document.write('<meta id="icT" name="apple-mobile-web-app-title" content="'+n+'"><link id="icA" rel="apple-touch-icon" href="'+p+'-180.png"><link id="icF" rel="icon" type="image/png" href="'+p+'-192.png"><link id="icM" rel="manifest" href="'+p+'.webmanifest">');document.title=n;window.CVH_ICONE_SETOR=function(x){var q="estacao-"+(x==="internacao"?"internacao":"recepcao");try{localStorage.setItem("cvh_int_setor",x);}catch(e){}var a=document.getElementById("icA"),f=document.getElementById("icF"),m=document.getElementById("icM");if(a&&a.getAttribute("href")!==q+"-180.png"){a.href=q+"-180.png";f.href=q+"-192.png";m.href=q+".webmanifest";}var nm=x==="internacao"?"Estação internação":"Estação recepção",t=document.getElementById("icT");if(t)t.content=nm;document.title=nm;};})();</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Mini Estação CVH</title>
+<style>
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 90px}
+.topo{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.topo h1{margin:0;font-size:21px;color:var(--vinho)}
+.topo h1 small{display:block;font-size:12.5px;font-weight:600;color:var(--tinta2)}
+.btn{border:0;border-radius:14px;padding:12px 16px;background:var(--vinho);color:#fff;font-weight:700}
+.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
+.btn.peq{padding:8px 12px;font-size:14px;border-radius:11px}
+.btn.grande{width:100%;padding:18px;font-size:18px;margin-bottom:10px}
+.btn.perigo{background:#fff;color:var(--verm);border:1px solid #e3b9b4}
+.btn:disabled{opacity:.45}
+.bts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin-bottom:12px}
+.cx h2{margin:0 0 8px;font-size:16px;color:var(--vinho)}
+.cx.al{border-color:#e3b9b4;background:#fdf3f1}
+.cx.av{border-color:#ecd7b3;background:#fdf8ef}
+.bolsa{border-top:1px solid var(--areia);padding:10px 0}
+.bolsa:first-of-type{border-top:0}
+.bolsa b{font-size:16.5px}
+.bolsa small{display:block;color:var(--tinta2)}
+.tlp{list-style:none;margin:8px 0 2px;padding:0}.tlp li{position:relative;padding:0 0 8px 22px;font-size:13.5px}.tlp li::before{content:"";position:absolute;left:4px;top:5px;width:10px;height:10px;border-radius:50%;border:2px solid var(--areia2);background:#fff}.tlp li::after{content:"";position:absolute;left:9px;top:18px;bottom:0;width:2px;background:var(--areia2)}.tlp li:last-child::after{display:none}.tlp li.f::before{background:var(--vinho);border-color:var(--vinho)}.tlp li.a::before{border-color:#C49A6C;box-shadow:0 0 0 3px #F3E6D6}.tlp li.x::before{background:var(--verm);border-color:var(--verm)}.tlp li:not(.f):not(.a):not(.x) b{color:#a59588;font-weight:600}.tlp small{color:var(--tinta2);margin-left:6px}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:700;background:var(--areia);color:var(--tinta2);margin-left:4px}
+.tag.ok{background:#e4efe7;color:var(--ok)}.tag.al{background:#f7dedb;color:var(--verm)}.tag.av{background:#f6ead3;color:#8a5a12}
+.relogio{font-variant-numeric:tabular-nums;font-weight:800}
+.relogio.al{color:var(--verm)}
+.vazio{color:var(--tinta2);text-align:center;padding:14px}
+label{display:block;font-size:13.5px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
+input[type=text],input[type=tel],input[type=number],textarea,select{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:12px;background:#fff}
+.op{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--areia2);border-radius:12px;padding:11px;margin-top:8px;font-weight:600}
+.op.off{opacity:.5}
+.op.on{border-color:#5F130F;background:#5F130F;color:#fff}
+input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
+.tps{display:inline-block;vertical-align:2px;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.02em;line-height:1.5;color:#fff;white-space:nowrap}.tps.neg{background:#A83D3D}.tps.pos{background:#3F6890}.tps.gat{background:#C49A6C}
+.tipos{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+.esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.esc .op{flex:1 1 0;justify-content:center;margin-top:0;padding:11px 8px;background:#fff;font-size:15px;min-width:0;text-align:center}
+.esc.sinais .op,.esc[data-g=mom] .op{flex:1 1 44%}.acht{display:flex;gap:8px;align-items:flex-end;margin-top:8px}.acht>*{flex:1}.acht .btn{flex:none}input[type=time]{width:100%;border:1px solid var(--areia2);border-radius:12px;padding:11px;background:#fff}
+.esc .op.on{background:#5F130F;color:#fff;border-color:#5F130F}.esc .op.lido{background:#FBF1DD;border-color:#C49A6C}.esc .op.on.lido{background:#5F130F;color:#fff}
+.tipag{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tipag .esc{flex-direction:column}.tipag .esc .op{flex:none}.tipag h4{margin:6px 0 0;font-size:13px;color:var(--tinta2)}
+.ganhe{background:#5F130F;color:#fff;border-radius:16px;padding:14px;margin:10px 0}.ganhe b{display:block;font-size:16px;margin-bottom:4px}.ganhe p{margin:0 0 10px;font-size:14px;line-height:1.4;color:#f3e6dc}.ganhe .btn{background:#EEE5DB;color:#5F130F;width:100%}.colar{margin-top:8px;border:1px dashed #C6B098;border-radius:12px;padding:10px;text-align:center;font-size:16px;color:#f3e6dc;height:46px;overflow:hidden;outline:none;-webkit-user-select:text;user-select:text;caret-color:transparent}.colar:empty::before{content:attr(data-ph);color:#e9d9cc;font-size:14px}.colar *{display:none!important}
+.pesoV{display:inline-block;margin-top:6px;font-weight:800;color:#5F130F}
+.ac-pai{position:relative}.ac-lista{position:absolute;left:0;right:0;top:100%;z-index:40;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid var(--areia2);border-radius:10px;box-shadow:0 10px 28px rgba(60,20,15,.18);max-height:264px;overflow:auto;display:none}.ac-lista.on{display:block}.ac-lista li{padding:.7em .75em;border-radius:7px;cursor:pointer;font-size:15px}.ac-lista li:hover{background:#f4ece3}.ac-lista li small{display:block;color:var(--tinta2)}
+.orienta{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
+.tipo-exp{background:#fdf8ef;border:1px solid #ecd7b3;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.45}
+.tipo-exp small{display:block;margin-top:6px;color:#6b5a52}
+.prazo{display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border-radius:999px;background:#fdf3f1;color:#A83D3D;font-weight:700;font-size:13px}
+.op input{margin-top:3px;transform:scale(1.25)}
+#veu{position:fixed;inset:0;background:rgba(43,35,32,.5);z-index:20;display:none}
+#veu.on{display:block}
+#modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:16px;z-index:21;display:none}
+#modal.on{display:block}
+#modal h2{margin:0 0 6px;color:var(--vinho);font-size:18px}
+#cam{position:fixed;inset:0;background:#000;z-index:30;display:none;flex-direction:column}
+#cam.on{display:flex}
+#cam video{flex:1;width:100%;object-fit:cover;min-height:0}
+#cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
+#cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam .linha{display:flex;gap:8px}
+#cam .linha input{flex:1}
+.toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:14px;z-index:40;width:max-content;max-width:min(94vw,620px);font-weight:500;font-size:13px;line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+#alarme{position:fixed;inset:0;background:var(--verm);color:#fff;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+#alarme h2{font-size:24px;margin:8px 0}
+#cpAlerta{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;animation:cpPisca 1s steps(1) infinite}
+#cpAlerta h2{font-size:26px;line-height:1.15;margin:10px 0}#cpAlerta p{font-size:18px;line-height:1.4}#cpAlerta b.t{font-size:15px;letter-spacing:.12em}
+#cpAlerta .btn{background:#fff;color:#8A1D14;margin-top:18px;padding:16px 22px;font-size:17px}
+@keyframes cpPisca{0%{background:#A83D3D}50%{background:#5F130F}}
+.cx.cp-pisca{animation:cpBorda 1.2s ease-in-out infinite;border:3px solid #A83D3D}
+@keyframes cpBorda{0%,100%{box-shadow:0 0 0 0 rgba(168,61,61,.0)}50%{box-shadow:0 0 0 6px rgba(168,61,61,.35)}}
+#alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
+.mascara{-webkit-text-security:disc;text-security:disc}
+.cx.teste{border:2px dashed #C49A6C}.cx.teste h2{color:#5F130F}.cx.teste .op{display:flex;gap:8px;align-items:center;margin:6px 0}
+</style></head>
+<body>
+<div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
+<div id="veu"></div><div id="modal" role="dialog" aria-modal="true"></div>
+<div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
+<input type="file" id="foto" accept="image/*" capture="environment" hidden>
+<script>
+"use strict";
+const $ = (q) => document.querySelector(q);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const p2 = (n) => String(n).padStart(2, "0");
+const hora = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+const dataBr = (iso) => iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "";
+const NOME_COMP = { CH: "CH com SAG", CP: "Concentrado de plaquetas", PFC: "Plasma fresco congelado", CRIO: "Crioprecipitado", PPC: "Plasma pobre em crio" };
+let tT = null;
+function toast(m, ms) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(tT); tT = setTimeout(() => { t.hidden = true; }, ms || 4000); }
+function modal(h) { if (typeof rascAgora === "function") rascAgora(); const mm = $("#modal"); delete mm.dataset.form; delete mm.dataset.arg; $("#modal").innerHTML = h; $("#modal").classList.add("on"); $("#veu").classList.add("on"); $("#modal").scrollTop = 0; }
+function fechar() { $("#modal").classList.remove("on"); $("#veu").classList.remove("on"); }
+
+/* ── aparelho: o link do CVH (?k=…) ativa este celular; depois o endereço fica limpo ── */
+let K = "";
+try { const q = new URLSearchParams(location.search); if (q.get("k")) { localStorage.setItem("cvh_int_k", q.get("k")); } K = localStorage.getItem("cvh_int_k") || ""; } catch (e) {}
+const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, [K + (typeof OP !== "undefined" && OP && OP.op ? "|" + OP.op : ""), ...a]).catch((e) => { const m = e && e.message || "";
+  if (/^OPFIM: /.test(m)) { e.message = m.slice(7); if (typeof opFim === "function") opFim(""); }
+  else if (/^ENTRAR: /.test(m)) { e.message = m.slice(8); setTimeout(() => { if (typeof opEntrar === "function") opEntrar(); }, 50); }
+  throw e; });
+const nomeSalvo = () => { try { return localStorage.getItem("cvh_int_nome") || ""; } catch (e) { return ""; } };
+const salvarNome = (n) => { try { localStorage.setItem("cvh_int_nome", n); } catch (e) {} };
+
+/* ── sons (Web Audio): aviso suave e alarme insistente; o primeiro toque na tela libera o som ── */
+let AUD = null;
+function somLiberar() { try { AUD = AUD || new (window.AudioContext || window.webkitAudioContext)(); if (AUD.state === "suspended") AUD.resume(); } catch (e) {} }
+document.addEventListener("pointerdown", somLiberar, { passive: true });
+function tom(f, ini, dur, vol, tipo) { if (!AUD) return; const o = AUD.createOscillator(), g = AUD.createGain(), t = AUD.currentTime + ini; o.type = tipo || "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(AUD.destination); o.start(t); o.stop(t + dur + 0.05); }
+function somAviso() { tom(659.3, 0, 0.9, 0.22); tom(880, 0.18, 1.2, 0.2); }
+function bip(ok) { somLiberar(); tom(ok === false ? 380 : 2700, 0, ok === false ? 0.35 : 0.09, 0.25, "square"); }
+function somOk() { tom(784, 0, 0.35, 0.18); tom(1046.5, 0.12, 0.5, 0.16); }
+let ALARME = null, ALARME_ON = "";
+function alarme(chave, titulo, corpo) {
+  if (ALARME_ON) return; ALARME_ON = chave;
+  const ov = document.createElement("div"); ov.id = "alarme"; ov.innerHTML = "<div><b>ATENÇÃO</b><h2>" + esc(titulo) + "</h2><p>" + esc(corpo) + '</p><button class="btn" id="alOk">Estou resolvendo</button></div>'; document.body.appendChild(ov);
+  const ciclo = () => { for (let i = 0; i < 4; i++) { tom(853, i * 0.5, 0.24, 0.35, "square"); tom(960, i * 0.5 + 0.25, 0.24, 0.35, "square"); } if (navigator.vibrate) navigator.vibrate([600, 200, 600, 200, 600]); };
+  ciclo(); ALARME = setInterval(ciclo, 2600);
+  $("#alOk").onclick = () => { clearInterval(ALARME); ALARME = null; ov.remove(); if (navigator.vibrate) navigator.vibrate(0); SILENCIO[chave] = Date.now(); ALARME_ON = ""; };
+}
+const SILENCIO = {};
+// plaqueta: aviso crítico piscando (na caixa a caminho, na chegada e a cada 2 h enquanto estiver aqui)
+function cpAlerta(u) {
+  if (document.getElementById("cpAlerta") || ALARME_ON) return;
+  const l = cpLim(u), ov = document.createElement("div"); ov.id = "cpAlerta";
+  ov.innerHTML = '<div><b class="t">ATENÇÃO · PLAQUETA</b><h2>NÃO REFRIGERAR<br>NÃO CONGELAR</h2><p>Manter em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C). Nunca dentro do refrigerador de CH nem do freezer: o frio inativa as plaquetas.</p><p>' + esc(u.id) + (l ? " · transfundir até <b>" + esc(hmData(l)) + "</b>" : " · transfundir em até 24 h") + '</p><button class="btn" id="cpOk">Entendi. A plaqueta está fora do refrigerador</button></div>';
+  document.body.appendChild(ov); somLiberar();
+  const ciclo = () => { for (let i = 0; i < 3; i++) { tom(988, i * 0.45, 0.2, 0.32, "square"); tom(740, i * 0.45 + 0.22, 0.2, 0.32, "square"); } if (navigator.vibrate) navigator.vibrate([500, 200, 500]); };
+  ciclo(); const t = setInterval(ciclo, 3000);
+  $("#cpOk").onclick = () => { clearInterval(t); ov.remove(); if (navigator.vibrate) navigator.vibrate(0); try { localStorage.setItem("cvh_cp_" + u.id, String(Date.now())); } catch (e) {} };
+}
+const CP_PERG = { aberta: "" };
+function perguntaCP() {
+  if (!D || !D.aparelho || D.aparelho.setor !== "internacao" || $("#modal").classList.contains("on") || $("#cam").classList.contains("on")) return false;
+  const u = (D.unidades || []).find((x) => x.componente === "CP" && x.local === D.aparelho.local && ["disponivel", "reservada"].includes(x.situacao) && (x.dados || {}).cpPergunta);
+  if (!u) return false; CP_PERG.aberta = u.id; const l = cpLim(u); somAviso(); if (navigator.vibrate) navigator.vibrate([400, 150, 400]);
+  const bt = (r, t, cls) => '<button class="btn' + (cls || "") + '" data-a="cpResp" data-r="' + r + '" data-v="' + esc(u.id) + '" style="width:100%;margin-top:8px">' + t + "</button>";
+  modal('<h2>Onde está a plaqueta?</h2><div class="bolsa">' + linhaBolsa(u) + '</div><p>' + (l ? "Transfundir até <b>" + esc(hmData(l)) + "</b>. " : "") + 'Responda a cada 4 horas para o CVH saber que ela continua segura.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '">' +
+    bt("ambiente", "No ar-condicionado a 21 °C, aguardando") + bt("transfundida", "Vai ser transfundida agora") + bt("nao_usada", "Não será usada", " sec") + bt("refrigerador", "Foi para o refrigerador", " perigo"));
+  return true;
+}
+function conferirCP() {
+  if (!D || !D.aparelho) return; const A = D.aparelho;
+  const L = (D.unidades || []).filter((u) => u.componente === "CP" && !vencidaU(u) && ((u.local === A.local && ["disponivel", "reservada"].includes(u.situacao)) || (u.situacao === "transito" && (D.remessas || []).some((r) => (r.unidades || []).includes(u.id) && r.destino === A.local))));
+  for (const u of L) { let t0 = 0; try { t0 = +localStorage.getItem("cvh_cp_" + u.id) || 0; } catch (e) {} if (Date.now() - t0 > 2 * 36e5) return cpAlerta(u); }
+}
+setInterval(conferirCP, 20000);
+
+/* ── notificações com o app fechado (caixa a caminho, alertas) ── */
+async function ativarNotif() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error(/iPhone|iPad/.test(navigator.userAgent) ? "No iPhone, adicione esta página à tela de início (Compartilhar, Adicionar à Tela de Início) e abra por lá para ativar as notificações." : "Este navegador não recebe notificações.");
+  somLiberar(); const p = await Notification.requestPermission(); if (p !== "granted") throw new Error("Permissão de notificação não concedida.");
+  const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
+  const chave = await window.CVH_SERVIDOR.chamar("pushChave", []); if (!chave) throw new Error("O servidor ainda não tem a chave das notificações.");
+  const b = Uint8Array.from(atob(chave.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((chave.length + 3) % 4)), (c) => c.charCodeAt(0));
+  let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b });
+  await srv("apPushAssinar", sub.toJSON());
+}
+const notifOk = () => { try { return "Notification" in window && Notification.permission === "granted"; } catch (e) { return false; } };
+try { if (navigator.serviceWorker) { navigator.serviceWorker.register("sw.js").catch(() => {}); navigator.serviceWorker.addEventListener("message", () => carregar(true)); } } catch (e) {}
+
+/* ── leitor de QR: BarcodeDetector quando o celular tem; senão jsQR; sempre dá para digitar ── */
+let JSQR = null, CAM_FIM = null;
+function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
+const TESTE = { semFoto: false, semQR: false };
+const emTeste = (k) => !!(typeof OP !== "undefined" && OP && OP.adm && TESTE[k]);
+// modo de teste do administrador: em vez da câmera, escolhe a caixa, a bolsa ou o equipamento numa lista
+function escolherSemLer(titulo) {
+  return new Promise((resolve) => {
+    const caixa = /caixa/i.test(titulo), equip = /refrigerador|freezer|equipamento/i.test(titulo);
+    const ops = caixa ? (D.remessas || []).map((r) => [r.id, "Caixa " + r.id + " · " + r.unidades.length + " bolsa(s)"])
+      : equip ? (D.equipamentos || []).map((e) => [e.id, e.nome]) : (D.unidades || []).filter((u) => u.local === D.aparelho.local || u.situacao === "transito").map((u) => [u.id, u.id + " · " + u.componente + " · " + (u.situacao || "")]);
+    modal("<h2>Modo de teste</h2><p>" + esc(titulo) + "</p>" + (ops.length ? ops.map(([c, r]) => '<button class="btn sec" data-a="testeEscolha" data-v="' + esc(c) + '" style="width:100%;margin:4px 0;text-align:left">' + esc(r) + "</button>").join("") : '<p class="vazio">Nada para escolher aqui.</p>') +
+      '<label>Ou digite o código</label><input type="text" id="testeTxt" autocapitalize="characters"><div class="bts"><button class="btn" data-a="testeEscolha" data-v="">Usar o código digitado</button><button class="btn sec" data-a="testeEscolha" data-v="__sair">Voltar</button></div>');
+    TESTE_ESC = (c) => { TESTE_ESC = null; fechar(); if (c === "__sair") return resolve(null); const v = c || ($("#testeTxt") || {}).value || ""; resolve(String(v).trim() || null); };
+  });
+}
+let TESTE_ESC = null;
+function lerQR(titulo) {
+  if (emTeste("semQR")) return escolherSemLer(titulo);
+  return new Promise(async (resolve) => {
+    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
+    let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bip(); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
+    $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
+    $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
+    try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); v.srcObject = fluxo; await v.play();
+      // foco contínuo e imagem aproximada: o celular pode ficar a uns 20 cm, onde a lente consegue focar
+      try { const tr = fluxo.getVideoTracks()[0], cap = tr.getCapabilities ? tr.getCapabilities() : {}, adv = {}; if (cap.focusMode && cap.focusMode.includes("continuous")) adv.focusMode = "continuous"; if (cap.zoom && cap.zoom.max > 1) adv.zoom = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, 1.6)); if (Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); } catch (e) {} }
+    catch (e) { if (!vivo) return; toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
+    let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
+    const passo = async () => {
+      if (!vivo) return;
+      try {
+        if (v.readyState >= 2) {
+          if (det) { const r = await det.detect(v); if (r && r[0] && r[0].rawValue) { if (navigator.vibrate) navigator.vibrate(60); return fim(r[0].rawValue); } }
+          else if (zx && (++n % 2 || !jq)) { const t = zx(v); if (t) { if (navigator.vibrate) navigator.vibrate(60); return fim(t); } }
+          else if (jq) { const w = 640, h = Math.round(640 * v.videoHeight / v.videoWidth) || 480; cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h); const r = jq(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "dontInvert" }); if (r && r.data) { if (navigator.vibrate) navigator.vibrate(60); return fim(r.data); } }
+        }
+      } catch (e) {}
+      setTimeout(passo, det ? 90 : 40);
+    };
+    passo();
+  });
+}
+
+// código de barras (Code 128) pela câmera quando o celular não tem leitor próprio (iPhone): ZXing na faixa do meio da imagem
+let ZXP = null;
+function carregarZX() {
+  if (window.ZXing) return Promise.resolve(window.ZXing); if (ZXP) return ZXP;
+  ZXP = new Promise((ok, erro) => { const tenta = (src, depois) => { const sc = document.createElement("script"); sc.src = src; sc.onload = () => window.ZXing ? ok(window.ZXing) : depois(); sc.onerror = depois; document.head.appendChild(sc); }; let local = "bibliotecas/zxing.min.js"; try { if (window.parent !== window) local = new URL(local, window.parent.location.href).href; } catch (e) {} tenta(local, () => tenta("https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js", () => { ZXP = null; erro(new Error("zxing")); })); });
+  return ZXP;
+}
+function leitorBarras(Z) {
+  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); const r = new Z.MultiFormatReader(); r.setHints(h);
+  const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height);
+    try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
+}
+// o QR pode trazer só o código ou um endereço com ?u= / ?c= / ?e=
+const codigo = (t) => { t = String(t || "").trim(); const m = t.match(/[?&](?:u|c|e)=([^&#]+)/); return (m ? decodeURIComponent(m[1]) : t).trim(); };
+const norm = (t) => codigo(t).toUpperCase().replace(/\s+/g, " ");
+
+/* ── foto: vai reduzida, para subir rápido ── */
+function tirarFoto() {
+  return new Promise((resolve) => {
+    const inp = $("#foto"); inp.value = "";
+    inp.onchange = async () => {
+      const f = inp.files[0]; if (!f) return resolve(null);
+      try {
+        const img = await new Promise((ok, erro) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = erro; im.src = u; });
+        const k = Math.min(1, 1100 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); resolve(c.toDataURL("image/jpeg", 0.72).split(",")[1]);
+      } catch (e) { toast("Não consegui abrir a foto. Tente de novo."); resolve(null); }
+    };
+    inp.click();
+  });
+}
+
+/* ── estado ── */
+let D = null, DIF = 0;
+const agora = () => Date.now() + DIF;
+const uniDe = (id) => (D.unidades || []).find((u) => u.id === id);
+const anDe = (id) => (D.animais || []).find((a) => a.id === id) || {};
+// doador sem cadastro (carga inicial): nome, espécie e tipagem anotados na bolsa ou na bolsa de origem
+const doadorDe = (u) => { const a = u && u.animal_id ? doadorDe(u) : {}; if (a.id) return a; const d = (u && u.dados) || {}, m = u && u.mae_id ? (((D.unidades || []).find((x) => x.id === u.mae_id) || {}).dados || {}) : {}; return { nome: d.doador || m.doador || "", especie: d.especie || m.especie || "", tipoSanguineo: d.tipoSanguineo || m.tipoSanguineo || "", dal: d.dal || m.dal || "" }; };
+// etiqueta do tipo sanguíneo: DEA 1 negativo em vermelho, positivo em azul (no gato, o grupo A, B ou AB)
+const seloTipoA = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/i) || [])[1]; return g ? '<span class="tps gat">Tipo ' + g.toUpperCase() + "</span>" : ""; } return /neg/i.test(t) ? '<span class="tps neg">DEA 1 −</span>' : /pos/i.test(t) ? '<span class="tps pos">DEA 1 +</span>' : ""; };
+const tipoRestoA = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return ""; const t = String(a.tipoSanguineo || ""); return (!/neg|pos/i.test(t) && t ? t : "") + (a.dal ? (t && !/neg|pos/i.test(t) ? " · " : "") + "DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const seloTipo = (u) => seloTipoA(doadorDe(u)), tipoResto = (u) => tipoRestoA(doadorDe(u));
+const tipoTxt = (u) => { const a = doadorDe(u), t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const especie = (u) => /fel|gat/i.test(doadorDe(u).especie || "") ? "Felino" : "Canino";
+const linhaBolsa = (u) => "<b>" + esc(u.componente) + " · " + esc(u.coleta) + seloTipo(u) + seloCP(u) + "</b>" + '<small>' + esc(NOME_COMP[u.componente] || u.componente) + " · " + esc(especie(u)) + (tipoResto(u) ? " " + esc(tipoResto(u)) : "") + (u.volume_ml ? " · " + esc(u.volume_ml) + " mL" : "") + (u.validade ? " · validade " + esc(dataBr(u.validade)) : "") + "</small>";
+const prazo = (u) => (D.prazos || {})[u.componente] || 20;
+const inicioGuarda = (r) => r && (r.entrega_em || r.recebida_em) ? Date.parse(r.entrega_em || r.recebida_em) : null;
+// plaqueta: 24 h fora do agitador (ABVHMT); qualquer bolsa: validade
+const cpLim = (u) => u && u.componente === "CP" && (u.dados || {}).saidaAgitador ? Date.parse(u.dados.saidaAgitador) + 864e5 : null;
+const hojeBR = () => new Date(Date.now() - 3 * 36e5).toISOString().slice(0, 10);
+const vencidaU = (u) => !!u && ((cpLim(u) != null && agora() > cpLim(u)) || (!!u.validade && String(u.validade).slice(0, 10) < hojeBR()));
+const hmData = (ms) => { const d = new Date(ms); return p2(d.getHours()) + ":" + p2(d.getMinutes()) + " de " + p2(d.getDate()) + "/" + p2(d.getMonth() + 1); };
+const seloCP = (u) => { const l = cpLim(u); if (l == null) return ""; const resta = l - agora(); return ' <span class="tag ' + (resta < 0 ? "al" : resta < 6 * 36e5 ? "al" : "av") + '">' + (resta < 0 ? "VENCIDA, não use" : "transfundir até " + hmData(l)) + "</span>"; };
+function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Math.abs(s), t = p2(Math.floor(a / 60)) + ":" + p2(a % 60); return '<span class="relogio' + (s < 0 ? " al" : "") + '" data-fim="' + fimMs + '">' + (s < 0 ? "atrasado " + t : t) + "</span>"; }
+
+/* ── login individual: cada médico veterinário entra com o próprio usuário (sai sozinho depois de 30 min parado) ── */
+// celular público: a entrada do médico veterinário fica só na memória da página (fechar ou recarregar encerra) e termina depois de 10 minutos sem uso
+let OP = null;
+try { localStorage.removeItem("cvh_int_op"); } catch (e) {}
+const opMexeu = () => { if (OP) OP.t = Date.now(); };
+const opFim = (msg) => { const o = OP; OP = null; TESTE.semFoto = false; TESTE.semQR = false; if (!o) { pintar(); return; }
+  const r = (typeof capturarRasc === "function" && capturarRasc(o.usuario)) || (RASC && RASC.dono === o.usuario ? RASC : null);
+  if (r) GUARDADO[o.usuario] = r; RASC = null; if ($("#modal").dataset.form) fechar();
+  srv("intSair", o.op, r ? semExames(r) : null).catch(() => {}); pintar();
+  if (msg || r) toast((msg ? msg + " " : "") + (r ? "O que estava preenchido ficou guardado. Entre de novo com o seu usuário para continuar de onde parou." : ""), 9000); };
+["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, opMexeu, { passive: true }));
+setInterval(() => { if (OP && Date.now() - OP.t > 10 * 6e4) opFim("Saída automática do usuário depois de 10 minutos sem uso."); }, 20000);
+window.addEventListener("pagehide", () => { if (OP) { const r = capturarRasc(OP.usuario) || RASC; srv("intSair", OP.op, r ? semExames(r) : null).catch(() => {}); OP = null; } });
+function cadastro() {
+  const campo = (id, rot, extra) => '<label>' + rot + '</label><input type="text" id="' + id + '" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore ' + (extra || "") + '>';
+  modal('<h2>Criar meu usuário</h2><p>Com o seu usuário, os pedidos, as transfusões e o acompanhamento ficam no seu nome. O CVH recebe um aviso do cadastro.</p>' +
+    campo("cdNome", "Nome e sobrenome", 'autocapitalize="words"') + '<label class="op"><input type="checkbox" id="cdVet"> Sou médico veterinário</label><div id="cdCrmvW" hidden>' + campo("cdCrmv", "CRMV-DF (número)", 'inputmode="numeric"') + '</div>' +
+    campo("cdEmail", "E-mail (para recuperar a senha)", 'inputmode="email" autocapitalize="none"') + campo("cdUsu", "Usuário para entrar", 'autocapitalize="none"') +
+    campo("cdSen", "Senha", 'class="mascara" autocapitalize="none"') + campo("cdSen2", "Repita a senha", 'class="mascara" autocapitalize="none"') +
+    '<p><small>Pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet. Este celular é de uso comum: a senha não fica salva.</small></p>' +
+    '<div class="bts"><button class="btn" data-a="cadOk">Criar e entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) ["#cdSen", "#cdSen2"].forEach((q) => { $(q).type = "password"; $(q).autocomplete = "new-password"; });
+  $("#cdVet").onchange = () => { $("#cdCrmvW").hidden = !$("#cdVet").checked; };
+  $("#cdNome").oninput = () => { const u = $("#cdUsu"); if (u.dataset.mexeu) return; const p = $("#cdNome").value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]/g, "").split(/\s+/).filter((x) => x && !/^(dr|dra|drs|vet)$/.test(x)); u.value = p.length > 1 ? p[0] + "." + p[p.length - 1] : p[0] || ""; };
+  $("#cdUsu").oninput = () => { $("#cdUsu").dataset.mexeu = "1"; };
+  setTimeout(() => { const x = $("#cdNome"); if (x) x.focus(); }, 100);
+}
+function opEntrar() { modal('<h2>Entrar com o meu usuário</h2><p>Use o seu usuário do Painel CVH. O CRMV entra sozinho nos pedidos e nas transfusões, e o registro fica no seu nome.</p><p><small>Este celular é de uso comum. A senha não fica salva e a entrada termina ao sair, ao fechar o app ou depois de 10 minutos sem uso.</small></p><label>Usuário</label><input type="text" id="opU" name="u' + Date.now() + '" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Senha</label><input type="text" id="opS" name="x' + Date.now() + '" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="bts"><button class="btn" data-a="opOk">Entrar</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); const cs = $("#opS"); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) { cs.type = "password"; cs.autocomplete = "new-password"; } setTimeout(() => { const x = $("#opU"); if (x) x.focus(); }, 100); }
+const vetDoOp = () => OP ? { nome: OP.nome, crmv: OP.crmv } : null;
+function pintar() {
+  if (!D) return;
+  const A = D.aparelho, interna = A.setor === "internacao", rem = D.remessas || [];
+  if (window.CVH_ICONE_SETOR) CVH_ICONE_SETOR(A.setor);
+  let h = '<div class="topo"><h1>' + (interna ? "Estação internação" : "Estação recepção") + '<small>'  + esc(A.nome) + "</small></h1><button class=\"btn sec peq\" data-a=\"atualizar\">Atualizar</button></div>";
+  h += OP ? '<div class="cx" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px"><span>Usando: <b>' + esc(OP.nome) + "</b>" + (OP.crmv ? " · " + esc(OP.crmv) : "") + '</span><button class="btn sec peq" data-a="opSair">Sair</button></div>' +
+    (OP.adm ? '<div class="cx teste"><h2>Administrador · modo de teste</h2><label class="op"><input type="checkbox" data-a="teste" data-v="semFoto"' + (TESTE.semFoto ? " checked" : "") + '> Seguir sem fotos</label><label class="op"><input type="checkbox" data-a="teste" data-v="semQR"' + (TESTE.semQR ? " checked" : "") + '> Escolher na lista em vez de ler QR e código de barras</label><p><small>Vale só enquanto você estiver entrado neste celular. Fica registrado que foi teste do administrador.</small></p></div>' : "") : ('<div class="cx" style="padding:12px 14px"><p style="margin:0 0 10px"><b>Entre com o seu usuário</b> para pedir bolsa, retirar, registrar a transfusão e o acompanhamento. Para receber e guardar a caixa basta o primeiro nome e a foto.</p><div class="bts" style="margin:0"><button class="btn peq" data-a="opEntrar">Entrar com o meu usuário</button><button class="btn sec peq" data-a="cadastro">Criar meu usuário</button></div></div>');
+  // caixas a caminho
+  const caminho = rem.filter((r) => r.situacao === "transito");
+  if (caminho.length) h += '<div class="cx av"><h2>Caixa a caminho</h2>' + caminho.map((r) => "<p>Caixa " + esc(r.id) + " com " + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + ", saiu do CVH " + esc(hora(r.saida_em)) + (r.modalidade ? " (" + esc(r.modalidade) + ")" : "") + ".</p>" + (OP && OP.adm ? '<div class="bts"><button class="btn sec peq" data-a="informar" data-v="' + esc(r.id) + '">Informar que chegou e foi guardada</button></div>' : "")).join("") + "</div>";
+  if (!notifOk()) h += '<div class="cx av"><p>Ative as notificações para saber quando uma caixa do CVH estiver a caminho, mesmo com o aplicativo fechado.</p><button class="btn" data-a="notif">Ativar notificações</button></div>';
+  const vencidas = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada", "retirada"].includes(u.situacao) && vencidaU(u));
+  if (vencidas.length) h += '<div class="cx al"><h2>BOLSA VENCIDA · NÃO USE</h2><p>Não use. Bolsa vencida não volta ao CVH: descarte no lixo infectante e toque em Descartar para registrar. O CVH já foi avisado.</p>' + vencidas.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + '</small><div class="bts"><button class="btn peq" data-a="descartar" data-v="' + esc(u.id) + '">Descartar</button></div></div>').join("") + "</div>";
+  const cps = (D.unidades || []).filter((u) => u.local === A.local && u.componente === "CP" && ["disponivel", "reservada"].includes(u.situacao) && !vencidaU(u));
+  if (cps.length) h += '<div class="cx av cp-pisca"><h2>Plaqueta aqui · NÃO REFRIGERAR, NÃO CONGELAR</h2><p><b>Manter em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C). Nunca no refrigerador nem no freezer.</b> Transfundir em até 24 h depois que saiu do CVH. Agite suavemente antes de usar.</p>' + cps.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "</div>").join("") + "</div>";
+  // atalho para o estoque: quem vai transfundir entra direto para retirar a bolsa para uso
+  { const nEst = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada"].includes(u.situacao)).length;
+    if (interna && OP) h += '<button class="btn grande" data-a="irEstoque">Estoque · ' + nEst + (nEst === 1 ? " bolsa" : " bolsas") + '<small style="display:block;font-size:13px;font-weight:400;opacity:.85">retirar a bolsa para transfundir</small></button>'; }
+  h += '<button class="btn grande" data-a="receber">Chegou caixa do CVH</button>';
+  // pedidos ao CVH: bolsa, tipagem, prova de compatibilidade e Coombs (internação)
+  if (interna && OP) {
+    const Hr = D.horario || {};
+    if (Hr.aberto === false) h += '<div class="cx av" style="margin-top:10px"><h2>CVH fora do horário de funcionamento</h2><p>' + esc(Hr.grade || "") + "</p><p>Pedidos de rotina e de reserva enviados agora ficam registrados e chegam à equipe do CVH " + esc(Hr.quando || "na abertura") + ".</p><p><b>Infelizmente não poderemos atender urgência ou emergência fora do horário.</b></p></div>";
+    h += '<button class="btn grande sec" data-a="solicitar" style="margin-top:10px">Solicitar bolsa ou teste ao CVH</button>';
+    const P = (D.pedidos || []).filter((x) => !["concluido", "cancelado"].includes(x.etapa) || Date.now() - new Date(x.criado).getTime() < 864e5);
+    if (P.length) h += '<div class="cx"><h2>Pedidos ao CVH</h2>' + P.map((x) => { const p = (x.dados || {}).pedido || {}; return '<div class="bolsa"><b>' + esc(x.paciente) + " · " + esc(oQuePedido(p)) + '</b> <span class="tag ' + (x.etapa === "cancelado" ? "al" : x.etapa === "concluido" || x.etapa === "entregue" ? "ok" : "av") + '">' + esc(ETAPA_PED[x.etapa] || x.etapa) + "</span><small>" + esc(hora(x.criado)) + " · " + esc(p.vet ? p.vet.nome : x.solicitante) + (p.urgencia ? " · " + esc(TIPO_PED[p.urgencia] || p.urgencia) : "") + (p.reservaPara ? " para " + esc(hora(p.reservaPara)) : "") + "</small>" + infoPedido(x, p) + linhaPedido(x) + ((x.dados || {}).resultados || []).map((r) => '<a class="btn sec peq" style="display:inline-block;margin:6px 6px 0 0;text-decoration:none" href="' + esc(r.url) + '" target="_blank" rel="noopener">Laudo: ' + esc(r.titulo) + "</a>" + (r.urlA4 ? '<a class="btn sec peq" style="display:inline-block;margin:6px 6px 0 0;text-decoration:none" href="' + esc(r.urlA4) + '" target="_blank" rel="noopener">' + esc(r.titulo) + " · A4 para imprimir</a>" : "")).join("") + "</div>"; }).join("") + "</div>";
+  }
+  // guarda pendente: cada bolsa com o relógio até ler o QR do equipamento; CRIO primeiro
+  const prio = { CRIO: 0, PFC: 1, PPC: 1, CH: 2, CP: 3 };
+  for (const r of rem.filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
+    const us = r.unidades.map(uniDe).filter(Boolean).sort((a, b) => (prio[a.componente] ?? 9) - (prio[b.componente] ?? 9)), ini = inicioGuarda(r);
+    const pend = us.filter((u) => u.situacao === "transito" || (u.dados && u.dados.guarda && !u.dados.guarda.foto)); if (!pend.length) continue;
+    h += '<div class="cx al"><h2>Guardar agora · caixa ' + esc(r.id) + "</h2>" + (r.recebida_em ? "<small>Recebida por " + esc(r.recebida_por) + " " + esc(hora(r.recebida_em)) + "</small>" : "<p><b>Entrega registrada. Toque em Chegou caixa do CVH e leia o QR da caixa antes de abrir.</b></p>") +
+      us.map((u) => { const g = (u.dados || {}).guarda; let st, bt = "";
+        if (u.situacao === "transito") { st = ini && D.prazos[u.componente] ? "<small>Tempo para guardar</small>" + relogio(ini + prazo(u) * 6e4) : ""; if (r.recebida_em) bt = '<button class="btn peq" data-a="guardar" data-v="' + esc(u.id) + '">Guardar</button>'; }
+        else if (g && !g.foto) { st = '<span class="tag av">No equipamento · foto pendente</span>'; bt = '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
+        else st = '<span class="tag ok">guardada</span>';
+        const eq = (D.equipamentos || []).find((e) => (e.aceita || []).includes(u.componente));
+        return '<div class="bolsa">' + linhaBolsa(u) + (u.situacao === "transito" && u.componente === "CP" ? '<small><b>Ar-condicionado a 21 °C, NUNCA no refrigerador nem no freezer</b></small>' : u.situacao === "transito" && eq ? "<small>Guardar em " + esc(eq.nome) + "</small>" : "") + "<div>" + st + (g ? " <small>" + esc(g.nome) + "</small>" : "") + '</div><div class="bts">' + bt + "</div></div>"; }).join("") +
+      (r.recebida_em ? '<div class="bts"><button class="btn sec peq" data-a="ocorrencia" data-v="Caixa ' + esc(r.id) + '">Informar ocorrência ao CVH</button></div>' : "") + (OP && OP.adm ? '<div class="bts"><button class="btn sec peq" data-a="informar" data-v="' + esc(r.id) + '">Informar que chegou e foi guardada</button></div>' : "") + "</div>";
+  }
+  // bolsas que voltaram ao estoque por cancelamento e ainda esperam o QR do equipamento e a foto
+  const regu = (D.unidades || []).filter((u) => (u.dados || {}).guardaPendente || ((u.dados || {}).guarda && !u.dados.guarda.foto && !u.dados.remessa && u.local === A.local && ["disponivel", "reservada"].includes(u.situacao)));
+  if (regu.length) h += '<div class="cx al"><h2>Guardar de novo</h2>' + regu.map((u) => '<div class="bolsa">' + linhaBolsa(u) + '<div class="bts">' + ((u.dados || {}).guardaPendente ? '<button class="btn peq" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler QR do equipamento</button>' : '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>') + "</div></div>").join("") + "</div>";
+  // internação: TRANSFUNDIDO | CANCELAR E DEVOLVER AO ESTOQUE
+  const dez = (u) => Date.parse(((u.dados || {}).uso || {}).retiradaEm) + 6e5;
+  const ret = (D.unidades || []).filter((u) => u.situacao === "retirada" || (u.situacao === "utilizada" && dez(u) > agora()));
+  if (ret.length && OP) h += '<div class="cx av"><h2>Retiradas para uso</h2>' + ret.map((u) => { const t0 = Date.parse((u.dados.uso || {}).retiradaEm), resta = t0 + 6e5 - agora(), feita = u.situacao === "utilizada";
+    return '<div class="bolsa">' + linhaBolsa(u) + "<small>Retirada " + esc(hora(t0)) + (feita ? " · transfundida em " + esc(((u.dados.uso || {}).paciente || {}).nome || "") : "") + (u.reserva ? " · reserva " + esc(u.reserva) : "") + '</small><div class="bts">' + (interna && !feita ? '<button class="btn peq" data-a="transfundir" data-v="' + esc(u.id) + '">TRANSFUNDIDO</button>' : "") + (interna ? '<button class="btn sec peq" data-a="monit" data-v="' + esc(u.id) + '">Ficha de monitoramento</button>' : "") + (interna && resta > 0 ? '<button class="btn perigo peq" data-a="cancelar" data-v="' + esc(u.id) + '">' + (feita ? "Corrigir: não foi usada" : "CANCELAR E DEVOLVER AO ESTOQUE") + " (" + relogio(t0 + 6e5) + ")</button>" : "") + "</div></div>"; }).join("") + "</div>";
+  if (OP) h += '<button class="btn grande sec" data-a="lerEtiqueta">Ler etiqueta da bolsa</button>';
+  if (interna && OP) h += '<button class="btn grande sec" data-a="monitEsc" style="margin-top:10px">Ficha de monitoramento da transfusão</button>';
+  // miniestoque
+  const est = (D.unidades || []).filter((u) => u.local === A.local && ["disponivel", "reservada", "bloqueada"].includes(u.situacao));
+  const ordem = ["CH", "PFC", "CRIO", "CP", "PPC"];
+  h += '<div class="cx" id="estoqueLocal"><h2>Estoque na ' + esc(A.local) + " · " + est.length + (est.length === 1 ? " bolsa" : " bolsas") + "</h2>" + (est.length ? est.sort((a, b) => ordem.indexOf(a.componente) - ordem.indexOf(b.componente) || String(a.validade).localeCompare(String(b.validade))).map((u) =>
+    '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc(u.equipamento || "") + (u.situacao === "reservada" ? ' <span class="tag">reservada' + (u.reserva ? " · " + esc(u.reserva) : "") + "</span>" : "") + (u.situacao === "bloqueada" ? ' <span class="tag al">bloqueada, não usar</span>' : "") + '</small><div class="bts">' +
+    (!OP ? "" : interna && u.situacao !== "bloqueada" && !vencidaU(u) ? '<button class="btn peq" data-a="retirar" data-v="' + esc(u.id) + '">Retirar para uso</button>' : "") + (!OP ? "" : u.situacao === "reservada" ? '<button class="btn sec peq" data-a="cancReserva" data-v="' + esc(u.id) + '">Cancelar reserva</button>' : "") + (OP && u.componente === "CP" ? '<button class="btn sec peq" data-a="descartar" data-v="' + esc(u.id) + '">Descartar</button>' : "") + '<button class="btn sec peq" data-a="ocorrencia" data-v="' + esc(u.id) + '">Ocorrência</button></div></div>').join("") : '<p class="vazio">Nenhuma bolsa no estoque.</p>') + "</div>";
+  const feitas = (D.unidades || []).filter((u) => u.situacao === "utilizada");
+  if (feitas.length && OP) h += '<div class="cx"><h2>Acompanhamento das transfusões</h2><p class="vazio" style="text-align:left;margin:0 0 4px"><small>Depois da transfusão, marque se houve reação e o hematócrito de controle. Leva menos de um minuto e pode ser completado depois.</small></p>' +
+    feitas.sort((a, b) => String(b.dados.uso.transfundidaEm).localeCompare(String(a.dados.uso.transfundidaEm))).map((u) => { const U = u.dados.uso || {}, ac = U.acomp || {}, hts = ac.hts || [];
+      const st = !U.acomp ? '<span class="tag al">acompanhamento pendente</span>' : (ac.reacao === "sim" ? '<span class="tag al">reação registrada</span> ' : ac.reacao === "nao" ? '<span class="tag ok">sem reação</span> ' : "") + (hts.length ? '<span class="tag ok">Ht ' + esc(hts.map((x) => x.valor + "%").join(" · ")) + "</span>" : '<span class="tag">falta o Ht de controle</span>');
+      return '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · " + esc(hora(U.transfundidaEm)) + "</small><div>" + st + '</div><div class="bts">' + (Date.now() - Date.parse(U.transfundidaEm) < 4 * 864e5 ? '<button class="btn peq' + (U.acomp ? " sec" : "") + '" data-a="acomp" data-v="' + esc(u.id) + '">' + (U.acomp ? "Completar ou corrigir" : "Acompanhamento") + "</button>" : "") + '<button class="btn sec peq" data-a="monit" data-v="' + esc(u.id) + '">' + (U.monitoramento ? "Ficha de monitoramento ✓" : "Ficha de monitoramento") + "</button></div></div>"; }).join("") + "</div>";
+  h += '<p class="vazio"><small>Dúvidas sobre as bolsas, fale com o CVH.</small></p>';
+  $("#app").innerHTML = h;
+}
+
+/* ── relógios e alarme da guarda ── */
+const AVISADO = {};
+function tique() {
+  document.querySelectorAll(".relogio[data-fim]").forEach((el) => { const s = Math.round((+el.dataset.fim - agora()) / 1000), a = Math.abs(s); el.textContent = (s < 0 ? "atrasado " : "") + p2(Math.floor(a / 60)) + ":" + p2(a % 60); el.classList.toggle("al", s < 0); });
+  if (!D) return;
+  for (const r of (D.remessas || []).filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
+    const ini = inicioGuarda(r); if (!ini) continue;
+    for (const u of r.unidades.map(uniDe).filter((x) => x && x.situacao === "transito" && D.prazos[x.componente])) {
+      const fim = ini + prazo(u) * 6e4, ch = "g:" + u.id;
+      if (agora() > fim) {
+        if (!AVISADO[ch]) { AVISADO[ch] = 1; srv("intAlertaGuarda", u.id).catch(() => {}); }
+        if (!SILENCIO[ch] || Date.now() - SILENCIO[ch] > 3 * 6e4) alarme(ch, u.componente + " fora da refrigeração", "A bolsa " + u.id + " passou de " + prazo(u) + " minutos. Guarde agora e leia o QR do equipamento.");
+      } else if (agora() > fim - Math.min(5, prazo(u) / 2.5) * 6e4 && !AVISADO["q" + ch]) { AVISADO["q" + ch] = 1; somAviso(); toast("Faltam " + Math.round(Math.min(5, prazo(u) / 2.5)) + " minutos para guardar " + u.id + ".", 6000); }
+    }
+  }
+}
+setInterval(tique, 1000);
+
+async function carregar(silencio) {
+  if (!K) { $("#app").innerHTML = '<div class="cx"><h2>Aparelho não ativado</h2><p>Copie o link de ativação enviado pelo CVH e cole aqui. Também dá para abrir o link no navegador e adicionar à tela de início de novo.</p><input type="text" id="atvLink" placeholder="Cole o link aqui" style="width:100%;font-size:16px;padding:12px;border:1px solid #E2D6C8;border-radius:10px;margin:8px 0"><button class="btn" id="atvBt" style="width:100%">Ativar este celular</button></div>';
+    // o app da tela de início do iPhone tem memória separada do navegador: o link colado aqui ativa o próprio app
+    $("#atvBt").onclick = () => { const v = $("#atvLink").value.trim(), m = /[?&]k=([A-Za-z0-9]+)/.exec(v), k = m ? m[1] : /^[A-Za-z0-9]{16,}$/.test(v) ? v : ""; if (!k) { alert("Esse não parece o link de ativação do CVH."); return; } try { localStorage.setItem("cvh_int_k", k); const s2 = /[?&]s=(recepcao|internacao)/.exec(v); if (s2) localStorage.setItem("cvh_int_setor", s2[1]); } catch (e) {} K = k; carregar(); };
+    return; }
+  try {
+    const antes = D; D = await srv("intDados"); DIF = Date.parse(D.agora) - Date.now();
+    if (antes) { const novas = (D.remessas || []).filter((r) => r.situacao === "transito" && !(antes.remessas || []).some((x) => x.id === r.id)); if (novas.length) { somAviso(); toast("Caixa do CVH a caminho.", 7000); } }
+    // transporte chegou para buscar a amostra: alarme com o app aberto (uma vez por chamada)
+    { let visto = {}; try { visto = JSON.parse(localStorage.getItem("cvh_int_busca") || "{}"); } catch (_) {}
+      const ch = (D.pedidos || []).filter((x) => { const am = x.amostra || {}; return am.chamadoEm && !am.enviadaEm && !am.saiuEm && !am.chegouEm && visto[x.id] !== am.chamadoEm; });
+      if (ch.length) { somAviso(); setTimeout(somAviso, 1300); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); toast((((ch[0].amostra || {}).via === "motoboy") ? "Motoboy" : "Uber") + " chegou para buscar a amostra de " + (ch[0].paciente || "paciente") + ".", 9000); ch.forEach((x) => { visto[x.id] = x.amostra.chamadoEm; }); try { localStorage.setItem("cvh_int_busca", JSON.stringify(visto)); } catch (_) {} } }
+    if (!$("#modal").classList.contains("on") && !$("#cam").classList.contains("on")) pintar();
+    setTimeout(() => { if (!perguntaCP()) conferirCP(); }, 600);
+  } catch (e) {
+    if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_int_k"); } catch (_) {} K = ""; return carregar(); }
+    if (!silencio) toast(e.message || String(e), 6000);
+    if (!D) $("#app").innerHTML = '<div class="cx vazio">Sem conexão com o CVH. ' + esc(e.message || "") + '<div class="bts" style="justify-content:center"><button class="btn" data-a="atualizar">Tentar de novo</button></div></div>';
+  }
+}
+setInterval(() => carregar(true), 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) carregar(true); });
+
+/* ── ações ── */
+// recebimento (10.2): nome, foto rápida pela câmera frontal (sem prévia), depois o QR externo da caixa
+async function fotoFrontal() {
+  if (emTeste("semFoto")) return null;
+  let f = null; const v = document.createElement("video"); v.playsInline = true; v.muted = true; v.setAttribute("playsinline", ""); v.style.cssText = "position:fixed;width:2px;height:2px;opacity:0;left:0;top:0"; document.body.appendChild(v);
+  try {
+    f = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 } }, audio: false }); v.srcObject = f; await v.play();
+    await new Promise((r) => setTimeout(r, 700));
+    const c = document.createElement("canvas"), k = Math.min(1, 640 / (v.videoWidth || 640)); c.width = Math.round((v.videoWidth || 640) * k); c.height = Math.round((v.videoHeight || 480) * k); c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.7).split(",")[1];
+  } catch (e) { return null; } finally { if (f) f.getTracks().forEach((t) => t.stop()); v.remove(); }
+}
+function pedirNome(titulo, depois) {
+  if (typeof OP !== "undefined" && OP && OP.adm && TESTE.semFoto) { const n = OP.nome.split(" ")[0]; return depois(n, null); }
+  modal("<h2>" + esc(titulo) + '</h2><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '" autocomplete="given-name"><p><small>Ao continuar, o aplicativo registra uma foto rápida pela câmera da frente para identificar quem recebeu. A foto tem acesso restrito ao CVH.</small></p><div class="bts"><button class="btn" data-a="nomeOk">Continuar</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  PROX = depois;
+}
+let PROX = null;
+async function nomeOk(b) {
+  const nome = ($("#mNome") || {}).value ? $("#mNome").value.trim() : ""; if (!nome) return toast("Informe seu primeiro nome."); salvarNome(nome);
+  b.disabled = true; const fn = PROX; PROX = null; toast("Registrando a foto do recebimento…", 3000);
+  const foto = await fotoFrontal(); fechar(); if (fn) await fn(nome, foto);
+}
+function receber() {
+  pedirNome("Chegou caixa do CVH", async (nome, foto) => {
+    const t = await lerQR("Leia o QR do lado de fora da caixa, antes de abrir"); if (!t) return toast("Recebimento não registrado. A foto foi descartada.", 5000);
+    await confirmarRecebimento(norm(t), nome, foto);
+  });
+}
+// o recebimento só vale com o QR da etiqueta da caixa (código próprio da entrega, com prazo)
+function receberCaixa(id) { pedirNome("Caixa " + id, async (nome, foto) => { const t = await lerQR("Leia o QR do lado de fora da caixa " + id); if (!t) return toast("Recebimento não registrado.", 5000); await confirmarRecebimento(norm(t), nome, foto); }); }
+async function confirmarRecebimento(cod, nome, foto) {
+  const id = String(cod || "").split(".")[0];
+  const r = (D.remessas || []).find((x) => x.id === id);
+  if (!r) { bip(false); return toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); }
+  toast("Enviando…", 20000);
+  try { await srv("intReceber", cod, nome, foto); somOk(); toast("Recebimento confirmado. Guarde cada bolsa: leia a etiqueta e depois o QR do equipamento.", 8000); await carregar(); }
+  catch (e) { bip(false); toast(e.message, 7000); }
+}
+// guarda (10.3 a 10.6): etiqueta da bolsa, orientação do CH, QR do equipamento, foto da bolsa no equipamento
+const pendenteGuarda = (u) => u && (u.situacao === "transito" && (D.remessas || []).some((r) => r.recebida_em && r.unidades.includes(u.id)) || (u.dados || {}).guardaPendente);
+const ORIENTA_CH = '<svg viewBox="0 0 340 214" style="width:100%;max-width:460px;display:block;margin:6px auto" font-family="Arial,Helvetica,sans-serif" font-size="11"><rect x="3" y="3" width="164" height="208" rx="12" fill="#EAF3EC" stroke="#2F6B45" stroke-width="1.5"/><circle cx="24" cy="23" r="10" fill="#2F6B45"/><path d="M19 23 l4 4 l7 -8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><text x="40" y="27" font-weight="700" font-size="12.5" fill="#2F6B45">CORRETO</text><g stroke="#C9C2BC" stroke-width="2.2" stroke-linecap="round"><line x1="14" y1="46" x2="156" y2="46"/><line x1="14" y1="58" x2="156" y2="58"/><line x1="14" y1="70" x2="156" y2="70"/><line x1="14" y1="82" x2="156" y2="82"/><line x1="14" y1="94" x2="156" y2="94"/><line x1="14" y1="106" x2="156" y2="106"/><line x1="14" y1="118" x2="156" y2="118"/><line x1="14" y1="130" x2="156" y2="130"/><line x1="14" y1="142" x2="156" y2="142"/><line x1="14" y1="154" x2="156" y2="154"/></g><path d="M30 52 H140 V160 H30 Z" fill="#DCE9F2" fill-opacity=".85" stroke="#7F9BB0" stroke-width="1.3"/><path d="M30 52 H140" stroke="#7F9BB0" stroke-width="3"/><path d="M30 46 H140" stroke="#7F9BB0" stroke-width="2" stroke-dasharray="3 2"/><g opacity="1"><path d="M64 68 H72 V58 H78 V68 H96 V58 H102 V68 H110 Q122 68 122 80 V142 Q122 154 110 154 H64 Q52 154 52 142 V80 Q52 68 64 68 Z" fill="#A83D3D" stroke="#6E1F1B" stroke-width="1.5" stroke-linejoin="round"/><path d="M75 58 C75 48 54 48 46 64" fill="none" stroke="#8F2F2B" stroke-width="3" stroke-linecap="round"/><rect x="83" y="60" width="8" height="7" rx="2" fill="#F4ECE6" stroke="#6E1F1B" stroke-width="1"/><path d="M58 82 Q57 110 60 140" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/><rect x="65" y="98" width="44" height="34" rx="2" fill="#fff" stroke="#6E1F1B" stroke-width=".8"/><text x="87" y="111" text-anchor="middle" font-size="10" font-weight="700" fill="#5F130F">CH</text><g fill="#2b2320"><rect x="68" y="116" width="1.6" height="11"/><rect x="70" y="116" width="1" height="11"/><rect x="71" y="116" width="1.6" height="11"/><rect x="73" y="116" width="1" height="11"/><rect x="75" y="116" width="1" height="11"/><rect x="76" y="116" width="1" height="11"/><rect x="78" y="116" width="1" height="11"/><rect x="80" y="116" width="1.6" height="11"/><rect x="81" y="116" width="1" height="11"/><rect x="83" y="116" width="1.6" height="11"/><rect x="85" y="116" width="1" height="11"/><rect x="87" y="116" width="1" height="11"/><rect x="88" y="116" width="1" height="11"/><rect x="90" y="116" width="1" height="11"/><rect x="92" y="116" width="1.6" height="11"/><rect x="94" y="116" width="1" height="11"/><rect x="95" y="116" width="1.6" height="11"/><rect x="97" y="116" width="1" height="11"/><rect x="99" y="116" width="1" height="11"/><rect x="101" y="116" width="1.6" height="11"/></g></g><text x="85" y="182" text-anchor="middle" font-size="10.5" fill="#2b2320" font-weight="700">Bolsa por cima, fora do plástico</text><text x="85" y="197" text-anchor="middle" font-size="10" fill="#2b2320">ziplock aberto por baixo</text><rect x="173" y="3" width="164" height="208" rx="12" fill="#F8E3E2" stroke="#A83D3D" stroke-width="1.5"/><circle cx="194" cy="23" r="10" fill="#A83D3D"/><path d="M190 19 l8 8 M198 19 l-8 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><text x="210" y="27" font-weight="700" font-size="12.5" fill="#8A1D14">EVITAR</text><g stroke="#C9C2BC" stroke-width="2.2" stroke-linecap="round"><line x1="184" y1="46" x2="326" y2="46"/><line x1="184" y1="58" x2="326" y2="58"/><line x1="184" y1="70" x2="326" y2="70"/><line x1="184" y1="82" x2="326" y2="82"/><line x1="184" y1="94" x2="326" y2="94"/><line x1="184" y1="106" x2="326" y2="106"/><line x1="184" y1="118" x2="326" y2="118"/><line x1="184" y1="130" x2="326" y2="130"/><line x1="184" y1="142" x2="326" y2="142"/><line x1="184" y1="154" x2="326" y2="154"/></g><g opacity="0.9"><path d="M232 76 H240 V66 H246 V76 H264 V66 H270 V76 H278 Q290 76 290 88 V150 Q290 162 278 162 H232 Q220 162 220 150 V88 Q220 76 232 76 Z" fill="#A83D3D" stroke="#6E1F1B" stroke-width="1.5" stroke-linejoin="round"/><path d="M243 66 C243 56 222 56 214 72" fill="none" stroke="#8F2F2B" stroke-width="3" stroke-linecap="round"/><rect x="251" y="68" width="8" height="7" rx="2" fill="#F4ECE6" stroke="#6E1F1B" stroke-width="1"/><path d="M226 90 Q225 118 228 148" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/><rect x="233" y="106" width="44" height="34" rx="2" fill="#fff" stroke="#6E1F1B" stroke-width=".8"/><text x="255" y="119" text-anchor="middle" font-size="10" font-weight="700" fill="#5F130F">CH</text><g fill="#2b2320"><rect x="236" y="124" width="1.6" height="11"/><rect x="238" y="124" width="1" height="11"/><rect x="239" y="124" width="1.6" height="11"/><rect x="241" y="124" width="1" height="11"/><rect x="243" y="124" width="1" height="11"/><rect x="244" y="124" width="1" height="11"/><rect x="246" y="124" width="1" height="11"/><rect x="248" y="124" width="1.6" height="11"/><rect x="249" y="124" width="1" height="11"/><rect x="251" y="124" width="1.6" height="11"/><rect x="253" y="124" width="1" height="11"/><rect x="255" y="124" width="1" height="11"/><rect x="256" y="124" width="1" height="11"/><rect x="258" y="124" width="1" height="11"/><rect x="260" y="124" width="1.6" height="11"/><rect x="262" y="124" width="1" height="11"/><rect x="263" y="124" width="1.6" height="11"/><rect x="265" y="124" width="1" height="11"/><rect x="267" y="124" width="1" height="11"/><rect x="269" y="124" width="1.6" height="11"/></g></g><path d="M206 56 H312 V164 H206 Z" fill="#FFFFFF" fill-opacity=".55" stroke="#7F9BB0" stroke-width="1.5"/><rect x="204" y="50" width="110" height="9" rx="3" fill="#9DB3C4" stroke="#5E7A8E" stroke-width="1"/><g stroke="#5E7A8E" stroke-width="1"><line x1="209" y1="52" x2="209" y2="57"/><line x1="215" y1="52" x2="215" y2="57"/><line x1="221" y1="52" x2="221" y2="57"/><line x1="227" y1="52" x2="227" y2="57"/><line x1="233" y1="52" x2="233" y2="57"/><line x1="239" y1="52" x2="239" y2="57"/><line x1="245" y1="52" x2="245" y2="57"/><line x1="251" y1="52" x2="251" y2="57"/><line x1="257" y1="52" x2="257" y2="57"/><line x1="263" y1="52" x2="263" y2="57"/><line x1="269" y1="52" x2="269" y2="57"/><line x1="275" y1="52" x2="275" y2="57"/><line x1="281" y1="52" x2="281" y2="57"/><line x1="287" y1="52" x2="287" y2="57"/><line x1="293" y1="52" x2="293" y2="57"/><line x1="299" y1="52" x2="299" y2="57"/><line x1="305" y1="52" x2="305" y2="57"/></g><rect x="300" y="47" width="10" height="15" rx="2" fill="#5E7A8E"/><g fill="#7F9BB0" fill-opacity=".8"><circle cx="216" cy="80" r="1.8"/><circle cx="302" cy="100" r="2.2"/><circle cx="214" cy="140" r="1.6"/><circle cx="300" cy="148" r="1.8"/><circle cx="226" cy="156" r="1.4"/></g><text x="255" y="182" text-anchor="middle" font-size="10.5" fill="#2b2320" font-weight="700">Bolsa dentro do ziplock</text><text x="255" y="197" text-anchor="middle" font-size="10" fill="#2b2320">fechado</text></svg>';
+async function guardar(uidSugerido) {
+  const t = await lerQR(uidSugerido ? "Leia a etiqueta da bolsa " + uidSugerido : "Leia a etiqueta da bolsa"); if (!t) return;
+  const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
+  if (!u || !pendenteGuarda(u)) { bip(false); return toast(u ? "Esta bolsa não está esperando guarda." : "Bolsa não encontrada nesta caixa. Confira a etiqueta.", 7000); }
+  if (u.componente === "CP") { const l = cpLim(u); modal('<h2>Plaqueta · ' + esc(u.id) + '</h2><p style="font-size:17px;color:#8A1D14"><b>NÃO coloque no refrigerador nem no freezer.</b> O frio inativa as plaquetas.</p><p>Deixe a bolsa em temperatura controlada, no ar-condicionado a 21 °C (entre 20 e 24 °C), deitada, longe do sol e do refrigerador.' + (l ? ' Transfundir até <b>' + esc(hmData(l)) + '</b>.' : ' Transfundir em até 24 h.') + ' Agite suavemente antes de usar.</p><div class="bts"><button class="btn" data-a="cpUso" data-v="' + esc(u.id) + '">Vou transfundir agora</button><button class="btn" data-a="cpAmb" data-v="' + esc(u.id) + '">Aguardando o paciente (ar-condicionado a 21 °C)</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
+  if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; }
+  await lerEquip(u.id);
+}
+async function lerEquip(uid) {
+  fechar(); const u = uniDe(uid); const t = await lerQR(uid + " · leia o QR do " + (u.componente === "CH" ? "refrigerador" : "freezer")); if (!t) return;
+  try { await srv("intGuardar", uid, norm(t), nomeSalvo() || (OP ? OP.nome.split(" ")[0] : "")); somOk(); await carregar(); if (emTeste("semFoto")) return fotoGuarda(uid); pedirFotoGuarda(uid); }
+  catch (e) { bip(false); toast(e.message, 9000); }
+}
+function pedirFotoGuarda(uid) {
+  const u = uniDe(uid) || {};
+  modal("<h2>No equipamento · foto pendente</h2><p>Tire a foto da bolsa " + esc(uid) + (u.componente === "CP" ? " no lugar onde ela vai ficar, fora do refrigerador." : " já dentro do equipamento.") + (u.componente === "CH" ? " A foto precisa mostrar a bolsa fora do ziplock, apoiada sobre o plástico aberto." : "") + '</p><div class="bts"><button class="btn" data-a="fotoGuarda" data-v="' + esc(uid) + '">Tirar a foto</button><button class="btn sec" data-a="fechar">Depois</button></div>');
+}
+async function fotoGuarda(uid) {
+  if (emTeste("semFoto")) { fechar(); try { await srv("intFotoGuarda", uid, ""); somOk(); toast("Bolsa guardada (teste sem foto).", 4000); await carregar(); } catch (e) { toast(e.message, 7000); } return; }
+  const f = await tirarFoto(); if (!f) return toast("Tire a foto da bolsa guardada.");
+  fechar(); toast("Enviando a foto…", 20000);
+  try { await srv("intFotoGuarda", uid, f); somOk(); toast("Bolsa guardada.", 4000); await carregar(); } catch (e) { toast(e.message, 7000); }
+}
+function ocorrencia(alvo) {
+  modal("<h2>Informar ocorrência ao CVH</h2><p>" + esc(alvo) + '</p><label>O que aconteceu</label><textarea id="ocTxt" rows="4" placeholder="Ex.: sinal de descongelamento, bolsa danificada, bolsa faltando ou a mais na caixa"></textarea><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="ocOk" data-v="' + esc(alvo) + '">Enviar ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+// uso (10.10 e 10.11)
+function confirmarRetirada(uid) {
+  const u = uniDe(uid); if (!u || u.local !== D.aparelho.local || !["disponivel", "reservada"].includes(u.situacao)) return toast("Esta bolsa não está disponível aqui. Confira a etiqueta.", 7000);
+  modal("<h2>Retirar para uso</h2>" + '<div class="bolsa">' + linhaBolsa(u) + "</div>" + (u.situacao === "reservada" ? '<p class="tag av">Reservada' + (u.reserva ? " para " + esc(u.reserva) : "") + "</p>" : "") + '<p>Ao confirmar, a bolsa sai do estoque da Intensivet. Dá para cancelar e devolver ao estoque em até 10 minutos.</p><div class="bts"><button class="btn" data-a="retirarOk" data-v="' + esc(uid) + '">Confirmar retirada</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+async function retirarQR() { const t = await lerQR("Leia a etiqueta da bolsa"); if (!t) return; const id = norm(t), u = (D.unidades || []).find((x) => x.id.toUpperCase() === id); if (!u) { bip(false); return toast("Bolsa não encontrada no estoque daqui. Confira a etiqueta.", 7000); } confirmarRetirada(u.id); }
+const vets = () => { try { return JSON.parse(localStorage.getItem("cvh_int_vets") || "[]"); } catch (e) { return []; } };
+/* ── pedido ao CVH pelo celular da internação ── */
+const TESTES_PED = [["tipagem", "Tipagem sanguínea"], ["prova", "Prova de compatibilidade"], ["coombs", "Teste de Coombs (antiglobulina direto)"]];
+const ETAPA_PED = { aberto: "Recebido pelo CVH", possivel: "Em análise", autorizado: "Autorizado", pago: "Confirmado", testes: "Testes em andamento", fracionamento: "Preparando a bolsa", preparo: "Preparando a bolsa", pronta: "Pronta para sair", retirada: "Com o motoboy", entregue: "Entregue", concluido: "Concluído", cancelado: "Cancelado" };
+const TIPO_PED = { rotina: "Rotina", reserva: "Reserva", urgente: "Urgência", emergencia: "Emergência" };
+const TIPO_TXT = {
+  rotina: "Sem pressa. O CVH responde dentro do horário de funcionamento.",
+  reserva: "Bolsa separada para um procedimento programado, como uma cirurgia. Informe a data e a hora ou marque a definir, se ainda não houver agendamento.",
+  urgente: "Depois de receber o link, o responsável tem até 30 minutos para autorizar o atendimento e concluir o pagamento. O CVH envia a bolsa em até 3 horas, contadas a partir da chegada da amostra.",
+  emergencia: "O CVH pode enviar a bolsa antes de receber a amostra do paciente. Colete a amostra antes de iniciar a transfusão e envie ao CVH para tipagem sanguínea e prova de compatibilidade.<br><br>Depois de receber o link, o responsável tem até 10 minutos para autorizar o atendimento e concluir o pagamento.<small>A coleta antes da transfusão evita que as hemácias da bolsa interfiram na tipagem do receptor. Os resultados ficam registrados no prontuário e orientam as próximas transfusões. Se houver incompatibilidade, o CVH comunica o resultado à equipe assistente, que avalia a necessidade de interromper a transfusão, caso ainda esteja em curso.</small>",
+};
+const CVH_WHATS = "(61) 9 8237-2772";
+const ORIENTA_TXT = "Oriente o responsável a falar com o CVH pelo WhatsApp " + CVH_WHATS + ". O CVH combina com ele a autorização e o pagamento, sem precisar ligar.";
+const CONTATO_TXT = { orientado: "Já orientado", orientar: "Vou orientar agora" };
+const RACAS_CAO = ["SRD (sem raça definida)","Afghan Hound","Airedale Terrier","Akita Americano","Akita Inu","American Bully","American Pit Bull Terrier","American Staffordshire Terrier","Basenji","Basset Hound","Beagle","Bearded Collie","Bichon Bolonhês","Bichon Frisé","Bloodhound","Boerboel","Boiadeiro Australiano","Boiadeiro Bernês","Border Collie","Border Terrier","Borzoi","Boston Terrier","Boxer","Braco Alemão de Pelo Curto","Bull Terrier","Bull Terrier Miniatura","Bulldog Americano","Bulldog Campeiro","Bulldog Francês","Bulldog Inglês","Bullmastiff","Cane Corso","Cão da Serra da Estrela","Cão de Água Português","Cão de Crista Chinês","Cavalier King Charles Spaniel","Chesapeake Bay Retriever","Chihuahua","Chow Chow","Cocker Spaniel Americano","Cocker Spaniel Inglês","Collie","Coton de Tuléar","Dachshund","Dálmata","Doberman","Dogo Argentino","Dogue Alemão","Dogue de Bordeaux","Fila Brasileiro","Fox Paulistinha (Terrier Brasileiro)","Fox Terrier","Galgo Inglês (Greyhound)","Galgo Italiano","Golden Retriever","Goldendoodle","Havanês","Husky Siberiano","Jack Russell Terrier","Kelpie Australiano","Labradoodle","Labrador Retriever","Leonberger","Lhasa Apso","Lulu da Pomerânia (Spitz Alemão Anão)","Malamute do Alasca","Maltês","Mastiff","Mastim Napolitano","Mastim Tibetano","Old English Sheepdog","Ovelheiro Gaúcho","Papillon","Pastor Alemão","Pastor Australiano","Pastor Belga Groenendael","Pastor Belga Malinois","Pastor Branco Suíço","Pastor da Anatólia","Pastor de Shetland","Pastor do Cáucaso","Pastor Holandês","Pastor Maremano Abruzês","Pequinês","Perdigueiro Português","Pinscher Miniatura","Podengo Português","Pointer Inglês","Poodle Toy","Poodle Miniatura","Poodle Médio","Poodle Gigante","Presa Canário","Pug","Rhodesian Ridgeback","Rottweiler","Samoieda","São Bernardo","Schnauzer Miniatura","Schnauzer Standard","Schnauzer Gigante","Setter Irlandês","Shar-Pei","Shiba Inu","Shih Tzu","Spitz Alemão","Spitz Japonês","Springer Spaniel Inglês","Staffordshire Bull Terrier","Terra Nova","Veadeiro Pampeano","Weimaraner","Welsh Corgi Pembroke","West Highland White Terrier","Whippet","Yorkshire Terrier"];
+const RACAS_GATO = ["SRD (sem raça definida)","Abissínio","Angorá","Azul Russo","Bengal","British Shorthair","Devon Rex","Exótico","Himalaio","Maine Coon","Norueguês da Floresta","Persa","Ragdoll","Sagrado da Birmânia","Scottish Fold","Siamês","Siberiano","Sphynx"];
+
+// escolhas de um toque (sem abrir lista): espécie, sexo, tipagem, primeira transfusão, contato
+const ESC = {};
+const escolha = (k, op, extra) => '<div class="esc" data-k="' + k + '"' + (extra || "") + ">" + op.map((v) => '<button type="button" class="op' + (ESC[k] === v ? " on" : "") + '" data-a="esc" data-k="' + k + '" data-v="' + esc(v) + '">' + esc(v) + "</button>").join("") + "</div>";
+function marcar(k, v, lido) { ESC[k] = v; document.querySelectorAll('.esc[data-k="' + k + '"] .op').forEach((x) => { x.classList.toggle("on", x.dataset.v === v); if (lido) x.classList.toggle("lido", x.dataset.v === v); }); if (k === "esp") pintarTipagem(); }
+function pintarTipagem() { const el = $("#sTipag"); if (!el) return; const gato = ESC.esp === "Felina";
+  el.innerHTML = gato ? "<h4>Tipo sanguíneo felino</h4>" + escolha("fel", ["Tipo A", "Tipo B", "Tipo AB", "Não tipado"]) : '<div class="tipag"><div><h4>DEA 1</h4>' + escolha("dea1", ["DEA 1 negativo", "DEA 1 positivo", "Não tipado"]) + "</div><div><h4>DAL</h4>" + escolha("dal", ["DAL negativo", "DAL positivo", "Não tipado"]) + "</div></div>"; }
+// peso: vírgula ou ponto; abaixo de 1 kg com duas casas, acima com uma
+const numBr = (v) => { const n = parseFloat(String(v || "").replace(",", ".").replace(/[^\d.]/g, "")); return isFinite(n) ? n : null; };
+const fmtPeso = (v) => { const n = numBr(v); if (!n) return ""; return (n < 1 ? n.toFixed(2) : (Math.round(n * 10) / 10).toFixed(1).replace(/\.0$/, "")).replace(".", ","); };
+const limparNum = (el) => { const c = el.value.replace(/[^\d.,]/g, ""), i = c.search(/[.,]/); el.value = i < 0 ? c : c.slice(0, i + 1) + c.slice(i + 1).replace(/[.,]/g, ""); };
+// sugestões ao digitar (raça, médico veterinário)
+function sugerir(inp, lista, aoEscolher) {
+  if (!inp || inp._ac) return; inp._ac = 1; const nz = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const ul = document.createElement("ul"); ul.className = "ac-lista"; inp.parentElement.classList.add("ac-pai"); inp.insertAdjacentElement("afterend", ul);
+  const fechar = () => ul.classList.remove("on");
+  const mostrar = () => { const q = nz(inp.value); if (!q) return fechar(); const L = lista().filter((r) => nz(r.t).split(/\s+/).some((w) => w.startsWith(q)) || nz(r.t).startsWith(q) || (q.length > 2 && nz(r.t).includes(q))).slice(0, 7); if (!L.length || (L.length === 1 && nz(L[0].t) === q && !L[0].s)) return fechar(); ul.innerHTML = L.map((r, i) => '<li data-i="' + i + '">' + esc(r.t) + (r.s ? "<small>" + esc(r.s) + "</small>" : "") + "</li>").join(""); ul._L = L; ul.classList.add("on"); };
+  const tocar = (e) => { const li = e.target.closest("li"); if (!li) return; e.preventDefault(); const r = ul._L[+li.dataset.i]; inp.value = r.t; fechar(); if (aoEscolher) aoEscolher(r); };
+  ul.addEventListener("mousedown", tocar); ul.addEventListener("touchstart", tocar, { passive: false });
+  inp.addEventListener("input", mostrar); inp.addEventListener("focus", mostrar); inp.addEventListener("blur", () => setTimeout(fechar, 200));
+}
+const crmvNum = (v) => String(v || "").replace(/^\s*CRMV\s*[-/]?\s*[A-Z]{2}\s*/i, "").replace(/\D/g, "");
+const crmvTxt = (v) => { const m = String(v || "").match(/CRMV\s*[-/]?\s*([A-Z]{2})/i), n = crmvNum(v); return n ? "CRMV-" + (m ? m[1].toUpperCase() : "DF") + " " + n : ""; };
+function todosVets() { const L = [], visto = new Set(); vets().concat(D.vets || []).forEach((v) => { const k = String(v.nome || "").toLowerCase().trim(); if (!k || visto.has(k)) return; visto.add(k); L.push({ nome: v.nome.trim(), crmv: v.crmv || "" }); }); return L; }
+function ligarVet() { sugerir($("#tVet"), () => todosVets().map((v) => ({ t: v.nome, s: crmvTxt(v.crmv), v })), (r) => { $("#tCrmv").value = crmvNum(r.v.crmv); }); }
+function checarVet(nome) { const conhecido = todosVets().some((v) => v.nome.toLowerCase() === nome.toLowerCase()); return conhecido || nome.trim().split(/\s+/).filter((w) => w.length > 1).length >= 2; }
+function guardarVet(nome, crmv) { try { const V = vets().filter((v) => v.nome.toLowerCase() !== nome.toLowerCase()); V.unshift({ nome, crmv }); localStorage.setItem("cvh_int_vets", JSON.stringify(V.slice(0, 30))); } catch (e) {} }
+function blocoOrienta() { return '<div class="orienta">' + ORIENTA_TXT + "</div>" + escolha("contato", Object.values(CONTATO_TXT)); }
+const contatoEsc = () => Object.keys(CONTATO_TXT).find((k) => CONTATO_TXT[k] === ESC.contato) || "";
+function ligarNumeros() { document.querySelectorAll("input[data-num]").forEach((el) => { el.addEventListener("input", () => { limparNum(el); const o = $("#" + el.id + "V"); if (o) o.textContent = el.value && el.dataset.num === "peso" ? fmtPeso(el.value) + " kg" : ""; }); el.addEventListener("blur", () => { if (el.dataset.num === "peso" && el.value) el.value = fmtPeso(el.value); }); }); }
+
+// situação do pedido para quem pediu: espera da abertura, prazo de pagamento e de envio
+function infoPedido(x, p) {
+  const z = (x.dados || {}).prazos || {}, t = [];
+  if (x.etapa === "aberto" && p.foraHorario && p.abreEm && Date.parse(p.abreEm) > agora()) t.push("Recebido fora do horário. Chega à equipe do CVH " + p.abreQuando + ".");
+  if (x.etapa === "autorizado" && z.pagamento) t.push((Date.parse(z.pagamento) < agora() ? "Prazo de pagamento terminou " : "Pagamento até ") + hora(z.pagamento));
+  if (z.envio && ["pago", "testes", "fracionamento", "preparo"].includes(x.etapa)) t.push("Envio até " + hora(z.envio));
+  const am = x.amostra || {}, via = am.via === "motoboy" ? "Motoboy" : "Uber";
+  // a equipe só é chamada quando o transporte chega; "Amostra enviada" pode ser marcada depois, sem pressa
+  const pend = (am.caminhoEm || am.chamadoEm) && !am.enviadaEm && !am.saiuEm && !am.chegouEm;
+  const uber = am.chegouEm ? '<span class="prazo" style="background:#e4efe7;color:#2f6b3f">Amostra recebida no CVH</span>' : am.saiuEm || am.enviadaEm ? '<span class="prazo" style="background:#e4efe7;color:#2f6b3f">Amostra a caminho do CVH</span>' :
+    pend ? '<div class="tipo-exp" style="margin-top:8px"><b>' + (am.chamadoEm ? via + " chegou para buscar a amostra" : via + " a caminho para buscar a amostra") + '</b><br>Tubo da amostra identificado com o nome do paciente.' + (am.uber ? ' <a href="' + esc(am.uber) + '" target="_blank" rel="noopener">Ver a corrida</a>' : "") + '<div class="bts" style="margin-top:6px"><button class="btn peq" data-a="amEntregue" data-v="' + esc(x.id) + '">Amostra enviada</button></div></div>' : "";
+  return t.map((v) => '<span class="prazo">' + esc(v) + "</span>").join("") + uber;
+}
+// linha do tempo do pedido (a mesma do link de acompanhamento das clínicas)
+function linhaPedido(x) {
+  const P = x.passos || []; if (!P.length) return ""; const ult = P.reduce((i, y, k) => (y.em || y.pulado ? k : i), -1), fim = ["concluido", "entregue", "cancelado"].includes(x.etapa);
+  return '<ol class="tlp">' + P.map((y, k) => { const c = y.k === "cancelado" ? "x" : y.em || y.pulado ? "f" : !fim && k === ult + 1 ? "a" : ""; return '<li class="' + c + '"><b>' + esc(y.t) + "</b>" + (y.em ? "<small>" + esc(hora(y.em)) + "</small>" : c === "a" && y.prev ? "<small>previsão " + esc(hora(y.prev)) + "</small>" : "") + "</li>"; }).join("") + "</ol>";
+}
+const oQuePedido = (p) => (p.bolsas || []).map((b) => b.qtd + " " + b.componente).concat((p.testes || []).map((t) => ({ tipagem: "tipagem", prova: "prova de compatibilidade", coombs: "Coombs" }[t] || t))).join(" + ");
+let ASS = null, EXAMES = [];
+// exames anexados: o PDF vira texto aqui no celular (rápido) e o servidor devolve os dados do cabeçalho
+const LIB_PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", LIB_PDFJS_W = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const carregarJs = (src) => new Promise((ok, erro) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => erro(new Error("Sem internet para abrir o PDF.")); document.head.appendChild(sc); });
+async function textoDoPdf(u8) {
+  if (!window.pdfjsLib) await carregarJs(LIB_PDFJS);
+  for (let i = 0; i < 40 && !window.pdfjsLib; i++) await new Promise((ok) => setTimeout(ok, 100));
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsLib.GlobalWorkerOptions.workerSrc || LIB_PDFJS_W;
+  const doc = await pdfjsLib.getDocument({ data: u8, isEvalSupported: false }).promise; let out = "";
+  for (let n = 1; n <= Math.min(doc.numPages, 3); n++) {
+    const c = await (await doc.getPage(n)).getTextContent(), L = {};
+    c.items.forEach((it) => { const y = Math.round(it.transform[5] / 3) * 3; (L[y] = L[y] || []).push([it.transform[4], it.str]); });
+    out += Object.keys(L).map(Number).sort((a, b) => b - a).map((y) => L[y].sort((a, b) => a[0] - b[0]).map((x) => x[1]).join(" ").replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + "\n";
+  }
+  return out;
+}
+const b64De = (u8) => { let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(b); };
+async function fotoMenor(f) { const im = await createImageBitmap(f).catch(() => null); if (!im) return null; const k = Math.min(1, 1800 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); const bl = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.85)); return new Uint8Array(await bl.arrayBuffer()); }
+function pintarExames() { const el = $("#exLista"); if (!el) return; el.innerHTML = EXAMES.map((x, i) => '<div class="bolsa"><b>' + esc(x.nome) + '</b><small>' + esc(x.st || "") + '</small><div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="exTirar" data-v="' + i + '">Tirar</button></div></div>').join(""); }
+// preenche só o que está vazio e marca em dourado o que veio do exame
+function aplicarExame(d) {
+  const P = d.paciente || {}, R = d.responsavel || {}, V = d.vet || {}, X = d.valores || {}, marcados = [];
+  const pre = (id, v) => { const el = $("#" + id); if (!el || v == null || String(v).trim() === "" || String(el.value || "").trim()) return; el.value = String(v).trim(); el.classList.add("lido"); marcados.push(id); };
+  pre("sAn", P.nome); pre("sRaca", P.raca); pre("sIdade", P.idade); pre("sPeso", String(P.peso || "").replace(/[^\d.,]/g, "")); pre("sHt", String(X.ht || "").replace(/[^\d.,]/g, ""));
+  pre("sResp", R.nome); pre("tTel", R.telefone); pre("tVet", V.nome); pre("tCrmv", crmvNum(V.crmv));
+  // Transfundido: o mesmo exame ou print do SimplesVet preenche o paciente, o peso, o Ht e o telefone
+  pre("tAn", P.nome); pre("tPeso", String(P.peso || "").replace(/[^\d.,]/g, "")); pre("tHt", String(X.ht || "").replace(/[^\d.,]/g, ""));
+  if ($("#tAn") && P.especie && !ESC.espT) marcar("espT", /fel|gat/i.test(P.especie) ? "Felino" : "Canino", true);
+  const tp = $("#tPeso"); if (tp && tp.classList.contains("lido")) { tp.value = fmtPeso(tp.value); const o = $("#tPesoV"); if (o) o.textContent = tp.value + " kg"; }
+  if (P.especie && /fel|gat/i.test(P.especie)) marcar("esp", "Felina", true); else if (P.especie && /can|cão|cao/i.test(P.especie)) marcar("esp", "Canina", true);
+  if (P.sexo && !ESC.sexo) marcar("sexo", /^f/i.test(P.sexo) ? "Fêmea" : "Macho", true);
+  const pz = $("#sPeso"); if (pz && pz.classList.contains("lido")) { pz.value = fmtPeso(pz.value); const o = $("#sPesoV"); if (o) o.textContent = pz.value + " kg"; }
+  const obs = []; if (X.hb) obs.push("Hb " + X.hb + " g/dL"); if (X.plaquetas) obs.push("plaquetas " + X.plaquetas + " mil/µL"); if (X.ppt) obs.push("PPT " + X.ppt + " g/dL");
+  if (obs.length || d.laboratorio || d.data) { const el = $("#sObs"); if (el && !el.value.trim()) { el.value = "Exame" + (d.laboratorio ? " " + d.laboratorio : "") + (d.data ? " de " + d.data : "") + (obs.length ? ": " + obs.join(", ") : "") + "."; el.classList.add("lido"); } }
+  return marcados.length;
+}
+// colar: PDF ou foto copiados (WhatsApp, e-mail, Arquivos) entram sem precisar salvar no celular
+function arquivosDoColar(dt) {
+  if (!dt) return []; const L = [...(dt.files || [])], vistos = new Set(L.map((f) => f.name + f.size)); [...(dt.items || [])].filter((x) => x.kind === "file").map((x) => x.getAsFile()).filter(Boolean).forEach((f) => { if (!vistos.has(f.name + f.size)) L.push(f); });
+  return L.filter((f) => /^image\/|pdf/i.test(f.type || "") || /\.(pdf|jpe?g|png|heic)$/i.test(f.name || "")).map((f, i) => { const pdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || ""); return pdf ? new File([f], /\.pdf$/i.test(f.name || "") ? f.name : "Exame colado.pdf", { type: "application/pdf" }) : f.name && f.name !== "image.png" ? f : new File([f], "Foto colada " + (i + 1) + ".jpg", { type: f.type || "image/jpeg" }); });
+}
+const tiposColados = (dt) => { const t = [...((dt || {}).items || [])].map((x) => x.kind + ":" + (x.type || "?")); return t.length ? t.join(", ") : "nada"; };
+document.addEventListener("paste", (ev) => {
+  if (!$("#exArq") || !$("#modal").classList.contains("on")) return; const L = arquivosDoColar(ev.clipboardData), z = $("#exColarZona"), naZona = z && (ev.target === z || z.contains(ev.target));
+  if (L.length) { ev.preventDefault(); if (z) z.innerHTML = ""; toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L); return; }
+  if (!naZona) return;
+  // o iPhone às vezes cola o PDF como figura dentro do quadro: a figura vira o arquivo do exame
+  const tipos = tiposColados(ev.clipboardData); setTimeout(async () => { const F = await figurasDaZona(z); z.innerHTML = ""; z.blur(); if (F.length) { toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(F); } else toast("O iPhone não deixa colar PDF em página da internet, só imagem. Tire um print do laudo e cole aqui, ou use Anexar hemograma ou requisição.", 9000); }, 400);
+});
+async function figurasDaZona(z) { const F = []; for (const im of [...z.querySelectorAll("img, object, embed")]) { const src = im.getAttribute("src") || im.getAttribute("data") || ""; if (!src) continue; try { const b = await (await fetch(src)).blob(); if (b.size > 500) F.push(new File([b], /pdf/i.test(b.type) ? "Exame colado.pdf" : "Exame colado.jpg", { type: /pdf/i.test(b.type) ? "application/pdf" : b.type || "image/png" })); } catch (_) {} } return F; }
+async function colarExames() {
+  try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = [];
+    let tipos = []; for (const c of await navigator.clipboard.read()) { tipos = tipos.concat(c.types); const t = c.types.find((x) => /^image\/|pdf/i.test(x)); if (t) { const pdf = /pdf/i.test(t); L.push(new File([await c.getType(t)], pdf ? "Exame colado.pdf" : "Foto colada.jpg", { type: pdf ? "application/pdf" : t })); } }
+    if (!L.length) { const z = $("#exColarZona"); if (z) z.focus(); return toast("Não há imagem copiada. No iPhone, o navegador não deixa colar PDF em página da internet, só imagem. Tire um print do laudo e cole aqui, ou use Anexar hemograma ou requisição.", 9000); }
+    toast("Arquivo colado. Lendo os dados…", 3000); anexarExames(L);
+  } catch (_) { const z = $("#exColarZona"); if (z) { z.focus(); toast("Toque e segure no quadro tracejado e escolha Colar.", 5000); } }
+}
+// "Enviar ao CVH": enquanto o pedido está aberto, o PDF que chegou pelo Atalho entra sozinho
+let T_CAIXA = null;
+function vigiarCaixa() {
+  clearInterval(T_CAIXA); let ocupado = false;
+  const olhar = async () => { if (ocupado || document.hidden) return; if (!$("#exArq") || !$("#modal").classList.contains("on")) { clearInterval(T_CAIXA); return; } ocupado = true; try { const x = await srv("intCaixaPegar"); if (x && x.b64) { const u8 = Uint8Array.from(atob(x.b64), (c) => c.charCodeAt(0)); toast("PDF recebido pelo Compartilhar: " + x.nome, 4000); await anexarExames([new File([u8], x.nome, { type: x.mime })]); } } catch (_) {} ocupado = false; };
+  T_CAIXA = setInterval(olhar, 3000); olhar(); document.onvisibilitychange = olhar;
+}
+async function mostrarAtalho() {
+  const ch = await srv("intCaixaChave"), link = window.CVH_SERVIDOR.api + "?caixa=" + ch;
+  const el = document.createElement("div"); el.className = "atalho"; el.innerHTML = '<h2 style="margin-top:14px">Atalho Enviar ao CVH</h2><ol style="padding-left:20px;line-height:1.5;font-size:14px"><li>Abra o app <b>Atalhos</b> e toque em <b>+</b>.</li><li>Toque no nome lá em cima e escreva <b>Enviar ao CVH</b>.</li><li>Toque em <b>Adicionar Ação</b>, procure <b>Obter Conteúdo do URL</b> e toque nele.</li><li>Toque em <b>URL</b> e cole o link abaixo.</li><li>Toque na setinha ao lado da ação (Mostrar Mais) e mude: <b>Método</b> para POST, <b>Corpo da Solicitação</b> para Arquivo, e em <b>Arquivo</b> escolha Entrada do Atalho.</li><li>Toque no <b>ⓘ</b> embaixo e ligue <b>Mostrar na Folha de Compartilhamento</b>. Em tipos, deixe Arquivos (PDF) e Imagens.</li></ol><p><small>Link deste celular (não compartilhe)</small></p><pre style="white-space:pre-wrap;word-break:break-all;background:#F6F1EB;border:1px solid #E2D6C8;border-radius:10px;padding:10px;font-size:12.5px;-webkit-user-select:all;user-select:all">' + esc(link) + '</pre><div class="bts" style="margin-top:6px"><button class="btn sec peq" data-a="atalhoCopiar" data-v="' + esc(link) + '">Copiar o link</button><button class="btn sec peq" data-a="atalhoCopiar" data-v="' + esc('Mostrar na Folha de Compartilhamento, recebendo PDFs e imagens. Usar a ação Obter Conteúdo do URL com o URL ' + link + ', método POST, corpo da solicitação Arquivo, e o arquivo é a Entrada do Atalho. Depois mostrar uma notificação com o conteúdo recebido.') + '">Copiar o texto para "Descreva uma alteração"</button></div><p><small>Para usar: abra o PDF no WhatsApp ou no e-mail, toque em Compartilhar e escolha Enviar ao CVH. Volte para este pedido: o arquivo entra em poucos segundos.</small></p>';
+  const g = document.querySelector(".ganhe"); if (g && !document.querySelector(".atalho")) g.insertAdjacentElement("afterend", el);
+}
+async function anexarExames(files) {
+  for (const f of [...files].slice(0, 4 - EXAMES.length)) {
+    if (f.size > 7e6) { toast("O arquivo " + f.name + " é grande demais.", 5000); continue; }
+    const pdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name || "");
+    const u8 = pdf ? new Uint8Array(await f.arrayBuffer()) : await fotoMenor(f); if (!u8) continue;
+    const x = { nome: f.name || (pdf ? "Exame.pdf" : "Foto do exame.jpg"), mime: pdf ? "application/pdf" : "image/jpeg", b64: b64De(u8), st: "lendo os dados…" }; EXAMES.push(x); pintarExames();
+    try {
+      let texto = ""; if (pdf) texto = await textoDoPdf(u8.slice()).catch(() => "");
+      const d = await srv("intLerExame", texto.trim().length > 80 ? { texto } : { mime: x.mime, b64: x.b64 });
+      const n = aplicarExame(d || {}); x.lido = true; x.st = n ? "dados lidos e preenchidos (em dourado): confira" : "lido, nada novo para preencher";
+    } catch (e) { x.st = "anexado. " + (e.message || "Não consegui ler os dados; preencha à mão."); }
+    pintarExames();
+  }
+}
+function formSolicitar() {
+  const Hr = D.horario || {}, fechado = Hr.aberto === false;
+  Object.keys(ESC).forEach((k) => delete ESC[k]); ESC.esp = "Canina";
+  modal("<h2>Solicitar ao CVH</h2><p><small>Bolsa e testes pré-transfusionais. No horário de funcionamento o pedido chega na hora para a equipe do CVH.</small></p>" +
+    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF</b><p>Anexe o hemograma ou a requisição do SimplesVet (PDF, foto ou print da tela). Os dados do paciente, do responsável e do médico veterinário são preenchidos sozinhos, sem perder tempo digitando. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar imagem copiada (print do laudo)</button><div id="exColarZona" contenteditable="true" class="colar" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div><p style="margin:10px 0 0;font-size:13px">PDF do WhatsApp ou do e-mail sem salvar: Compartilhar, <b>Enviar ao CVH</b>. <a href="#" data-a="atalho" style="color:#EEE5DB">Configurar o Atalho</a></p></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
+    "<label>O que precisa</label>" + ["CH", "PFC", "CRIO", "CP"].map((c) => '<label class="op" style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="sB" value="' + c + '"> <span style="flex:1">' + { CH: "CH · concentrado de hemácias", PFC: "PFC · plasma fresco congelado", CRIO: "CRIO · crioprecipitado", CP: "CP · concentrado de plaquetas" }[c] + '</span><input type="number" inputmode="numeric" min="1" max="10" value="1" class="sQ" data-c="' + c + '" style="width:70px" aria-label="quantidade"></label>').join("") +
+    TESTES_PED.map(([k, t]) => '<label class="op"><input type="checkbox" class="sT" value="' + k + '"> ' + t + "</label>").join("") +
+    '<p id="sAmHint" hidden><small>Para prova de compatibilidade, tipagem e Coombs, colete sangue do paciente em tubo de EDTA (1 mL) e identifique com o nome.</small></p>' +
+    '<label class="op" id="sAmLb" hidden><input type="checkbox" id="sAm"> A amostra do paciente já está coletada para o motoboy buscar</label>' +
+    '<label>Tipo do pedido</label><div class="tipos">' + Object.keys(TIPO_PED).map((k) => { const off = fechado && (k === "urgente" || k === "emergencia"); return '<label class="op' + (off ? " off" : "") + '"><input type="radio" name="sUrg" value="' + k + '"' + (off ? " disabled" : "") + "> " + TIPO_PED[k] + "</label>"; }).join("") + "</div>" +
+    (fechado ? '<p class="tipo-exp">O CVH está fora do horário. Infelizmente não poderemos atender urgência ou emergência agora. Rotina e reserva chegam à equipe ' + esc(Hr.quando || "na abertura") + ".</p>" : "") +
+    '<div class="tipo-exp" id="sTipoExp" hidden></div><div id="sResWrap" hidden><label>Data e hora do procedimento</label><input type="datetime-local" id="sResQ">' + escolha("resDef", ["A definir"], ' style="margin-top:8px"') + "</div>" +
+    '<h2 style="margin-top:14px">Paciente</h2><label>Nome</label><input type="text" id="sAn">' +
+    "<label>Espécie</label>" + escolha("esp", ["Canina", "Felina"]) +
+    '<label>Raça</label><input type="text" id="sRaca" placeholder="comece a digitar">' +
+    "<label>Sexo</label>" + escolha("sexo", ["Macho", "Fêmea"]) +
+    '<label>Idade</label><input type="text" id="sIdade" placeholder="ex.: 6 anos">' +
+    '<label>Peso (kg)</label><input type="text" inputmode="decimal" id="sPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="sPesoV"></span>' +
+    '<label>Hematócrito atual (%)</label><input type="text" inputmode="decimal" id="sHt" data-num="ht">' +
+    '<label>Tipagem sanguínea</label><div id="sTipag"></div>' +
+    "<label>Primeira transfusão?</label>" + escolha("prim", ["Sim", "Não"]) +
+    '<label>Indicação clínica e diagnóstico (opcional)</label><textarea id="sInd" rows="3" style="width:100%" placeholder="ex.: anemia hemolítica imunomediada, hemorragia por trauma"></textarea>' +
+    '<h2 style="margin-top:14px">Responsável</h2><label>Nome</label><input type="text" id="sResp"><label>Telefone ou WhatsApp</label><input type="tel" id="tTel">' + blocoOrienta() +
+    '<h2 style="margin-top:14px">Médico veterinário solicitante</h2>' +
+    '<label>Nome e sobrenome</label><input type="text" id="tVet" placeholder="digite a primeira letra"><label>CRMV-DF</label><input type="text" inputmode="numeric" id="tCrmv" placeholder="00000">' +
+    '<label>Assinatura da requisição</label><p><small>Assine com o dedo no quadro. Se já tiver a requisição em PDF, anexe no lugar da assinatura.</small></p><canvas id="sAss" width="600" height="200" style="width:100%;height:140px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff"></canvas>' +
+    '<div class="bts" style="margin-top:4px"><button class="btn sec peq" data-a="assLimpar">Limpar assinatura</button><button class="btn sec peq" data-a="sAnexar">Anexar requisição em PDF</button></div><input type="file" id="sArq" accept="application/pdf,image/*" hidden><p id="sArqNome"></p>' +
+    '<label>Observações</label><p style="margin:0 0 4px"><small>Alguma observação que considera importante para o CVH?</small></p><textarea id="sObs" rows="4" style="width:100%"></textarea>' +
+    '<div class="bts"><button class="btn" data-a="solicitarOk">Enviar pedido ao CVH</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  EXAMES = []; pintarTipagem(); ligarNumeros(); ligarVet(); vigiarCaixa();
+  sugerir($("#sRaca"), () => (ESC.esp === "Felina" ? RACAS_GATO : RACAS_CAO).map((t) => ({ t })));
+  $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
+  ASS = { tracos: 0, anexo: null }; const cv = $("#sAss"), cx = cv.getContext("2d"); cx.lineWidth = 3; cx.lineCap = "round"; cx.strokeStyle = "#2b2320";
+  let des = false; const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
+  cv.onpointerdown = (e) => { des = true; cv.setPointerCapture(e.pointerId); const [x, y] = pos(e); cx.beginPath(); cx.moveTo(x, y); };
+  cv.onpointermove = (e) => { if (!des) return; const [x, y] = pos(e); cx.lineTo(x, y); cx.stroke(); ASS.tracos++; };
+  cv.onpointerup = cv.onpointercancel = () => { des = false; };
+  const amostra = () => { const t = [...document.querySelectorAll(".sT:checked")].length; $("#sAmHint").hidden = $("#sAmLb").hidden = !t; };
+  document.querySelectorAll(".sT").forEach((x) => (x.onchange = amostra));
+  document.querySelectorAll('input[name="sUrg"]').forEach((x) => (x.onchange = () => { $("#sTipoExp").hidden = false; $("#sTipoExp").innerHTML = TIPO_TXT[x.value]; $("#sResWrap").hidden = x.value !== "reserva"; }));
+  $("#sResQ").addEventListener("input", () => { if ($("#sResQ").value) marcar("resDef", ""); });
+  document.querySelectorAll(".sQ").forEach((x) => (x.oninput = () => { const c = document.querySelector('.sB[value="' + x.dataset.c + '"]'); if (c) c.checked = true; }));
+  $("#sArq").onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 7e6) return toast("Arquivo grande demais.", 5000); const u8 = new Uint8Array(await f.arrayBuffer()); let b = ""; for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); ASS.anexo = { nome: f.name, mime: f.type || "application/pdf", b64: btoa(b) }; $("#sArqNome").innerHTML = "<small>Anexo: " + esc(f.name) + "</small>"; };
+  vetFixo();
+}
+function tipagemTxt() {
+  if (ESC.esp === "Felina") return ESC.fel && ESC.fel !== "Não tipado" ? ESC.fel : ESC.fel ? "não tipado" : "";
+  const L = [ESC.dea1 && ESC.dea1 !== "Não tipado" ? ESC.dea1 : "", ESC.dal && ESC.dal !== "Não tipado" ? ESC.dal : ""].filter(Boolean);
+  return L.length ? L.join(" · ") : ESC.dea1 || ESC.dal ? "não tipado" : "";
+}
+async function solicitarOk(b) {
+  const val = (id) => ($("#" + id) || {}).value ? $("#" + id).value.trim() : "", urg = document.querySelector('input[name="sUrg"]:checked'), gato = ESC.esp === "Felina";
+  const o = { bolsas: [...document.querySelectorAll(".sB:checked")].map((x) => ({ componente: x.value, qtd: +(document.querySelector('.sQ[data-c="' + x.value + '"]') || {}).value || 1 })), testes: [...document.querySelectorAll(".sT:checked")].map((x) => x.value), urgencia: urg ? urg.value : "", reservaPara: ESC.resDef ? "" : val("sResQ"), reservaAdefinir: !!ESC.resDef,
+    paciente: { nome: val("sAn"), especie: ESC.esp || "", raca: val("sRaca"), sexo: ESC.sexo || "", idade: val("sIdade"), peso: fmtPeso(val("sPeso")), ht: val("sHt").replace(".", ","), tipagem: tipagemTxt(), dea1: gato ? "" : ESC.dea1 || "", dal: gato ? "" : ESC.dal || "", felino: gato ? ESC.fel || "" : "", primeira: ESC.prim || "", transfundido: ESC.prim === "Sim" ? "Não" : ESC.prim === "Não" ? "Sim" : "" }, indicacao: val("sInd"), obs: val("sObs"), exames: EXAMES.map((x) => ({ nome: x.nome, mime: x.mime, b64: x.b64 })), lidoDoExame: EXAMES.some((x) => x.lido),
+    responsavel: { nome: val("sResp"), telefone: val("tTel"), contato: contatoEsc() }, vet: { nome: val("tVet").replace(/\s+/g, " "), crmv: crmvTxt(val("tCrmv")) }, amostra: { coletada: !!($("#sAm") || {}).checked } };
+  if (!o.bolsas.length && !o.testes.length) return toast("Escolha o que precisa, bolsa ou teste.", 5000);
+  if (!o.urgencia) return toast("Escolha o tipo do pedido.", 5000);
+  if (o.urgencia === "reserva" && !o.reservaPara && !o.reservaAdefinir) return toast("Informe a data e a hora do procedimento ou marque A definir.", 5000);
+  if (!o.paciente.nome || !o.paciente.peso) return toast("Informe o nome e o peso do paciente.", 5000);
+  if (!o.vet.nome || !o.vet.crmv) return toast("Informe o médico veterinário e o número do CRMV.", 5000);
+  if (!OP && !checarVet(o.vet.nome)) return toast("No primeiro pedido, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (OP) o.op = OP.op;
+  if (!o.responsavel.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 5000);
+  if (ASS.tracos < 8 && !ASS.anexo) return toast("Assine a requisição no quadro ou anexe a requisição em PDF.", 6000);
+  if (ASS.tracos >= 8) o.assinatura = $("#sAss").toDataURL("image/png").split(",")[1]; if (ASS.anexo) o.anexo = ASS.anexo;
+  b.disabled = true; b.textContent = "Enviando…";
+  try { await srv("intSolicitar", o); rascLimpar(); guardarVet(o.vet.nome, o.vet.crmv);
+    fechar(); toast("Pedido enviado ao CVH. Acompanhe aqui em Pedidos ao CVH.", 6000); await carregar(); }
+  catch (e) { b.disabled = false; b.textContent = "Enviar pedido ao CVH"; toast(e.message || String(e), 7000); }
+}
+function formTransfusao(uid) {
+  Object.keys(ESC).forEach((k) => delete ESC[k]); EXAMES = [];
+  modal("<h2>Transfundido · " + esc(uid) + '</h2>' +
+    '<div class="ganhe"><b>Ganhe tempo: comece pelo PDF ou pelo print</b><p>Anexe o hemograma ou a requisição do SimplesVet, ou cole o print da ficha do paciente. O nome, a espécie, o peso, o hematócrito e o telefone do responsável são preenchidos sozinhos. Depois é só conferir o que ficou em dourado.</p><button class="btn" data-a="exAnexar">Anexar hemograma ou requisição</button><button class="btn" data-a="exColar" style="margin-top:8px;background:transparent;color:#fff;border:1px solid #C6B098">Colar imagem copiada (print)</button><div id="exColarZona" contenteditable="true" class="colar" data-ph="ou toque e segure aqui e escolha Colar" aria-label="Toque e segure aqui e escolha Colar"></div></div><input type="file" id="exArq" accept="application/pdf,image/*" multiple hidden><div id="exLista"></div>' +
+    '<label>Nome do animal que recebeu a bolsa</label><input type="text" id="tAn"><label>O paciente é</label>' + escolha("espT", ["Canino", "Felino"]) + '<label>Peso (kg)</label><input type="text" inputmode="decimal" id="tPeso" data-num="peso" placeholder="ex.: 2,43 ou 2.43"><span class="pesoV" id="tPesoV"></span><label>Hematócrito do paciente (%)</label><input type="text" inputmode="decimal" id="tHt" data-num="ht"><label>Telefone ou WhatsApp do responsável</label><input type="tel" id="tTel">' +
+    '<label>Nome e sobrenome do médico veterinário</label><input type="text" id="tVet" placeholder="digite a primeira letra"><label>CRMV-DF</label><input type="text" inputmode="numeric" id="tCrmv" placeholder="00000">' +
+    "<label>Responsável</label>" + blocoOrienta() +
+    '<div class="bts"><button class="btn" data-a="transfOk" data-v="' + esc(uid) + '">TRANSFUNDIDO</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+  ligarNumeros(); ligarVet(); $("#tCrmv").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6); });
+  vetFixo(); vigiarCaixa();
+}
+// com alguém logado, nome e CRMV vêm do usuário e não podem ser trocados
+function vetFixo() { if (!OP) return; const n = $("#tVet"), c = $("#tCrmv"); if (n) { n.value = OP.nome; n.readOnly = true; } if (c && OP.crmv) { c.value = crmvNum(OP.crmv); c.readOnly = true; } }
+async function transfOk(uid, b) {
+  const o = { animal: $("#tAn").value.trim(), peso: fmtPeso($("#tPeso").value), ht: $("#tHt").value.trim().replace(".", ","), telefone: $("#tTel").value.trim(), vet: $("#tVet").value.trim().replace(/\s+/g, " "), crmv: crmvTxt($("#tCrmv").value), contato: contatoEsc(), especie: ESC.espT || "", op: OP ? OP.op : "" };
+  if (["animal", "peso", "ht", "telefone", "vet", "crmv"].some((k) => !o[k])) return toast("Preencha todos os dados do paciente e do médico veterinário.", 6000);
+  if (!o.especie) return toast("Marque se o paciente é canino ou felino.", 5000);
+  if (!OP && !checarVet(o.vet)) return toast("Na primeira vez, escreva o nome e o sobrenome do médico veterinário.", 6000);
+  if (!o.contato) return toast("Marque se o responsável já foi orientado a falar com o CVH.", 6000);
+  // confirmação física: depois de TRANSFUNDIDO, a etiqueta da bolsa usada precisa ser lida; sem a leitura, nada é registrado
+  const t = await lerQR("Leia a etiqueta da bolsa transfundida (" + uid + ")");
+  if (!t) return toast("Transfusão não registrada: a etiqueta não foi lida.", 6000);
+  if (norm(t) !== uid.toUpperCase()) { bip(false); return toast("Esta etiqueta é de outra bolsa (" + norm(t) + "). Transfusão não registrada.", 8000); }
+  o.etiqueta = norm(t);
+  b.disabled = true;
+  try {
+    await srv("intTransfundir", uid, o); rascLimpar(); somOk();
+    guardarVet(o.vet, o.crmv);
+    fechar(); toast("Transfusão registrada. Obrigado.", 5000); await carregar();
+  } catch (e) { if (/ESPÉCIE TROCADA/.test(e.message)) { bip(false); modal('<h2 style="color:#8A1D14">Não transfunda</h2><p style="font-size:17px">' + esc(e.message) + '</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>'); } else toast(e.message, 8000); } finally { b.disabled = false; }
+}
+/* ── acompanhamento da transfusão (hemovigilância) ── */
+const SINAIS = { febre: "Febre", tremores: "Tremores", urticaria: "Urticária ou prurido", edema: "Edema facial", vomito: "Vômito ou salivação", taquicardia: "Taquicardia", dispneia: "Taquipneia ou dispneia", hipotensao: "Hipotensão ou colapso", hemolise: "Hemoglobinúria ou plasma hemolisado" };
+const MOMENTOS = { logo: "Logo após", "6h": "Após 6 h", "12h": "Após 12 h", "24h": "Após 24 h" };
+let AC = null;
+const hhmm = (t) => { const d = new Date(t); return isNaN(d) ? "" : p2(d.getHours()) + ":" + p2(d.getMinutes()); };
+function formAcomp(uid) {
+  const u = uniDe(uid); if (!u) return; const U = (u.dados || {}).uso || {}, ant = U.acomp || {};
+  AC = { uid, volume: ant.volume || "", reacao: ant.reacao || "", sinais: (ant.sinais || []).slice(), interrompida: !!ant.interrompida, hts: (ant.hts || []).map((x) => Object.assign({}, x)), mom: "" };
+  const chip = (grupo, v, rot, on) => '<button type="button" class="op' + (on ? " on" : "") + '" data-a="acChip" data-k="' + grupo + '" data-v="' + esc(v) + '">' + esc(rot) + "</button>";
+  modal("<h2>Acompanhamento · " + esc(uid) + "</h2><p style=\"margin:0 0 6px;color:#6b5b4e\">" + esc((U.paciente || {}).nome || "") + " · Ht antes " + esc((U.paciente || {}).ht || "?") + "% · transfundida " + esc(hora(U.transfundidaEm)) + "</p>" +
+    '<label>Teve reação?</label><div class="esc" data-g="reacao">' + chip("reacao", "nao", "Não", AC.reacao === "nao") + chip("reacao", "sim", "Sim", AC.reacao === "sim") + "</div>" +
+    '<div id="acReac"' + (AC.reacao === "sim" ? "" : " hidden") + '><label>O que aconteceu (marque todos)</label><div class="esc sinais" data-g="sinais">' + Object.keys(SINAIS).map((k) => chip("sinais", k, SINAIS[k], AC.sinais.includes(k))).join("") + "</div>" +
+    '<input type="text" id="acOutro" placeholder="Outro sinal (opcional)" value="' + esc(ant.outro || "") + '" style="margin-top:8px"><label>A transfusão foi interrompida?</label><div class="esc" data-g="interrompida">' + chip("interrompida", "nao", "Não", !AC.interrompida) + chip("interrompida", "sim", "Sim", AC.interrompida) + "</div></div>" +
+    '<label>Hematócrito de controle</label><div class="esc" data-g="mom">' + Object.keys(MOMENTOS).map((k) => chip("mom", k, MOMENTOS[k], false)).join("") + '</div><div class="acht"><input type="text" inputmode="decimal" id="acHt" placeholder="Ht em %"><button type="button" class="btn sec peq" data-a="acHtAdd">Acrescentar</button></div><div id="acHts"></div>' +
+    '<label>Volume transfundido</label><div class="esc" data-g="volume">' + chip("volume", "toda", "Bolsa inteira", AC.volume === "toda") + chip("volume", "parte", "Parte da bolsa", AC.volume === "parte") + '</div><input type="text" inputmode="numeric" id="acMl" placeholder="Quantos mL" value="' + esc(ant.volumeMl || "") + '"' + (AC.volume === "parte" ? "" : " hidden") + ' style="margin-top:8px">' +
+    '<div class="acht"><div><label>Início</label><input type="time" id="acIni" value="' + esc(ant.inicio || hhmm(U.retiradaEm)) + '"></div><div><label>Término</label><input type="time" id="acFim" value="' + esc(ant.fim || "") + '"></div></div>' +
+    '<label>Observação (opcional)</label><textarea id="acObs" rows="2">' + esc(ant.obs || "") + "</textarea>" +
+    '<label>Seu primeiro nome</label><input type="text" id="acPor" value="' + esc(nomeSalvo()) + '">' +
+    '<div class="bts"><button class="btn" data-a="acOk">Salvar</button><button class="btn sec" data-a="fechar">Voltar</button></div><p class="vazio"><small>Pode salvar só o que já tem. O resto fica para depois, por até 4 dias.</small></p>');
+  pintarHts();
+}
+function pintarHts() { const el = $("#acHts"); if (!el) return; el.innerHTML = AC.hts.map((x, i) => '<span class="tag ok" style="margin:6px 6px 0 0;display:inline-block">' + esc(MOMENTOS[x.momento]) + " · " + esc(x.valor) + '% <a href="#" data-a="acHtDel" data-v="' + i + '" style="color:inherit;margin-left:4px">×</a></span>').join(""); }
+function acChip(g, v) {
+  if (g === "sinais") { AC.sinais = AC.sinais.includes(v) ? AC.sinais.filter((x) => x !== v) : AC.sinais.concat([v]); }
+  else if (g === "interrompida") AC.interrompida = v === "sim";
+  else AC[g] = AC[g] === v && g === "mom" ? "" : v;
+  document.querySelectorAll('.esc[data-g="' + g + '"] .op').forEach((x) => x.classList.toggle("on", g === "sinais" ? AC.sinais.includes(x.dataset.v) : g === "interrompida" ? (x.dataset.v === "sim") === AC.interrompida : AC[g] === x.dataset.v));
+  if (g === "reacao") $("#acReac").hidden = v !== "sim";
+  if (g === "volume") $("#acMl").hidden = v !== "parte";
+  if (g === "mom" && AC.mom) $("#acHt").focus();
+}
+function acHtAdd() {
+  const v = String($("#acHt").value || "").replace(".", ",").replace(/[^\d,]/g, "");
+  if (!AC.mom) return toast("Toque em quando o hematócrito foi feito: logo após, 6 h, 12 h ou 24 h.");
+  if (!v || !(parseFloat(v.replace(",", ".")) > 0 && parseFloat(v.replace(",", ".")) < 90)) return toast("Escreva o hematócrito em %.");
+  AC.hts = AC.hts.filter((x) => x.momento !== AC.mom).concat([{ momento: AC.mom, valor: v }]).sort((a, b) => Object.keys(MOMENTOS).indexOf(a.momento) - Object.keys(MOMENTOS).indexOf(b.momento));
+  $("#acHt").value = ""; acChip("mom", AC.mom); pintarHts();
+}
+async function acOk(b) {
+  const por = $("#acPor").value.trim(); if (!por) return toast("Informe seu primeiro nome.");
+  if ($("#acHt").value.trim() && AC.mom) acHtAdd();
+  else if ($("#acHt").value.trim()) return toast("Toque em quando o hematócrito foi feito e depois em Acrescentar.");
+  const o = { reacao: AC.reacao, sinais: AC.sinais, outro: $("#acOutro").value.trim(), interrompida: AC.interrompida, hts: AC.hts, volume: AC.volume, volumeMl: $("#acMl").value.trim(), inicio: $("#acIni").value, fim: $("#acFim").value, obs: $("#acObs").value.trim(), por };
+  if (o.volume === "parte" && !o.volumeMl) return toast("Escreva quantos mL foram transfundidos.");
+  salvarNome(por); b.disabled = true;
+  try { await srv("intAcompanhar", AC.uid, o); rascLimpar(); somOk(); fechar(); toast(o.reacao === "sim" ? "Registrado. O CVH foi avisado da reação." : "Acompanhamento salvo. Obrigado.", 5000); await carregar(); }
+  catch (e) { toast(e.message, 7000); } finally { b.disabled = false; }
+}
+function cancelarUso(uid) {
+  const u = uniDe(uid), feita = u && u.situacao === "utilizada";
+  modal("<h2>Cancelar e devolver ao estoque</h2><p>" + esc(uid) + "</p>" + (feita ? '<label class="op"><input type="checkbox" id="cSem"> Confirmo que a bolsa não foi usada e que as condições de retorno estão atendidas (Transfundido tocado por engano).</label>' : "<p>Use só se a transfusão não começou e a bolsa está íntegra.</p>") + '<p><small>Depois de cancelar, leia o QR do equipamento e tire a foto da bolsa guardada.</small></p><div class="bts"><button class="btn perigo" data-a="cancelarOk" data-v="' + esc(uid) + '">Cancelar e devolver</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+function devolver(uid) {
+  const u = uniDe(uid);
+  modal("<h2>Devolver ao CVH</h2>" + '<div class="bolsa">' + linhaBolsa(u) + '</div><p>Use quando o CVH pedir a bolsa de volta ou quando ela não for mais ficar aqui.</p><label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="devOk" data-v="' + esc(uid) + '">Confirmar a saída da bolsa</button><button class="btn sec" data-a="fechar">Voltar</button></div>');
+}
+async function lerEtiquetaGeral() { const t = await lerQR("Leia a etiqueta da bolsa"); if (t) tratarBolsa(norm(t)); }
+function tratarBolsa(id) {
+  const u = (D.unidades || []).find((x) => x.id.toUpperCase() === id);
+  if (u && pendenteGuarda(u)) { if (u.componente === "CH") { modal("<h2>CH · " + esc(u.id) + "</h2><p><b>Retire a bolsa de CH do ziplock. No refrigerador, deixe o plástico aberto por baixo e a bolsa de CH por cima, fora dele.</b></p>" + ORIENTA_CH + '<div class="bts"><button class="btn" data-a="lerEquip" data-v="' + esc(u.id) + '">Ler o QR do refrigerador</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); return; } return lerEquip(u.id); }
+  if (u && D.aparelho.setor === "internacao" && ["disponivel", "reservada"].includes(u.situacao) && u.local === D.aparelho.local) return confirmarRetirada(u.id);
+  if (u && u.local === D.aparelho.local) { modal('<div class="bolsa">' + linhaBolsa(u) + "</div><p>" + esc(u.equipamento || "") + '</p><div class="bts">' + (u.situacao === "reservada" ? '<button class="btn sec" data-a="cancReserva" data-v="' + esc(u.id) + '">Cancelar reserva</button>' : "") + '<button class="btn sec" data-a="ocorrencia" data-v="' + esc(u.id) + '">Informar ocorrência</button><button class="btn sec" data-a="fechar">Fechar</button></div>'); return; }
+  bip(false); toast("Bolsa não encontrada no estoque daqui.", 6000);
+}
+
+document.addEventListener("click", async (ev) => {
+  if (ev.target.id === "veu") return fechar();
+  const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
+  try {
+    if (a === "fechar") { PROX = null; return fechar(); }
+    if (a === "solicitar") return formSolicitar();
+    if (a === "exAnexar") { const f = $("#exArq"); f.onchange = () => { anexarExames(f.files); f.value = ""; }; f.click(); return; }
+    if (a === "exColar") return colarExames();
+    if (a === "amEntregue") { b.disabled = true; await srv("intAmostraEntregue", v); somOk(); toast("Obrigado. Amostra marcada como enviada.", 4000); return carregar(); }
+    if (a === "atalho") { ev.preventDefault(); return mostrarAtalho(); }
+    if (a === "atalhoCopiar") { try { await navigator.clipboard.writeText(v); toast("Link copiado.", 2500); } catch (_) { toast("Toque e segure no link para copiar.", 5000); } return; }
+    if (a === "exTirar") { EXAMES.splice(+v, 1); pintarExames(); return; }
+    if (a === "esc") { const k = b.dataset.k; marcar(k, ESC[k] === v && k !== "esp" ? "" : v); if (k === "resDef" && ESC.resDef) $("#sResQ").value = ""; return; }
+    if (a === "solicitarOk") return solicitarOk(b);
+    if (a === "assLimpar") { const cv = $("#sAss"); cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); ASS.tracos = 0; return; }
+    if (a === "sAnexar") return $("#sArq").click();
+    if (a === "atualizar") { await carregar(); return toast("Atualizado.", 1500); }
+    if (a === "notif") { await ativarNotif(); toast("Notificações ativadas.", 4000); return pintar(); }
+    if (a === "receber") return receber();
+    if (a === "nomeOk") return nomeOk(b);
+    if (a === "guardar") return guardar(v);
+    if (a === "lerEquip") return lerEquip(v);
+    if (a === "cpUso") { b.disabled = true; try { await srv("intGuardar", v, "AMBIENTE_USO", nomeSalvo()); await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); } catch (e) { bip(false); toast(e.message, 9000); b.disabled = false; } return; }
+    if (a === "cpResp") { const n = ($("#mNome") || {}).value ? $("#mNome").value.trim() : ""; if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); const r = b.dataset.r; b.disabled = true;
+      try { await srv("intCPResposta", v, r, n); CP_PERG.aberta = ""; fechar(); await carregar();
+        if (r === "transfundida") { await srv("intRetirar", v); await carregar(); return formTransfusao(v); }
+        if (r === "nao_usada" || r === "refrigerador") { if (r === "refrigerador") { bip(false); toast("Plaqueta refrigerada não pode ser usada. Descarte e registre.", 9000); } return document.querySelector('[data-a="descartar"][data-v="' + v + '"]') ? document.querySelector('[data-a="descartar"][data-v="' + v + '"]').click() : null; }
+        somOk(); toast("Obrigado. Mantenha no ar-condicionado a 21 °C.", 4000); } catch (e) { b.disabled = false; toast(e.message, 7000); } return; }
+    if (a === "cpAmb") { b.disabled = true; try { await srv("intGuardar", v, "AMBIENTE", nomeSalvo()); somOk(); fechar(); await carregar(); pedirFotoGuarda(v); } catch (e) { bip(false); toast(e.message, 9000); b.disabled = false; } return; }
+    if (a === "lerEtiqueta") return lerEtiquetaGeral();
+    if (a === "irEstoque") { const el = $("#estoqueLocal"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (a === "pedirFoto") return pedirFotoGuarda(v);
+    if (a === "fotoGuarda") return fotoGuarda(v);
+    if (a === "ocorrencia") return ocorrencia(v);
+    if (a === "ocOk") { const tx = $("#ocTxt").value.trim(); if (!tx) return toast("Descreva a ocorrência."); const n = $("#mNome").value.trim(); if (n) salvarNome(n); b.disabled = true; await srv("intOcorrencia", v, tx, n); fechar(); somOk(); return toast("Ocorrência enviada ao CVH.", 5000); }
+    if (a === "retirar") return confirmarRetirada(v);
+    if (a === "retirarQR") return retirarQR();
+    if (a === "retirarOk") { b.disabled = true; await srv("intRetirar", v); somOk(); fechar(); await carregar(); return formTransfusao(v); }
+    if (a === "transfundir") return formTransfusao(v);
+    if (a === "acomp") return formAcomp(v);
+    if (a === "opEntrar") return opEntrar();
+    if (a === "cadastro") return cadastro();
+    if (a === "cadOk") { b.disabled = true; const o = { nome: $("#cdNome").value, vet: $("#cdVet").checked, crmv: $("#cdCrmv").value, email: $("#cdEmail").value, usuario: $("#cdUsu").value, senha: $("#cdSen").value, senha2: $("#cdSen2").value };
+      try { const r = await srv("intCadastrar", o); $("#cdSen").value = $("#cdSen2").value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario, adm: !!r.adm, t: Date.now() }; fechar(); somOk(); toast("Usuário criado. Olá, " + r.nome.split(" ")[0] + ".", 4000); pintar(); }
+      catch (e) { b.disabled = false; toast(e.message, 7000); } return; }
+    if (a === "teste") { TESTE[v] = !!b.checked; toast(b.checked ? "Modo de teste ligado." : "Modo de teste desligado.", 2500); return; }
+    if (a === "testeEscolha") { if (TESTE_ESC) TESTE_ESC(v); return; }
+    if (a === "informar") { const m = prompt("A caixa " + v + " chegou e as bolsas já estão no lugar certo?\n\nEscreva o motivo (por exemplo: celular não abriu, emergência). Fica registrado no histórico de cada bolsa."); if (!m) return; await srv("intInformarRecebida", v, m); somOk(); toast("Registrado: caixa recebida e bolsas guardadas.", 6000); await carregar(); return; }
+    if (a === "opOk") { b.disabled = true; const cu = $("#opU"), cs = $("#opS"), u0 = cu.value, s0 = cs.value, cn = $("#opN"), cn2 = $("#opN2");
+      let nova = ""; if (cn) { nova = cn.value; if (!nova) { b.disabled = false; return toast("Digite a senha nova.", 4000); } if (nova !== cn2.value) { b.disabled = false; return toast("As duas senhas novas não são iguais.", 5000); } }
+      try { const r = await srv("intEntrar", u0, s0, nova); if (cn) { cn.value = ""; cn2.value = ""; } cu.value = ""; cs.value = ""; OP = { op: r.op, nome: r.nome, crmv: r.crmv, usuario: r.usuario || u0.trim().toLowerCase(), adm: !!r.adm, t: Date.now() }; fechar(); rascDaEntrada(r.rascunho); somOk(); toast("Olá, " + r.nome.split(" ")[0] + ".", 3000); pintar(); } catch (e) { b.disabled = false; if (/^TROCAR: /.test(e.message) && !$("#opN")) { cs.insertAdjacentHTML("afterend", '<p><small>Primeiro acesso com a senha provisória. Crie a sua senha pessoal, com pelo menos 8 caracteres, sem o seu nome e sem senhas que já vazaram na internet.</small></p><label>Senha nova</label><input type="text" id="opN" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore><label>Repita a senha nova</label><input type="text" id="opN2" class="mascara" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore>'); if (!(window.CSS && (CSS.supports("-webkit-text-security", "disc") || CSS.supports("text-security", "disc")))) ["#opN", "#opN2"].forEach((q) => { $(q).type = "password"; $(q).autocomplete = "new-password"; }); $("#opN").focus(); return toast("Crie a sua senha pessoal para continuar.", 5000); } toast(e.message.replace(/^TROCAR: /, ""), 6000); } return; }
+    if (a === "opSair") { opFim(""); return; }
+    if (a === "rascSeguir") { const r = RASC; fechar(); if (r) FORMS_ABRIR(r); return; }
+    if (a === "rascDescartar") { rascLimpar(); fechar(); toast("Rascunho descartado.", 3000); return; }
+    if (a === "monitEsc") { const L = (D.unidades || []).filter((u) => u.local === D.aparelho.local && (u.situacao === "retirada" || (u.situacao === "utilizada" && Date.now() - Date.parse(((u.dados || {}).uso || {}).transfundidaEm || 0) < 4 * 864e5)));
+      if (!L.length) return modal('<h2>Ficha de monitoramento</h2><p>A ficha é aberta para a bolsa que foi retirada para uso. Toque em Retirar para uso na bolsa do estoque e depois abra a ficha por aqui.</p><div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>');
+      return modal('<h2>Ficha de monitoramento</h2><p>Escolha a bolsa da transfusão.</p>' + L.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((((u.dados || {}).uso || {}).paciente || {}).nome || "retirada " + hora(((u.dados || {}).uso || {}).retiradaEm)) + '</small><div class="bts"><button class="btn peq" data-a="monit" data-v="' + esc(u.id) + '">Abrir a ficha</button></div></div>').join("") + '<div class="bts"><button class="btn sec" data-a="fechar">Voltar</button></div>'); }
+    if (a === "monit") { b.disabled = true; const w = window.open("", "_blank"); try { const t = await srv("intMonLink", v), url = location.origin + location.pathname.replace(/[^/]*$/, "") + "monitoramento.html?m=" + t; if (w) w.location = url; else location.href = url; } catch (e) { if (w) w.close(); toast(e.message, 6000); } finally { b.disabled = false; } return; }
+    if (a === "acChip") return acChip(b.dataset.k, v);
+    if (a === "acHtAdd") return acHtAdd();
+    if (a === "acHtDel") { ev.preventDefault(); AC.hts.splice(+v, 1); return pintarHts(); }
+    if (a === "acOk") return acOk(b);
+    if (a === "transfOk") return transfOk(v, b);
+    if (a === "cancelar") return cancelarUso(v);
+    if (a === "cancelarOk") { const c = $("#cSem"); if (c && !c.checked) return toast("Marque a confirmação."); b.disabled = true; await srv("intCancelarRetirada", v, { semUso: !!c }); fechar(); await carregar(); toast("Retirada cancelada. Agora leia o QR do equipamento.", 6000); return lerEquip(v); }
+    if (a === "devolver") return devolver(v);
+    if (a === "cancReserva") { const u = uniDe(v); return modal('<h2>Cancelar reserva</h2><div class="bolsa">' + linhaBolsa(u) + '</div><p>A reserva' + (u.reserva ? " <b>" + esc(u.reserva) + "</b>" : "") + ' deixa de valer. A bolsa continua aqui no estoque da ' + esc(D.aparelho.local) + ' para outro paciente. O CVH recebe um aviso.</p><label>Motivo (opcional)</label><input type="text" id="crMot" placeholder="Ex.: paciente não precisou, alta, óbito"><div class="bts"><button class="btn" data-a="cancReservaOk" data-v="' + esc(v) + '">Cancelar a reserva</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); }
+    if (a === "cancReservaOk") { b.disabled = true; try { await srv("intCancelarReserva", v, ($("#crMot") || {}).value || ""); fechar(); somOk(); toast("Reserva cancelada. A bolsa continua no estoque daqui.", 5000); await carregar(); } catch (e) { b.disabled = false; toast(e.message, 6000); } return; }
+    if (a === "descartar") { const u = uniDe(v); return modal('<h2>Descartar</h2><div class="bolsa">' + linhaBolsa(u) + '</div><p>' + (vencidaU(u) ? "Bolsa vencida." : "Plaqueta que não será usada.") + ' Descarte no lixo infectante. Nada que saiu do CVH volta para o estoque.</p>' + (vencidaU(u) ? "" : '<label>Motivo</label><input type="text" id="dsMot" placeholder="Ex.: paciente não precisou">') + '<label>Seu primeiro nome</label><input type="text" id="mNome" value="' + esc(nomeSalvo()) + '"><div class="bts"><button class="btn" data-a="descOk" data-v="' + esc(v) + '">Descartei a bolsa</button><button class="btn sec" data-a="fechar">Voltar</button></div>'); }
+    if (a === "descOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; try { await srv("intDescartar", v, n, ($("#dsMot") || {}).value || ""); fechar(); somOk(); toast("Descarte registrado.", 5000); return carregar(); } catch (e) { b.disabled = false; return toast(e.message, 7000); } }
+    if (a === "devOk") { const n = $("#mNome").value.trim(); if (!n) return toast("Informe seu primeiro nome."); salvarNome(n); b.disabled = true; await srv("intDevolver", v, n); fechar(); toast("Devolução registrada. Mande a bolsa ao CVH em caixa térmica.", 7000); return carregar(); }
+  } catch (e) { toast(e.message || String(e), 7000); b.disabled = false; }
+});
+// leitor de código de barras ligado ao celular (Bluetooth): digita o código e um Enter em poucos milissegundos
+const LEIT = { buf: "", t0: 0, ult: 0 };
+document.addEventListener("keydown", (e) => {
+  const t = performance.now();
+  if (e.key === "Enter") { const c = LEIT.buf; LEIT.buf = ""; if (c.length >= 4 && t - LEIT.t0 < 40 * c.length + 120) { e.preventDefault(); const el = document.activeElement; if (el && /INPUT|TEXTAREA/.test(el.tagName)) el.value = el.value.slice(0, Math.max(0, el.value.length - c.length)); lidoLeitor(c); } return; }
+  if (e.key.length !== 1) return; if (t - LEIT.ult > 60) { LEIT.buf = ""; LEIT.t0 = t; } LEIT.ult = t; LEIT.buf += e.key;
+}, true);
+function lidoLeitor(c) {
+  if (CAM_FIM) return CAM_FIM(c);
+  if (!D || $("#modal").classList.contains("on")) return;
+  const C = norm(c), r = (D.remessas || []).find((x) => x.id === C), u = (D.unidades || []).find((x) => x.id.toUpperCase() === C);
+  if (r && !r.recebida_em) { bip(); return receberCaixa(r.id); }
+  if (u) return tratarBolsa(u.id.toUpperCase());
+  bip(false); toast("Código não reconhecido aqui: " + c, 5000);
+}
+if (!("BarcodeDetector" in window)) setTimeout(() => { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }, 1500);
+// rascunho automático: o que está preenchido no pedido, no registro da transfusão ou no acompanhamento não se perde.
+// Fica na memória da página e, com alguém entrado, também no servidor (24 h, só para o mesmo usuário). A assinatura é feita de novo.
+let RASC = null, RASC_T = 0, RASC_ENV = 0; const GUARDADO = {};
+const _formSolicitar = formSolicitar, _formTransfusao = formTransfusao, _formAcomp = formAcomp;
+const FORM_ORIG = { solicitar: () => _formSolicitar(), transfusao: (a) => _formTransfusao(a), acomp: (a) => _formAcomp(a) };
+const FORM_NOME = { solicitar: "Pedido ao CVH", transfusao: "Registro da transfusão", acomp: "Acompanhamento da transfusão" };
+const donoAtual = () => (OP ? OP.usuario : "");
+const semExames = (r) => Object.assign({}, r, { exames: undefined });
+function camposModal() {
+  const m = $("#modal"), c = {};
+  m.querySelectorAll("input, textarea, select").forEach((el, i) => { if (el.type === "file" || ((el.id === "tVet" || el.id === "tCrmv") && el.readOnly)) return;
+    const k = el.id ? "#" + el.id : [el.tagName, el.className, el.name || "", el.dataset.c || "", el.type === "checkbox" || el.type === "radio" ? el.value : i].join("|");
+    c[k] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
+  return c;
+}
+function estadoModal() { return { campos: camposModal(), esc: Object.assign({}, ESC), ac: AC ? JSON.parse(JSON.stringify(AC)) : null }; }
+function capturarRasc(dono) {
+  const m = $("#modal"); if (!m.classList.contains("on") || !m.dataset.form) return null;
+  const e = estadoModal(); if (JSON.stringify(e) === m.dataset.ini && !EXAMES.length) return (RASC && RASC.form === m.dataset.form && RASC.arg === (m.dataset.arg || "")) ? RASC : null;
+  return Object.assign(e, { form: m.dataset.form, arg: m.dataset.arg || "", dono: dono === undefined ? donoAtual() : dono, em: Date.now(), exames: m.dataset.form === "solicitar" && EXAMES.length ? EXAMES.slice() : undefined });
+}
+function rascAgora() { const r = capturarRasc(); if (!r) return; RASC = r; if (OP && Date.now() - RASC_ENV > 4000) { RASC_ENV = Date.now(); srv("intRascunho", OP.op, semExames(r)).catch(() => {}); } }
+function rascAgendar() { clearTimeout(RASC_T); RASC_T = setTimeout(rascAgora, 1200); }
+["input", "change", "click"].forEach((ev) => document.addEventListener(ev, (e) => { if (e.target.closest && e.target.closest("#modal") && $("#modal").dataset.form) rascAgendar(); }, true));
+setInterval(() => { if (OP && $("#modal").dataset.form) { RASC_ENV = 0; rascAgora(); } }, 15000);
+function rascLimpar() { RASC = null; if (OP) { delete GUARDADO[OP.usuario]; srv("intRascunho", OP.op, null).catch(() => {}); } }
+function aplicarRasc(r) {
+  const m = $("#modal"), c = r.campos || {};
+  m.querySelectorAll("input, textarea, select").forEach((el, i) => { if (el.type === "file" || el.readOnly) return;
+    const k = el.id ? "#" + el.id : [el.tagName, el.className, el.name || "", el.dataset.c || "", el.type === "checkbox" || el.type === "radio" ? el.value : i].join("|");
+    if (!(k in c)) return; if (el.type === "checkbox" || el.type === "radio") { if (el.checked !== !!c[k]) { el.checked = !!c[k]; el.dispatchEvent(new Event("change", { bubbles: true })); } }
+    else if (el.value !== c[k]) { el.value = c[k]; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); } });
+  Object.keys(r.esc || {}).forEach((k) => marcar(k, r.esc[k]));
+  if (r.ac && AC && r.ac.uid === AC.uid) { AC = JSON.parse(JSON.stringify(r.ac));
+    ["reacao", "volume", "mom"].forEach((g) => document.querySelectorAll('.esc[data-g="' + g + '"] .op').forEach((x) => x.classList.toggle("on", AC[g] === x.dataset.v)));
+    document.querySelectorAll('.esc[data-g="sinais"] .op').forEach((x) => x.classList.toggle("on", AC.sinais.includes(x.dataset.v)));
+    document.querySelectorAll('.esc[data-g="interrompida"] .op').forEach((x) => x.classList.toggle("on", (x.dataset.v === "sim") === AC.interrompida));
+    if ($("#acReac")) $("#acReac").hidden = AC.reacao !== "sim"; if ($("#acMl")) $("#acMl").hidden = AC.volume !== "parte"; pintarHts(); }
+  if (r.exames && r.exames.length) { EXAMES = r.exames.slice(); pintarExames(); }
+}
+function abrirForm(nome, arg) {
+  FORM_ORIG[nome](arg); const m = $("#modal"); if (!m.classList.contains("on")) return;
+  m.dataset.form = nome; m.dataset.arg = arg || ""; m.dataset.ini = JSON.stringify(estadoModal());
+  if (RASC && RASC.form === nome && RASC.arg === (arg || "") && RASC.dono === donoAtual()) { aplicarRasc(RASC); toast("Continuei de onde parou. Confira e envie" + (nome === "solicitar" ? ", e assine de novo." : "."), 6000); }
+}
+formSolicitar = () => abrirForm("solicitar");
+formTransfusao = (uid) => abrirForm("transfusao", uid);
+formAcomp = (uid) => abrirForm("acomp", uid);
+const FORMS_ABRIR = (r) => ({ solicitar: () => formSolicitar(), transfusao: () => formTransfusao(r.arg), acomp: () => formAcomp(r.arg) })[r.form]();
+function rascDaEntrada(doServidor) {
+  const usu = OP.usuario, mem = GUARDADO[usu]; let r = doServidor && doServidor.form ? doServidor : null;
+  if (mem && (!r || (mem.em || 0) >= (r.em || 0))) r = mem; else if (r && mem && mem.form === r.form && mem.arg === r.arg) r.exames = mem.exames;
+  delete GUARDADO[usu]; if (!r) return; r.dono = usu; RASC = r;
+  const pac = (r.campos || {})["#sAn"] || (r.campos || {})["#tAn"] || ""; const desc = FORM_NOME[r.form] + (r.arg ? " da bolsa " + r.arg : "") + (pac ? " · " + pac : "");
+  modal("<h2>Continuar de onde parou?</h2><p>Você tinha começado: <b>" + esc(desc) + "</b>.</p><div class=\"bts\"><button class=\"btn\" data-a=\"rascSeguir\">Continuar</button><button class=\"btn sec\" data-a=\"rascDescartar\">Descartar</button></div>");
+}
+
+carregar();
+</script>
+</body></html>
