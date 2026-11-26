@@ -628,7 +628,7 @@ function pintar() {
 let ORIGEM = ""; ponte("origem").then((o) => { ORIGEM = o || ""; try { pintar(); } catch (_) {} }).catch(() => {});
 const contaLink = () => (S.D && S.D.conta && S.D.conta !== "cvh" ? "&c=" + encodeURIComponent(S.D.conta) : "");
 const paginaMoto = () => (S.D && S.D.conta === "dea" ? "motoboy-dea.html" : "motoboy.html");
-const linkAp = (a) => ORIGEM + (a.setor === "motoboy" ? paginaMoto() + "?k=" + a.token + contaLink() : "intensivet.html?k=" + a.token + "&s=" + a.setor);
+const linkAp = (a) => ORIGEM + (a.setor === "motoboy" ? paginaMoto() + "?k=" + a.token + contaLink() : (a.setor === "internacao" ? "internacao.html" : "intensivet.html") + "?k=" + a.token + "&s=" + a.setor);
 const quemAp = (a) => a.setor === "motoboy" ? "do motoboy " + (a.nome || "") : a.setor === "recepcao" ? "da recepção" : "da internação";
 const btsLink = (a) => !ORIGEM || !a.ativo ? "" : '<div class="bts" style="margin-top:6px"><a class="btn sec peq" style="text-decoration:none" target="_blank" rel="noopener" href="' + esc(linkAp(a)) + '">Entrar</a><button class="btn sec peq" data-a="copiar" data-v="' + esc(linkAp(a)) + '">Copiar o link</button><button class="btn sec peq" data-a="enviarLink" data-v="' + esc(linkAp(a)) + '" data-q="' + esc(quemAp(a).trim()) + '">Enviar</button></div>';
 async function enviarLink(v, q) {
