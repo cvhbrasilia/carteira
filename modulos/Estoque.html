@@ -135,8 +135,9 @@ const animalDe = (id) => ANI[id] || {};
 // doador sem cadastro (carga inicial): nome, espécie e tipagem anotados na bolsa ou na bolsa de origem
 const doadorDe = (u) => { if (u && u.animal_id && ANI[u.animal_id]) return ANI[u.animal_id]; const d = (u && u.dados) || {}, m = u && u.mae_id ? ((S.uni || []).find((x) => x.id === u.mae_id) || {}).dados || {} : {}; return { nome: d.doador || m.doador || "", especie: d.especie || m.especie || "", tipoSanguineo: d.tipoSanguineo || m.tipoSanguineo || "", dal: d.dal || m.dal || "" }; };
 // etiqueta do tipo sanguíneo: DEA 1 negativo em vermelho, positivo em azul (no gato, o grupo A, B ou AB)
-const seloTipo = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/i) || [])[1]; return g ? '<span class="tps gat">Tipo ' + g.toUpperCase() + "</span>" : ""; } return /neg/i.test(t) ? '<span class="tps neg">DEA 1 −</span>' : /pos/i.test(t) ? '<span class="tps pos">DEA 1 +</span>' : ""; };
-const tipoResto = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return ""; const t = String(a.tipoSanguineo || ""); return (!/neg|pos/i.test(t) && t ? t : "") + (a.dal ? (t && !/neg|pos/i.test(t) ? " · " : "") + "DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
+const seloTipo0 = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); if (/fel|gat/i.test(a.especie || "")) { const g = (t.match(/\b(AB|A|B)\b/i) || [])[1]; return g ? '<span class="tps gat">Tipo ' + g.toUpperCase() + "</span>" : ""; } return /neg/i.test(t) ? '<span class="tps neg">DEA 1 −</span>' : /pos/i.test(t) ? '<span class="tps pos">DEA 1 +</span>' : ""; };
+const seloTipo = (a) => seloTipo0(a) + (a && a.dal && !/fel|gat/i.test(a.especie || "") ? (/neg/i.test(a.dal) ? '<span class="tps neg">DAL −</span>' : '<span class="tps pos">DAL +</span>') : "");
+const tipoResto = (a) => { if (!a || /fel|gat/i.test(a.especie || "")) return ""; const t = String(a.tipoSanguineo || ""); return !/neg|pos/i.test(t) && t ? t : ""; };
 const tipoTxt = (a) => { if (!a) return ""; const t = String(a.tipoSanguineo || ""); return (/fel|gat/i.test(a.especie || "") ? t : t.replace(/Positivo/i, "+").replace(/Negativo/i, "−")) + (a.dal ? " · DAL " + (/neg/i.test(a.dal) ? "−" : "+") : ""); };
 const ROT_SIT = { quarentena: "Aguardando liberação", disponivel: "Disponível", reservada: "Reservada", transito: "Em trânsito", retirada: "Retirada para transfusão", producao_crio: "Em produção de CRIO", utilizada: "Utilizada", descartada: "Descartada", bloqueada: "Bloqueada" };
 const COR_SIT = { quarentena: "av", disponivel: "ok", reservada: "", transito: "av", retirada: "av", producao_crio: "av", utilizada: "ne", descartada: "ne", bloqueada: "al" };
@@ -1154,8 +1155,9 @@ async function zplBolsa(u, n) {
   z += zbox(24, 92, 752, 2) + zfb(24, 100, 20, 18, 752, 6, "C", OBS_BOLSA) + zbox(24, 228, 752, 2);
   z += zbar(24, 236, 44, u.id) + zf(24, 284, 24, 22, u.id) + (hc ? zbar(776 - zbarW(hc), 236, 44, hc) : "") + zfb(376, 284, 24, 22, 400, 1, "R", B.comp);
   z += zbox(24, 314, 752, 2);
-  z += zf(24, 326, tam, tam - 4, dea[0]) + (dea[1] ? zf(24, 326 + tam + 2, tam, tam - 4, dea[1]) : "");
-  let y = 326 + (dea[1] ? 2 * tam + 4 : tam + 4);
+  // DEA 1 POSITIVO/NEGATIVO em duas linhas grandes; outro texto (felino, tipo não informado) em até duas linhas menores
+  z += dea[1] ? zf(24, 326, tam, tam - 4, dea[0]) + zf(24, 326 + tam + 2, tam, tam - 4, dea[1]) : zfb(24, 326, 40, 36, 280, 2, "L", dea[0]);
+  let y = 326 + (dea[1] ? 2 * tam + 4 : 84);
   if (B.dal) { z += zbox(24, y, 270, 2) + zf(24, y + 6, 38, 34, B.dal); y += 48; }
   if (B.ht) z += zf(24, y + 2, 26, 24, "Hematócrito " + B.ht + "%");
   z += zbox(312, 326, 2, 188) + zfb(322, 328, 24, 21, 454, 2, "C", "Triagem infecciosa não reagente ou negativa") + zfb(322, 382, 24, 20, 454, 5, "C", TRIAGEM_ETQ);
