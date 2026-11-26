@@ -1492,15 +1492,17 @@ function leitorBarras(Z) {
     try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
 }
 let CAM = null;
+const camDoPainel = async () => { try { if (window.parent !== window && typeof window.parent.CVH_CAM === "function") return await window.parent.CVH_CAM(); } catch (e) {} return null; };
+const soltarCamPainel = () => { try { window.parent.CVH_CAM_SOLTAR(); } catch (e) {} };
 async function abrirCamera() {
   bip.liberar && bip.liberar();
   const cx = $("#camE"), v = cx.querySelector("video"), continua = () => !!document.querySelector("[data-sel]") || (S.aba === "conf" && !!S.conf);
   $("#camEt").textContent = continua() ? "Leia as bolsas da remessa, uma depois da outra" : "Aponte para o código da bolsa"; $("#camEl").innerHTML = ""; cx.classList.add("on");
   const st = CAM = { vivo: true, fluxo: null, ult: {}, det: null, jq: null };
   if (!("BarcodeDetector" in window)) { carregarJsQR().catch(() => {}); carregarZX().catch(() => {}); }
-  const fim = () => { st.vivo = false; CAM = null; cx.classList.remove("on"); if (st.fluxo) st.fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; };
+  const fim = () => { st.vivo = false; CAM = null; cx.classList.remove("on"); if (st.pai) soltarCamPainel(); else if (st.fluxo) st.fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; };
   $("#camEsair").onclick = fim;
-  try { st.fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false }); v.srcObject = st.fluxo; await v.play(); }
+  try { const fp = await camDoPainel(); if (fp) { st.pai = true; st.fluxo = fp; } else st.fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false }); v.srcObject = st.fluxo; await v.play(); }
   catch (e) { fim(); return toast("Não consegui abrir a câmera. Libere o acesso à câmera para o Painel CVH.", 7000); }
   try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); const q = ["qr_code", "code_128"].filter((x) => f.includes(x)); if (q.length) st.det = new BarcodeDetector({ formats: q }); } } catch (e) { st.det = null; }
   if (!st.det) { try { st.jq = await carregarJsQR(); } catch (e) { st.jq = null; } try { st.zx = leitorBarras(await carregarZX()); } catch (e) { st.zx = null; } if (!st.jq && !st.zx) { fim(); return toast("Leitor da câmera indisponível agora. Use o leitor de código de barras.", 7000); } }

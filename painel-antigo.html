@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126210155">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126213357">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126210155';
+  var VERSAO = '20261126213357';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -7465,6 +7465,7 @@ function telaInicio(busca) {
     (mod === 'laudos' ? '<button class="btn" data-acao="laudos-painel" style="margin-bottom:10px">Painel de laudos: alertas, por tipo e por etapa</button>' : '') +
     (mod === 'laudos' ? '<p class="nota">Toque no animal para fazer um laudo ou ver os laudos dele. Para receptor, o laudo fica salvo e assinado no painel de laudos.</p><button class="btn" data-acao="laudo-receptor">Laudo de receptor</button> <button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button> <button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
+    (mod === 'fichas' ? '<button class="btn" data-acao="etq-coleta" style="margin-bottom:10px">Etiqueta de coleta</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
     (mod === 'tcle' ? termosTipos() + '<p class="nota">Toque no responsável para preparar o TCLE com os dados do cadastro. Para ver os termos em andamento e os que aguardam a assinatura do CVH, use o botão abaixo.</p><button class="btn sec2" data-acao="tcle-todos">Ver todos os termos</button>' : '') +
     (cart ? cartaoVerm() : '') + (cart ? '<section class="cartao"><h3>Próximos 30 dias</h3>' + (venc.length ? venc.map(v => '<button class="venc" data-acao="abrir-animal" data-id="' + v.an.id + '"><div class="t"><b>' + esc(v.an.nome) + '</b> · ' + esc(v.rot) + '<small>' + esc(v.det) + ' · ' + br(v.data) + '</small></div>' + chip(v.data) + '</button>').join('') : '<p class="vazio-p">Nada vencendo nos próximos 30 dias.</p>') + '</section>' : '') +
@@ -8899,6 +8900,48 @@ async function idexxEstado() {
     el.innerHTML = !r.instalado ? 'Ainda não instalado.' : !r.visto ? 'Instalador baixado, mas o leitor ainda não deu sinal.' : (vis < 12 * 6e4 ? '<b>Ligado.</b> Último sinal ' : '<b>Sem sinal desde</b> ') + esc(brHora(loc(r.visto))) + (vis < 12 * 6e4 ? '.' : '. Confira se o computador do consultório está ligado.') + (r.ultimo ? '<br>Último PDF: ' + esc(r.ultimo.nome) + ', ' + esc(brHora(loc(r.ultimo.em))) + '.' : '') + (r.hemoplus ? '<br>HemoPlusVet: última consulta ' + esc(brHora(loc(r.hemoplus))) + (r.hemoplusAplica ? '.' : ' (ainda só em conferência, sem mexer no estoque).') : '');
   } catch (e) { el.textContent = e.message; }
 }
+// etiqueta de coleta (tubo) na Zebra pequena 50 × 30 mm: logo resumida, número grande, código de barras, tipo da doação, data e hora.
+// A coleta vem do HemoPlus (número com o dígito, doador e data); busca por número, leitor de código de barras ou nome do animal
+async function desenharColeta(c0) {
+  const W = 400, H = 240, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.fillStyle = '#000'; const fonte = px => 'bold ' + px + "px Tahoma, Verdana, 'DejaVu Sans', sans-serif";
+  const lg = await new Promise((ok, er) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => er(new Error('Não consegui abrir a logo.')); i.src = 'etiqueta-resumida.png'; });
+  const lh = 46, lw = Math.round(lg.naturalWidth * lh / lg.naturalHeight); c.drawImage(lg, 24, 18, lw, lh);
+  const x0 = 24 + lw + 12; let fs = 64; c.font = fonte(fs); while (fs > 30 && c.measureText(c0.numero).width > 392 - x0) { fs -= 2; c.font = fonte(fs); }
+  c.textBaseline = 'alphabetic'; c.fillText(c0.numero, 392 - c.measureText(c0.numero).width, 18 + lh / 2 + fs * 0.36);
+  const linha = (t, y) => { let f = 30; c.font = fonte(f); while (f > 16 && c.measureText(t).width > 352) { f -= 1; c.font = fonte(f); } c.fillText(t, (W - c.measureText(t).width) / 2, y + Math.round(f * 0.82)); };
+  linha(String(c0.tipo || 'Clube de Doadores').toUpperCase(), 162);
+  const d = c0.data ? new Date(c0.data) : null; linha(d && !isNaN(d) ? d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '', 198);
+  const px = c.getImageData(0, 0, W, H).data; for (let o = 0; o < px.length; o += 4) { const v = px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 175 ? 0 : 255; px[o] = px[o + 1] = px[o + 2] = v; px[o + 3] = 255; } c.putImageData(new ImageData(px, W, H), 0, 0);
+  return { cv, c, W, H };
+}
+const C128_ = '212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112'.split(' ');
+const c128Mod = t => { const v = [104]; for (const ch of String(t)) v.push(ch.charCodeAt(0) - 32); v.push(v.reduce((s, x, i) => s + x * (i || 1), 0) % 103); v.push(106); return v.map(x => C128_[x]).join('').split('').reduce((a, b) => a + +b, 0); };
+async function zplColeta(c0, n) {
+  const { c, W, H } = await desenharColeta(c0), px = c.getImageData(0, 0, W, H).data, bpr = W / 8; let hex = '';
+  for (let y = 0; y < H; y++) for (let b = 0; b < bpr; b++) { let v = 0; for (let k = 0; k < 8; k++) if (px[(y * W + b * 8 + k) * 4] < 128) v |= 128 >> k; hex += (v < 16 ? '0' : '') + v.toString(16).toUpperCase(); }
+  const m = c128Mod(c0.numero) * 3 <= 352 ? 3 : 2, x = Math.round((W - c128Mod(c0.numero) * m) / 2);
+  return '^XA~SD05^CI28^PW400^LL240^LH0,0^FO0,0^GFA,' + bpr * H + ',' + bpr * H + ',' + bpr + ',' + hex + '^FS^BY' + m + ',3,74^FO' + x + ',80^BCN,74,N,N,N^FD' + String(c0.numero).replace(/[\^~\\]/g, '') + '^FS^CI0^PQ' + (n || 1) + '^XZ';
+}
+async function previaColeta(c0) {
+  const { cv } = await desenharColeta(c0), k = 378 / 400, mods = c128Mod(c0.numero), m = mods * 3 <= 352 ? 3 : 2;
+  let x = 0, d = ''; const v = [104]; for (const ch of String(c0.numero)) v.push(ch.charCodeAt(0) - 32); v.push(v.reduce((s, q, i) => s + q * (i || 1), 0) % 103); v.push(106);
+  v.map(q => C128_[q]).join('').split('').forEach((w, i) => { if (i % 2 === 0) d += 'M' + x + ' 0h' + w + 'v1h-' + w + 'z'; x += +w; });
+  return '<div style="width:378px;height:227px;position:relative;background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.18);margin:8px auto;max-width:100%"><img src="' + cv.toDataURL() + '" alt="" style="position:absolute;left:0;top:0;width:378px"><svg viewBox="0 0 ' + mods + ' 1" preserveAspectRatio="none" style="position:absolute;left:' + ((400 - mods * m) / 2 * k).toFixed(1) + 'px;top:' + (80 * k).toFixed(1) + 'px;width:' + (mods * m * k).toFixed(1) + 'px;height:' + (74 * k).toFixed(1) + 'px;shape-rendering:crispEdges"><path d="' + d + '" fill="#000"/></svg></div>';
+}
+function telaEtqColeta() {
+  abrirFolha('Etiqueta de coleta', '<p class="nota">Digite o número da doação, leia o código de barras ou busque pelo nome do animal. As coletas vêm do HemoPlus.</p><input id="ecBusca" type="search" placeholder="Número, código de barras ou nome do animal" autocomplete="off" style="width:100%"><div id="ecLista" style="margin-top:8px"></div><div id="ecPrev"></div>', c => {
+    let t = null, L = [];
+    const escolher = async c0 => { E.ecSel = c0; const p = $('#ecPrev'); p.innerHTML = '<p class="nota">Montando a prévia…</p>';
+      try { p.innerHTML = '<h3 style="margin:12px 0 0">Coleta ' + esc(c0.numero) + ' · ' + esc(c0.doador) + '</h3>' + await previaColeta(c0) + '<div class="acoes" style="align-items:center"><span>Quantidade</span><button class="btn sec2 peq" data-acao="ec-menos">−</button><b id="ecQtd" style="min-width:24px;text-align:center">2</b><button class="btn sec2 peq" data-acao="ec-mais">+</button><button class="btn" data-acao="ec-imprimir">Imprimir na Zebra pequena</button></div>'; } catch (e) { p.innerHTML = '<p class="nota">' + esc(e.message) + '</p>'; } };
+    const pinta = () => { $('#ecLista').innerHTML = L.length ? L.map((x, i) => '<button class="venc" data-acao="ec-escolher" data-i="' + i + '"><div class="t"><b>' + esc(x.numero) + ' · ' + esc(x.doador) + '</b><small>' + esc([x.responsavel, x.data ? new Date(x.data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''].filter(Boolean).join(' · ')) + '</small></div></button>').join('') : '<p class="vazio-p">Nenhuma coleta encontrada.</p>'; E.ecLista = L; };
+    const busca = async () => { try { L = await api('coletasHemo', E.sessao, $('#ecBusca').value.trim()); pinta(); } catch (e) { $('#ecLista').innerHTML = '<p class="nota">' + esc(e.message) + '</p>'; } };
+    const i = $('#ecBusca'); i.addEventListener('input', () => { clearTimeout(t); t = setTimeout(busca, 250); });
+    // leitor de código de barras: digita o número e um Enter
+    i.addEventListener('keydown', async e => { if (e.key !== 'Enter') return; e.preventDefault(); clearTimeout(t); await busca(); if (L.length === 1) escolher(L[0]); });
+    E.ecEscolher = escolher; busca(); setTimeout(() => i.focus(), 50);
+  });
+}
 // Uber pelo celular Android: situação e os últimos avisos que chegaram (para conferir se as frases do Uber foram reconhecidas)
 async function uberEstado() {
   const el = $('#uberSt'); if (!el) return;
@@ -9225,6 +9268,13 @@ const ACOES = {
   'pd-animal': async () => { fecharFolha(); if (!E.pd) { try { E.pd = await api('pendenciasListar', E.sessao); } catch (e) { return toast(e.message, 6000); } } formPendencia(null, E.animal); },
   'pd-editar': b => formPendencia(E.pd.lista.find(p => p.id === b.dataset.id)),
   'pd-feito': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; try { Object.assign(p, await api('pendenciaConcluir', E.sessao, p.id, !p.feitoEm)); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast(p.feitoEm ? 'Pendência concluída.' : 'Pendência reaberta.'); } catch (e) { toast(e.message, 6000); } },
+  'etq-coleta': () => telaEtqColeta(),
+  'ec-escolher': b => { const c0 = (E.ecLista || [])[+b.dataset.i]; if (c0 && E.ecEscolher) E.ecEscolher(c0); },
+  'ec-mais': () => { const el = $('#ecQtd'); el.textContent = Math.min(20, (+el.textContent || 1) + 1); },
+  'ec-menos': () => { const el = $('#ecQtd'); el.textContent = Math.max(1, (+el.textContent || 1) - 1); },
+  'ec-imprimir': async b => { const c0 = E.ecSel; if (!c0) return; const n = +($('#ecQtd') || {}).textContent || 1; b.disabled = true;
+    try { await api('estZebraImprimir', E.sessao, { impressora: 'pequena', zpl: await zplColeta(c0, n), copias: n, rotulo: 'Coleta ' + c0.numero }); toast(n + (n > 1 ? ' etiquetas de coleta enviadas' : ' etiqueta de coleta enviada') + ' para a Zebra pequena.', 5000); } catch (e) { toast(e.message, 6000); }
+    b.disabled = false; },
   'uber-chave': async b => {
     const el = $('#uberSt'); if (el && /Último aviso|Endereço gerado/.test(el.textContent) && !b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Tocar de novo: o endereço antigo para de valer'; return; }
     b.disabled = true;

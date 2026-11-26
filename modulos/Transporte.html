@@ -115,6 +115,8 @@ const num = (x) => { if (x == null || x === "") return null; const n = parseFloa
 const fmt = (v, c = 0) => v == null || !isFinite(v) ? "" : (+v).toLocaleString("pt-BR", { maximumFractionDigits: c, minimumFractionDigits: c });
 const dias = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 const somaDias = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()); };
+const camDoPainel = async () => { try { if (window.parent !== window && typeof window.parent.CVH_CAM === "function") return await window.parent.CVH_CAM(); } catch (e) {} return null; };
+const soltarCamPainel = () => { try { window.parent.CVH_CAM_SOLTAR(); } catch (e) {} };
 const ponte = (metodo, ...args) => {
   let f = null; try { f = window.parent.CVH_PONTE; } catch (e) { f = null; }
   if (typeof f !== "function") return Promise.reject(new Error("Abra o módulo pelo Painel CVH."));
@@ -644,12 +646,12 @@ function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) =
 function lerQR(titulo) {
   return new Promise(async (resolve) => {
     const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
-    let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
-    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
+    let fluxo = null, vivo = true, det = null, jq = null, pai = false; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+    const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (pai) soltarCamPainel(); else if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
     CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
     $("#camOk").onclick = () => { const t = $("#camTxt").value.trim(); if (t) fim(t); };
     $("#camTxt").onkeydown = (e) => { if (e.key === "Enter") $("#camOk").click(); };
-    try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
+    try { fluxo = await camDoPainel(); if (fluxo) pai = true; else fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); v.srcObject = fluxo; await v.play(); }
     catch (e) { if (!vivo) return; toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
     try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
     let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
