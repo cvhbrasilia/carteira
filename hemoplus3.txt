@@ -1,0 +1,34 @@
+$r = New-Object System.Collections.Generic.List[string]
+function L($t) { $r.Add([string]$t) }
+$bin = 'C:\Users\Public\Nova pasta\HemoplusVet\bin'
+$udls = Get-ChildItem $bin -Filter *.udl -EA 0
+L "== Arquivos de conexao (senha escondida)"
+foreach ($u in $udls) {
+  L "-- $($u.Name) ($($u.Length) bytes)"
+  foreach ($t in (Get-Content $u.FullName -EA 0)) { L ("   " + ($t -replace '(?i)(password|pwd)\s*=[^;]*', '$1=***')) }
+}
+foreach ($u in $udls) {
+  if ($u.Length -lt 20) { continue }
+  L "== Teste de leitura com $($u.Name)"
+  $cn = New-Object System.Data.OleDb.OleDbConnection ("File Name=" + $u.FullName)
+  try {
+    $cn.Open()
+    function Q($sql) { $cm = $cn.CreateCommand(); $cm.CommandText = $sql; $cm.CommandTimeout = 60; $da = New-Object System.Data.OleDb.OleDbDataAdapter $cm; $dt = New-Object System.Data.DataTable; [void]$da.Fill($dt); return ,$dt }
+    $i = Q "SELECT DB_NAME() AS banco, (SELECT COUNT(*) FROM sys.databases) AS bancos_no_servidor, LEFT(@@VERSION, 60) AS versao"
+    L "  banco: $($i.Rows[0].banco) | bancos no servidor: $($i.Rows[0].bancos_no_servidor) | $($i.Rows[0].versao)"
+    $t = Q "SELECT s.name + '.' + t.name AS tabela, SUM(p.rows) AS linhas FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.partitions p ON p.object_id = t.object_id AND p.index_id IN (0,1) GROUP BY s.name, t.name ORDER BY s.name, t.name"
+    L "  tabelas: $($t.Rows.Count)"
+    foreach ($w in $t.Rows) { if ([int64]$w.linhas -gt 0) { L "   $($w.tabela) | $($w.linhas)" } }
+    $c = Q "SELECT TABLE_NAME AS tabela, COLUMN_NAME AS coluna, DATA_TYPE AS tipo FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%bols%' OR TABLE_NAME LIKE '%transf%' OR TABLE_NAME LIKE '%recep%' OR TABLE_NAME LIKE '%hemoc%' OR TABLE_NAME LIKE '%estoq%' OR TABLE_NAME LIKE '%said%' OR TABLE_NAME LIKE '%doad%' ORDER BY TABLE_NAME, ORDINAL_POSITION"
+    L "== Colunas das tabelas de bolsas, transfusoes, receptores e doadores"
+    $atual = ''
+    foreach ($w in $c.Rows) { if ($w.tabela -ne $atual) { $atual = $w.tabela; L "  [$atual]" }; L "     $($w.coluna) ($($w.tipo))" }
+  } catch { L "  nao conectou: $($_.Exception.Message)" } finally { $cn.Close() }
+  break
+}
+$arq = Join-Path ([Environment]::GetFolderPath('Desktop')) 'HemoPlus diagnostico 3.txt'
+$r | Set-Content -Path $arq -Encoding UTF8
+$r -join "`r`n" | Set-Clipboard
+$r
+Write-Host ""
+Write-Host "Pronto. Resultado copiado. Cole na conversa com Ctrl+V." -ForegroundColor Green
