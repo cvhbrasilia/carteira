@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126000706">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126002740">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1053,11 +1053,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126000706';
+  var VERSAO = '20261126002740';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
       v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      // o Cartão doador só mostra o cartão: troca de versão sozinho, sem pedir toque
+      if (window.CVH_CTN) { location.reload(); return; }
       var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
       d.style.cssText = 'position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:12px;padding:8px 14px;font:600 13px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:min(94vw,620px);white-space:nowrap';
       d.onclick = function () { location.reload(); }; document.body.appendChild(d);
@@ -2909,9 +2911,15 @@ const clubeStatus = an => { if (!an || an.doador !== '1') return ''; if (an.apos
 function ctnIconeClube(x, cx, cy, r, tipo) {
   x.save(); x.lineWidth = r * 0.16; x.lineCap = 'round'; x.lineJoin = 'round';
   if (tipo === 'ativo') { x.strokeStyle = '#3E8E5B'; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke(); x.beginPath(); x.moveTo(cx - r * 0.45, cy + r * 0.02); x.lineTo(cx - r * 0.1, cy + r * 0.36); x.lineTo(cx + r * 0.48, cy - r * 0.3); x.stroke(); }
-  else { x.strokeStyle = '#8F8379'; const my = cy - r * 0.28, mr = r * 0.62; x.beginPath(); x.arc(cx, my, mr, 0, Math.PI * 2); x.stroke();
-    x.beginPath(); x.moveTo(cx - mr * 0.55, my + mr * 0.85); x.lineTo(cx - mr * 0.85, cy + r * 1.05); x.lineTo(cx - mr * 0.3, cy + r * 0.82); x.lineTo(cx, cy + r * 1.08);
-    x.lineTo(cx + mr * 0.3, cy + r * 0.82); x.lineTo(cx + mr * 0.85, cy + r * 1.05); x.lineTo(cx + mr * 0.55, my + mr * 0.85); x.stroke(); }
+  else {
+    // medalha de ouro: fitas vinho atrás e o disco dourado com uma estrela
+    const my = cy - r * 0.22, mr = r * 0.72, fita = (sx) => { x.beginPath(); x.moveTo(cx + sx * mr * 0.15, my); x.lineTo(cx + sx * mr * 0.85, my + mr * 0.2); x.lineTo(cx + sx * mr * 0.95, cy + r * 1.12); x.lineTo(cx + sx * mr * 0.6, cy + r * 0.9); x.lineTo(cx + sx * mr * 0.3, cy + r * 1.08); x.closePath(); x.fill(); };
+    x.fillStyle = '#A83D3D'; fita(-1); x.fillStyle = '#8A2E2A'; fita(1);
+    const g = x.createRadialGradient(cx - mr * 0.35, my - mr * 0.4, mr * 0.1, cx, my, mr); g.addColorStop(0, '#FFF1B8'); g.addColorStop(0.45, '#E9C25A'); g.addColorStop(1, '#B8862A');
+    x.fillStyle = g; x.beginPath(); x.arc(cx, my, mr, 0, Math.PI * 2); x.fill(); x.lineWidth = r * 0.1; x.strokeStyle = '#9A6F1E'; x.stroke();
+    x.lineWidth = r * 0.06; x.strokeStyle = 'rgba(154,111,30,.55)'; x.beginPath(); x.arc(cx, my, mr * 0.74, 0, Math.PI * 2); x.stroke();
+    x.fillStyle = '#FFF6D6'; x.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? mr * 0.22 : mr * 0.5; x.lineTo(cx + rr * Math.cos(a), my + rr * Math.sin(a)); } x.closePath(); x.fill();
+  }
   x.restore();
 }
 function ctnFrente(R, D) {

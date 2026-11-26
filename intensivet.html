@@ -47,11 +47,13 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126000706';
+  var VERSAO = '20261126002740';
   function conferirVersao() {
     if (document.hidden) return;
     fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
       v = String(v || '').trim(); if (!v || v === VERSAO || document.getElementById('cvhVersao')) return;
+      // o Cartão doador só mostra o cartão: troca de versão sozinho, sem pedir toque
+      if (window.CVH_CTN) { location.reload(); return; }
       var d = document.createElement('button'); d.id = 'cvhVersao'; d.type = 'button'; d.textContent = 'Há uma versão nova do app. Toque para atualizar.';
       d.style.cssText = 'position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9999;background:#5F130F;color:#fff;border:0;border-radius:12px;padding:8px 14px;font:600 13px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:min(94vw,620px);white-space:nowrap';
       d.onclick = function () { location.reload(); }; document.body.appendChild(d);
