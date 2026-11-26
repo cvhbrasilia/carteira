@@ -1159,7 +1159,7 @@ async function imprimirDireto(ids, f) {
 async function previaEtiqueta(id, f) {
   const el = $("#etqPrev"), u = S.uni.find((x) => x.id === id); if (!el || !u) return; f = f || fmtEtq(); const F = FORMATOS[f];
   const css = (f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_PQ : CSS_N).replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "");
-  el.innerHTML = '<style>#etqPrev *{box-sizing:border-box}#etqPrev .et{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.18);margin:8px auto}' + css.replace(/\.(et|p|g)\b/g, (m) => m) + "</style>" + etiquetaHtml(u, f, await qrHtml(u.id));
+  el.innerHTML = '<style>#etqPrev *{box-sizing:border-box}#etqPrev .et{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.18);margin:8px auto}' + css.replace(/\.(et|p|g)\b/g, (m) => m) + "</style>" + (f === "z50" ? await previaPequenaHtml(u) : etiquetaHtml(u, f, await qrHtml(u.id)));
   await esperarImagensEtq(el.innerHTML); encaixarEtq(el);
   const et = el.querySelector(".et"), larg = el.clientWidth - 4, w = et.getBoundingClientRect().width; if (w > larg) { et.style.transform = "scale(" + (larg / w) + ")"; et.style.transformOrigin = "top left"; el.style.height = et.getBoundingClientRect().height + 20 + "px"; }
 }
@@ -1253,7 +1253,7 @@ async function zplBolsa(u, n) {
 }
 // etiqueta pequena (50 × 30 mm): selo e textos desenhados ponto a ponto (1 bit, sem cinza) para controlar o espaçamento;
 // sem hífens entre os dados (não confundir com o sinal de negativo), "580-0" junto, conteúdo 2 mm abaixo do corte de cima
-async function zplPequena(u, n) {
+async function desenharPequena(u) {
   const a = doadorDe(u), esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
   const tipos = tipoTxt(a).split("·").map((t) => t.trim().replace(/\s+([+−-])$/, "$1").replace(/-$/, "−")).filter(Boolean);
   const W = 400, H = 194, X = 24, R = 390, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
@@ -1277,6 +1277,18 @@ async function zplPequena(u, n) {
   linha([esp].concat(tipos), 128, 30, 26);
   linha([vol, col ? "coleta " + col : ""].filter(Boolean), 162, 26, 26);
   // 1 bit: preto só onde o desenho é escuro (sem tons de cinza, que borram na térmica)
+  const px = c.getImageData(0, 0, W, H).data;
+  for (let o = 0; o < px.length; o += 4) { const v = px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 140 ? 0 : 255; px[o] = px[o + 1] = px[o + 2] = v; px[o + 3] = 255; }
+  c.putImageData(new ImageData(px, W, H), 0, 0);
+  return { cv, c, W, H, X };
+}
+// prévia na tela igual ao que a Zebra imprime: o mesmo desenho e o código de barras na mesma posição
+async function previaPequenaHtml(u) {
+  const { cv } = await desenharPequena(u), k = 378 / 400;
+  return '<div class="et" style="width:378px;height:227px;position:relative;padding:0;overflow:hidden"><img src="' + cv.toDataURL() + '" alt="" style="position:absolute;left:0;top:0;width:378px;image-rendering:pixelated"><div style="position:absolute;left:' + (24 * k).toFixed(1) + "px;top:" + (198 * k).toFixed(1) + 'px">' + barrasEtq(u.id, 36 * k, zbarW(u.id) <= 370 ? 4 : 2) + "</div></div>";
+}
+async function zplPequena(u, n) {
+  const { c, W, H, X } = await desenharPequena(u);
   const px = c.getImageData(0, 0, W, H).data, bpr = W / 8; let hex = "";
   for (let y = 0; y < H; y++) for (let b = 0; b < bpr; b++) { let v = 0; for (let k = 0; k < 8; k++) { const o = (y * W + b * 8 + k) * 4; if (px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 140) v |= 128 >> k; } hex += (v < 16 ? "0" : "") + v.toString(16).toUpperCase(); }
   let z = "^XA" + ZESC + "^CI28^PW400^LL240^LH0,0";
