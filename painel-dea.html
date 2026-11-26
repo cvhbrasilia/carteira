@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261126215507">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261126220918">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126215507';
+  var VERSAO = '20261126220918';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -7467,7 +7467,7 @@ function telaInicio(busca) {
     (mod === 'historico' ? '<p class="nota">Toque no animal para ver os exames dele na tela. Para incluir exames novos, use Adicionar exames. O PDF vai para o Drive e entra sozinho na carteira dele.</p>' : '') +
     (mod === 'laudos' ? '<button class="btn" data-acao="laudos-painel" style="margin-bottom:10px">Painel de laudos: alertas, por tipo e por etapa</button>' : '') +
     (mod === 'laudos' ? '<section class="cartao"><h3>Receptor</h3><p class="nota">Testes pré-transfusionais: tipagem sanguínea, prova de compatibilidade e Coombs. O laudo fica salvo e assinado no painel de laudos.</p><button class="btn" data-acao="laudo-receptor">Testes pré-transfusionais</button> <button class="btn sec2" data-acao="etq-tubo">Etiqueta do tubo</button></section>' +
-      '<section class="cartao"><h3>Doador</h3><p class="nota">Hemograma e bioquímica, TECSA, FIV e FeLV e tipagem. Toque no doador na lista abaixo para fazer o laudo ou ver os laudos dele.</p><button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button></section><button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
+      '<section class="cartao"><h3>Doador</h3><p class="nota">Hemograma e bioquímica, TECSA, FIV e FeLV e tipagem. Escolha o doador para fazer o laudo ou ver os laudos dele.</p><button class="btn" data-acao="ld-doador">Exames do doador</button> <button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button></section><button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
     (mod === 'fichas' ? '<button class="btn" data-acao="etq-coleta" style="margin-bottom:10px">Etiqueta de coleta</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
@@ -7830,7 +7830,7 @@ function sairModulo(b) {
     E.ponte = null; E.modSujo = false; E.modAberto = null; E.modulo = null; return telaHome(); }
   const eraTcle = E.modAberto === 'tcle', eraLaudo = E.modAberto === 'laudos', doador = E.modAberto === 'fichas' ? E.animal : null, receita = E.modAberto === 'receitas' ? E.animal : null, hist = E.modAberto === 'historico' ? E.animal : null, laudo = E.modAberto === 'laudos' ? E.animal : null;
   E.ponte = null; E.modSujo = false; E.modAberto = null;
-  if (laudo && animalDe(laudo)) telaLaudos(laudo); else if (E.modAberto === null && eraLaudo) telaLaudos(null); else if (hist && animalDe(hist)) telaHistorico(hist); else if (receita && animalDe(receita)) telaReceitas(receita); else if (doador && animalDe(doador)) telaFichas(doador); else telaInicio();   // da ficha volta para o painel de doações do doador
+  if (laudo && animalDe(laudo)) telaLaudos(laudo); else if (E.modAberto === null && eraLaudo && E.laudoVolta === 'inicio') { E.laudoVolta = ''; E.modulo = 'laudos'; telaInicio(); } else if (E.modAberto === null && eraLaudo) telaLaudos(null); else if (hist && animalDe(hist)) telaHistorico(hist); else if (receita && animalDe(receita)) telaReceitas(receita); else if (doador && animalDe(doador)) telaFichas(doador); else telaInicio();   // da ficha volta para o painel de doações do doador
   // o termo assinado entra na carteira pelo servidor: recarrega os dados em segundo plano
   if (eraTcle) api('painelDados', E.sessao).then(d => { E.d = d; E.u = d.usuario; }).catch(() => {});
   // ficha de doação salva: se o vermífugo da doação ainda não está na carteira, abre o lançamento (a receita sai sozinha ao salvar)
@@ -9398,7 +9398,7 @@ const ACOES = {
   'laudo-ed-abrir': async b => { b.disabled = true; try { const r = await api('laudoRascunhoAbrir', E.sessao, b.dataset.id), m = (E.rascunhos || []).find(x => x.id === b.dataset.id) || {}; E.laudoEdicao = { id: r.id, texto: r.texto }; if (m.receptor || !animalDe(m.animalId)) { E.laudoReceptor = !!m.receptor; abrirModulo('laudos', null); } else abrirModulo('laudos', m.animalId); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'laudo-ed-apagar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Apagar mesmo?'; return; } try { await api('laudoRascunhoApagar', E.sessao, b.dataset.id); E.rascunhos = null; pintarRascunhos(E.animal); } catch (e) { toast(e.message, 5000); } },
   'laudo-corrigir': async b => { const r = (E.d.registros || []).concat(E.d.laudosReceptor || []).find(x => x.id === b.dataset.id); if (!r) return; b.disabled = true; try { const ed = (r.dados || {}).edicao, t = ed && ed.id ? await api('laudoEdicaoLer', E.sessao, ed.id) : { texto: edicaoDeAntigo(r.dados) }; E.laudoEdicao = { regId: r.id, texto: t.texto }; if (r.animalId === 'receptor') { E.laudoReceptor = true; abrirModulo('laudos', null); } else abrirModulo('laudos', r.animalId); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
-  'laudo-tecsa': () => { E.laudoTipo = 'tecsa'; abrirModulo('laudos', null); },
+  'laudo-tecsa': () => { E.laudoVolta = $('#labRec') ? 'inicio' : 'todos'; E.laudoTipo = 'tecsa'; abrirModulo('laudos', null); },
   'lab-todos': () => pintarLaboratorios(true),
   'lab-marcar': async b => { try { for (const id of String(b.dataset.id).split(',').filter(Boolean)) await api('laboratorioMarcar', E.sessao, id, { situacao: b.dataset.v }); pintarLaboratorios(); } catch (e) { toast(e.message, 4000); } },
   'lab-laudo': async b => { const x = (E.labRec || []).find(y => y.id === b.dataset.id); if (!x) return; const an = animalDoLab(x);
@@ -9411,7 +9411,8 @@ const ACOES = {
     // IDEXX: os outros PDFs do mesmo dia vão junto; o laudo junta os que forem do mesmo paciente
     const cand = x.origem === 'idexx' ? (E.labRec || []).filter(y => y.origem === 'idexx' && !ehQualidade(y) && y.id !== x.id && (y.data === x.data || parIdexx(x, y)) && y.situacao !== 'feito').map(y => ({ id: y.arquivoId, nome: y.nomeArquivo, labId: y.id })) : [];
     E.laudoPdfLab = { id: x.arquivoId, origem: x.origem, nome: x.nomeArquivo, labId: x.id, candidatos: cand, feitos }; E.laudoTipo = x.origem === 'tecsa' ? 'tecsa' : 'idexx'; abrirModulo('laudos', an ? an.id : null); },
-  'laudo-receptor': () => { E.laudoReceptor = true; abrirModulo('laudos', null); },
+  'laudo-receptor': () => { E.laudoVolta = $('#labRec') ? 'inicio' : 'todos'; E.laudoReceptor = true; abrirModulo('laudos', null); },
+  'ld-doador': () => { const i = $('#busca'); if (!i) return; i.scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(() => i.focus(), 350); toast('Escolha o doador na lista para abrir os exames dele.', 4000); },
   'laudo-apagar': async b => { const r = regPorId(b.dataset.id); if (!r || !confirm('Apagar este laudo?')) return; try { await api('excluirRegistro', E.sessao, r.id); E.d.registros = E.d.registros.filter(x => x.id !== r.id); telaLaudos(E.animal); toast('Laudo apagado.'); } catch (e) { toast(e.message, 6000); } },
   'ag-dia': b => telaAgenda(b.dataset.v),
   'ag-novo': () => formAgenda({ data: E.diaAg }),
