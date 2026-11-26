@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126123132';
+  var VERSAO = '20261126123525';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -741,9 +741,10 @@ async function textoDoPdf(u8) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsLib.GlobalWorkerOptions.workerSrc || LIB_PDFJS_W;
   const doc = await pdfjsLib.getDocument({ data: u8, isEvalSupported: false }).promise; let out = "";
   for (let n = 1; n <= Math.min(doc.numPages, 3); n++) {
-    const c = await (await doc.getPage(n)).getTextContent(), L = {};
-    c.items.forEach((it) => { const y = Math.round(it.transform[5] / 3) * 3; (L[y] = L[y] || []).push([it.transform[4], it.str]); });
-    out += Object.keys(L).map(Number).sort((a, b) => b - a).map((y) => L[y].sort((a, b) => a[0] - b[0]).map((x) => x[1]).join(" ").replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + "\n";
+    // linhas pela altura com tolerância (rótulo e valor meio ponto desalinhados ficam na mesma linha)
+    const c = await (await doc.getPage(n)).getTextContent(), its = c.items.filter((it) => String(it.str || "").trim()).map((it) => [it.transform[5], it.transform[4], it.str, Math.abs(it.transform[3]) || 8]).sort((a, b) => b[0] - a[0] || a[1] - b[1]), linhas = [];
+    its.forEach((it) => { const l = linhas[linhas.length - 1]; if (l && Math.abs(l.y - it[0]) <= Math.max(2.5, Math.min(l.h, it[3]) * 0.45)) l.i.push(it); else linhas.push({ y: it[0], h: it[3], i: [it] }); });
+    out += linhas.map((l) => l.i.sort((a, b) => a[1] - b[1]).map((x) => x[2]).join(" ").replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + "\n";
   }
   return out;
 }
