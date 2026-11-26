@@ -1174,12 +1174,11 @@ async function zplBolsa(u, n) {
 }
 async function zplPequena(u, n) {
   const a = doadorDe(u), esp = /fel|gat/i.test(a.especie || "") ? "Felino" : "Canino", tipo = tipoTxt(a).replace(/\s+([+−])/g, "$1"), val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
-  const S0 = await zplImg("etiqueta-selo.png", 84);
-  const X = 24;   // 3 mm para a direita (sem ^LH, que ficaria valendo para o HemoPlus)
+  const S0 = await zplImg("etiqueta-selo.png", 112), X = 24;   // 3 mm para a direita (sem ^LH, que ficaria valendo para o HemoPlus)
   let z = "^XA^CI28^PW400^LL240^LH0,0";
-  z += "^FO" + (X + 4) + ",10" + S0.gf + "^FS" + zf(X + 98, 14, 44, 38, u.id) + zf(X + 98, 62, 26, 24, "VAL. " + val);
-  z += zf(X + 4, 102, 26, 22, esp + (tipo ? " - " + tipo : "")) + zf(X + 4, 134, 22, 20, [vol, col ? "coleta " + col : ""].filter(Boolean).join(" - "));
-  z += zbar(X + 4, 166, 50, u.id) + zqr(X + 282, 156, u.id, 3);
+  z += "^FO" + X + ",6" + S0.gf + "^FS" + zf(X + 122, 14, 52, 46, u.id) + zf(X + 122, 72, 32, 29, "VAL. " + val);
+  z += zf(X, 126, 30, 26, esp + (tipo ? " - " + tipo : "")) + zf(X, 160, 26, 23, [vol, col ? "coleta " + col : ""].filter(Boolean).join(" - "));
+  z += "^BY2,3,42^FO" + X + ",192^BCN,42,N,N,N^FD" + zt(u.id) + "^FS";
   return z + "^CI0^PQ" + (n || 1) + "^XZ";
 }
 async function zplReserva(u, R, n) {
