@@ -30,7 +30,7 @@ try {
 L "== Registro do Windows"
 foreach ($k in (Get-ChildItem 'HKCU:\Software','HKLM:\Software','HKLM:\Software\WOW6432Node' -EA 0 | Where-Object { $_.PSChildName -match 'hemo|m4' })) {
   L "[$($k.Name)]"
-  foreach ($s in (Get-ChildItem $k.PSPath -Recurse -EA 0) + (Get-Item $k.PSPath)) {
+  foreach ($s in @(Get-Item $k.PSPath) + @(Get-ChildItem $k.PSPath -Recurse -EA 0)) {
     foreach ($n in $s.GetValueNames()) { if ($n -notmatch '(?i)pass|pwd|senha|user|usuario|token|chave|key') { L "  $($s.PSChildName)\$n = $($s.GetValue($n))" } }
   }
 }
