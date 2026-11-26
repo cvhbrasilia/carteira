@@ -771,6 +771,30 @@ async function pdfQrEtiquetas(itens, f) {
   }
   return doc.saveAsBase64();
 }
+const CSS_ENT = "@page{size:100mm 62mm;margin:0}.ent{width:378px;height:234px;box-sizing:border-box;padding:9px 11px 9px;overflow:hidden;page-break-after:always;font-family:'Proza Libre',Arial,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;gap:5px}.ent *{box-sizing:border-box}.ent .faixa{background:#000;color:#fff;font-weight:800;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}.ent .qr{width:100%;height:auto;display:block}";
+// etiqueta de entrega: d = { nome, endereco, cep, telefone, paciente, vet, qr, qrRot }
+function entregaHtml(d) {
+  const lin = (k, v, t) => v ? '<span style="font-size:' + (t || 11) + 'px;line-height:1.2;font-weight:600"><span style="font-size:8.5px;font-weight:800;letter-spacing:.06em">' + k + '</span> <b>' + esc(v) + "</b></span>" : "";
+  return '<div class="ent"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1.5px solid #000;padding-bottom:4px"><img src="etiqueta-logo.png" alt="CVH" style="height:24px;display:block"><span style="font-size:9.5px;font-weight:800;text-align:right;line-height:1.15">Remetente CVH<br>(61) 98237-2772</span></div>' +
+    '<div style="flex:1;min-height:0;display:flex;gap:10px"><div class="encE" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-size:8.5px;font-weight:800;letter-spacing:.08em">ENTREGAR PARA</span><b style="font-size:24px;font-weight:800;line-height:1.02">' + esc(d.nome || "") + "</b>" +
+    '<span style="font-size:13px;font-weight:700;line-height:1.2">' + esc(d.endereco || "") + (d.cep ? " · CEP " + esc(d.cep) : "") + "</span>" + lin("TEL.", d.telefone, 12) + lin("PACIENTE", d.paciente, 15) + lin("M.V.", d.vet, 13) + "</div>" +
+    (d.qr ? '<div style="width:96px;flex:none;display:flex;flex-direction:column;align-items:center;gap:1px">' + d.qr + '<b style="font-size:9px;text-align:center;line-height:1.1">' + esc(d.qrRot || "") + "</b></div>" : "") + "</div>" +
+    '<span style="font-size:9.5px;font-weight:700;text-align:center;line-height:1.15">Entregar na recepção. Qualquer problema, ligar para (61) 98237-2772.</span><div class="faixa" style="font-size:12px;padding:3px 4px;line-height:1.2;letter-spacing:.04em">FRÁGIL · FAVOR MANUSEAR COM CUIDADO</div></div>';
+}
+// etiqueta de entrega da caixa (Brother 62 mm): destino, endereço, paciente, médico veterinário e o QR da caixa que a Intensivet (ou a clínica) lê
+async function dadosEntrega(r) {
+  const at = (S.at || []).find((x) => x.remessa_id === r.id || x.id === ((r.dados || {}).atendimento)) || {}, ped = ((at.dados || {}).pedido) || {};
+  let cli = null; try { const D = await ponte("trp", "cliDados"); const n = String(at.destino || r.destino || "").trim().toLowerCase(); cli = (D.clinicas || []).find((c) => String(c.nome || "").trim().toLowerCase() === n) || null; } catch (e) { cli = null; }
+  return { nome: (cli && cli.nome) || at.destino || r.destino || "", endereco: [(cli && cli.endereco) || at.endereco || "", cli && cli.bairro].filter(Boolean).join(", "), cep: cli && cli.cep, telefone: cli && cli.telefone,
+    paciente: String(at.paciente || (ped.paciente || {}).nome || "").toUpperCase(), vet: (ped.vet || {}).nome || at.solicitante || "", qr: await qrHtml(qrCaixa(r)), qrRot: "CAIXA " + r.id };
+}
+function blocoEntrega(r) {
+  return '<div class="cx" style="margin-top:12px"><h2>Etiqueta de entrega da caixa ' + esc(r.id) + ' (Brother 62 mm)</h2><div id="entPrev"></div><div class="bts" style="align-items:center;flex-wrap:wrap"><span>Quantidade</span>' + qtdHtml("entQtd", 1) + '<button class="btn peq" data-a="entImp" data-v="' + esc(r.id) + '">Imprimir na Brother</button></div><p><small>Na janela de impressão, escolha a Brother, papel 62 mm × 100 mm, paisagem, margens Nenhuma. O QR é o da caixa, lido ao receber.</small></p></div>';
+}
+async function previaEntrega(r) { const el = $("#entPrev"); if (!el) return; el.innerHTML = "<style>" + CSS_ENT.replace(/@page\{[^}]*\}/, "").replace("page-break-after:always;", "") + "#entPrev .ent{box-shadow:0 1px 8px rgba(0,0,0,.18);margin:6px auto}</style>" + entregaHtml(await dadosEntrega(r));
+  await esperarImagensEtq(el.innerHTML); encaixarEtq(el);
+  const et = el.querySelector(".ent"), larg = el.clientWidth - 4; if (et && larg > 0 && larg < 378) et.style.zoom = (larg / 378).toFixed(3); }
+async function imprimirEntrega(r, n) { const um = entregaHtml(await dadosEntrega(r)); let h = ""; for (let i = 0; i < n; i++) h += um; await esperarImagensEtq(h); h = encaixarHtml(h, CSS_ENT); imprimirDoc("Entrega " + r.id, "<style>#impArea *{box-sizing:border-box}#impArea .ent:last-child{page-break-after:auto}" + CSS_ENT + "</style>" + h); }
 function escolherQr(tipo, id) {
   const f = fmtEtq();
   return '<div class="cx" style="margin-top:12px"><h2>' + (tipo === "caixa" ? "QR da caixa " + esc(id) : id ? "QR do equipamento " + esc(id) : "QR dos equipamentos") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="qrFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><div class="bts"><button class="btn peq" data-a="qrPdf" data-t="' + tipo + '" data-v="' + esc(id || "") + '">Gerar PDF para imprimir</button><button class="btn sec peq" data-a="qrDireto" data-t="' + tipo + '" data-v="' + esc(id || "") + '">Imprimir direto (computador)</button></div><p><small>No celular, abra o PDF e use Compartilhar, Imprimir. Cole a etiqueta do lado de fora da caixa.</small></p></div>';
@@ -1057,7 +1081,7 @@ async function imprimirEtiquetas(ids, f) {
   } catch (e) { toast(e.message || String(e), 7000); }
 }
 function encaixarEtq(raiz) {
-  raiz.querySelectorAll(".et.n,.et.pq").forEach((et) => { const bl = et.querySelectorAll(".enc"); let k = 1; bl.forEach((b) => { b.style.zoom = ""; });
+  raiz.querySelectorAll(".et.n,.et.pq,.ent").forEach((et) => { const bl = et.querySelectorAll(".enc,.encE"); let k = 1; bl.forEach((b) => { b.style.zoom = ""; });
     while (et.scrollHeight > et.clientHeight + 1 && k > 0.8) { k -= 0.03; bl.forEach((b) => { b.style.zoom = k.toFixed(2); }); } });
 }
 // a área de impressão fica escondida na tela: mede e encaixa fora da tela, depois imprime o resultado
@@ -1120,8 +1144,8 @@ function embalagem(E0) {
   const at = S.at.find((x) => x.id === E0.atendimento) || {}, r = at.remessa_id ? S.rem.find((x) => x.id === at.remessa_id) : null;
   abrirUnidade(u.id);
   $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px;border-color:var(--vinho)"><h2>Embalagem · atendimento ' + esc(at.id || E0.atendimento) + (at.paciente ? " · " + esc(at.paciente) : "") + '</h2><p class="nota">1. Imprima a etiqueta nova da bolsa (abaixo). 2. Imprima a etiqueta da caixa de isopor, com o QR que a Intensivet lê ao receber.</p>' +
-    (r && r.situacao !== "preparo" ? "<p><b>Caixa " + esc(r.id) + "</b> já saiu (" + esc(r.situacao) + ").</p>" : r ? passosEmb(u, r, at) : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa de isopor</button></div>') + "</div>" + escolherEtiqueta([u.id]) + (r ? escolherQr("caixa", r.id) : "");
-  previaEtiqueta(u.id);
+    (r && r.situacao !== "preparo" ? "<p><b>Caixa " + esc(r.id) + "</b> já saiu (" + esc(r.situacao) + ").</p>" : r ? passosEmb(u, r, at) : '<div class="bts"><button class="btn" data-a="embCaixa" data-v="' + esc(u.id) + '" data-at="' + esc(at.id || "") + '">Criar a caixa de isopor</button></div>') + "</div>" + escolherEtiqueta([u.id]) + (r ? escolherQr("caixa", r.id) + blocoEntrega(r) : "");
+  previaEtiqueta(u.id); if (r) previaEntrega(r);
 }
 /* ── impressão direta na Zebra (ZPL): letras, números e códigos de barras com as fontes da própria impressora; logo, selo e manguito em bitmap 1 bit ── */
 const ZIMG = {};
@@ -1482,6 +1506,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
   if (a === "etqDireto") return imprimirDireto(v.split("|"));
   if (a === "etqResImp") return imprimirReserva(v);
+  if (a === "entImp") { const r = S.rem.find((x) => x.id === v); if (r) imprimirEntrega(r, qtdDe("entQtd")); return; }
   if (a === "qtdMais" || a === "qtdMenos") { const el = document.getElementById(v); if (el) el.textContent = Math.max(1, Math.min(50, qtdDe(v) + (a === "qtdMais" ? 1 : -1))); return; }
   if (a === "etqZebra") { const f = fmtEtq(), n = qtdDe("etqQtd"), us = v.split("|").map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); b.disabled = true; try { const L = []; for (const u of us) L.push([f === "z50" ? "pequena" : "grande", f === "z50" ? await zplPequena(u, n) : await zplBolsa(u, n), n, u.id]); await imprimirZebra(L); } catch (e) { toast(e.message, 7000); } finally { b.disabled = false; } return; }
   if (a === "etqResZebra") { const u = S.uni.find((x) => x.id === v); if (!u) return; const n = qtdDe("resQtd"); b.disabled = true; try { await imprimirZebra([["grande", await zplReserva(u, lerRes(), n), n, "reserva " + u.id]]); } finally { b.disabled = false; } return; }
