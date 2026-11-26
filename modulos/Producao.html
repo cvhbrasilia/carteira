@@ -915,7 +915,7 @@ const etqTipo = (t) => String(t || "").replace(/\+/g, " POSITIVO").replace(/[−
 const etqDal = (v) => !v ? "" : /neg|−|-/.test(String(v).toLowerCase()) ? "DAL NEGATIVO" : "DAL POSITIVO";
 const dataHoraBr = (iso) => { const m = /^(\d{4})-(\d\d)-(\d\d)(?:[T ](\d\d:\d\d))?/.exec(String(iso || "")); return m ? m[3] + "/" + m[2] + "/" + m[1] + (m[4] ? " " + m[4] : "") : ""; };
 const horaLocal = (iso) => { if (!iso) return ""; const d = new Date(iso); if (isNaN(d)) return dataHoraBr(iso); const p = (n) => String(n).padStart(2, "0"); return p(d.getDate()) + "/" + p(d.getMonth() + 1) + "/" + d.getFullYear() + " " + p(d.getHours()) + ":" + p(d.getMinutes()); };
-function barrasEtq(txt, h) { const M = 3 * 25.4 / 203 * 96 / 25.4, larg = code128Larg(txt), tot = larg.reduce((a, b) => a + b, 0); let x = 0, d = ""; larg.forEach((w, i) => { if (i % 2 === 0) d += "M" + x + " 0h" + w + "v40h-" + w + "z"; x += w; }); return '<svg viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="display:block;width:' + (tot * M).toFixed(2) + 'px;max-width:100%;height:' + h + 'px;shape-rendering:crispEdges"><path d="' + d + '" fill="#000"/></svg>'; }
+function barrasEtq(txt, h, pts) { const M = (pts || 3) * 96 / 203, larg = code128Larg(txt), tot = larg.reduce((a, b) => a + b, 0); let x = 0, d = ""; larg.forEach((w, i) => { if (i % 2 === 0) d += "M" + x + " 0h" + w + "v40h-" + w + "z"; x += w; }); return '<svg viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="display:block;width:' + (tot * M).toFixed(2) + 'px;max-width:100%;height:' + h + 'px;shape-rendering:crispEdges"><path d="' + d + '" fill="#000"/></svg>'; }
 const CABEC_ETQ = (tel) => '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:4px"><img src="etiqueta-logo.png" alt="CVH" style="height:' + (tel ? 32 : 22) + 'px;display:block;flex:none">' + (tel ? '<div style="flex:1 1 auto;min-width:0;max-width:200px;text-align:right"><img src="etiqueta-manguito.png" alt="" style="width:190px;max-width:100%;height:auto;display:block;margin-left:auto"><b style="font-size:10px;display:block;margin-top:2px">(61) 98237-2772</b></div>' : '<img src="etiqueta-manguito.png" alt="" style="flex:1;min-width:0;width:100%;height:auto;display:block">') + "</div>";
 // etiqueta pequena (Zebra 50 × 30 mm): selo do CVH, código da bolsa, tipagem, volume, coleta e validade, código de barras e QR
 function barrasP(txt, h) { const M = 2 * 96 / 203, larg = code128Larg(txt), tot = larg.reduce((a, b) => a + b, 0); let x = 0, d = ""; larg.forEach((w, i) => { if (i % 2 === 0) d += "M" + x + " 0h" + w + "v40h-" + w + "z"; x += w; }); return '<svg viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="display:block;width:' + (tot * M).toFixed(2) + 'px;height:' + h + 'px;shape-rendering:crispEdges"><path d="' + d + '" fill="#000"/></svg>'; }
@@ -931,12 +931,12 @@ function etqBolsaHtml(u) {
   const anti = u.componente === "CH" ? "SAGM-1" : (doa.anticoagulante || "CPD"), lote = doa.lote || "", valB = (() => { const v = String(doa.validade || "").trim(), m = /^(\d{4})-(\d\d)/.exec(v), m2 = /^(\d\d)\/(\d\d)\/(\d{4})$/.exec(v); return m ? m[2] + "/" + m[1] : m2 ? m2[2] + "/" + m2[3] : v; })();
   const L = (k, v, b) => "<span>" + esc(k) + (v ? " <b" + (b ? ' style="font-size:10px"' : "") + ">" + esc(v) + "</b>" : "") + "</span>";
   return '<div class="et n bolsa">' + CABEC_ETQ(true) +
-    '<div class="fino" style="font-size:8px;line-height:1.22;text-align:center;border-top:1px solid #000;border-bottom:1px solid #000;padding:2px 0">' + esc(OBS_BOLSA).replace("NÃO AQUECER", "<b>NÃO AQUECER</b>") + "</div>" +
-    '<div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-end"><div style="display:flex;flex-direction:column;gap:1px">' + barrasEtq(u.id, 30) + '<b style="font-size:11px">' + esc(u.id) + '</b></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">' + (codHemo(u) ? barrasEtq(codHemo(u), 30) : "") + '<b style="font-size:11px">' + esc(comp) + "</b></div></div>" +
+    '<div class="fino enc" style="font-size:8px;line-height:1.22;text-align:center;border-top:1px solid #000;border-bottom:1px solid #000;padding:2px 0">' + esc(OBS_BOLSA).replace("NÃO AQUECER", "<b>NÃO AQUECER</b>") + "</div>" +
+    '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-end"><div style="flex:0 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px">' + barrasEtq(u.id, 30) + '<b style="font-size:11px">' + esc(u.id) + '</b></div><div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px">' + (codHemo(u) ? barrasEtq(codHemo(u), 26, 2) : "") + '<b style="font-size:10px;white-space:nowrap">' + esc(comp) + "</b></div></div>" +
     '<div style="display:grid;grid-template-columns:136px minmax(0,1fr);gap:8px;align-items:center;border-top:1px solid #000;padding-top:4px"><div style="display:flex;flex-direction:column;gap:3px"><b style="font-size:' + (dal ? 22 : 25) + 'px;font-weight:800;line-height:.98">' + esc(dea || "TIPO NÃO INFORMADO").replace(/^(DEA \S+) /, "$1<br>") + "</b>" + (dal ? '<b style="font-size:15px;font-weight:800;line-height:1;border-top:1px solid #000;padding-top:3px">' + esc(dal) + "</b>" : "") + (u.componente === "CH" && D.htFinal != null ? '<span style="font-size:10px">Hematócrito <b>' + esc(fmt(D.htFinal, 0)) + "%</b></span>" : "") + "</div>" +
-    '<div style="text-align:center;display:flex;flex-direction:column;gap:2px;border-left:1px solid #000;padding-left:8px"><b style="font-size:9px">Triagem infecciosa não reagente ou negativa</b><span class="fino" style="font-size:8.8px;line-height:1.25">' + esc(TRIAGEM_ETQ) + "</span></div></div>" +
+    '<div style="text-align:center;display:flex;flex-direction:column;gap:2px;border-left:1px solid #000;padding-left:8px"><b style="font-size:9px">Triagem infecciosa não reagente ou negativa</b><span class="fino enc" style="font-size:8.8px;line-height:1.25">' + esc(TRIAGEM_ETQ) + "</span></div></div>" +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="display:flex;flex-direction:column;gap:1px;text-align:center"><span style="font-size:9px">Coleta</span><b class="faixa" style="font-size:13px;padding:2px 0">' + esc(col) + '</b></div><div style="display:flex;flex-direction:column;gap:1px;text-align:center"><span style="font-size:9px">Vencimento</span><b class="faixa" style="font-size:13px;padding:2px 0">' + esc(venc) + "</b></div></div>" +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:9.5px;line-height:1.22">' +
+    '<div class="enc" style="display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:9.5px;line-height:1.22">' +
     "<span>Contém " + esc(u.volume_ml != null ? fmt(u.volume_ml) : "") + " ml" + (doa.volume ? " obtidos de " + esc(doa.volume) + " ml de sangue total" : "") + "</span>" + L("Fabricante", doa.fabricante || "FRESENIUS") +
     L("Anticoagulante", anti) + L("Lote", lote) + '<b style="font-size:10px">Armazenamento ' + esc(ARMAZ_ETQ[u.componente] || "") + "</b>" + L("Validade", valB) + "</div>" +
     '<div style="display:flex;flex-direction:column;gap:2px;text-align:center"><b class="faixa" style="font-size:11px;padding:2px 0;letter-spacing:.03em">NÃO ADICIONAR MEDICAMENTOS</b><b class="faixa" style="font-size:9.5px;padding:2px 0">APÓS ROMPIMENTO DO LACRE INFUNDIR EM ATÉ 4 HORAS</b></div></div>';
@@ -965,7 +965,7 @@ function etqReservaHtml(u, R, qr) {
     '<div style="display:grid;grid-template-columns:88px minmax(0,1fr);border-bottom:' + B + '"><div style="' + c + ";border-right:" + B + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Volume</span><b style="font-size:12px;font-weight:800;line-height:1.1">' + esc(u.volume_ml != null ? fmt(u.volume_ml) : "") + '</b></div><div style="' + c + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Tipagem da doação</span><b style="font-size:12px;font-weight:800;line-height:1.1">' + esc(R.tipDoa) + "</b></div></div>" +
     '<div style="display:grid;grid-template-columns:1fr 1fr"><div style="' + c + ";border-right:" + B + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Prova de compatibilidade</span><div style="display:flex;align-items:center;gap:6px"><b style="font-size:15px;font-weight:800">' + esc(R.prova) + '</b><span style="font-size:8px;line-height:1.25">Realizada por <b>Plínio Rossi</b><br>' + esc(R.provaEm) + '</span></div></div><div style="' + c + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Reserva / liberação</span><span style="font-size:8px;line-height:1.25;padding-top:2px">Liberada por <b>' + esc(R.liberadoPor) + "</b><br>" + esc(R.liberadoEm) + "</span></div></div></div>" +
     '<div style="display:flex;align-items:center;gap:10px;padding-top:4px"><div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="display:flex;flex-direction:column;gap:1px">' + (codHemo(u) ? barrasEtq(codHemo(u), 28) : "") + '<b style="font-size:10px">' + esc(codHemo(u)) + '</b></div><div style="display:flex;flex-direction:column;gap:1px">' + barrasEtq(u.coleta, 28) + '<b style="font-size:10px">' + esc(u.coleta) + '</b></div></div><span class="q">' + qr + "</span></div>" +
-    '<div class="fino" style="font-size:7.2px;line-height:1.25;padding-top:3px">' + esc(OBS_RESERVA) + "</div></div>";
+    '<div class="fino enc" style="font-size:7.2px;line-height:1.25;padding-top:3px">' + esc(OBS_RESERVA) + "</div></div>";
 }
 const CAMPOS_RES = [["paciente", "Paciente"], ["responsavel", "Responsável"], ["sexo", "Sexo (M ou F)"], ["especie", "Espécie"], ["raca", "Raça"], ["idade", "Idade"], ["registro", "Registro"], ["solicitacao", "Solicitação"], ["clinica", "Hospital / clínica"], ["tipPac", "Tipagem do paciente"], ["tipDoa", "Tipagem da doação"], ["prova", "Prova de compatibilidade (COMP ou INCOMP)"], ["provaEm", "Prova: data e hora"], ["liberadoPor", "Liberada por"], ["liberadoEm", "Liberação: data e hora"]];
 function formEtqRes(u, R) {
@@ -977,10 +977,11 @@ const lerRes = () => { const R = {}; document.querySelectorAll("[data-er]").forE
 async function previaRes() {
   const f = $("#erForm"), el = $("#erPrev"); if (!f || !el) return; const u = S.uni.find((x) => x.id === f.dataset.id); if (!u) return;
   el.innerHTML = "<style>#erPrev *{box-sizing:border-box}#erPrev .et{box-shadow:0 1px 8px rgba(0,0,0,.18);margin:4px auto}" + CSS_N.replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "") + "</style>" + etqReservaHtml(u, lerRes(), await qrHtml(u.id));
+  await esperarImagensEtq(el.innerHTML); encaixarEtq(el);
 }
 document.addEventListener("input", (e) => { if (e.target && e.target.dataset && e.target.dataset.er) { clearTimeout(previaRes.t); previaRes.t = setTimeout(previaRes, 250); } });
 async function imprimirReserva(id) {
-  const u = S.uni.find((x) => x.id === id); if (!u) return; const h = etqReservaHtml(u, lerRes(), await qrHtml(u.id)); await esperarImagensEtq(h);
+  const u = S.uni.find((x) => x.id === id); if (!u) return; let h = etqReservaHtml(u, lerRes(), await qrHtml(u.id)); await esperarImagensEtq(h); h = encaixarHtml(h, CSS_N);
   imprimirDoc("Etiqueta de reserva " + u.id, "<style>#impArea *{box-sizing:border-box}#impArea .et:last-child{page-break-after:auto}" + CSS_N + "</style>" + h);
 }
 const CSS_PQ = "@page{size:50mm 30mm;margin:0}.et.pq{width:189px;height:113px;padding:5px 6px 6px;overflow:hidden;page-break-after:always;font-family:'Proza Libre',Arial,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;gap:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pq .faixa{background:#000;color:#fff;font-weight:800}.pq .q svg{width:30px;height:30px;display:block}";
@@ -1053,6 +1054,15 @@ async function imprimirEtiquetas(ids, f) {
     await ponte("baixar", nome, b64); toast("PDF pronto. Imprima em tamanho real (100%), na impressora de etiquetas.", 7000);
   } catch (e) { toast(e.message || String(e), 7000); }
 }
+function encaixarEtq(raiz) {
+  raiz.querySelectorAll(".et.n,.et.pq").forEach((et) => { const bl = et.querySelectorAll(".enc"); let k = 1; bl.forEach((b) => { b.style.zoom = ""; });
+    while (et.scrollHeight > et.clientHeight + 1 && k > 0.62) { k -= 0.03; bl.forEach((b) => { b.style.zoom = k.toFixed(2); }); } });
+}
+// a área de impressão fica escondida na tela: mede e encaixa fora da tela, depois imprime o resultado
+function encaixarHtml(h, css) {
+  const box = document.createElement("div"); box.style.cssText = "position:absolute;left:-10000px;top:0"; box.innerHTML = "<style>" + css.replace(/@page\{[^}]*\}/g, "") + "</style>" + h; document.body.appendChild(box);
+  encaixarEtq(box); const out = [...box.querySelectorAll(".et")].map((e) => e.outerHTML).join(""); box.remove(); return out;
+}
 async function esperarImagensEtq(h) {
   const srcs = [...new Set((h.match(/src="(etiqueta-[^"]+)"/g) || []).map((x) => x.slice(5, -1)))];
   await Promise.all(srcs.map((src) => new Promise((ok) => { const im = new Image(); im.onload = im.onerror = ok; im.src = src; })));
@@ -1063,6 +1073,7 @@ async function imprimirDireto(ids, f) {
   let h = ""; for (const u of us) h += etiquetaHtml(u, f, await qrHtml(u.id));
   const css = f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_PQ : CSS_N;
   await esperarImagensEtq(h);
+  h = encaixarHtml(h, css);
   imprimirDoc("Etiquetas", "<style>#impArea *{box-sizing:border-box}#impArea .et:last-child{page-break-after:auto}" + css + "</style>" + h);
 }
 // prévia na própria ficha
@@ -1070,6 +1081,7 @@ async function previaEtiqueta(id, f) {
   const el = $("#etqPrev"), u = S.uni.find((x) => x.id === id); if (!el || !u) return; f = f || fmtEtq(); const F = FORMATOS[f];
   const css = (f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_PQ : CSS_N).replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "");
   el.innerHTML = '<style>#etqPrev *{box-sizing:border-box}#etqPrev .et{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.18);margin:8px auto}' + css.replace(/\.(et|p|g)\b/g, (m) => m) + "</style>" + etiquetaHtml(u, f, await qrHtml(u.id));
+  await esperarImagensEtq(el.innerHTML); encaixarEtq(el);
   const et = el.querySelector(".et"), larg = el.clientWidth - 4, w = et.getBoundingClientRect().width; if (w > larg) { et.style.transform = "scale(" + (larg / w) + ")"; et.style.transformOrigin = "top left"; el.style.height = et.getBoundingClientRect().height + 20 + "px"; }
 }
 // impressão na própria tela do módulo (como a ficha): só a área da impressão aparece no papel
