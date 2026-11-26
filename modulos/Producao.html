@@ -1211,7 +1211,7 @@ async function zplImg(src, w) {
   for (let y = 0; y < h; y++) for (let b = 0; b < bpr; b++) { let v = 0; for (let i = 0; i < 8; i++) { const x = b * 8 + i; if (x < w) { const o = (y * w + x) * 4; if (px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 128) v |= 128 >> i; } } hex += (v < 16 ? "0" : "") + v.toString(16).toUpperCase(); }
   return (ZIMG[k] = { w, h, gf: "^GFA," + bpr * h + "," + bpr * h + "," + bpr + "," + hex });
 }
-// escuridão 5, a mesma que o driver do HemoPlus manda em cada etiqueta dele (o painel imprime direto, sem o driver)
+// escuridão 5 só na pequena, a mesma da fila do HemoPlus PEQUENA; a grande imprime com a escuridão da fila do HemoPlus GRANDE
 const ZESC = "~SD05";
 const zt = (t) => String(t == null ? "" : t).replace(/[\^~\\]/g, "").replace(/[·•]/g, "-").replace(/[−–—]/g, "-").replace(/\s+/g, " ").trim();
 const zf = (x, y, h, w, t, extra) => "^FO" + x + "," + y + "^A0N," + h + "," + w + (extra || "") + "^FD" + zt(t) + "^FS";
@@ -1229,7 +1229,7 @@ function dadosBolsaEtq(u) {
 async function zplBolsa(u, n) {
   const B = dadosBolsaEtq(u), L = await zplImg("etiqueta-logo.png", 400), hc = codHemo(u), mw = 776 - (24 + L.w + 20), M = await zplImg("etiqueta-manguito.png", Math.min(330, mw));
   const dea = (B.dea || "TIPO NÃO INFORMADO").split(/ (?=POSITIVO|NEGATIVO)/), tam = B.dal ? 50 : 58, d = 12;   // d: tudo 12 pontos abaixo (a Zebra corta ~1 mm no topo)
-  let z = "^XA" + ZESC + "^CI28^PW800^LL800^LH0,0";
+  let z = "^XA^CI28^PW800^LL800^LH0,0";
   z += "^FO24,18" + L.gf + "^FS^FO" + (776 - M.w) + ",24" + M.gf + "^FS" + zfb(376, 24 + M.h + 6, 24, 22, 400, 1, "R", "(61) 98237-2772");
   const t = 18 + L.h + 8;   // fim do cabeçalho
   z += zbox(24, t, 752, 2) + zfb(24, t + 8, 20, 18, 752, 5, "C", OBS_BOLSA) + zbox(24, t + 112, 752, 2);
@@ -1286,7 +1286,7 @@ async function zplPequena(u, n) {
 }
 async function zplReserva(u, R, n) {
   const L = await zplImg("etiqueta-logo.png", 300), M = await zplImg("etiqueta-manguito.png", 400), comp = NOME_ETQ[u.componente] || u.componente, hc = codHemo(u);
-  let z = "^XA" + ZESC + "^CI28^PW800^LL800^LH0,0";
+  let z = "^XA^CI28^PW800^LL800^LH0,0";
   z += "^FO24,14" + L.gf + "^FS^FO" + (776 - M.w) + ",12" + M.gf + "^FS";
   z += zbox(24, 92, 752, 458, 2);
   z += zf(34, 102, 22, 20, "Paciente") + zf(130, 96, 42, 38, R.paciente);
