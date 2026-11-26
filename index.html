@@ -111,7 +111,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261126220918">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261126222636">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1053,7 +1053,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126220918';
+  var VERSAO = '20261126222636';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -7252,7 +7252,7 @@ function telaLaudos(aid, busca) {
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="laudos-lista">‹ Voltar</button></div>' +
     '<header class="topo"><div class="t"><span>Laudos de exames</span><b>' + (an ? esc(an.nome) + (tipoTxt(an) ? ' <small class="tp">' + esc(tipoTxt(an)) + '</small>' : '') : 'Todos os laudos') + '</b></div></header>' +
     (an ? '<button class="btn" data-acao="laudo-novo" data-id="' + aid + '">+ Novo laudo</button><p class="nota">IDEXX, TECSA, tipagem sanguínea, FIV e FeLV, Coombs ou prova de compatibilidade. O laudo sai no padrão do CVH, em A4 e para celular, assinado com o seu CRMV. Fica guardado aqui e pode ser enviado ao responsável por WhatsApp. Não entra na carteira.</p>' :
-      '<div class="ld-novos"><button class="btn" data-acao="laudo-receptor">+ Testes pré-transfusionais</button> <button class="btn sec2" data-acao="laudo-tecsa">+ Laudo da TECSA pelo número da doação</button></div><p class="nota">No laudo de receptor você escolhe um receptor cadastrado ou cadastra um novo no próprio laudo, que fica salvo e assinado aqui e no painel de laudos. No da TECSA, o painel acha o doador pelo número da doação.</p>') +
+      '<div class="ld-novos"><button class="btn" data-acao="laudo-receptor">+ Testes pré-transfusionais</button></div><p class="nota">Nos testes pré-transfusionais você escolhe um receptor cadastrado ou cadastra um novo no próprio laudo, que fica salvo e assinado aqui e no painel de laudos. Os laudos da TECSA chegam sozinhos pelo robô.</p>') +
     (an ? '' : '<section class="cartao" id="ldAfazer" hidden></section>') +
     '<div class="busca"><input id="buscaLd" type="search" placeholder="Buscar por animal, exame ou data" value="' + esc(busca || '') + '" aria-label="Buscar laudos"></div><section class="cartao" id="listaEd" hidden></section><section class="cartao" id="listaLd"></section></div></main>';
   pintarRascunhos(aid); if (!an) provasAfazer();
@@ -7466,7 +7466,7 @@ function telaInicio(busca) {
     (mod === 'historico' ? '<p class="nota">Toque no animal para ver os exames dele na tela. Para incluir exames novos, use Adicionar exames. O PDF vai para o Drive e entra sozinho na carteira dele.</p>' : '') +
     (mod === 'laudos' ? '<button class="btn" data-acao="laudos-painel" style="margin-bottom:10px">Painel de laudos: alertas, por tipo e por etapa</button>' : '') +
     (mod === 'laudos' ? '<section class="cartao"><h3>Receptor</h3><p class="nota">Testes pré-transfusionais: tipagem sanguínea, prova de compatibilidade e Coombs. O laudo fica salvo e assinado no painel de laudos.</p><button class="btn" data-acao="laudo-receptor">Testes pré-transfusionais</button> <button class="btn sec2" data-acao="etq-tubo">Etiqueta do tubo</button></section>' +
-      '<section class="cartao"><h3>Doador</h3><p class="nota">Hemograma e bioquímica, TECSA, FIV e FeLV e tipagem. Escolha o doador para fazer o laudo ou ver os laudos dele.</p><button class="btn" data-acao="ld-doador">Exames do doador</button> <button class="btn sec2" data-acao="laudo-tecsa">Laudo da TECSA pelo número da doação</button></section><button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
+      '<section class="cartao"><h3>Doador</h3><p class="nota">Hemograma e bioquímica, TECSA, FIV e FeLV e tipagem. Escolha o doador para fazer o laudo ou ver os laudos dele.</p><button class="btn" data-acao="ld-doador">Exames do doador</button></section><button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
     (mod === 'fichas' ? '<button class="btn" data-acao="etq-coleta" style="margin-bottom:10px">Etiqueta de coleta</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
