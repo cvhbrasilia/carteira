@@ -920,7 +920,7 @@ const CABEC_ETQ = (tel) => '<div style="display:flex;align-items:center;justify-
 function etqBolsaHtml(u) {
   const D = u.dados || {}, a = doadorDe(u), doa = doacao(u.coleta) || {}, comp = NOME_ETQ[u.componente] || u.componente, dea = etqTipo(a.tipoSanguineo), dal = etqDal(a.dal);
   const col = dataHoraBr(String(doa.data || u.data_coleta || "").slice(0, 10) + (doa.hora ? "T" + String(doa.hora).slice(0, 5) : "")), venc = dataHoraBr(String(u.validade || "").slice(0, 10)) + (u.validade ? " 23:59" : "");
-  const anti = u.componente === "CH" ? "SAGM-1" : (doa.anticoagulante || "CPD"), lote = doa.lote || "", valB = doa.validade ? br(String(doa.validade).slice(0, 10)).replace(/^\d\d\//, "") : "";
+  const anti = u.componente === "CH" ? "SAGM-1" : (doa.anticoagulante || "CPD"), lote = doa.lote || "", valB = (() => { const v = String(doa.validade || "").trim(), m = /^(\d{4})-(\d\d)/.exec(v), m2 = /^(\d\d)\/(\d\d)\/(\d{4})$/.exec(v); return m ? m[2] + "/" + m[1] : m2 ? m2[2] + "/" + m2[3] : v; })();
   const L = (k, v, b) => "<span>" + esc(k) + (v ? " <b" + (b ? ' style="font-size:10px"' : "") + ">" + esc(v) + "</b>" : "") + "</span>";
   return '<div class="et n">' + CABEC_ETQ(true) +
     '<div style="font-size:7.2px;line-height:1.25;text-align:center;border-top:1px solid #000;border-bottom:1px solid #000;padding:3px 0">' + esc(OBS_BOLSA).replace("NÃO AQUECER", "<b>NÃO AQUECER</b>") + "</div>" +
