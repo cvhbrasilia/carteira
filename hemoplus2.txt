@@ -1,0 +1,46 @@
+$r = New-Object System.Collections.Generic.List[string]
+function L($t) { $r.Add([string]$t) }
+$raiz = 'C:\Users\Public\Nova pasta\HemoplusVet'
+$exe = Join-Path $raiz 'bin\Suite_HemoPlusVet.exe'
+L "== Programa"
+$v = (Get-Item $exe -EA 0).VersionInfo
+L "$($v.ProductName) | $($v.FileVersion) | $($v.CompanyName) | $($v.FileDescription)"
+try { $an = [Reflection.AssemblyName]::GetAssemblyName($exe); L ".NET: $($an.FullName)" } catch { L ".NET: nao" }
+L "== Pasta HemoplusVet (sem a bin)"
+foreach ($x in (Get-ChildItem $raiz -Recurse -File -EA 0 | Where-Object { $_.FullName -notmatch '\\bin(_|\\|$)|\\BIN_|\\bin_old' } | Select-Object -First 80)) { L ("  {0} | {1:N0} KB | {2:dd/MM/yyyy}" -f $x.FullName.Substring($raiz.Length), ($x.Length/1KB), $x.LastWriteTime) }
+L "== Arquivos da bin (todos os tipos)"
+foreach ($x in (Get-ChildItem (Join-Path $raiz 'bin') -File -EA 0 | Select-Object -First 80)) { L ("  {0} | {1:N0} KB" -f $x.Name, ($x.Length/1KB)) }
+L "== Conexoes do HemoPlus (deixe o programa aberto)"
+foreach ($q in (Get-Process -Name 'Suite_HemoPlusVet' -EA 0)) {
+  foreach ($c in (Get-NetTCPConnection -OwningProcess $q.Id -EA 0 | Where-Object { $_.RemoteAddress -notmatch '^(0\.0\.0\.0|::|127\.)' })) {
+    $nome = ''; try { $nome = [Net.Dns]::GetHostEntry($c.RemoteAddress).HostName } catch {}
+    L "  $($c.RemoteAddress):$($c.RemotePort) | $($c.State) | $nome"
+  }
+}
+L "== Endereco do banco dentro do programa (sem senha)"
+try {
+  $b = [IO.File]::ReadAllBytes($exe)
+  $txt = [Text.Encoding]::ASCII.GetString($b) + ' ' + [Text.Encoding]::Unicode.GetString($b)
+  $vistos = @{}
+  foreach ($m in [regex]::Matches($txt, '(?i)(data source|server|initial catalog|database|provider|dsn|address)\s*=\s*[^;"\x00]{2,80}')) {
+    $s = $m.Value.Trim(); if ($s -match '(?i)pass|pwd|senha' -or $vistos[$s]) { continue }; $vistos[$s] = 1; L "  $s"
+  }
+  foreach ($m in [regex]::Matches($txt, '(?i)https?://[a-z0-9\.\-]+(:\d+)?(/[a-z0-9_\-/\.]*)?')) { $s = $m.Value; if (-not $vistos[$s]) { $vistos[$s] = 1; L "  $s" } }
+} catch { L "  nao deu para ler: $($_.Exception.Message)" }
+L "== Registro do Windows"
+foreach ($k in (Get-ChildItem 'HKCU:\Software','HKLM:\Software','HKLM:\Software\WOW6432Node' -EA 0 | Where-Object { $_.PSChildName -match 'hemo|m4' })) {
+  L "[$($k.Name)]"
+  foreach ($s in (Get-ChildItem $k.PSPath -Recurse -EA 0) + (Get-Item $k.PSPath)) {
+    foreach ($n in $s.GetValueNames()) { if ($n -notmatch '(?i)pass|pwd|senha|user|usuario|token|chave|key') { L "  $($s.PSChildName)\$n = $($s.GetValue($n))" } }
+  }
+}
+L "== Pastas em AppData"
+foreach ($b in @($env:APPDATA,$env:LOCALAPPDATA,"$env:LOCALAPPDATA\VirtualStore",$env:ProgramData,"$env:PUBLIC\Documents")) {
+  if ($b -and (Test-Path $b)) { foreach ($d in (Get-ChildItem $b -Directory -Recurse -Depth 2 -EA 0 | Where-Object { $_.Name -match 'hemo|m4tec|suite_' })) { L "  $($d.FullName)"; foreach ($x in (Get-ChildItem $d.FullName -File -Recurse -EA 0 | Select-Object -First 20)) { L ("     {0} | {1:N0} KB" -f $x.Name, ($x.Length/1KB)) } } }
+}
+$arq = Join-Path ([Environment]::GetFolderPath('Desktop')) 'HemoPlus diagnostico 2.txt'
+$r | Set-Content -Path $arq -Encoding UTF8
+$r -join "`r`n" | Set-Clipboard
+$r
+Write-Host ""
+Write-Host "Pronto. Resultado copiado. Cole na conversa com Ctrl+V." -ForegroundColor Green
