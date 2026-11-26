@@ -1259,7 +1259,7 @@ async function desenharPequena(u) {
   const W = 400, H = 194, X = 24, R = 390, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const c = cv.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, W, H); c.fillStyle = "#000"; c.textBaseline = "alphabetic";
   // mesma família de letra das etiquetas do HemoPlus (Tahoma), traço normal; só o número da bolsa em negrito
-  const fonte = (px, n) => (n ? "bold " : "") + px + "px Tahoma, Verdana, 'DejaVu Sans', sans-serif";
+  const fonte = (px, n) => "bold " + px + "px Tahoma, Verdana, 'DejaVu Sans', sans-serif";   // negrito em tudo: traço fino falha na térmica
   const selo = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => erro(new Error("Não consegui abrir o selo")); i.src = "etiqueta-selo.png"; });
   const sh = Math.round(112 * selo.naturalHeight / selo.naturalWidth); c.drawImage(selo, X, 14, 112, sh);
   // número da bolsa: "580" "-" "0" bem juntos (o traço desenhado curto), espaço e o hemocomponente
@@ -1278,14 +1278,14 @@ async function desenharPequena(u) {
   linha([vol, col ? "coleta " + col : ""].filter(Boolean), 162, 26, 26);
   // 1 bit: preto só onde o desenho é escuro (sem tons de cinza, que borram na térmica)
   const px = c.getImageData(0, 0, W, H).data;
-  for (let o = 0; o < px.length; o += 4) { const v = px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 140 ? 0 : 255; px[o] = px[o + 1] = px[o + 2] = v; px[o + 3] = 255; }
+  for (let o = 0; o < px.length; o += 4) { const v = px[o] * 0.3 + px[o + 1] * 0.59 + px[o + 2] * 0.11 < 175 ? 0 : 255; px[o] = px[o + 1] = px[o + 2] = v; px[o + 3] = 255; }
   c.putImageData(new ImageData(px, W, H), 0, 0);
   return { cv, c, W, H, X };
 }
 // prévia na tela igual ao que a Zebra imprime: o mesmo desenho e o código de barras na mesma posição
 async function previaPequenaHtml(u) {
   const { cv } = await desenharPequena(u), k = 378 / 400;
-  return '<div class="et" style="width:378px;height:227px;position:relative;padding:0;overflow:hidden"><img src="' + cv.toDataURL() + '" alt="" style="position:absolute;left:0;top:0;width:378px;image-rendering:pixelated"><div style="position:absolute;left:' + (24 * k).toFixed(1) + "px;top:" + (198 * k).toFixed(1) + 'px">' + barrasEtq(u.id, 36 * k, zbarW(u.id) <= 370 ? 4 : 2) + "</div></div>";
+  return '<div class="et" style="width:378px;height:227px;position:relative;padding:0;overflow:hidden"><img src="' + cv.toDataURL() + '" alt="" style="position:absolute;left:0;top:0;width:378px"><div style="position:absolute;left:' + (24 * k).toFixed(1) + "px;top:" + (198 * k).toFixed(1) + 'px">' + barrasEtq(u.id, 36 * k, zbarW(u.id) <= 370 ? 4 : 2) + "</div></div>";
 }
 async function zplPequena(u, n) {
   const { c, W, H, X } = await desenharPequena(u);

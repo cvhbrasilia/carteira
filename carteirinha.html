@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126205714">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126210155">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126205714';
+  var VERSAO = '20261126210155';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -8899,6 +8899,15 @@ async function idexxEstado() {
     el.innerHTML = !r.instalado ? 'Ainda não instalado.' : !r.visto ? 'Instalador baixado, mas o leitor ainda não deu sinal.' : (vis < 12 * 6e4 ? '<b>Ligado.</b> Último sinal ' : '<b>Sem sinal desde</b> ') + esc(brHora(loc(r.visto))) + (vis < 12 * 6e4 ? '.' : '. Confira se o computador do consultório está ligado.') + (r.ultimo ? '<br>Último PDF: ' + esc(r.ultimo.nome) + ', ' + esc(brHora(loc(r.ultimo.em))) + '.' : '') + (r.hemoplus ? '<br>HemoPlusVet: última consulta ' + esc(brHora(loc(r.hemoplus))) + (r.hemoplusAplica ? '.' : ' (ainda só em conferência, sem mexer no estoque).') : '');
   } catch (e) { el.textContent = e.message; }
 }
+// Uber pelo celular Android: situação e os últimos avisos que chegaram (para conferir se as frases do Uber foram reconhecidas)
+async function uberEstado() {
+  const el = $('#uberSt'); if (!el) return;
+  const loc = d => new Date(Date.parse(d) - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16), ROT = { caminho: 'a caminho', chegou: 'chegou para buscar', transito: 'em trânsito', fim: 'corrida encerrada' };
+  try { const r = await api('uberEstado', E.sessao);
+    el.innerHTML = !r.configurado ? 'Ainda não configurado.' : !r.visto ? 'Endereço gerado. Nenhum aviso do Uber chegou ainda.' : 'Último aviso ' + esc(brHora(loc(r.visto))) + '.' +
+      (r.ultimos.length ? '<br>' + r.ultimos.slice(0, 6).map(x => esc(brHora(loc(x.em))) + ' · ' + esc([x.titulo, x.texto].filter(Boolean).join(': ')) + ' <b>' + esc(x.etapa ? ROT[x.etapa] + (x.atendimento ? ' (atendimento ' + x.atendimento + ')' : ' (nenhuma busca por Uber aberta)') : 'não reconhecido') + '</b>').join('<br>') : '');
+  } catch (e) { el.textContent = e.message; }
+}
 function idexxBat(chave) {
   const leitor = [
     "$ErrorActionPreference = 'Continue'",
@@ -8957,7 +8966,7 @@ function idexxBat(chave) {
 }
 function telaAjustes() {
   const c = E.d.config || {};
-  setTimeout(idexxEstado, 50);
+  setTimeout(idexxEstado, 50); setTimeout(uberEstado, 80);
   abrirFolha('Ajustes',
     '<section class="cartao"><h3>Usuários</h3><p class="nota">Cada pessoa entra com o próprio usuário e vê só os módulos liberados. Quem tem assinatura vinculada assina sozinho o que salvar.</p>' +
     (E.d.usuarios || []).map(u => { const v = (E.d.vets || []).find(x => x.id === u.vetId); return '<button class="item" data-acao="editar-usuario" data-id="' + u.id + '"><div class="t"><b>' + esc(u.nome) + (u.ativo === '0' ? ' <small style="display:inline">(desativado)</small>' : '') + '</b><small>' + esc(u.usuario + ' · ' + (listaPt(u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + (v ? ' · ' + v.crmv : '') + (u.temSenha ? (u.trocarSenha ? ' · ainda não trocou a senha provisória' : '') : ' · sem senha, ainda não entra')) + '</small></div><span class="seta">›</span></button>'; }).join('') +
@@ -8971,6 +8980,7 @@ function telaAjustes() {
     campo('cKey', 'Chave da API', inp('cKey', '', 'type="password" autocomplete="off" placeholder="' + (c.temGemini ? '•••••• (deixe vazio para manter)' : 'cole a chave aqui') + '"')) +
     campo('cMod', 'Modelo', inp('cMod', c.modeloGemini, 'autocomplete="off"')) + '</section>' +
     '<button class="btn" id="bSalvarCfg">Salvar ajustes</button>' +
+    '<section class="cartao"><h3>Uber pelo celular Android do CVH</h3><p class="nota">O app MacroDroid, no celular Android em que vocês chamam o Uber, repassa ao painel cada aviso do app do Uber. Na busca de amostra por Uber, o painel marca sozinho "a caminho", "chegou para buscar" (com alarme na Intensivet), "amostra em trânsito" e o fim da corrida.</p><div id="uberSt" class="nota">Conferindo…</div><div class="acoes"><button class="btn sec2 peq" data-acao="uber-chave">Gerar o endereço para o celular</button></div><div id="uberCfg"></div></section>' +
     '<section class="cartao"><h3>Leitor da IDEXX e do HemoPlusVet</h3><p class="nota">Programa pequeno no computador do consultório (Windows) que manda cada PDF da IDEXX para o app assim que ele é salvo na pasta EXAMES IDEXX. O Google Drive continua como reserva. A cada 15 segundos ele também confere o HemoPlusVet, só para leitura, e dá saída nas bolsas do estoque que foram transfundidas ou inutilizadas lá.</p><p class="nota" id="idexxSt">Conferindo…</p><div class="acoes"><button class="btn sec2 peq" data-acao="idexx-instalador">Baixar o instalador</button></div></section>' +
     '<section class="cartao"><h3>Médicos veterinários</h3>' + (E.d.vets || []).map(v => '<button class="item" data-acao="editar-vet" data-id="' + v.id + '"><div class="t"><b>' + esc(v.nome) + (v.padrao === '1' ? ' <small style="display:inline">(padrão)</small>' : '') + '</b><small>' + esc(v.crmv) + (v.rubrica ? ' · rubrica cadastrada' : ' · sem rubrica') + '</small></div><span class="seta">›</span></button>').join('') +
     '<button class="btn sec2 peq" data-acao="editar-vet">+ Adicionar médico veterinário</button></section>' +
@@ -9215,6 +9225,14 @@ const ACOES = {
   'pd-animal': async () => { fecharFolha(); if (!E.pd) { try { E.pd = await api('pendenciasListar', E.sessao); } catch (e) { return toast(e.message, 6000); } } formPendencia(null, E.animal); },
   'pd-editar': b => formPendencia(E.pd.lista.find(p => p.id === b.dataset.id)),
   'pd-feito': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; try { Object.assign(p, await api('pendenciaConcluir', E.sessao, p.id, !p.feitoEm)); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast(p.feitoEm ? 'Pendência concluída.' : 'Pendência reaberta.'); } catch (e) { toast(e.message, 6000); } },
+  'uber-chave': async b => {
+    const el = $('#uberSt'); if (el && /Último aviso|Endereço gerado/.test(el.textContent) && !b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Tocar de novo: o endereço antigo para de valer'; return; }
+    b.disabled = true;
+    try { const r = await api('uberChaveNova', E.sessao), url = ((window.CVH_SERVIDOR || {}).api || '') + '?copia=uberAviso&k=' + encodeURIComponent(r.chave);
+      $('#uberCfg').innerHTML = '<p class="nota" style="margin-top:10px">No celular Android, instale o <b>MacroDroid</b> (Play Store, gratuito) e crie uma macro:</p><ol class="nota" style="padding-left:18px;margin:4px 0"><li><b>Gatilho</b>: Notificação › Notificação recebida › escolha o app <b>Uber</b> › qualquer conteúdo.</li><li><b>Ação</b>: Web › <b>Requisição HTTP</b> › método <b>POST</b>, cole o endereço abaixo, corpo do tipo <b>JSON</b> com o texto abaixo.</li><li>Salve a macro e permita o acesso às notificações quando o MacroDroid pedir.</li></ol><label class="nota">Endereço</label><textarea readonly rows="3" style="width:100%;font:12px monospace" onclick="this.select()">' + esc(url) + '</textarea><label class="nota">Corpo (JSON)</label><textarea readonly rows="2" style="width:100%;font:12px monospace" onclick="this.select()">{"app":"[app_name]","titulo":"[notification_title]","texto":"[notification]"}</textarea><p class="nota">O endereço funciona como uma chave: não mande para fora do CVH. Gerar de novo invalida o anterior.</p>';
+      uberEstado(); } catch (e) { toast(e.message, 6000); }
+    b.disabled = false; b.textContent = 'Gerar o endereço para o celular'; delete b.dataset.conf;
+  },
   'idexx-instalador': async b => {
     const el = $('#idexxSt'); if (el && /Ligado|Sem sinal|Instalador baixado/.test(el.textContent) && !b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Tocar de novo: o instalador antigo para de valer'; return; }
     b.disabled = true;
