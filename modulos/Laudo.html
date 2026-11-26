@@ -1985,9 +1985,10 @@ const NOTA_XM = "A prova de compatibilidade imunocromatográfica (prova maior) d
 const OBS_GEL = ["Prova de compatibilidade maior com resultado compatível, sem aglutinação na coluna de gel.", "Prova de compatibilidade menor com resultado compatível, sem aglutinação na coluna de gel.",
   "Prova de compatibilidade maior incompatível, com aglutinação na coluna de gel. Esta bolsa não deve ser transfundida.", "Autocontrole positivo. Interpretar a prova de compatibilidade com cautela."];
 const KITS_FIV = {
-  alere: { nome: "Alere FIV Ac/FeLV Ag", marca: "Alere", mapa: "9.691/2012", sensFiv: "96%", espFiv: "98%", sensFelv: "100%", espFelv: "100%" },
-  snap: { nome: "IDEXX SNAP Combo FIV/FeLV", marca: "IDEXX", mapa: "", sensFiv: "", espFiv: "", sensFelv: "", espFelv: "" },
-  outro: { nome: "", marca: "", mapa: "", sensFiv: "", espFiv: "", sensFelv: "", espFelv: "" },
+  alere: { nome: "Alere FIV Ac/FeLV Ag", marca: "Alere", mapa: "9.691/2012", sensFiv: "96%", espFiv: "98%", sensFelv: "100%", espFelv: "100%", tipoTeste: "Imunocromatografia, anticorpos contra FIV e antígeno de FeLV" },
+  // desempenho da folha de exatidão da IDEXX (Singh et al., Viruses 2023;15:2117): FeLV 100% e 99,2%; FIV 100% e 97,8%
+  snap: { nome: "SNAP FIV/FeLV Combo (IDEXX)", marca: "IDEXX", mapa: "", sensFiv: "100%", espFiv: "97,8%", sensFelv: "100%", espFelv: "99,2%", tipoTeste: "Imunoensaio enzimático rápido (SNAP), anticorpos contra FIV e antígeno p27 de FeLV" },
+  outro: { nome: "", marca: "", mapa: "", sensFiv: "", espFiv: "", sensFelv: "", espFelv: "", tipoTeste: "" },
 };
 const ehPos = (s) => /^(positivo|detectado|reagente|incompativel|indeterminado)/.test(semAc(s));
 const incompat = (s) => semAc(s).indexOf("incompat") === 0;
@@ -2059,7 +2060,7 @@ function iniciarTipo(k) {
   estado.exame = { titulo: "", data: hojeISO(), hora: "", equip: "", solicitante: estado.vet && !estado.receptor ? estado.vet.nome : "", clinica: "", amostra: "", doacao: "" };
   const ult = doacoesDoAnimal()[0]; if (ult && (k === "tipagem" || k === "fiv")) { estado.exame.doacao = ult.numero; if (ult.data) estado.exame.data = ult.data; }
   if (k === "tipagem") estado.t = novaTipagem();
-  if (k === "fiv") estado.t = Object.assign({ fiv: "Não reagente", felv: "Não reagente", kit: "alere", lote: "", codigo: "", validade: "", amostra: "Sangue total", tipoTeste: "Imunocromatografia, anticorpos contra FIV e antígeno de FeLV" }, KITS_FIV.alere);
+  if (k === "fiv") estado.t = Object.assign({ fiv: "Não reagente", felv: "Não reagente", kit: "snap", lote: "", codigo: "", validade: "", amostra: "Sangue total", tipoTeste: "Imunocromatografia, anticorpos contra FIV e antígeno de FeLV" }, KITS_FIV.snap);
   if (k === "coombs") estado.t = { res: "Negativo", grau: "", metodo: g ? "Imunocromatografia, Feline DAT Test (ALVEDIA LAB TEST)" : "Imunocromatografia, Canine DAT Test (ALVEDIA LAB TEST)", lote: "", validade: "", material: "Sangue com EDTA", nota: NOTA_COOMBS };
   if (k === "compat") estado.t = novaCompat();
   if (k === "requisicao") estado.t = { linhas: [], solicitante: null };
@@ -2714,7 +2715,7 @@ function blocosFiv(x, w, cel) {
 function blocosCoombs(x, w, cel) {
   const t = estado.t;
   return [secTit(x, w, "Teste de antiglobulina direta", t.material ? "Material  " + t.material : ""),
-    blocoCartao({ titulo: "Coombs direto", res: t.res, pos: ehPos(t.res), linhas: [["Intensidade", ehPos(t.res) ? t.grau : "", true], ["Método", t.metodo], ["Kit", loteTxt(t.lote, t.validade)]] }, x, w, cel),
+    blocoCartao({ titulo: "Coombs direto", res: t.res, pos: ehPos(t.res), foto: "fotoCoombs", rotW: 90, linhas: [["Intensidade", ehPos(t.res) ? t.grau : "", true], ["Método", t.metodo], ["Kit", loteTxt(t.lote, t.validade)]] }, x, w, cel),
     ...blocoTexto("SOBRE O TESTE", t.nota, x, w, cel ? 8.6 : 8.8)];
 }
 const NOTA_AC_NEG = "O autocontrole negativo indica ausência de aglutinação detectável entre o plasma e as hemácias do próprio paciente nas condições do ensaio. Entretanto, não exclui a presença de hemácias sensibilizadas por imunoglobulinas ou componentes do complemento, que podem não produzir aglutinação espontânea. A investigação dessa sensibilização requer métodos complementares, como o teste de antiglobulina direta (Coombs direto), associados à avaliação clínico-laboratorial.";
@@ -2756,7 +2757,7 @@ function blocosCompat(x, w, cel) {
     if (t.doadorExterno && p.bolsa) L.push(["Bolsa", p.bolsa]);
     if (htTxt(p.ht)) L.push([(p.htDe || "Bolsa") === "Bolsa" ? "Hematócrito da bolsa" : "Hematócrito do doador", htTxt(p.ht)]);
     const inc = incompat(p.maior) || (gel && t.menor && incompat(p.menor));
-    cartoes.push(blocoCartao({ titulo: t.doadorExterno ? "Doador " + (p.doador || i + 1) : p.bolsa ? "Bolsa " + p.bolsa : (t.provas.length > 1 ? "Bolsa " + (i + 1) : "Prova"), res: inc ? "Incompatível" : "Compatível", pos: inc, rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, linhas: L }, x, wl, cel));
+    cartoes.push(blocoCartao({ titulo: t.doadorExterno ? "Doador " + (p.doador || i + 1) : p.bolsa ? "Bolsa " + p.bolsa : (t.provas.length > 1 ? "Bolsa " + (i + 1) : "Prova"), res: inc ? "Incompatível" : "Compatível", pos: inc, rotW: lado ? 104 : 112, tamT: 15, tamRes: 10.4, foto: gel ? undefined : "fotoXm" + i, linhas: L }, x, wl, cel));
   });
   // método do autocontrole só na imunocromatográfica, em que ele é feito à parte, em coluna de gel
   // o aspecto do plasma vai na legenda da foto do tubo; sem foto, sai numa linha discreta, alinhada à esquerda
@@ -3068,6 +3069,9 @@ function sincronizarImagens() {
   if (tp && !felino() && tp.dal && tp.dal.on && estado.fotos.dal) { const pc = pocosDal(estado.fotos.dal); if (pc) pc.forEach((q, i) => { IMG_DIN["dalPoco" + i] = q; }); else IMG_DIN.fotoDal = estado.fotos.dal; }
   if (tp && !felino() && tp.dea1 && tp.dea1.on && estado.fotos.dea) IMG_DIN.fotoDea = estado.fotos.dea;
   if (estado.tipo === "fiv" && estado.fotos.fiv) IMG_DIN.fotoFiv = estado.fotos.fiv;
+  // fita do Coombs e fitas da prova imunocromatográfica: foto original recortada (sem reconstruir)
+  if (estado.tipo === "coombs" && estado.fotos.coombs) IMG_DIN.fotoCoombs = estado.fotos.coombs;
+  if (estado.tipo === "compat" && estado.t.metodo !== "gel") (estado.t.provas || []).forEach((_, i) => { if (estado.fotos["xm" + i]) IMG_DIN["fotoXm" + i] = estado.fotos["xm" + i]; });
   if (estado.tipo === "requisicao" && estado.fotos.assSol) IMG_DIN.assSol = estado.fotos.assSol;
 }
 
@@ -3585,11 +3589,11 @@ function formTipo() {
   }
   if (k === "fiv") return `<div class="cx"><h3>Resultado</h3><label>FIV (anticorpos)</label>${segm('data-a="tg" data-c="fiv"', t.fiv, ["Não reagente", "Reagente"])}<label style="margin-top:8px">FeLV (antígeno)</label>${segm('data-a="tg" data-c="felv"', t.felv, ["Não reagente", "Reagente"])}
     ${caixaFoto("fiv", "Foto do teste", "Foto do cassete com as janelas de leitura. Depois de escolher, você gira se precisar e ajusta o recorte só no teste.")}</div>
-    <div class="cx"><h3>Kit</h3><div class="grade">${campo("Kit usado", sel('data-t="kit"', t.kit, [["alere", "Alere FIV Ac/FeLV Ag"], ["snap", "IDEXX SNAP Combo FIV/FeLV"], ["outro", "Outro kit"]]), "larga")}${campo("Nome do teste", inp('data-t="nome"', t.nome), "larga")}${campo("Marca", inp('data-t="marca"', t.marca))}${campo("Registro no MAPA", inp('data-t="mapa"', t.mapa))}
+    <div class="cx"><h3>Kit</h3><div class="grade">${campo("Kit usado", sel('data-t="kit"', t.kit, [["snap", "SNAP FIV/FeLV Combo (IDEXX)"], ["alere", "Alere FIV Ac/FeLV Ag"], ["outro", "Outro kit"]]), "larga")}${campo("Nome do teste", inp('data-t="nome"', t.nome), "larga")}${campo("Marca", inp('data-t="marca"', t.marca))}${campo("Registro no MAPA", inp('data-t="mapa"', t.mapa))}
       ${campo("Lote ou partida", inp('data-t="lote"', t.lote))}${campo("Código", inp('data-t="codigo"', t.codigo))}${campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Amostra", inp('data-t="amostra"', t.amostra))}${campo("Tipo de teste", inp('data-t="tipoTeste"', t.tipoTeste), "larga")}<div class="larga">${t.kit === "outro" ? "" : caixaKit(t.kit === "alere" ? "fivAlere" : "fivSnap")}</div>
       ${campo("Sensibilidade FIV", inp('data-t="sensFiv"', t.sensFiv))}${campo("Especificidade FIV", inp('data-t="espFiv"', t.espFiv))}${campo("Sensibilidade FeLV", inp('data-t="sensFelv"', t.sensFelv))}${campo("Especificidade FeLV", inp('data-t="espFelv"', t.espFelv))}</div></div>`;
   if (k === "coombs") return `<div class="cx"><h3>Resultado</h3>${segm('data-a="tg" data-c="res"', t.res, ["Negativo", "Positivo"])}${t.res === "Positivo" ? `<label style="margin-top:8px">Intensidade</label>${segm('data-a="tg" data-c="grau"', t.grau, GRAUS)}` : ""}
-    <div class="grade" style="margin-top:9px">${campo("Método", inp('data-t="metodo"', t.metodo), "larga")}${campo("Lote", inp('data-t="lote"', t.lote))}${campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>${caixaKit(felino() ? "coombsGato" : "coombsCao")}${campo("Texto sobre o teste", `<textarea rows="6" data-t="nota">${esc(t.nota)}</textarea>`)}</div>`;
+    <div class="grade" style="margin-top:9px">${campo("Método", inp('data-t="metodo"', t.metodo), "larga")}${campo("Lote", inp('data-t="lote"', t.lote))}${campo("Validade", inp('data-t="validade"', t.validade, 'placeholder="mm/aaaa"'))}${campo("Material", inp('data-t="material"', t.material), "larga")}</div>${caixaKit(felino() ? "coombsGato" : "coombsCao")}${caixaFoto("coombs", "Foto da fita do Coombs", "Foto da fita com a identificação. Depois de escolher, você gira se precisar e recorta só a fita. A foto original fica no laudo.")}${campo("Texto sobre o teste", `<textarea rows="6" data-t="nota">${esc(t.nota)}</textarea>`)}</div>`;
   if (k === "compat") {
     sincAc();
     const gel = t.metodo === "gel";
@@ -3603,6 +3607,7 @@ function formTipo() {
         <div class="grade">${t.doadorExterno ? campo("Identificação do doador (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="nome ou número do doador"`, p.doador)) + campo("Número da bolsa (opcional)", inp(`data-pv-c="bolsa" data-i="${i}"`, p.bolsa)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || "Bolsa", ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))
           : campo("Número do segmento da bolsa", inp(`data-pv-c="bolsa" data-i="${i}" inputmode="numeric"`, p.bolsa)) + campo("Número da doação (obrigatório)", inp(`data-pv-c="doador" data-i="${i}" placeholder="ex.: 565-7"`, p.doador)) + campo("Hematócrito (opcional)", segm(`data-a="pv" data-i="${i}" data-c="htDe"`, p.htDe || "Bolsa", ["Doador", "Bolsa"]) + inp(`data-pv-c="ht" data-i="${i}" inputmode="decimal" placeholder="em branco, não sai no laudo"`, p.ht || ""))}</div>
         <label style="margin-top:6px">Prova maior</label>${segm(`data-a="pv" data-i="${i}" data-c="maior"`, p.maior, ["Compatível", "Incompatível"])}
+        ${gel ? "" : caixaFoto("xm" + i, "Foto da fita desta prova", "Foto da fita com a identificação. Depois de escolher, você gira se precisar e recorta só a fita. A foto original fica no laudo.")}
         ${gel && t.menor ? `<label style="margin-top:6px">Prova menor</label>${segm(`data-a="pv" data-i="${i}" data-c="menor"`, p.menor, ["Compatível", "Incompatível"])}` : ""}
         ${(() => { const r = t.doadorExterno ? null : acRegistrado(p); return r && r.res === "Positivo" ? `<p class="aviso-erro" style="margin:8px 0 0;color:#8A1D14;background:#FBE9E7;border:1px solid #e3b9b4;border-radius:8px;padding:8px 10px"><b>Autocontrole do doador positivo</b> na ficha da doação ${esc(r.numero)}. Esta bolsa não pode ser usada.</p>` : r ? `<p class="nota" style="margin:6px 0 0">Autocontrole do doador ${esc(r.res.toLowerCase())}, registrado na ficha da doação ${esc(r.numero)}${r.data ? " (" + esc(br(r.data)) + ")" : ""}.</p>` : ""; })()}
         ${(gel || t.acGel) && t.acDoadorOn ? `<label style="margin-top:6px">Autocontrole do doador</label>${segm(`data-a="pv" data-i="${i}" data-c="acDoador"`, "Negativo", ["Negativo"])}` : ""}
