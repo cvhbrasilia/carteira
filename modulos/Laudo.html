@@ -3634,8 +3634,10 @@ function formTipo() {
 function montarForm() { montarForm0(); autoRaca(); }
 function montarForm0() {
   if (!estado.tipo) {
-    const g = felino(), tipos = Object.entries(TIPOS).filter(([, v]) => !v.oculto && !(v.so === "gato" && estado.paciente.especie && !g));
-    $("#form").innerHTML = `<div class="cx"><h3>Novo laudo${estado.paciente.nome ? " de " + esc(estado.paciente.nome) : ""}</h3><p class="nota">Escolha o tipo de laudo. Todos saem no padrão do CVH, em A4 e para celular, assinados com o seu CRMV.${estado.receptor ? " Paciente receptor, sem cadastro: você digita os dados e o laudo fica salvo e assinado no painel de laudos." : ""}</p>
+    // receptor: só os testes pré-transfusionais; doador: os exames da triagem (hemograma e bioquímica, TECSA, FIV e FeLV, tipagem)
+    const PARA = estado.receptor ? ["tipagem", "compat", "compatExt", "coombs"] : ["idexx", "tipagem", "tecsa", "fiv"];
+    const g = felino(), tipos = Object.entries(TIPOS).filter(([k, v]) => !v.oculto && PARA.includes(k) && !(v.so === "gato" && estado.paciente.especie && !g)).sort((a, b) => PARA.indexOf(a[0]) - PARA.indexOf(b[0]));
+    $("#form").innerHTML = `<div class="cx"><h3>${estado.receptor ? "Testes pré-transfusionais" : "Exames do doador"}${estado.paciente.nome ? " · " + esc(estado.paciente.nome) : ""}</h3><p class="nota">Escolha o laudo. Todos saem no padrão do CVH, em A4 e para celular, assinados com o seu CRMV.${estado.receptor ? " Receptor sem cadastro: você digita os dados e o laudo fica salvo e assinado no painel de laudos." : ""}</p>
       <div class="tipos">${tipos.map(([k, v]) => `<button type="button" class="tipo" data-a="tipo" data-v="${k}"><b>${esc(v.nome)}</b><small>${esc(v.sub)}</small></button>`).join("")}</div></div>`;
     $("#salvar").parentElement.hidden = true; return;
   }
