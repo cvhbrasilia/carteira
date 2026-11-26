@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126025429">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261126114412">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126025429';
+  var VERSAO = '20261126114412';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6626,7 +6626,9 @@ function separadasTx(id) { const d = E.txEst && E.txEst.d; return ((d && d.unida
 function recTxHtml(T) {
   const rc = (E.rec || []).find(x => x.id === T.receptor);
   if (rc) { const d = rc.dados || {}; return '<div class="av-i novo"><b>Receptor · ' + esc(d.nome) + '</b><small>' + esc([d.especie, d.raca, d.tipo, d.responsavel ? 'resp. ' + d.responsavel : '', d.clinica].filter(Boolean).join(' · ')) + ' · <a href="#" data-acao="tx-rec-tirar">trocar</a></small></div>'; }
-  const pl = T.pacLaudo && T.paciente ? '<div class="av-i novo"><b>Paciente · ' + esc(T.paciente) + '</b><small>' + esc([T.esp, T.raca, T.sexo, T.idade, T.responsavel ? 'resp. ' + T.responsavel : '', T.veterinario ? 'med. vet. ' + T.veterinario : ''].filter(Boolean).join(' · ')) + ' · lido do laudo · <a href="#" data-acao="tx-rec-tirar">trocar</a></small></div>' : '';
+  const igual = T.pacLaudo && T.paciente ? (E.rec || []).find(x => semAc(x.dados.nome) === semAc(T.paciente) && (!T.responsavel || !x.dados.responsavel || semAc(x.dados.responsavel) === semAc(T.responsavel))) : null;
+  const pl = T.pacLaudo && T.paciente ? '<div class="av-i novo"><b>Paciente · ' + esc(T.paciente) + '</b><small>' + esc([T.esp, T.raca, T.sexo, T.idade, T.responsavel ? 'resp. ' + T.responsavel : '', T.veterinario ? 'med. vet. ' + T.veterinario : ''].filter(Boolean).join(' · ')) + ' · lido do laudo · <a href="#" data-acao="tx-rec-tirar">trocar</a></small>' +
+    '<div class="mini-bts" style="margin-top:8px">' + (igual ? '<button class="btn sec2 peq" data-acao="tx-rec-usar" data-id="' + igual.id + '">Usar o cadastro de ' + esc(igual.dados.nome) + '</button>' : '<button class="btn sec2 peq" data-acao="tx-rec-novo">Cadastrar ' + esc(T.paciente) + ' como receptor</button>') + '</div></div>' : '';
   return pl + '<div class="campo"><label for="txRecep">Receptor cadastrado (opcional)</label><input id="txRecep" list="txRecepL" placeholder="' + (E.rec ? 'Digite o nome do paciente' : 'Carregando os receptores…') + '" autocomplete="off"><datalist id="txRecepL">' + (E.rec || []).map(rc => '<option value="' + esc(rc.dados.nome + (rc.dados.responsavel ? ' · ' + rc.dados.responsavel : '')) + '">').join('') + '</datalist></div>';
 }
 function ligarRecTx(T) {
@@ -6634,9 +6636,13 @@ function ligarRecTx(T) {
   const i = $('#txRecep'); if (!i) return;
   i.onchange = () => { const v = semAc(i.value), rc = (E.rec || []).find(x => semAc(x.dados.nome + (x.dados.responsavel ? ' · ' + x.dados.responsavel : '')) === v) || (E.rec || []).find(x => semAc(x.dados.nome) === v); if (!rc) return;
     const d = rc.dados || {}, gato = /fel|gat/i.test(d.especie || ''), t = semAc(d.tipo || '');
-    T.receptor = rc.id; T.paciente = d.nome; T.orcId = ''; T.esp = gato ? 'Gato' : 'Cão'; T.fator = String(TX_FATOR[T.esp]); if (numTx(d.peso)) T.peso = String(d.peso);
-    T.tipPac = gato ? ((d.tipo || '').match(/\b(AB|A|B)\b/) || [])[1] || '' : /neg/.test(t) ? 'neg' : /pos/.test(t) ? 'pos' : '';
-    toast('Receptor ' + d.nome + ' escolhido. Confira o peso e preencha o Ht de hoje.', 5000); i.onchange = null; i.blur(); setTimeout(telaTransfusao, 0); };
+    usarRecTx(T, rc); i.onchange = null; i.blur(); setTimeout(telaTransfusao, 0); };
+}
+function usarRecTx(T, rc, quieto) {
+  const d = rc.dados || {}, gato = /fel|gat/i.test(d.especie || ''), t = semAc(d.tipo || '');
+  T.receptor = rc.id; T.paciente = d.nome; T.orcId = ''; T.esp = gato ? 'Gato' : 'Cão'; T.fator = String(TX_FATOR[T.esp]); if (numTx(d.peso)) T.peso = String(d.peso);
+  T.tipPac = gato ? ((d.tipo || '').match(/\b(AB|A|B)\b/) || [])[1] || '' : /neg/.test(t) ? 'neg' : /pos/.test(t) ? 'pos' : '';
+  if (!quieto) toast('Receptor ' + d.nome + ' escolhido. Confira o peso e preencha o Ht de hoje.', 5000);
 }
 // orçamento: cada cálculo enviado (copiado, WhatsApp ou ligado a atendimento) fica registrado para o relatório de orçamentos
 function orcTx(acao) {
@@ -6834,9 +6840,10 @@ async function textoDoPdfIdx(u8) {
   if (!/local/.test(pdfjsLib.GlobalWorkerOptions.workerSrc || '')) pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsLib.GlobalWorkerOptions.workerSrc || LIB_PDFJS_W;
   const doc = await pdfjsLib.getDocument({ data: u8.slice(), isEvalSupported: false }).promise; let out = '';
   for (let n = 1; n <= Math.min(doc.numPages, 4); n++) {
-    const c = await (await doc.getPage(n)).getTextContent(), L = {};
-    c.items.forEach(it => { const y = Math.round(it.transform[5] / 3) * 3; (L[y] = L[y] || []).push([it.transform[4], it.str]); });
-    out += Object.keys(L).map(Number).sort((a, b) => b - a).map(y => L[y].sort((a, b) => a[0] - b[0]).map(x => x[1]).join(' ').replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n') + '\n';
+    // linhas pela altura com tolerância: o rótulo e o valor às vezes ficam meio ponto desalinhados (antes viravam duas linhas e o valor se perdia)
+    const c = await (await doc.getPage(n)).getTextContent(), its = c.items.filter(it => String(it.str || '').trim()).map(it => [it.transform[5], it.transform[4], it.str, Math.abs(it.transform[3]) || 8]).sort((a, b) => b[0] - a[0] || a[1] - b[1]), linhas = [];
+    its.forEach(it => { const l = linhas[linhas.length - 1]; if (l && Math.abs(l.y - it[0]) <= Math.max(2.5, Math.min(l.h, it[3]) * 0.45)) l.i.push(it); else linhas.push({ y: it[0], h: it[3], i: [it] }); });
+    out += linhas.map(l => l.i.sort((a, b) => a[1] - b[1]).map(x => x[2]).join(' ').replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n') + '\n';
   }
   return out;
 }
@@ -6954,7 +6961,8 @@ function telaHemoIA() {
 }
 // Leitura sem IA do texto de um PDF de hemograma: acha cada parâmetro pelo nome e pega o primeiro número depois dele (o resultado vem antes da referência)
 function valoresDoTexto(tx) {
-  const t = String(tx || '').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ');
+  // rótulo numa linha e ": valor" na seguinte (ou "Rótulo :" e o valor embaixo) viram uma linha só
+  const t = String(tx || '').normalize('NFC').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n\s*(?=:)/g, ' ').replace(/:\s*\n/g, ': ');
   const NUM = '(\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?)';
   const num = x => { x = String(x); if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x)) x = x.replace(/\./g, '').replace(',', '.'); else x = x.replace(',', '.'); const n = parseFloat(x); return isNaN(n) ? null : n; };
   const achar = (rotulos, min, max, mil) => {
@@ -6967,13 +6975,14 @@ function valoresDoTexto(tx) {
   const V = {
     ht: achar(['hemat[óo]crito', '\\bht\\b', '\\bhct\\b', 'volume globular', '\\bvg\\b', '\\bpcv\\b'], 3, 80),
     hb: achar(['hemoglobina(?!\\s*corp)(?!\\s*glob)', '\\bhgb\\b', '\\bhb\\b(?!\\s*corp)'], 1, 26),
-    vcm: achar(['\\bvcm\\b', '\\bmcv\\b', 'volume corpuscular'], 30, 120),
-    chcm: achar(['\\bchcm\\b', '\\bmchc\\b', 'concentra[çc][ãa]o de hemoglobina corpuscular'], 15, 50),
+    vcm: achar(['\\bvcm\\b', '\\bv\\.\\s?c\\.\\s?m\\.?', '\\bmcv\\b', 'volume corpuscular'], 30, 120),
+    chcm: achar(['\\bchcm\\b', '\\bc\\.\\s?h\\.\\s?c\\.\\s?m\\.?', '\\bmchc\\b', 'concentra[çc][ãa]o de hemoglobina corpuscular'], 15, 50),
     plaquetas: achar(['plaquetas', '\\bplt\\b', '\\bplq\\b', 'contagem de plaquetas'], 1, 2500, true),
     leucocitos: achar(['leuc[óo]citos totais', 'leuc[óo]citos', '\\bwbc\\b', 'leucometria global'], 0.1, 300, true),
     tp: achar(['tempo de protrombina', '\\btp\\b(?!\\s*plasm)', '\\bpt\\b(?=\\s*\\(?s)'], 3, 120),
     ttpa: achar(['tempo de tromboplastina parcial ativada', '\\bttpa\\b', '\\baptt\\b', '\\bptt\\b'], 5, 300),
-    fibrinogenio: achar(['fibrinog[êe]nio', 'fibrinogen'], 20, 1500)
+    fibrinogenio: achar(['fibrinog[êe]nio', 'fibrinogen'], 20, 1500),
+    proteinaTotal: achar(['prote[íi]na plasm[áa]tica total', 'prote[íi]nas? (?:plasm[áa]ticas? )?totais', 'prote[íi]na total', '\\bppt\\b'], 2, 15)
   };
   Object.keys(V).forEach(k => { if (V[k] == null) delete V[k]; });
   return V;
@@ -6991,7 +7000,9 @@ function pacienteDoTexto(tx) {
     idade: pega(new RegExp('idade\\s*:\\s*([^\\n:]{1,30}?)' + FIM, 'i')),
     peso: pega(/peso\s*:\s*([\d.,]+)\s*kg/i),
     responsavel: pega(new RegExp('(?:propriet[áa]rio|respons[áa]vel|tutor)\\s*:\\s*([^\\n:]{1,50}?)' + FIM, 'i')),
-    veterinario: pega(new RegExp('(?:veterin[áa]rio(?: solicitante)?|requisitante|m[ée]dico veterin[áa]rio)\\s*:\\s*([^\\n:]{1,50}?)' + FIM, 'i'))
+    veterinario: pega(new RegExp('(?:veterin[áa]rio(?: solicitante)?|requisitante|m[ée]dico veterin[áa]rio)\\s*:\\s*([^\\n:]{1,50}?)' + FIM, 'i')).replace(/\s*-\s*$/, '').trim(),
+    clinica: pega(new RegExp('(?:cl[íi]nica|hospital|estabelecimento)\\s*:\\s*([^\\n:]{1,60}?)' + FIM, 'i')),
+    crmv: pega(/crmv[\s-]*([A-Z]{2}[\s:-]*\d{2,6}|\d{2,6})/i).replace(/[\s:-]+/g, ' ')
   };
   if (/^felin|^gat/i.test(P.especie)) P.esp = 'Gato'; else if (/^canin|^c[ãa]o|^cachorr/i.test(P.especie)) P.esp = 'Cão';
   Object.keys(P).forEach(k => { if (!P[k]) delete P[k]; });
@@ -7001,7 +7012,7 @@ function pacDaIA(r) { const p = (r && r.paciente) || {}, P = {}; ['nome', 'raca'
 // aplica o que foi lido do laudo no cálculo (o nome não precisa ser perguntado depois)
 function aplicarPacTx(T, P) {
   if (!P) return; if (P.nome) T.paciente = P.nome; if (P.esp) { T.esp = P.esp; T.fator = String(TX_FATOR[P.esp] || T.fator || ''); } if (P.peso && !numTx(T.peso)) T.peso = P.peso;
-  ['raca', 'sexo', 'idade', 'responsavel', 'veterinario'].forEach(k => { if (P[k]) T[k] = P[k]; }); T.pacLaudo = P.nome ? Object.assign({}, P) : T.pacLaudo;
+  ['raca', 'sexo', 'idade', 'responsavel', 'veterinario', 'crmv'].forEach(k => { if (P[k]) T[k] = P[k]; }); if (P.clinica && !T.clinica) T.clinica = P.clinica; T.pacLaudo = P.nome ? Object.assign({}, P) : T.pacLaudo;
 }
 function pintarHemoIA() {
   // o estado da calculadora pode ter sido recriado enquanto a tela estava aberta: o peso vem também do campo da tela
@@ -9028,6 +9039,10 @@ const ACOES = {
   },
   // bolsa maior que a necessidade: abre o fracionamento com o volume da dose e da margem (e o atendimento, se houver)
   'tx-outras': () => { E.txOutras = !E.txOutras; telaTransfusao(); },
+  'tx-rec-usar': b => { const rc = (E.rec || []).find(x => x.id === b.dataset.id); if (rc) { usarRecTx(E.tx, rc); telaTransfusao(); } },
+  'tx-rec-novo': () => { const T = E.tx || {};
+    E.recNovoCb = r => { usarRecTx(E.tx, r, true); if (E.modulo === 'transfusao') telaTransfusao(); };
+    formReceptor(null, { nome: T.paciente, especie: T.esp === 'Gato' ? 'Felina' : 'Canina', raca: T.raca, sexo: /^f/i.test(T.sexo || '') ? 'Fêmea' : /^m/i.test(T.sexo || '') ? 'Macho' : '', idade: T.idade, peso: T.peso, responsavel: T.responsavel, veterinario: T.veterinario, crmv: T.crmv, clinica: T.clinica }); },
   'tx-rec-tirar': () => { E.tx.receptor = ''; E.tx.paciente = ''; E.tx.pacLaudo = null; E.tx.orcId = ''; telaTransfusao(); },
   'orc-lista': () => telaOrcamentos(),
   'orc-dias': b => telaOrcamentos(+b.dataset.v),
