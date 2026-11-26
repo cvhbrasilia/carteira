@@ -1,0 +1,30 @@
+$r = New-Object System.Collections.Generic.List[string]
+function L($t) { $r.Add([string]$t) }
+$udl = 'C:\Users\Public\Nova pasta\HemoplusVet\bin\HEMOPLUSvet.udl'
+$cn = New-Object System.Data.OleDb.OleDbConnection ("File Name=" + $udl)
+function Q($sql) { $cm = $cn.CreateCommand(); $cm.CommandText = $sql; $cm.CommandTimeout = 60; $da = New-Object System.Data.OleDb.OleDbDataAdapter $cm; $dt = New-Object System.Data.DataTable; [void]$da.Fill($dt); return ,$dt }
+function T($titulo, $sql) {
+  L "== $titulo"
+  try {
+    $dt = Q $sql
+    L ("  " + (($dt.Columns | ForEach-Object { $_.ColumnName }) -join ' | '))
+    foreach ($w in $dt.Rows) { L ("  " + (($w.ItemArray | ForEach-Object { if ($_ -is [datetime]) { $_.ToString('dd/MM/yyyy HH:mm') } elseif ($_ -is [byte[]]) { '(imagem)' } else { ([string]$_).Trim() } }) -join ' | ')) }
+  } catch { L "  erro: $($_.Exception.Message)" }
+}
+try {
+  $cn.Open()
+  T "Colunas" "SELECT TABLE_NAME, STRING_AGG(COLUMN_NAME, ', ') WITHIN GROUP (ORDER BY ORDINAL_POSITION) AS colunas FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME IN ('T002_Doacao','T009_Producao','T010_Inutilizacao','T011_Liberacao','T013_Hemo_Agencia','T014_Tutor','T015_Tutor_Telefone','T029_Numero','T058_Hospital','T125_Medico','T127_Solicitacao','T128_Solicitacao_Hemo','T068_Agencia','T053_Especie','T055_Raca') GROUP BY TABLE_NAME"
+  T "Hemocomponentes" "SELECT A065_codhem, RTRIM(A065_nomhem) nome, RTRIM(A065_nomabr) abrev, A065_status FROM T065_Hemocomponente ORDER BY A065_codhem"
+  T "Estoque agora (por tipo)" "SELECT h.A065_nomabr, COUNT(*) bolsas FROM vw_HemosEstoque e JOIN T065_Hemocomponente h ON h.A065_codhem = e.vwCodHem GROUP BY h.A065_nomabr"
+  T "Ultimas 6 liberacoes para transfusao (so o primeiro nome)" "SELECT TOP 6 vwDatLib, vwNumDca, vwNumDoacaoDv, RTRIM(vwNomeHemo) hemo, vwStatus, LEFT(vwNomeReceptor, CHARINDEX(' ', vwNomeReceptor + ' ')) receptor, RTRIM(vwHospital) hospital, LEFT(vwMedico, CHARINDEX(' ', vwMedico + ' ')) medico, vwPeso, vwHematocrito, vwAboReceptor, vwAboBolsa, vwProva, vwTipoTransfusao, vwNumSol FROM vw_SegurancaTransfusional ORDER BY vwDatLib DESC"
+  T "Ultimas 6 transfusoes" "SELECT TOP 6 * FROM vw_HemosTransfundidos ORDER BY vwDatTra DESC"
+  T "Ultimas 4 producoes" "SELECT TOP 4 * FROM T009_Producao ORDER BY 1 DESC"
+  T "Ultimas 3 doacoes (sem nomes)" "SELECT TOP 3 * FROM T002_Doacao ORDER BY 1 DESC"
+  T "Ultimas 3 inutilizacoes" "SELECT TOP 3 * FROM T010_Inutilizacao ORDER BY 1 DESC"
+} catch { L "nao conectou: $($_.Exception.Message)" } finally { $cn.Close() }
+$arq = Join-Path ([Environment]::GetFolderPath('Desktop')) 'HemoPlus diagnostico 5.txt'
+$r | Set-Content -Path $arq -Encoding UTF8
+$r -join "`r`n" | Set-Clipboard
+$r
+Write-Host ""
+Write-Host "Pronto. Anexe o arquivo 'HemoPlus diagnostico 5.txt' da Area de Trabalho." -ForegroundColor Green
