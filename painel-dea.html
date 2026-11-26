@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261126011548">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261126022910">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126011548';
+  var VERSAO = '20261126022910';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3633,6 +3633,7 @@ async function iniciarResponsavel() {
   const kq = new URLSearchParams(location.search).get('carteirinha'), ka = kq && E.d.animais.find(a => a.id === kq);
   if (ka) { abrirCarteira(ka.id); return setTimeout(() => abrirCarteirinha(ka.id), 250); }
   if (E.d.animais.length === 1) abrirCarteira(E.d.animais[0].id); else telaEscolha();
+  if (E.token !== 'demo' && !E.d.temporario) perguntarAvisosResp();
 }
 // ícones discretos de espécie, só em traço
 const IC_CAO = '<svg class="ic-esp" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 5.6C9.4 4 14.6 4 16.8 5.6l2.6 1.1c1.2 2.9.6 6.2-1.4 6.6l-.6-2.2c.5 4.9-2.3 8.6-5.4 8.6s-5.9-3.7-5.4-8.6l-.6 2.2c-2-.4-2.6-3.7-1.4-6.6z"/><path d="M10.6 15.4c.5.6 2.3.6 2.8 0"/><circle cx="12" cy="14" r=".9" class="ch"/><circle cx="9.8" cy="10.6" r=".7" class="ch"/><circle cx="14.2" cy="10.6" r=".7" class="ch"/></svg>';
@@ -4443,7 +4444,8 @@ function telaAvisos(aid) {
     (x.cert ? '<button class="lt-lk" data-acao="cert-ver" data-aid="' + aid + '" data-id="' + x.cert + '" data-v="a4">Ver certificado</button>' : x.id ? '<button class="lt-lk" data-acao="av-ir" data-id="' + x.id + '">Ver na carteira</button>' : '') + '</div></li>';
   abrirFolha('Avisos · ' + (an.nome || ''),
     (a.novos.length ? '<h4 class="av-h">Novidades</h4><ul class="av">' + a.novos.map(x => li(x, 'novo')).join('') + '</ul>' : '<p class="nota">Nenhuma novidade desde a última visita.</p>') +
-    (a.lembretes.length ? '<h4 class="av-h">Lembretes</h4><p class="nota">Obrigações são exigências (para doar, por exemplo). Recomendações preventivas ajudam a manter a saúde em dia.</p><ul class="av">' + a.lembretes.map(x => li(x)).join('') + '</ul>' + (pend ? '<button class="btn sec2" data-acao="av-lidas" data-aid="' + aid + '">Marcar como lidas</button>' : '') : '<p class="nota">Nenhum lembrete para os próximos 30 dias.</p>'));
+    (a.lembretes.length ? '<h4 class="av-h">Lembretes</h4><p class="nota">Obrigações são exigências (para doar, por exemplo). Recomendações preventivas ajudam a manter a saúde em dia.</p><ul class="av">' + a.lembretes.map(x => li(x)).join('') + '</ul>' + (pend ? '<button class="btn sec2" data-acao="av-lidas" data-aid="' + aid + '">Marcar como lidas</button>' : '') : '<p class="nota">Nenhum lembrete para os próximos 30 dias.</p>') +
+    (E.modo === 'responsavel' && E.token !== 'demo' ? '<div class="mini-bts" style="margin-top:12px"><button class="btn sec2" data-acao="resp-avisos-cel">Avisos no celular</button></div>' : ''));
   try { localStorage.setItem(chaveAvisos(aid), agoraLocal()); } catch (_) { }
   const bt = $('#btAvisos'); if (bt) { const n = contaAvisos(aid); bt.innerHTML = IC_SINO + (n ? '<i>' + n + '</i>' : ''); }
 }
@@ -7315,6 +7317,39 @@ if (window.CVH_PAINEL) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && E.sessao) checarAvisos(); });
   setInterval(() => { if (E.sessao && E.sessaoAvisos !== E.sessao) { E.sessaoAvisos = E.sessao; checarAvisos(); } }, 1500);
 }
+// avisos no celular do responsável (carteira de saúde): o que entrou na carteira, lembretes uma semana antes e a véspera da agenda
+const pushPossivel = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const iosNavegador = () => /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone;
+async function subAtualResp() { if (!pushPossivel()) return null; try { const reg = await navigator.serviceWorker.getRegistration(); return reg ? await reg.pushManager.getSubscription() : null; } catch (_) { return null; } }
+async function avisosRespLigados() { const sub = await subAtualResp(); if (!sub || Notification.permission !== 'granted') return false; try { return await api('carteiraPushTem', E.token, sub.endpoint); } catch (_) { return false; } }
+async function ativarAvisosResp() {
+  if (!pushPossivel()) throw new Error(iosNavegador() ? 'No iPhone, os avisos funcionam com a carteira instalada na tela de início. Toque em Compartilhar e em "Adicionar à Tela de Início", e abra a carteira pelo ícone.' : 'Este navegador não recebe avisos. Abra a carteira no Chrome ou instale o app.');
+  const p = await Notification.requestPermission(); if (p !== 'granted') throw new Error('Os avisos não foram permitidos. Libere nos ajustes do celular, em Notificações.');
+  const reg = await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
+  const chave = await api('pushChave'); if (!chave) throw new Error('Os avisos ainda não estão disponíveis.');
+  const b = Uint8Array.from(atob(chave.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((chave.length + 3) % 4)), c => c.charCodeAt(0));
+  let sub = await reg.pushManager.getSubscription(); if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b });
+  await api('carteiraPushAssinar', E.token, sub.toJSON(), /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : 'Navegador');
+  try { localStorage.setItem('cvh_push_resp_pergunta', '1'); } catch (_) {}
+}
+async function desligarAvisosResp() { const sub = await subAtualResp(); if (sub) await api('carteiraPushSair', E.token, sub.endpoint); }
+async function telaAvisosCelular() {
+  abrirFolha('Avisos no celular', '<p class="nota">Conferindo este celular…</p>');
+  const on = await avisosRespLigados(), bloq = pushPossivel() && Notification.permission === 'denied';
+  abrirFolha('Avisos no celular', '<p class="nota">O CVH avisa neste celular quando entra algo novo na carteira de saúde (doação, laudo, exames, vacina, vermífugo, receita), uma semana antes de vencer uma vacina ou um vermífugo e na véspera do horário marcado.</p>' +
+    (on ? '<p class="hj-q" style="font-size:16px">Avisos ligados neste celular.</p><div class="mini-bts"><button class="btn sec2" data-acao="resp-push-off">Desligar os avisos</button></div>'
+      : bloq ? '<p class="nota"><b>Os avisos estão bloqueados neste celular.</b> Libere nos ajustes do celular, em Notificações, e volte aqui.</p>'
+      : !pushPossivel() && iosNavegador() ? '<p class="nota"><b>No iPhone, os avisos funcionam com a carteira instalada.</b> Toque em Compartilhar, depois em "Adicionar à Tela de Início", e abra a carteira pelo ícone. Lá aparece o botão para ligar.</p>'
+      : '<div class="mini-bts"><button class="btn" data-acao="resp-push-on">Ligar os avisos</button></div>'));
+}
+// carteira instalada (ícone na tela de início): pergunta uma vez se quer os avisos
+function perguntarAvisosResp() {
+  if (E.modo !== 'responsavel' || !E.token || !pushPossivel() || Notification.permission !== 'default') return;
+  try { if (localStorage.getItem('cvh_push_resp_pergunta')) return; } catch (_) { return; }
+  const inst = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); if (!inst) return;
+  setTimeout(() => { const fo = document.getElementById('folha'); if (fo && !fo.hidden) return;
+    abrirFolha('Receber os avisos do CVH?', '<p class="nota">O CVH avisa neste celular quando entra algo novo na carteira de saúde, uma semana antes de vencer uma vacina ou um vermífugo e na véspera do horário marcado. Dá para desligar quando quiser, em Opções.</p><div class="mini-bts"><button class="btn" data-acao="resp-push-on">Ligar os avisos</button><button class="btn sec2" data-acao="resp-push-depois">Agora não</button></div>'); }, 2500);
+}
 function notifEstado() {
   if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone ? 'No iPhone, as notificações funcionam com o app instalado na tela inicial. Instale o painel e abra por ele.' : 'Este navegador não recebe notificações.';
   return Notification.permission === 'granted' ? 'Notificações permitidas neste aparelho.' : Notification.permission === 'denied' ? 'As notificações foram bloqueadas neste aparelho. Libere nos ajustes do navegador ou do celular.' : 'Notificações ainda não ativadas neste aparelho.';
@@ -9226,7 +9261,11 @@ const ACOES = {
     b.disabled = false; b.textContent = t0;
   },
   'pdf-carteira': () => pdfCarteira(),
-  'menu-resp': () => abrirFolha('Opções', '<div style="display:flex;flex-direction:column;gap:10px"><button class="btn sec2" data-acao="pdf-carteira">PDF completo da carteira</button><button class="btn sec2" data-acao="instalar">Instalar o app no celular</button></div>'),
+  'menu-resp': () => abrirFolha('Opções', '<div style="display:flex;flex-direction:column;gap:10px"><button class="btn sec2" data-acao="pdf-carteira">PDF completo da carteira</button><button class="btn sec2" data-acao="instalar">Instalar o app no celular</button><button class="btn sec2" data-acao="resp-avisos-cel">Avisos no celular</button></div>'),
+  'resp-avisos-cel': () => telaAvisosCelular(),
+  'resp-push-on': async b => { b.disabled = true; try { await ativarAvisosResp(); toast('Avisos ligados neste celular.'); } catch (e) { toast(e.message, 6000); } telaAvisosCelular(); },
+  'resp-push-off': async b => { b.disabled = true; try { await desligarAvisosResp(); toast('Avisos desligados neste celular.'); } catch (e) { toast(e.message, 6000); } telaAvisosCelular(); },
+  'resp-push-depois': () => { try { localStorage.setItem('cvh_push_resp_pergunta', '1'); } catch (_) {} fecharFolha(); },
   'excluir-resp': () => excluirCadastro('resp', E.d.responsaveis.find(r => r.id === E.resp)),
   instalar: () => telaInstalar(),
   'compartilhar-painel': () => telaCompartilharPainel(),

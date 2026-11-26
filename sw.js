@@ -7,7 +7,7 @@ self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
     const abertos = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     abertos.forEach((c) => c.postMessage({ tipo: 'cvh-notificacao', m }));
-    const ic = /motoboy/.test(m.url || '') ? 'motoboy-192.png' : /intensivet/.test(m.url || '') ? 'estacao-recepcao-192.png' : 'painel-192.png';
+    const ic = /motoboy/.test(m.url || '') ? 'motoboy-192.png' : /intensivet/.test(m.url || '') ? 'estacao-recepcao-192.png' : /^\/?(index\.html)?([?#]|$)/.test(m.url || 'painel') ? 'icone-192.png' : 'painel-192.png';
     await self.registration.showNotification((crit ? 'URGENTE · ' : '') + (m.titulo || 'CVH'), {
       body: m.corpo || '', icon: ic, badge: ic, tag: 'cvh-' + (m.id || Date.now()), renotify: true,
       requireInteraction: crit, vibrate: crit ? [600, 200, 600, 200, 600, 200, 900] : [120, 80, 120], data: { url: m.url || 'painel.html' },
