@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261126124234">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261126124701">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126124234';
+  var VERSAO = '20261126124701';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6658,13 +6658,23 @@ function usarRecTx(T, rc, quieto) {
   T.tipPac = gato ? ((d.tipo || '').match(/\b(AB|A|B)\b/) || [])[1] || '' : /neg/.test(t) ? 'neg' : /pos/.test(t) ? 'pos' : '';
   if (!quieto) toast('Receptor ' + d.nome + ' escolhido. Confira o peso e preencha o Ht de hoje.', 5000);
 }
-// orçamento: cada cálculo enviado (copiado, WhatsApp ou ligado a atendimento) fica registrado para o relatório de orçamentos
+// orçamento: todo cálculo completo fica registrado (só calculado, copiado, WhatsApp ou ligado a atendimento) para o relatório de orçamentos
+// o só calculado entra 10 s depois da última mudança (ou ao sair da tela), para não registrar cada número digitado
+function agendarOrcTx() { clearTimeout(E.orcTimer); E.orcTimer = setTimeout(() => { E.orcTimer = null; orcTx('calculado'); }, 10000); }
+function descarregarOrcTx() { if (E.orcTimer) { clearTimeout(E.orcTimer); E.orcTimer = null; orcTx('calculado'); } }
+document.addEventListener('visibilitychange', () => { if (document.hidden) descarregarOrcTx(); });
+window.addEventListener('pagehide', descarregarOrcTx);
 function orcTx(acao) {
+  if (acao !== 'calculado') { clearTimeout(E.orcTimer); E.orcTimer = null; }
   const T = E.tx; if (!T) return; const r = calcComp(T); if (!r) return;
   const at = T.at || '', pac = T.paciente || (at ? pacienteTx(at) : ''), sig = [T.comp, T.esp, T.peso, pac, T.receptor || ''].join('|');
-  if (T.orcSig !== sig) { T.orcId = ''; T.orcSig = sig; }
+  if (T.orcSig !== sig) { T.orcId = ''; T.orcSig = sig; T.orcAcao = ''; }
+  // o mesmo orçamento: o registro de só calculado não apaga o que já foi feito com ele (copiado, WhatsApp, atendimento)
+  if (acao === 'calculado' && T.orcAcao) acao = T.orcAcao; else if (acao !== 'calculado') T.orcAcao = acao;
+  // espera o registro anterior voltar com o id, para não criar dois orçamentos do mesmo cálculo
+  if (T.orcPend) { const a0 = acao; T.orcPend.then(() => orcTx(a0 === 'calculado' ? 'calculado' : a0)); return; }
   const o = { id: T.orcId || '', comp: T.comp, modo: T.comp === 'CH' ? (T.chModo === 'cirurgia' ? 'cirurgia' : 'transfusao') : T.sit, esp: T.esp, peso: T.peso, htAtual: T.comp === 'CH' ? htUsado(T) : '', htDesejado: T.comp === 'CH' && T.chModo !== 'cirurgia' ? T.des : '', vol: r.vol != null ? Math.round(r.vol) : null, unidades: r.n != null ? r.n : null, paciente: pac, receptor: T.receptor || '', atendimento: at, semBolsa: !!E.txSemBolsa, acao, clinica: T.clinica || '', calc: T };
-  api('estOrcamentoSalvar', E.sessao, o).then(x => { if (x && x.id) T.orcId = x.id; }).catch(() => {});
+  T.orcPend = api('estOrcamentoSalvar', E.sessao, o).then(x => { if (x && x.id) T.orcId = x.id; }).catch(() => {}).finally(() => { T.orcPend = null; });
 }
 const ORC_VIROU = ['pago', 'testes', 'fracionamento', 'preparo', 'pronta', 'retirada', 'entregue', 'concluido'];
 const ORC_MOT = { sem_bolsa: 'Sem bolsa', nao_quiseram: 'Não quiseram', outro: 'Outro motivo' };
@@ -6687,7 +6697,8 @@ function pintarOrcamentos() {
   const L = E.orc || [], c = resumoOrc(L), d0 = E.orcDias;
   const item = o => { const d = o.dados || {}, x = situOrc(o), quando = new Date(o.criado);
     const tag = x.s === 'virou' ? '<span class="tag ok">virou transfusão</span>' : x.s === 'perdido' ? '<span class="tag al">' + esc(ORC_MOT[x.m] || x.m) + '</span>' : '<span class="tag">em aberto</span>';
-    const qual = [d.comp + (d.vol ? ' ' + d.vol + ' mL' : d.unidades ? ' ' + d.unidades + ' un.' : ''), d.esp, d.peso ? String(d.peso).replace('.', ',') + ' kg' : '', d.htAtual ? 'Ht ' + d.htAtual + '%' : '', d.semBolsa ? 'sem bolsa suficiente no estoque' : ''].filter(Boolean).join(' · ');
+    const feito = { calculado: 'só calculado', copiou: 'mensagem copiada', whatsapp: 'enviado por WhatsApp', atendimento: 'ligado a atendimento' }[d.acao] || '';
+    const qual = [d.comp + (d.vol ? ' ' + d.vol + ' mL' : d.unidades ? ' ' + d.unidades + ' un.' : ''), feito, d.esp, d.peso ? String(d.peso).replace('.', ',') + ' kg' : '', d.htAtual ? 'Ht ' + d.htAtual + '%' : '', d.semBolsa ? 'sem bolsa suficiente no estoque' : ''].filter(Boolean).join(' · ');
     return '<div class="venc orc" style="cursor:default"><div class="t"><b>' + esc(d.paciente || o.at_paciente || 'Paciente não informado') + '</b> ' + tag + '<small>' + esc(String(quando.getDate()).padStart(2, '0') + '/' + String(quando.getMonth() + 1).padStart(2, '0') + ' · ' + qual + (o.atendimento ? ' · atendimento ' + o.atendimento : '') + (d.por ? ' · ' + d.por : '')) + '</small></div>' +
       '<div class="mini-bts">' + (x.s === 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="virou">Virou transfusão</button>' + Object.entries(ORC_MOT).map(([k, t]) => '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="' + k + '">' + t + '</button>').join('') : '') +
       '<button class="mini" data-acao="orc-retomar" data-id="' + o.id + '">' + (o.atendimento && o.at_etapa ? 'Abrir o cálculo e o atendimento' : 'Retomar o cálculo') + '</button>' +
@@ -6695,7 +6706,7 @@ function pintarOrcamentos() {
   const bq = semAc(E.orcBusca || '').trim(), vis = bq ? L.filter(o => { const d = o.dados || {}; return semAc([d.paciente, o.at_paciente, o.atendimento, o.at_destino, d.clinica, d.por, o.id, d.esp].join(' ')).includes(bq); }) : L;
   raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="modulo" data-k="transfusao">‹ HemoCalculadora</button></div>' +
     '<header class="topo"><div class="t"><span>HemoCalculadora</span><b>Orçamentos</b></div></header>' +
-    '<section class="cartao"><p class="nota">Cada cálculo copiado, enviado por WhatsApp ou ligado a um atendimento vira um orçamento. Quando o atendimento é pago, conta como transfusão. Quando é cancelado, conta como não seguiu, com o motivo do cancelamento.</p><div class="filtros">' + [7, 30, 90, 365].map(n => '<button class="filtro' + (n === d0 ? ' on' : '') + '" data-acao="orc-dias" data-v="' + n + '">' + (n === 365 ? '1 ano' : n + ' dias') + '</button>').join('') + '</div>' + htmlResumoOrc(c) + '</section>' +
+    '<section class="cartao"><p class="nota">Todo cálculo completo da HemoCalculadora vira um orçamento, mesmo o que só foi calculado (aparece como só calculado), para acompanhar o fluxo. Copiar a mensagem, enviar por WhatsApp ou ligar a um atendimento fica marcado no mesmo orçamento. Quando o atendimento é pago, conta como transfusão. Quando é cancelado, conta como não seguiu, com o motivo do cancelamento.</p><div class="filtros">' + [7, 30, 90, 365].map(n => '<button class="filtro' + (n === d0 ? ' on' : '') + '" data-acao="orc-dias" data-v="' + n + '">' + (n === 365 ? '1 ano' : n + ' dias') + '</button>').join('') + '</div>' + htmlResumoOrc(c) + '</section>' +
     '<section class="cartao"><div class="orc-busca"><input type="search" id="orcBusca" placeholder="Pesquisar por paciente, clínica ou atendimento" value="' + esc(E.orcBusca || '') + '" autocomplete="off"></div><h3>' + vis.length + (vis.length === 1 ? ' orçamento' : ' orçamentos') + (bq ? ' encontrados' : '') + '</h3>' + (vis.length ? vis.map(item).join('') : '<p class="vazio-p">' + (bq ? 'Nada encontrado com essa busca no período. Tente um período maior.' : 'Nenhum orçamento no período.') + '</p>') + '</section></div></main>';
   const ib = $('#orcBusca'); if (ib) { ib.oninput = () => { E.orcBusca = ib.value; const p0 = ib.selectionStart; pintarOrcamentos(); const n = $('#orcBusca'); if (n) { n.focus(); n.setSelectionRange(p0, p0); } }; }
 }
@@ -6703,7 +6714,7 @@ function pintarOrcamentos() {
 function retomarOrc(id) {
   const o = (E.orc || []).find(x => x.id === id); if (!o) return; const d = o.dados || {}, c = d.calc || {};
   const base = { comp: d.comp || 'CH', esp: d.esp || 'Cão', peso: d.peso != null ? String(d.peso).replace('.', ',') : '', rec: d.htAtual != null ? String(d.htAtual).replace('.', ',') : '', des: d.htDesejado != null ? String(d.htDesejado).replace('.', ',') : '26', chModo: d.modo === 'cirurgia' ? 'cirurgia' : 'transfusao', paciente: d.paciente || o.at_paciente || '', receptor: o.receptor || '' };
-  E.tx = Object.assign({}, base, c, { orcId: o.id, at: o.atendimento || '' }); E.tx.orcSig = [E.tx.comp, E.tx.esp, E.tx.peso, E.tx.paciente || '', E.tx.receptor || ''].join('|'); E.txEst = null; E.txOutras = false;
+  E.tx = Object.assign({}, base, c, { orcId: o.id, at: o.atendimento || '', orcAcao: d.acao && d.acao !== 'calculado' ? d.acao : '', orcPend: null }); E.tx.orcSig = [E.tx.comp, E.tx.esp, E.tx.peso, E.tx.paciente || '', E.tx.receptor || ''].join('|'); E.txEst = null; E.txOutras = false;
   E.modulo = 'transfusao'; telaTransfusao(); toast('Orçamento retomado' + (o.atendimento ? ' com o atendimento ' + o.atendimento : '') + '.');
 }
 async function desfechoOrc(id, v) {
@@ -6820,6 +6831,7 @@ function telaTransfusao() {
   const pinta = manterTexto => {
     document.querySelectorAll('.tx-esp .filtro').forEach(b => b.classList.toggle('on', b.dataset.esp === T.esp));
     const r = calcComp(T), box = $('#txRes');
+    if (r) agendarOrcTx(); else clearTimeout(E.orcTimer);
     if (!r) { box.innerHTML = (T.comp === 'CH' ? caixaHb(T) : '') + '<p class="vazio-p">' + (T.comp === 'CH' && T.chModo !== 'cirurgia' && numTx(T.des) != null && numTx(htUsado(T)) != null && numTx(T.des) <= numTx(htUsado(T)) ? 'O hematócrito desejado precisa ser maior que o do receptor. Para reservar bolsa para uma cirurgia, use Reserva para cirurgia.' : T.comp === 'CH' ? 'Preencha o peso e o hematócrito do receptor.' : 'Preencha o peso.') + '</p>'; ligarHb(); return; }
     let topo;
     if (T.comp === 'CH') { const sug = r.bolsa && r.vol > r.bolsa * 1.15 ? 'varias' : 'uma', tipo = T.tipo === 'auto' ? sug : T.tipo;
@@ -7068,7 +7080,7 @@ function pintarHemoIA() {
     '<div class="acoes"><button class="btn" id="hiCopiar">Copiar mensagem</button><a class="btn sec2" id="hiZap" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn sec2" id="hiCalc">Abrir na calculadora</button></div></section>';
   const zap = () => { $('#hiZap').href = 'https://wa.me/?text=' + encodeURIComponent($('#hiMsg').value); }; zap(); $('#hiMsg').oninput = zap;
   const aplicarCH = () => Object.assign(T, { comp: 'CH', chModo, resMlkg: chModo === 'cirurgia' ? '' : T.resMlkg, des: base.des, doa: base.doa, fator: base.fator, esp: base.esp, peso: base.peso, rec: ht != null ? String(ht).replace('.', ',') : T.rec, hb: hb != null ? String(hb).replace('.', ',') : T.hb, usarHb: !!H.usarHb });
-  if (chEst) { aplicarCH(); const rc = calcComp(T); if (rc) bolsasTx(Object.assign({}, T, { rec: htUsado(T) }), rc); else { const b = $('.hi-est'); if (b) b.remove(); } }
+  if (chEst) { aplicarCH(); const rc = calcComp(T); if (rc) agendarOrcTx(); if (rc) bolsasTx(Object.assign({}, T, { rec: htUsado(T) }), rc); else { const b = $('.hi-est'); if (b) b.remove(); } }
   $('#hiCopiar').onclick = async () => { if (chEst) orcTx('copiou'); toast(await copiar($('#hiMsg').value) ? 'Mensagem copiada.' + (chEst ? ' Orçamento registrado.' : '') : 'Selecione o texto e copie manualmente.'); };
   $('#hiZap').addEventListener('click', () => { if (chEst) orcTx('whatsapp'); });
   document.querySelectorAll('[data-hm]').forEach(b => b.onclick = () => { H.msg = b.dataset.hm; pintarHemoIA(); });
