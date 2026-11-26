@@ -778,7 +778,7 @@ const itensQr = (tipo, id) => tipo === "caixa" ? (() => { const r = S.rem.find((
 async function gerarPdfQr(tipo, id) {
   const it = itensQr(tipo, id); if (!it.length) return toast("Nada para imprimir.");
   toast("Gerando o PDF…", 15000);
-  try { const b64 = await pdfQrEtiquetas(it, fmtEtq()); await ponte("baixar", (tipo === "caixa" ? "Caixa " + id : id ? "QR " + id : "QR dos equipamentos") + " " + FORMATOS[fmtEtq()].nome.replace(/ × /g, "x") + ".pdf", b64); toast("PDF pronto. Imprima em tamanho real (100%).", 6000); } catch (e) { toast(e.message || String(e), 7000); }
+  try { const b64 = await pdfQrEtiquetas(it, fmtEtq()); await ponte("baixar", (tipo === "caixa" ? "Caixa " + id : id ? "QR " + id : "QR dos equipamentos") + " " + FORMATOS[fmtEtq()].w + "x" + FORMATOS[fmtEtq()].h + "mm" + ".pdf", b64); toast("PDF pronto. Imprima em tamanho real (100%).", 6000); } catch (e) { toast(e.message || String(e), 7000); }
 }
 async function imprimirQRRem(r) { const q = await qrHtml(qrCaixa(r)); imprimir("Caixa " + r.id, '<div class="et">' + q + "<b>" + esc(r.id) + "</b><small>CVH · " + esc(r.destino) + "<br>" + r.unidades.length + (r.unidades.length === 1 ? " bolsa" : " bolsas") + " · leia o QR antes de abrir a caixa</small></div>"); }
 async function imprimirQREq(lista) { let h = ""; for (const e of lista) h += '<div class="et">' + (await qrHtml(e.id)) + "<b>" + esc(e.id) + "</b><small>" + esc(e.nome) + " · " + esc(e.local) + "<br>" + esc((e.aceita || []).join(", ")) + "</small></div>"; imprimir("QR dos equipamentos", h); }
@@ -885,8 +885,8 @@ function code128Svg(txt, alt) {
   return '<svg class="bc" viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="height:' + (alt || 8) + 'mm"><rect width="' + tot + '" height="40" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
 }
 const FORMATOS = {
-  z50: { nome: "Zebra 50 × 30 mm", w: 50, h: 30 },
-  zg: { nome: "Zebra 100 × 100 mm", w: 100, h: 100 },
+  z50: { nome: "Zebra pequena (50 × 30 mm)", w: 50, h: 30, imp: "PAINEL CVH ZEBRA PEQUENA" },
+  zg: { nome: "Zebra grande (100 × 100 mm)", w: 100, h: 100, imp: "PAINEL CVH ZEBRA GRANDE" },
   b100: { nome: "Brother 100 × 100 mm", w: 100, h: 100 },
 };
 // rolos da Zebra ZD220 do CVH: 50 × 30 mm (pequena) e 100 × 100 mm (grande); 104 × 50,8 mm era só a medida do driver, não existe etiqueta assim (21/11)
@@ -1040,7 +1040,7 @@ async function imprimirEtiquetas(ids, f) {
   f = f || fmtEtq(); const us = ids.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); if (!us.length) return toast("Nenhuma bolsa para etiquetar.");
   toast("Gerando o PDF das etiquetas…", 15000);
   try {
-    const b64 = await pdfEtiquetas(us, f), nome = "Etiquetas " + (us.length === 1 ? us[0].id : us.length + " bolsas") + " " + FORMATOS[f].nome.replace(/ × /g, "x") + ".pdf";
+    const b64 = await pdfEtiquetas(us, f), nome = "Etiquetas " + (us.length === 1 ? us[0].id : us.length + " bolsas") + " " + FORMATOS[f].w + "x" + FORMATOS[f].h + "mm" + ".pdf";
     await ponte("baixar", nome, b64); toast("PDF pronto. Imprima em tamanho real (100%), na impressora de etiquetas.", 7000);
   } catch (e) { toast(e.message || String(e), 7000); }
 }
@@ -1102,7 +1102,7 @@ function embalagem(E0) {
 }
 function escolherEtiqueta(ids) {
   const f = fmtEtq();
-  return '<div class="cx" style="margin-top:12px"><h2>Etiquetas · ' + ids.length + (ids.length === 1 ? " bolsa" : " bolsas") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="etqFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><div id="etqPrev" data-id="' + esc(ids[0]) + '"></div><div class="bts"><button class="btn peq" data-a="etqImp" data-v="' + esc(ids.join("|")) + '">Gerar PDF para imprimir</button><button class="btn sec peq" data-a="etqDireto" data-v="' + esc(ids.join("|")) + '">Imprimir direto (computador)</button></div><p><small>' + (ids.length > 1 ? "A prévia mostra a primeira bolsa. " : "") + 'No celular, abra o PDF e use Compartilhar, Imprimir. No computador, imprima em tamanho real (100%).</small></p></div>';
+  return '<div class="cx" style="margin-top:12px"><h2>Etiquetas · ' + ids.length + (ids.length === 1 ? " bolsa" : " bolsas") + '</h2><div class="filtros">' + Object.entries(FORMATOS).map(([k, F]) => '<button class="' + (k === f ? "on" : "") + '" data-a="etqFmt" data-v="' + k + '">' + esc(F.nome) + "</button>").join("") + '</div><div id="etqPrev" data-id="' + esc(ids[0]) + '"></div><div class="bts"><button class="btn peq" data-a="etqImp" data-v="' + esc(ids.join("|")) + '">Gerar PDF para imprimir</button><button class="btn sec peq" data-a="etqDireto" data-v="' + esc(ids.join("|")) + '">Imprimir direto (computador)</button></div><p><small>' + (ids.length > 1 ? "A prévia mostra a primeira bolsa. " : "") + 'No celular, abra o PDF e use Compartilhar, Imprimir. No computador, toque em Imprimir direto e escolha a impressora ' + (FORMATOS[f].imp ? '<b>' + esc(FORMATOS[f].imp) + '</b>' : 'de etiquetas') + ', margens Nenhuma.</small></p></div>';
 }
 
 /* ── leitor: o leitor de código de barras (USB ou Bluetooth) digita o código e um Enter em poucos milissegundos ── */
