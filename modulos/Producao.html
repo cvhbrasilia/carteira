@@ -90,7 +90,20 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 .unid.fr{margin-left:28px;width:calc(100% - 28px);background:#FBF3E8;border-left:3px solid var(--cara);border-radius:0 10px 10px 0;padding-left:10px}
 .unid.fr .co{background:#C49A6C!important;width:38px;height:38px;font-size:11.5px}
 .grupo-t{font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta2);margin:12px 0 2px}
-</style></head>
+</style><style id="paleta-cvh">
+/* paleta inteira do manual (26/11/2026): o vinho fica no botão principal; secundários em areia, destaques em caramelo, títulos em vinho com traço caramelo */
+.btn.sec,.btn.sec2{background:#EEE5DB;color:#5F130F;border-color:#C6B098}
+.btn.cara{background:#C49A6C;color:#3D0C09}
+.cx>h2:first-child,.cx>h3:first-child,.cartao>h3{color:#5F130F;border-left:3px solid #C49A6C;padding-left:8px;line-height:1.15}
+.mini{background:#EEE5DB;border-color:#C6B098}
+.filtro.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
+.mod{border-top:4px solid var(--mc,#C6B098);box-shadow:none}
+.mods .mod:nth-child(4n+1){--mc:#C49A6C}.mods .mod:nth-child(4n+2){--mc:#C6B098}.mods .mod:nth-child(4n+3){--mc:#A83D3D}.mods .mod:nth-child(4n+4){--mc:#5F130F}
+.mod i{background:#EEE5DB;border:1px solid #E3D5C5}
+.mod-n{background:#EEE5DB;color:#9B7A55}
+.filtros button.on,.ag-abas button.on,.mini.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
+</style>
+</head>
 <body>
 <div class="wrap" id="app"><div class="cx vazio">Abrindo o estoque…</div></div>
 <div id="veu"></div>

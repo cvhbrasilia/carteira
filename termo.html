@@ -48,7 +48,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126223807';
+  var VERSAO = '20261126225420';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -342,7 +342,20 @@ a.btn{text-decoration:none}
 .ac-lista.on{display:block}
 .ac-lista li{padding:.62em .75em;border-radius:7px;cursor:pointer;font-size:15px}
 .ac-lista li:hover,.ac-lista li[aria-selected=true]{background:#f4ece5}
-</style></head><body>
+</style><style id="paleta-cvh">
+/* paleta inteira do manual (26/11/2026): o vinho fica no botão principal; secundários em areia, destaques em caramelo, títulos em vinho com traço caramelo */
+.btn.sec,.btn.sec2{background:#EEE5DB;color:#5F130F;border-color:#C6B098}
+.btn.cara{background:#C49A6C;color:#3D0C09}
+.cx>h2:first-child,.cx>h3:first-child,.cartao>h3{color:#5F130F;border-left:3px solid #C49A6C;padding-left:8px;line-height:1.15}
+.mini{background:#EEE5DB;border-color:#C6B098}
+.filtro.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
+.mod{border-top:4px solid var(--mc,#C6B098);box-shadow:none}
+.mods .mod:nth-child(4n+1){--mc:#C49A6C}.mods .mod:nth-child(4n+2){--mc:#C6B098}.mods .mod:nth-child(4n+3){--mc:#A83D3D}.mods .mod:nth-child(4n+4){--mc:#5F130F}
+.mod i{background:#EEE5DB;border:1px solid #E3D5C5}
+.mod-n{background:#EEE5DB;color:#9B7A55}
+.filtros button.on,.ag-abas button.on,.mini.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
+</style>
+</head><body>
 <div id="app"><div style="padding:60px 20px;text-align:center;font-family:system-ui,sans-serif;color:#C49A6C">Carregando o app do termo…</div></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (function(){function show(m){var a=document.getElementById('app');if(!a)return;a.innerHTML='<div style="max-width:640px;margin:40px auto;padding:20px;border-radius:12px;background:#fff;color:#5F130F;font:16px/1.5 system-ui,sans-serif"><b>O app encontrou um erro ao abrir.</b><br>Mande um print desta tela para o suporte.<pre style="white-space:pre-wrap;font-size:12px;color:#333;margin-top:10px">'+String(m).replace(/</g,'&lt;')+'</pre></div>';}

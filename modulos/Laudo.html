@@ -102,6 +102,19 @@ html,body{overflow-x:hidden;max-width:100%}
 #cam .linha{display:flex;gap:8px;margin:8px 0}#cam .linha input{flex:1;border:1px solid #C6B098;border-radius:10px;padding:10px;font-size:16px}#cam #camT{margin:0 0 4px;font-weight:700;color:#5F130F}#cam .bts .btn{width:100%}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style id="paleta-cvh">
+/* paleta inteira do manual (26/11/2026): o vinho fica no botão principal; secundários em areia, destaques em caramelo, títulos em vinho com traço caramelo */
+.btn.sec,.btn.sec2{background:#EEE5DB;color:#5F130F;border-color:#C6B098}
+.btn.cara{background:#C49A6C;color:#3D0C09}
+.cx>h2:first-child,.cx>h3:first-child,.cartao>h3{color:#5F130F;border-left:3px solid #C49A6C;padding-left:8px;line-height:1.15}
+.mini{background:#EEE5DB;border-color:#C6B098}
+.filtro.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
+.mod{border-top:4px solid var(--mc,#C6B098);box-shadow:none}
+.mods .mod:nth-child(4n+1){--mc:#C49A6C}.mods .mod:nth-child(4n+2){--mc:#C6B098}.mods .mod:nth-child(4n+3){--mc:#A83D3D}.mods .mod:nth-child(4n+4){--mc:#5F130F}
+.mod i{background:#EEE5DB;border:1px solid #E3D5C5}
+.mod-n{background:#EEE5DB;color:#9B7A55}
+.filtros button.on,.ag-abas button.on,.mini.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
+</style>
 </head>
 <body>
 <div class="wrap">
