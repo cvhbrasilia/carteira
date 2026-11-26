@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126022910">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261126025429">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1054,7 +1054,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261126022910';
+  var VERSAO = '20261126025429';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -8843,8 +8843,66 @@ function importarItem(i) {
 }
 
 /* ── ajustes ── */
+// leitor da IDEXX no computador do consultório: situação e instalador (arquivo .bat com a chave do leitor, gerada na hora)
+async function idexxEstado() {
+  const el = $('#idexxSt'); if (!el) return;
+  const loc = d => new Date(Date.parse(d) - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  try { const r = await api('idexxLeitorEstado', E.sessao), vis = r.visto ? Date.now() - Date.parse(r.visto) : null;
+    el.innerHTML = !r.instalado ? 'Ainda não instalado.' : !r.visto ? 'Instalador baixado, mas o leitor ainda não deu sinal.' : (vis < 12 * 6e4 ? '<b>Ligado.</b> Último sinal ' : '<b>Sem sinal desde</b> ') + esc(brHora(loc(r.visto))) + (vis < 12 * 6e4 ? '.' : '. Confira se o computador do consultório está ligado.') + (r.ultimo ? '<br>Último PDF: ' + esc(r.ultimo.nome) + ', ' + esc(brHora(loc(r.ultimo.em))) + '.' : '');
+  } catch (e) { el.textContent = e.message; }
+}
+function idexxBat(chave) {
+  const leitor = [
+    "$ErrorActionPreference = 'Continue'",
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12",
+    "$api = '" + CVH_SERVIDOR.api + "'; $chave = '" + chave + "'",
+    "$dir = Join-Path $env:LOCALAPPDATA 'CVH'",
+    "$pasta = Join-Path ([Environment]::GetFolderPath('Desktop')) 'EXAMES IDEXX'",
+    "$lista = Join-Path $dir 'enviados.txt'; $log = Join-Path $dir 'leitor.log'",
+    "$criou = $false; $mtx = New-Object System.Threading.Mutex($true, 'CVHLeitorIdexx', [ref]$criou); if (-not $criou) { exit }",
+    "function Anota($t) { try { Add-Content -Path $log -Value ((Get-Date -Format 's') + ' ' + $t); if ((Get-Item $log).Length -gt 500KB) { Remove-Item $log } } catch {} }",
+    "$feitos = @{}; if (Test-Path $lista) { Get-Content $lista | ForEach-Object { $feitos[$_] = 1 } }",
+    "$vivo = [DateTime]::MinValue; Anota 'leitor iniciado'",
+    "while ($true) {",
+    "  try {",
+    "    if (Test-Path $pasta) {",
+    "      $arqs = Get-ChildItem -Path $pasta -Filter '*.pdf' -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -gt (Get-Date).AddDays(-3) } | Sort-Object LastWriteTime",
+    "      foreach ($f in $arqs) {",
+    "        $k = $f.FullName + '|' + $f.Length + '|' + $f.LastWriteTimeUtc.Ticks",
+    "        if ($feitos.ContainsKey($k) -or $f.LastWriteTime -gt (Get-Date).AddSeconds(-5)) { continue }",
+    "        try {",
+    "          $sha = (Get-FileHash -Path $f.FullName -Algorithm SHA256).Hash.ToLower()",
+    "          $u = $api + '?copia=idexxPc&nome=' + [uri]::EscapeDataString($f.Name) + '&sha=' + $sha + '&criado=' + [uri]::EscapeDataString($f.CreationTimeUtc.ToString('o'))",
+    "          $r = Invoke-RestMethod -Uri $u -Method Post -InFile $f.FullName -ContentType 'application/pdf' -Headers @{ 'x-idexx' = $chave } -TimeoutSec 120",
+    "          if ($r.ok) { $feitos[$k] = 1; Add-Content -Path $lista -Value $k; $vivo = Get-Date; Anota ('enviado ' + $f.Name) } else { Anota ('recusado ' + $f.Name + ': ' + $r.erro); Start-Sleep -Seconds 60 }",
+    "        } catch { Anota ('erro ' + $f.Name + ': ' + $_.Exception.Message) }",
+    "      }",
+    "    } else { Anota ('pasta nao encontrada: ' + $pasta); Start-Sleep -Seconds 300 }",
+    "    if (((Get-Date) - $vivo).TotalMinutes -ge 5) { try { Invoke-RestMethod -Uri ($api + '?copia=idexxVivo') -Method Post -Headers @{ 'x-idexx' = $chave } -TimeoutSec 30 | Out-Null; $vivo = Get-Date } catch { Anota ('sem conexao: ' + $_.Exception.Message) } }",
+    "  } catch { Anota ('erro geral: ' + $_.Exception.Message) }",
+    "  Start-Sleep -Seconds 15",
+    "}"].join('\r\n');
+  const inst = [
+    "$dir = Join-Path $env:LOCALAPPDATA 'CVH'; New-Item -ItemType Directory -Force -Path $dir | Out-Null",
+    "$ps = Join-Path $dir 'leitor-idexx.ps1'",
+    "$leitor = @'", leitor, "'@",
+    "Get-CimInstance Win32_Process -Filter \"Name='powershell.exe'\" | Where-Object { $_.CommandLine -like '*leitor-idexx.ps1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+    "Start-Sleep -Seconds 1",
+    "Set-Content -Path $ps -Value $leitor -Encoding UTF8",
+    "$vbs = Join-Path ([Environment]::GetFolderPath('Startup')) 'CVH leitor IDEXX.vbs'",
+    "Set-Content -Path $vbs -Value ('CreateObject(\"WScript.Shell\").Run \"powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \"\"' + $ps + '\"\"\", 0, False') -Encoding Default",
+    "Start-Process wscript.exe -ArgumentList ('\"' + $vbs + '\"')",
+    "$pasta = Join-Path ([Environment]::GetFolderPath('Desktop')) 'EXAMES IDEXX'",
+    "Write-Host ''",
+    "if (Test-Path $pasta) { Write-Host 'Pronto. O leitor da IDEXX esta ligado e vigia a pasta:' -ForegroundColor Green; Write-Host $pasta } else { Write-Host ('Atencao: a pasta nao foi encontrada: ' + $pasta) -ForegroundColor Yellow }",
+    "Write-Host 'Ele liga sozinho sempre que o Windows iniciar. Pode fechar esta janela.'"].join('\r\n');
+  return ['@echo off', 'echo Instalando o leitor da IDEXX do CVH...',
+    "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$t = Get-Content -LiteralPath '%~f0' -Raw; $m = '#PS-' + 'INICIO'; Invoke-Expression $t.Substring($t.LastIndexOf($m))\"",
+    'pause', 'exit /b', '#PS-INICIO', inst, ''].join('\r\n');
+}
 function telaAjustes() {
   const c = E.d.config || {};
+  setTimeout(idexxEstado, 50);
   abrirFolha('Ajustes',
     '<section class="cartao"><h3>Usuários</h3><p class="nota">Cada pessoa entra com o próprio usuário e vê só os módulos liberados. Quem tem assinatura vinculada assina sozinho o que salvar.</p>' +
     (E.d.usuarios || []).map(u => { const v = (E.d.vets || []).find(x => x.id === u.vetId); return '<button class="item" data-acao="editar-usuario" data-id="' + u.id + '"><div class="t"><b>' + esc(u.nome) + (u.ativo === '0' ? ' <small style="display:inline">(desativado)</small>' : '') + '</b><small>' + esc(u.usuario + ' · ' + (listaPt(u.permissoes.map(p => ROT_PERM[p] || p)) || 'sem módulos') + (v ? ' · ' + v.crmv : '') + (u.temSenha ? (u.trocarSenha ? ' · ainda não trocou a senha provisória' : '') : ' · sem senha, ainda não entra')) + '</small></div><span class="seta">›</span></button>'; }).join('') +
@@ -8858,6 +8916,7 @@ function telaAjustes() {
     campo('cKey', 'Chave da API', inp('cKey', '', 'type="password" autocomplete="off" placeholder="' + (c.temGemini ? '•••••• (deixe vazio para manter)' : 'cole a chave aqui') + '"')) +
     campo('cMod', 'Modelo', inp('cMod', c.modeloGemini, 'autocomplete="off"')) + '</section>' +
     '<button class="btn" id="bSalvarCfg">Salvar ajustes</button>' +
+    '<section class="cartao"><h3>Leitor da IDEXX</h3><p class="nota">Programa pequeno no computador do consultório (Windows) que manda cada PDF da IDEXX para o app assim que ele é salvo na pasta EXAMES IDEXX. O Google Drive continua como reserva.</p><p class="nota" id="idexxSt">Conferindo…</p><div class="acoes"><button class="btn sec2 peq" data-acao="idexx-instalador">Baixar o instalador</button></div></section>' +
     '<section class="cartao"><h3>Médicos veterinários</h3>' + (E.d.vets || []).map(v => '<button class="item" data-acao="editar-vet" data-id="' + v.id + '"><div class="t"><b>' + esc(v.nome) + (v.padrao === '1' ? ' <small style="display:inline">(padrão)</small>' : '') + '</b><small>' + esc(v.crmv) + (v.rubrica ? ' · rubrica cadastrada' : ' · sem rubrica') + '</small></div><span class="seta">›</span></button>').join('') +
     '<button class="btn sec2 peq" data-acao="editar-vet">+ Adicionar médico veterinário</button></section>' +
     '<section class="cartao"><h3>Planilha</h3><p class="nota">O catálogo de vacinas (nome, cor da etiqueta, doenças e intervalo) fica na aba Vacinas. Depois de editar, recarregue o painel.</p><a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(c.planilha) + '">Abrir planilha</a></section>' +
@@ -9097,6 +9156,13 @@ const ACOES = {
   'pd-animal': async () => { fecharFolha(); if (!E.pd) { try { E.pd = await api('pendenciasListar', E.sessao); } catch (e) { return toast(e.message, 6000); } } formPendencia(null, E.animal); },
   'pd-editar': b => formPendencia(E.pd.lista.find(p => p.id === b.dataset.id)),
   'pd-feito': async b => { const p = E.pd.lista.find(x => x.id === b.dataset.id); if (!p) return; try { Object.assign(p, await api('pendenciaConcluir', E.sessao, p.id, !p.feitoEm)); E.d.pendencias = E.pd.lista.filter(x => x.paraId === E.u.id && !x.feitoEm).length; pintarPendencias(); toast(p.feitoEm ? 'Pendência concluída.' : 'Pendência reaberta.'); } catch (e) { toast(e.message, 6000); } },
+  'idexx-instalador': async b => {
+    const el = $('#idexxSt'); if (el && /Ligado|Sem sinal|Instalador baixado/.test(el.textContent) && !b.dataset.conf) { b.dataset.conf = '1'; b.textContent = 'Tocar de novo: o instalador antigo para de valer'; return; }
+    b.disabled = true;
+    try { const r = await api('idexxInstalador', E.sessao); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([idexxBat(r.chave)], { type: 'application/octet-stream' })); a.download = 'instalar-leitor-idexx.bat'; document.body.appendChild(a); a.click(); a.remove();
+      toast('Instalador baixado. Abra no computador do consultório.', 6000); idexxEstado(); } catch (e) { toast(e.message, 6000); }
+    b.disabled = false; b.textContent = 'Baixar o instalador'; delete b.dataset.conf;
+  },
   'idexx-agora': async b => { b.disabled = true; const t0 = b.textContent; b.textContent = 'Lendo a pasta da IDEXX...';
     try {
       const r = await api('idexxAgora', E.sessao);
