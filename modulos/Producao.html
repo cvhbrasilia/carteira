@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Produção CVH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Proza+Libre:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
 *{box-sizing:border-box}
@@ -374,6 +376,7 @@ function abrirUnidade(id) {
   }
   if (u.situacao === "utilizada" && (D.uso || {}).semReceptor) acoes += bt("recUso", "Informar o receptor", " ");
   if (!fim) acoes += bt("etq", "Etiqueta");
+  if (["reservada", "retirada", "utilizada", "transito"].includes(u.situacao)) acoes += bt("etqRes", "Etiqueta de reserva");
   const h = (u.situacao === "reservada" ? blocoReserva(u) : "") + '<dl class="dl"><dt>Hemocomponente</dt><dd>' + esc(NOME_COMP[u.componente] || u.componente) + "</dd><dt>Doador</dt><dd>" + esc(a.nome || D.doador || "") + seloTipo(a) + (tipoResto(a) ? " · " + esc(tipoResto(a)) : "") + "</dd>" +
     ((D.identificacao || D.loteBolsa) ? "<dt>Identificação</dt><dd>" + esc([D.identificacao, D.loteBolsa].filter(Boolean).join(" · ")) + (u.mae_id ? " <small>(fração da bolsa " + esc(u.mae_id) + ")</small>" : "") + "</dd>" : "") + (D.obs ? "<dt>Observação</dt><dd>" + esc(D.obs) + "</dd>" : "") +
     "<dt>Coleta</dt><dd>" + esc(u.coleta) + (u.data_coleta ? " · " + esc(br(String(u.data_coleta).slice(0, 10))) : "") + "</dd><dt>Volume</dt><dd>" + (u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "não informado") + (u.peso_g != null ? " <small>(" + fmt(u.peso_g) + " g)</small>" : "") + "</dd>" +
@@ -454,6 +457,7 @@ async function acaoUnidade(acao, o) {
   if (acao === "crioConcluir") { $("#uForm").innerHTML = formCrio(u); return; }
   if (acao === "transf" || acao === "recUso") { $("#uForm").innerHTML = formTransfundida(u, acao === "recUso"); carregarReceptores(); return; }
   if (acao === "etq") { $("#uForm").innerHTML = escolherEtiqueta([u.id]); previaEtiqueta(u.id); return; }
+  if (acao === "etqRes") { if (!S.rec) { try { S.rec = await est("estReceptores"); } catch (e) { S.rec = []; } } $("#uForm").innerHTML = formEtqRes(u, dadosReserva(u)); previaRes(); return; }
   if (acao === "devApta" || acao === "devBloq") { a = "receberDevolucao"; o.apta = acao === "devApta"; }
   if (acao === "conferirSim" || acao === "conferirNao") { a = "conferirCongelamento"; o.congelado = acao === "conferirSim"; }
   try { const r = await est("estUnidadeAcao", u.id, a, o); Object.assign(u, r); S.ev.unshift({ quando: new Date().toISOString(), coleta: u.coleta, unidade_id: u.id, tipo: "unidade:" + a, usuario: CTX.usuario || "", dados: o }); toast("Feito."); pintar(); abrirUnidade(u.id); }
@@ -893,11 +897,85 @@ function etiquetaHtml(u, f, qr) {
   const val = br(String(u.validade || "").slice(0, 10)), col = u.data_coleta ? br(String(u.data_coleta).slice(0, 10)) : "", vol = u.volume_ml != null ? fmt(u.volume_ml) + " mL" : "";
   if (f === "z50") return '<div class="et p"><div class="l1"><b>CVH</b><span>' + esc(NOME_COMP[u.componente] || u.componente) + '</span></div><div class="id">' + esc(u.id) + '</div><div class="l2">' + esc(esp + (tipo ? " · " + tipo : "")) + '</div><div class="l2">' + esc([vol, col ? "col. " + col : ""].filter(Boolean).join(" · ")) + '</div><div class="l3">Validade ' + esc(val) + '</div><div class="cod">' + code128Svg(u.id, 6.2) + '<span class="q">' + qr + "</span></div></div>";
   if (f === "z104") return '<div class="et w"><div class="cab"><b>CVH</b><span>Centro Veterinário de Hemoterapia · Brasília, DF</span><i>' + esc(NOME_COMP[u.componente] || u.componente) + '</i></div><div class="meio"><div class="txt"><div class="id">' + esc(u.id) + '</div><div class="tp">' + esc(tipo || "tipo não informado") + '</div><div>' + esc([esp, vol].filter(Boolean).join(" · ")) + (u.componente === "CH" && D.htFinal != null ? " · Ht " + esc(fmt(D.htFinal, 1)) + "%" : "") + '</div><div><b>Coleta ' + esc(col) + " · Validade " + esc(val) + "</b></div>" + (u.mae_id ? "<div>Fração de " + esc(u.mae_id) + "</div>" : "") + '<div class="cons">' + esc(CONSERVA[u.componente] || "") + '</div></div><div class="q">' + qr + '<small>RT Plínio Rossi<br>CRMV-DF 2703</small></div></div><div class="cod">' + code128Svg(u.id, 9) + "</div></div>";
+  if (f === "zg" || f === "b100") return etqBolsaHtml(u);
   const g = f === "zg";
   return '<div class="et g ' + f + '"><div class="cab"><b>CVH</b><span>Centro Veterinário de Hemoterapia<br>Brasília, DF · uso veterinário</span></div><div class="comp">' + esc(NOME_COMP[u.componente] || u.componente) + '</div><div class="id">' + esc(u.id) + '</div>' +
     '<table><tr><td>Espécie</td><td>' + esc(esp) + "</td></tr><tr><td>Tipo sanguíneo</td><td><b>" + esc(tipo || "não informado") + "</b></td></tr><tr><td>Volume</td><td>" + esc(vol || "não informado") + (u.peso_g != null ? " (" + fmt(u.peso_g) + " g)" : "") + "</td></tr>" + (u.componente === "CH" && D.htFinal != null ? "<tr><td>Hematócrito</td><td>" + fmt(D.htFinal, 1) + "%</td></tr>" : "") +
     "<tr><td>Coleta</td><td>" + esc(col) + "</td></tr><tr><td>Validade</td><td><b>" + esc(val) + "</b></td></tr>" + (u.mae_id ? "<tr><td>Fração de</td><td>" + esc(u.mae_id) + "</td></tr>" : "") + '</table><div class="cons">' + esc(CONSERVA[u.componente] || "") + '</div><div class="cod">' + code128Svg(u.id, g ? 14 : 11) + '<span class="q">' + qr + '</span></div><div class="rt">Responsável técnico Plínio Rossi · CRMV-DF 2703</div></div>';
 }
+/* ── etiquetas térmicas 100 × 100 mm no modelo aprovado em 26/11/2026 (mesma estrutura da etiqueta do HemoPlusVet, visual CVH, só preto) ── */
+const COD_HEMO = { CH: 11000, CP: 12000, PFC: 13000, CRIO: 14000, PPC: 22000 };
+const codHemo = (u) => { const b = COD_HEMO[u.componente]; if (!b) return ""; const m = /-F(\d)$/.exec(u.id || ""); return String(m ? b + +m[1] : b); };
+const NOME_ETQ = { CH: "CONCENTRADO DE HEMÁCIAS", CP: "CONCENTRADO DE PLAQUETAS", PFC: "PLASMA FRESCO CONGELADO", CRIO: "CRIOPRECIPITADO", PPC: "PLASMA POBRE EM CRIO" };
+const ARMAZ_ETQ = { CH: "2° a 6°", CP: "20° a 24°", PFC: "−18° ou menos", CRIO: "−18° ou menos", PPC: "−18° ou menos" };
+const TRIAGEM_ETQ = "Anaplasma spp (PCR), Babesia spp (PCR), Dirofilaria (PCR), Ehrlichia spp (PCR), Leishmania (ELISA), Leishmania (RIFI), Leishmania spp (PCR), M. haemocanis (PCR)";
+const OBS_BOLSA = "Identificar adequadamente o receptor. Conferir os resultados dos exames na etiqueta da bolsa. Transfundir somente sob prescrição médica. Recomenda-se transfundir somente após realizar as provas de compatibilidade. Utilizar unicamente equipo de infusão com filtro padrão para transfusão. Em caso de utilização da bomba de infusão, observar se é específica para hemocomponentes. NÃO AQUECER o hemocomponente utilizando micro-ondas ou banho-maria comum.";
+const OBS_RESERVA = "Conferir os dados de identificação do paciente. Transfundir somente com prescrição médica. Conferir os resultados dos exames no rótulo da bolsa. Utilizar equipo de infusão específico para transfusão. Não adicionar ou infundir conjuntamente medicamentos. Em caso de reação transfusional, suspenda imediatamente a transfusão e comunique ao médico do paciente e à agência transfusional.";
+const etqTipo = (t) => String(t || "").replace(/\+/g, " POSITIVO").replace(/[−-]\s*$/g, " NEGATIVO").replace(/positivo/i, "POSITIVO").replace(/negativo/i, "NEGATIVO").replace(/\s+/g, " ").trim().toUpperCase();
+const etqDal = (v) => !v ? "" : /neg|−|-/.test(String(v).toLowerCase()) ? "DAL NEGATIVO" : "DAL POSITIVO";
+const dataHoraBr = (iso) => { const m = /^(\d{4})-(\d\d)-(\d\d)(?:[T ](\d\d:\d\d))?/.exec(String(iso || "")); return m ? m[3] + "/" + m[2] + "/" + m[1] + (m[4] ? " " + m[4] : "") : ""; };
+const horaLocal = (iso) => { if (!iso) return ""; const d = new Date(iso); if (isNaN(d)) return dataHoraBr(iso); const p = (n) => String(n).padStart(2, "0"); return p(d.getDate()) + "/" + p(d.getMonth() + 1) + "/" + d.getFullYear() + " " + p(d.getHours()) + ":" + p(d.getMinutes()); };
+function barrasEtq(txt, h) { const larg = code128Larg(txt), tot = larg.reduce((a, b) => a + b, 0); let x = 0, d = ""; larg.forEach((w, i) => { if (i % 2 === 0) d += "M" + x + " 0h" + w + "v40h-" + w + "z"; x += w; }); return '<svg viewBox="0 0 ' + tot + ' 40" preserveAspectRatio="none" style="display:block;width:100%;height:' + h + 'px"><path d="' + d + '" fill="#000"/></svg>'; }
+const CABEC_ETQ = (tel) => '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:4px"><img src="etiqueta-logo.png" alt="CVH" style="height:22px;display:block;flex:none">' + (tel ? '<div style="display:flex;align-items:center;gap:8px"><img src="etiqueta-manguito.png" alt="" style="width:152px;height:auto;display:block;flex:none"><b style="font-size:9px">(61) 98237-2772</b></div>' : '<img src="etiqueta-manguito.png" alt="" style="flex:1;min-width:0;width:100%;height:auto;display:block">') + "</div>";
+function etqBolsaHtml(u) {
+  const D = u.dados || {}, a = doadorDe(u), doa = doacao(u.coleta) || {}, comp = NOME_ETQ[u.componente] || u.componente, dea = etqTipo(a.tipoSanguineo), dal = etqDal(a.dal);
+  const col = dataHoraBr(String(doa.data || u.data_coleta || "").slice(0, 10) + (doa.hora ? "T" + String(doa.hora).slice(0, 5) : "")), venc = dataHoraBr(String(u.validade || "").slice(0, 10)) + (u.validade ? " 23:59" : "");
+  const anti = u.componente === "CH" ? "SAGM-1" : (doa.anticoagulante || "CPD"), lote = doa.lote || "", valB = doa.validade ? br(String(doa.validade).slice(0, 10)).replace(/^\d\d\//, "") : "";
+  const L = (k, v, b) => "<span>" + esc(k) + (v ? " <b" + (b ? ' style="font-size:10px"' : "") + ">" + esc(v) + "</b>" : "") + "</span>";
+  return '<div class="et n">' + CABEC_ETQ(true) +
+    '<div style="font-size:7.2px;line-height:1.25;text-align:center;border-top:1px solid #000;border-bottom:1px solid #000;padding:3px 0">' + esc(OBS_BOLSA).replace("NÃO AQUECER", "<b>NÃO AQUECER</b>") + "</div>" +
+    '<div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px;align-items:end"><div style="display:flex;flex-direction:column;gap:1px">' + barrasEtq(u.id, 30) + '<b style="font-size:11px">' + esc(u.id) + '</b></div><div style="display:flex;flex-direction:column;gap:1px">' + (codHemo(u) ? barrasEtq(codHemo(u), 30) : "") + '<b style="font-size:11px">' + esc(comp) + "</b></div></div>" +
+    '<div style="display:grid;grid-template-columns:136px minmax(0,1fr);gap:8px;align-items:center;border-top:1px solid #000;padding-top:4px"><div style="display:flex;flex-direction:column;gap:3px"><b style="font-size:' + (dal ? 22 : 25) + 'px;font-weight:800;line-height:.98">' + esc(dea || "TIPO NÃO INFORMADO").replace(/^(DEA \S+) /, "$1<br>") + "</b>" + (dal ? '<b style="font-size:15px;font-weight:800;line-height:1;border-top:1px solid #000;padding-top:3px">' + esc(dal) + "</b>" : "") + (u.componente === "CH" && D.htFinal != null ? '<span style="font-size:10px">Hematócrito <b>' + esc(fmt(D.htFinal, 0)) + "%</b></span>" : "") + "</div>" +
+    '<div style="text-align:center;display:flex;flex-direction:column;gap:2px;border-left:1px solid #000;padding-left:8px"><b style="font-size:8px">Triagem infecciosa não reagente ou negativa</b><span style="font-size:7.6px;line-height:1.3">' + esc(TRIAGEM_ETQ) + "</span></div></div>" +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="display:flex;flex-direction:column;gap:1px;text-align:center"><span style="font-size:9px">Coleta</span><b class="faixa" style="font-size:13px;padding:2px 0">' + esc(col) + '</b></div><div style="display:flex;flex-direction:column;gap:1px;text-align:center"><span style="font-size:9px">Vencimento</span><b class="faixa" style="font-size:13px;padding:2px 0">' + esc(venc) + "</b></div></div>" +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:8.5px;line-height:1.25">' +
+    "<span>Contém " + esc(u.volume_ml != null ? fmt(u.volume_ml) : "") + " ml" + (doa.volume ? " obtidos de " + esc(doa.volume) + " ml de sangue total" : "") + "</span>" + L("Fabricante", doa.fabricante || "FRESENIUS") +
+    L("Anticoagulante", anti) + L("Lote", lote) + '<b style="font-size:10px">Armazenamento ' + esc(ARMAZ_ETQ[u.componente] || "") + "</b>" + L("Validade", valB) + "</div>" +
+    '<div style="display:flex;flex-direction:column;gap:2px;text-align:center"><b class="faixa" style="font-size:11px;padding:2px 0;letter-spacing:.03em">NÃO ADICIONAR MEDICAMENTOS</b><b class="faixa" style="font-size:9.5px;padding:2px 0">APÓS ROMPIMENTO DO LACRE INFUNDIR EM ATÉ 4 HORAS</b></div></div>';
+}
+// etiqueta de reserva e liberação: dados do pedido, do cadastro do receptor e do HemoPlusVet; o que faltar é preenchido na hora
+function dadosReserva(u) {
+  const D = u.dados || {}, U = D.uso || {}, R = D.reservaInfo || {}, at = (S.at || []).find((x) => x.id === (D.atendimento || R.atendimento)) || {}, ped = ((at.dados || {}).pedido) || {}, P = ped.paciente || {}, UP = U.paciente || {};
+  const rec = (S.rec || []).find((r) => r.id === UP.receptorId) || (S.rec || []).find((r) => String((r.dados || {}).nome || "").toLowerCase() === String(UP.nome || P.nome || at.paciente || "").toLowerCase()) || {}, RD = rec.dados || {};
+  const a = doadorDe(u), tp = (U.tipagem || []).filter((x) => !/controle|não realizado/i.test(x.exame || "")).map((x) => String(x.exame + " " + x.resultado).toUpperCase());
+  const tipPac = tp.length ? tp.join(" · ") : [P.dea1 ? "DEA 1 " + P.dea1 : "", P.dal ? "DAL " + P.dal : "", P.felino || ""].filter(Boolean).join(" · ").toUpperCase() || String(P.tipagem || "").toUpperCase();
+  const pv = (U.prova || [])[0] || {};
+  // reserva digitada à mão ("Thor (Maria)" ou "Thor - Maria"): nome do animal e responsável
+  const para = String(R.para || u.reserva || "").replace(/^Atendimento \S+\s*·?\s*/i, "").replace(/^Prova de compatibilidade[^·]*·?\s*/i, "").trim(), mp = /^([^(·-]+?)\s*(?:[(·-]\s*([^)]+?)\)?)?$/.exec(para) || [];
+  return { paciente: String(UP.nome || P.nome || at.paciente || RD.nome || mp[1] || "").toUpperCase(), responsavel: UP.responsavel || (ped.responsavel || {}).nome || RD.responsavel || mp[2] || "", sexo: String(P.sexo || RD.sexo || "").slice(0, 1).toUpperCase(), especie: UP.especie || P.especie || RD.especie || "", raca: UP.raca || P.raca || RD.raca || "", idade: String(P.idade || RD.idade || "").replace(/\s*anos?$/i, ""),
+    registro: "", solicitacao: (U.hemoplus || {}).numsol ? String(U.hemoplus.numsol) : (at.id || ""), clinica: String(U.clinica || at.destino || RD.clinica || "").toUpperCase(), tipPac,
+    tipDoa: [etqTipo(a.tipoSanguineo), etqDal(a.dal)].filter(Boolean).join(" · "), prova: pv.resultado ? (/incomp/i.test(pv.resultado) ? "INCOMP" : "COMP") : "COMP", provaEm: horaLocal(pv.data || R.em || ""), liberadoPor: R.por || "", liberadoEm: horaLocal(R.em || U.retiradaEm || "") };
+}
+function etqReservaHtml(u, R, qr) {
+  const comp = NOME_ETQ[u.componente] || u.componente, c = "padding:2px 6px", B = "1px solid #000", lab = "font-size:7.5px;line-height:1.1";
+  return '<div class="et n">' + CABEC_ETQ(false) + '<div style="border:' + B + ';display:flex;flex-direction:column">' +
+    '<div style="' + c + ";border-bottom:" + B + ';display:flex;flex-direction:column;gap:2px"><div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:9px">Paciente</span><b style="font-size:18px;font-weight:800;line-height:1.05">' + esc(R.paciente) + '</b></div><div style="display:grid;grid-template-columns:52px 88px minmax(0,1fr) 44px;font-size:8.5px"><span>Sexo <b>' + esc(R.sexo) + "</b></span><span>Espécie <b>" + esc(R.especie) + "</b></span><span>Raça <b>" + esc(R.raca) + '</b></span><span style="text-align:right">Idade <b>' + esc(R.idade) + '</b></span></div><div style="font-size:8.5px">Responsável <b>' + esc(R.responsavel) + "</b></div></div>" +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:' + B + ';font-size:9.5px"><div style="' + c + ";border-right:" + B + '">Registro <b>' + esc(R.registro) + '</b></div><div style="' + c + '">Solicitação <b>' + esc(R.solicitacao) + "</b></div></div>" +
+    '<div style="' + c + ";border-bottom:" + B + ';font-size:9.5px">Hospital / Clínica <b>' + esc(R.clinica) + "</b></div>" +
+    '<div style="display:flex;align-items:center;border-bottom:' + B + '"><div style="' + c + ';font-size:9px;width:98px;flex:none">Tipagem do paciente</div><div class="faixa" style="flex:1;font-size:' + (R.tipPac.length > 16 ? 12.5 : 15) + 'px;font-weight:800;text-align:center;padding:3px 0;white-space:nowrap">' + esc(R.tipPac || " ") + "</div></div>" +
+    '<div style="display:grid;grid-template-columns:88px minmax(0,1fr);border-bottom:' + B + '"><div style="' + c + ";border-right:" + B + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Nº doação</span><b style="font-size:15px;font-weight:800;line-height:1.1">' + esc(u.coleta) + '</b></div><div style="' + c + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Hemocomponente</span><b style="font-size:13px;font-weight:800;line-height:1.15">' + esc(comp) + "</b></div></div>" +
+    '<div style="display:grid;grid-template-columns:88px minmax(0,1fr);border-bottom:' + B + '"><div style="' + c + ";border-right:" + B + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Volume</span><b style="font-size:12px;font-weight:800;line-height:1.1">' + esc(u.volume_ml != null ? fmt(u.volume_ml) : "") + '</b></div><div style="' + c + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Tipagem da doação</span><b style="font-size:12px;font-weight:800;line-height:1.1">' + esc(R.tipDoa) + "</b></div></div>" +
+    '<div style="display:grid;grid-template-columns:1fr 1fr"><div style="' + c + ";border-right:" + B + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Prova de compatibilidade</span><div style="display:flex;align-items:center;gap:6px"><b style="font-size:15px;font-weight:800">' + esc(R.prova) + '</b><span style="font-size:8px;line-height:1.25">Realizada por <b>Plínio Rossi</b><br>' + esc(R.provaEm) + '</span></div></div><div style="' + c + ';display:flex;flex-direction:column;gap:1px"><span style="' + lab + '">Reserva / liberação</span><span style="font-size:8px;line-height:1.25;padding-top:2px">Liberada por <b>' + esc(R.liberadoPor) + "</b><br>" + esc(R.liberadoEm) + "</span></div></div></div>" +
+    '<div style="display:flex;align-items:center;gap:10px;padding-top:4px"><div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="display:flex;flex-direction:column;gap:1px">' + (codHemo(u) ? barrasEtq(codHemo(u), 28) : "") + '<b style="font-size:10px">' + esc(codHemo(u)) + '</b></div><div style="display:flex;flex-direction:column;gap:1px">' + barrasEtq(u.coleta, 28) + '<b style="font-size:10px">' + esc(u.coleta) + '</b></div></div><span class="q">' + qr + "</span></div>" +
+    '<div style="font-size:7.2px;line-height:1.25;padding-top:3px">' + esc(OBS_RESERVA) + "</div></div>";
+}
+const CAMPOS_RES = [["paciente", "Paciente"], ["responsavel", "Responsável"], ["sexo", "Sexo (M ou F)"], ["especie", "Espécie"], ["raca", "Raça"], ["idade", "Idade"], ["registro", "Registro"], ["solicitacao", "Solicitação"], ["clinica", "Hospital / clínica"], ["tipPac", "Tipagem do paciente"], ["tipDoa", "Tipagem da doação"], ["prova", "Prova de compatibilidade (COMP ou INCOMP)"], ["provaEm", "Prova: data e hora"], ["liberadoPor", "Liberada por"], ["liberadoEm", "Liberação: data e hora"]];
+function formEtqRes(u, R) {
+  return '<div class="cx" style="margin-top:12px" id="erForm" data-id="' + esc(u.id) + '"><h2>Etiqueta de reserva e liberação</h2><p class="nota">Os campos vêm do pedido, do cadastro do receptor e do HemoPlusVet. Complete o que faltar; a prévia muda na hora.</p>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">' + CAMPOS_RES.map(([k, t]) => '<label style="display:flex;flex-direction:column;gap:2px;font-size:13px">' + esc(t) + '<input type="text" data-er="' + k + '" value="' + esc(R[k] || "") + '"></label>').join("") + "</div>" +
+    '<div id="erPrev" style="margin-top:10px"></div><div class="bts"><button class="btn peq" data-a="etqResImp" data-v="' + esc(u.id) + '">Imprimir (computador)</button></div><p><small>Na impressora de etiquetas, papel 100 × 100 mm, tamanho real (100%).</small></p></div>';
+}
+const lerRes = () => { const R = {}; document.querySelectorAll("[data-er]").forEach((i) => { R[i.dataset.er] = i.value.trim(); }); R.paciente = R.paciente.toUpperCase(); R.clinica = R.clinica.toUpperCase(); R.tipPac = R.tipPac.toUpperCase(); R.tipDoa = R.tipDoa.toUpperCase(); R.prova = R.prova.toUpperCase(); return R; };
+async function previaRes() {
+  const f = $("#erForm"), el = $("#erPrev"); if (!f || !el) return; const u = S.uni.find((x) => x.id === f.dataset.id); if (!u) return;
+  el.innerHTML = "<style>#erPrev *{box-sizing:border-box}#erPrev .et{box-shadow:0 1px 8px rgba(0,0,0,.18);margin:4px auto}" + CSS_N.replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "") + "</style>" + etqReservaHtml(u, lerRes(), await qrHtml(u.id));
+}
+document.addEventListener("input", (e) => { if (e.target && e.target.dataset && e.target.dataset.er) { clearTimeout(previaRes.t); previaRes.t = setTimeout(previaRes, 250); } });
+async function imprimirReserva(id) {
+  const u = S.uni.find((x) => x.id === id); if (!u) return; const h = etqReservaHtml(u, lerRes(), await qrHtml(u.id)); await esperarImagensEtq(h);
+  imprimirDoc("Etiqueta de reserva " + u.id, "<style>#impArea *{box-sizing:border-box}#impArea .et:last-child{page-break-after:auto}" + CSS_N + "</style>" + h);
+}
+const CSS_N = "@page{size:100mm 100mm;margin:0}.et.n{width:378px;height:378px;padding:8px 9px;overflow:hidden;page-break-after:always;font-family:'Proza Libre',Arial,sans-serif;color:#000;background:#fff;display:flex;flex-direction:column;gap:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.n b{font-weight:700}.n .faixa{background:#000;color:#fff;font-weight:800}.n .q svg{width:48px;height:48px;display:block}";
 const CSS_ETQ = {
   w: "@page{size:104mm 50.8mm;margin:0}.et.w{width:104mm;height:50.8mm;padding:2mm 3mm;overflow:hidden;page-break-after:always;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column}.w .cab{display:flex;align-items:baseline;gap:2mm;border-bottom:.3mm solid #000;padding-bottom:.8mm;font-size:6.5pt}.w .cab b{font-size:11pt;letter-spacing:.08em}.w .cab i{margin-left:auto;font-style:normal;font-weight:700;font-size:8pt}.w .meio{display:flex;gap:2mm;flex:1;min-height:0}.w .txt{flex:1;font-size:8pt;line-height:1.25}.w .id{font-size:19pt;font-weight:800;line-height:1.1;margin-top:.6mm}.w .tp{font-size:10.5pt;font-weight:800}.w .cons{font-weight:700;font-size:7pt}.w .q{width:23mm;text-align:center;font-size:5.5pt;line-height:1.15}.w .q svg{width:23mm;height:23mm;display:block}.w .cod svg{height:7mm;width:68mm;display:block}",
   z50: "@page{size:50mm 30mm;margin:0}.et.p{width:50mm;height:30mm;padding:1.4mm 2mm;overflow:hidden;page-break-after:always;font-family:Arial,Helvetica,sans-serif;color:#000;display:flex;flex-direction:column}.p .l1{display:flex;justify-content:space-between;font-size:6.6pt;line-height:1.1}.p .l1 b{font-size:7.5pt;letter-spacing:.08em}.p .id{font-size:13pt;font-weight:800;line-height:1.05}.p .l2{font-size:6.6pt;line-height:1.15}.p .l3{font-size:7.4pt;font-weight:800;line-height:1.2}.p .cod{display:flex;align-items:flex-end;gap:1mm;margin-top:auto}.p .bc{flex:1;width:0}.p .q svg{width:9mm;height:9mm;display:block}",
@@ -966,16 +1044,22 @@ async function imprimirEtiquetas(ids, f) {
     await ponte("baixar", nome, b64); toast("PDF pronto. Imprima em tamanho real (100%), na impressora de etiquetas.", 7000);
   } catch (e) { toast(e.message || String(e), 7000); }
 }
+async function esperarImagensEtq(h) {
+  const srcs = [...new Set((h.match(/src="(etiqueta-[^"]+)"/g) || []).map((x) => x.slice(5, -1)))];
+  await Promise.all(srcs.map((src) => new Promise((ok) => { const im = new Image(); im.onload = im.onerror = ok; im.src = src; })));
+  try { await document.fonts.load("800 15px 'Proza Libre'"); await document.fonts.load("400 9px 'Proza Libre'"); } catch (e) {}
+}
 async function imprimirDireto(ids, f) {
   f = f || fmtEtq(); const F = FORMATOS[f]; const us = ids.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean); if (!us.length) return toast("Nenhuma bolsa para etiquetar.");
   let h = ""; for (const u of us) h += etiquetaHtml(u, f, await qrHtml(u.id));
-  const css = f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_ETQ.z50 : "@page{size:" + F.w + "mm " + F.h + "mm;margin:0}" + CSS_ETQ.g + ".et.g{width:" + F.w + "mm;height:" + F.h + "mm}";
+  const css = f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_ETQ.z50 : CSS_N;
+  await esperarImagensEtq(h);
   imprimirDoc("Etiquetas", "<style>#impArea *{box-sizing:border-box}#impArea .et:last-child{page-break-after:auto}" + css + "</style>" + h);
 }
 // prévia na própria ficha
 async function previaEtiqueta(id, f) {
   const el = $("#etqPrev"), u = S.uni.find((x) => x.id === id); if (!el || !u) return; f = f || fmtEtq(); const F = FORMATOS[f];
-  const css = (f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_ETQ.z50 : CSS_ETQ.g + ".et.g{width:" + F.w + "mm;height:" + F.h + "mm}").replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "");
+  const css = (f === "z104" ? CSS_ETQ.w : f === "z50" ? CSS_ETQ.z50 : CSS_N).replace(/@page\{[^}]*\}/g, "").replace(/page-break-after:always;?/g, "");
   el.innerHTML = '<style>#etqPrev *{box-sizing:border-box}#etqPrev .et{background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.18);margin:8px auto}' + css.replace(/\.(et|p|g)\b/g, (m) => m) + "</style>" + etiquetaHtml(u, f, await qrHtml(u.id));
   const et = el.querySelector(".et"), larg = el.clientWidth - 4, w = et.getBoundingClientRect().width; if (w > larg) { et.style.transform = "scale(" + (larg / w) + ")"; et.style.transformOrigin = "top left"; el.style.height = et.getBoundingClientRect().height + 20 + "px"; }
 }
@@ -1279,6 +1363,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "etqFmt") { try { localStorage.setItem("cvh_etq3", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); const pv = $("#etqPrev"); if (pv) previaEtiqueta(pv.dataset.id, v); return; }
   if (a === "etqImp") return imprimirEtiquetas(v.split("|"));
   if (a === "etqDireto") return imprimirDireto(v.split("|"));
+  if (a === "etqResImp") return imprimirReserva(v);
   if (a === "etqLista") { const ids = v.split("|"); const el = document.getElementById("etqBox"); if (el) { el.innerHTML = escolherEtiqueta(ids); previaEtiqueta(ids[0]); } return; }
   if (a === "remNova") return abrirRemNova();
   if (a === "eqQR") { const el = $("#eqQrBox"); if (el) el.innerHTML = escolherQr("equip"); return; }
