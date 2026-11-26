@@ -162,7 +162,7 @@ function entregaHtml(d) {
   const lin = (k, v, t) => v ? '<span style="font-size:' + (t || 11) + 'px;line-height:1.2;font-weight:600"><span style="font-size:8.5px;font-weight:800;letter-spacing:.06em">' + k + '</span> <b>' + esc(v) + "</b></span>" : "";
   return '<div class="ent"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1.5px solid #000;padding-bottom:4px"><img src="etiqueta-logo.png" alt="CVH" style="height:24px;display:block"><span style="font-size:9.5px;font-weight:800;text-align:right;line-height:1.15">Remetente CVH<br>(61) 98237-2772</span></div>' +
     '<div style="flex:1;min-height:0;display:flex;gap:10px"><div class="encE" style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-size:8.5px;font-weight:800;letter-spacing:.08em">ENTREGAR PARA</span><b style="font-size:24px;font-weight:800;line-height:1.02">' + esc(d.nome || "") + "</b>" +
-    '<span style="font-size:13px;font-weight:700;line-height:1.2">' + esc(d.endereco || "") + (d.cep ? " · CEP " + esc(d.cep) : "") + "</span>" + lin("TEL.", d.telefone, 12) + lin("PACIENTE", d.paciente, 15) + lin("M.V.", d.vet, 13) + "</div>" +
+    '<span style="font-size:13px;font-weight:700;line-height:1.2">' + esc(String(d.endereco || "").replace(/\s*,(\s*,)+/g, ",").replace(/[\s,.;-]+$/, "")) + (d.cep ? " · CEP " + esc(d.cep) : "") + "</span>" + lin("TEL.", d.telefone, 12) + lin("PACIENTE", d.paciente, 15) + lin("M.V.", d.vet, 13) + "</div>" +
     (d.qr ? '<div style="width:96px;flex:none;display:flex;flex-direction:column;align-items:center;gap:1px">' + d.qr + '<b style="font-size:9px;text-align:center;line-height:1.1">' + esc(d.qrRot || "") + "</b></div>" : "") + "</div>" +
     '<span style="font-size:9.5px;font-weight:700;text-align:center;line-height:1.15">Entregar na recepção. Qualquer problema, ligar para (61) 98237-2772.</span><div class="faixa" style="font-size:12px;padding:3px 4px;line-height:1.2;letter-spacing:.04em">FRÁGIL · FAVOR MANUSEAR COM CUIDADO</div></div>';
 }
@@ -189,6 +189,15 @@ async function imprimirEntrega(c, n) {
 }
 function pintarVets() { const el = $("#cVets"); if (!el) return; el.innerHTML = S.vets.length ? S.vets.map((v, i) => '<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 34px;gap:6px;margin-bottom:6px"><input data-v="nome" data-i="' + i + '" placeholder="Nome e sobrenome" value="' + esc(v.nome) + '"><input data-v="crmv" data-i="' + i + '" placeholder="CRMV" value="' + esc(v.crmv) + '"><input data-v="telefone" data-i="' + i + '" placeholder="Telefone" value="' + esc(v.telefone || "") + '"><button class="btn sec peq" data-a="vetTirar" data-i="' + i + '">×</button></div>').join("") : '<p class="nota">Nenhum cadastrado.</p>';
   el.querySelectorAll("input[data-v]").forEach((x) => x.oninput = () => { S.vets[+x.dataset.i][x.dataset.v] = x.value; }); }
+// colar o link do Google Maps preenche nome, endereço, bairro e CEP que estiverem vazios
+document.addEventListener("change", async (ev) => {
+  const i = ev.target; if (!i || i.id !== "cMaps" || !i.value.trim() || !S.D.pode) return;
+  toast("Buscando o endereço pelo mapa…", 6000);
+  try { const r = await trp("cliEnderecoDoMapa", i.value.trim()), ok = [];
+    for (const [id, k, rot] of [["cNome", "nome", "nome"], ["cEnd", "endereco", "endereço"], ["cBairro", "bairro", "bairro"], ["cCep", "cep", "CEP"]]) { const el = $("#" + id); if (el && !el.value.trim() && r[k]) { el.value = r[k]; el.style.background = "#FFF6DC"; ok.push(rot); } }
+    toast(ok.length ? "Preenchido pelo mapa: " + ok.join(", ") + ". Confira antes de salvar." : "O mapa não trouxe nada novo para os campos vazios.", 7000);
+  } catch (e) { toast(e.message, 7000); }
+});
 document.addEventListener("click", async (ev) => {
   const b = ev.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v;
   if (a === "fechar") return fecharGaveta();
