@@ -437,7 +437,9 @@ async function acaoUnidade(acao, o) {
   // ações que pedem um texto: o campo aparece na própria ficha
   if (PEDE[acao] && !o[PEDE[acao][2]]) {
     const [rot, ph, k] = PEDE[acao];
-    $("#uForm").innerHTML = '<label>' + rot + '</label><input type="text" id="uTxt" placeholder="' + esc(ph) + '" value="' + esc(acao === "mover" ? u.local || "CVH" : "") + '">' + (acao === "mover" ? '<label>Equipamento (refrigerador ou freezer, opcional)</label><input type="text" id="uEq" value="' + esc(u.equipamento || "") + '">' : "") +
+    // local: só os locais que existem (CVH e os locais dos celulares ativados), para a bolsa aparecer no estoque certo da Mini Estação
+    const locais = [...new Set(["CVH", "Intensivet"].concat((S.ap || []).filter((x) => x.ativo !== false && x.setor !== "motoboy").map((x) => x.local)).filter(Boolean))];
+    $("#uForm").innerHTML = '<label>' + rot + '</label>' + (acao === "mover" ? '<select id="uTxt">' + locais.concat(locais.includes(u.local) || !u.local ? [] : [u.local]).map((l) => '<option' + (l === (u.local || "CVH") ? " selected" : "") + ">" + esc(l) + "</option>").join("") + "</select>" : '<input type="text" id="uTxt" placeholder="' + esc(ph) + '" value="">') + (acao === "mover" ? '<label>Equipamento (refrigerador ou freezer, opcional)</label><input type="text" id="uEq" value="' + esc(u.equipamento || "") + '">' : "") +
       '<div class="bts" style="margin-top:10px"><button class="btn peq ' + (acao === "descartar" ? "perigo" : "") + '" data-a="uConf" data-v="' + acao + '">Confirmar</button><button class="btn peq sec" data-a="uni" data-v="' + esc(u.id) + '">Cancelar</button></div>';
     const t = $("#uTxt"); if (t) t.focus(); return;
   }
