@@ -427,12 +427,23 @@ function abrirAtendimento(id) {
     (r ? "<dt>Caixa</dt><dd>" + esc(r.id) + " · " + esc(ROT_REM[r.situacao] || r.situacao) + (r.recebida_em ? "<br><small>QR lido pela " + esc(r.destino) + " " + esc(hora(r.recebida_em)) + "</small>" : "") + "</dd>" : "") + (a.uber_fim ? "<dt>Corrida encerrada</dt><dd>" + esc(hora(a.uber_fim)) + "</dd>" : "") + "</dl>" +
     htmlCalculo(a) + '<div class="bts">' + ac + '</div><div id="atForm"></div><h2 style="margin-top:16px">Linha do tempo</h2>' + (a.linha || []).slice().reverse().map((x) => '<div class="ev"><b>' + esc(x.texto || ROT_AT[x.etapa] || x.etapa) + "</b> <small>" + esc(hora(x.em)) + " · " + esc(x.por) + "</small></div>").join("") +
     '<h2 style="margin-top:16px">Dados</h2>' + formAtendimento(a));
-  ligarClinica(); tiqueRelogios(); if (blocoProva && !blocoFeita) pintarProvaCx(a.id);
+  ligarClinica(); tiqueRelogios(); if (blocoProva && !blocoFeita && !blocoEmb) pintarProvaCx(a.id);
+  // prova feita com a bolsa reservada no HemoPlus (sem passar pela HemoCalculadora): liga a bolsa ao atendimento para seguir com a caixa e as etiquetas
+  if (provaFeita && !escU && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) && !(S.ligaBolsa || {})[a.id]) { (S.ligaBolsa = S.ligaBolsa || {})[a.id] = 1; ligarBolsaAt(a.id); }
+}
+async function ligarBolsaAt(id) {
+  try {
+    const L = await ponte("provasReservadas"), x = (L || []).find((y) => y.atendimento === id); if (!x) return;
+    const n = await est("estAtendimentoCalculo", id, { prova: [x.unidade], escolhida: { id: x.unidade, volume: x.volume } });
+    const i = S.at.findIndex((y) => y.id === id); if (n && i >= 0) S.at[i] = Object.assign({}, S.at[i], n);
+    if (S.atAberto === id && $("#gaveta").classList.contains("on")) abrirAtendimento(id);
+  } catch (e) { /* segue sem a bolsa ligada; a prova pode ser refeita */ }
 }
 // embalagem e saída (no Motoboy): etiquetas, ler a bolsa, foto da bolsa na caixa, ler a caixa e dar a saída
 function htmlEmb(a, r) {
   const cA = (a.dados || {}).calculo || {}, uid = (cA.escolhida || {}).id || (cA.prova || [])[0] || "";
-  if (!uid || !["testes", "fracionamento", "preparo", "pronta"].includes(a.etapa) || (r && r.situacao !== "preparo")) return "";
+  const feita = ((a.dados || {}).resultados || []).some((x) => /compatib/i.test(x.titulo || ""));
+  if (!uid || !(["testes", "fracionamento", "preparo", "pronta"].includes(a.etapa) || (feita && ["aberto", "possivel", "autorizado", "pago"].includes(a.etapa))) || (r && r.situacao !== "preparo")) return "";
   const M = S.emb = S.emb && S.emb.at === a.id ? S.emb : { at: a.id, uni: uid, bolsa: false, caixa: false, foto: "", via: a.modalidade === "uber" ? "uber" : "motoboy", link: a.link_uber || ((a.amostra || {}).uber || "") };
   M.uni = uid; M.rem = r ? r.id : "";
   const ok = (x) => x ? ' <b style="color:#2E7D32">✓</b>' : "";

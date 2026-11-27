@@ -1161,7 +1161,7 @@ function encaixarEtq(raiz) {
 // a área de impressão fica escondida na tela: mede e encaixa fora da tela, depois imprime o resultado
 function encaixarHtml(h, css) {
   const box = document.createElement("div"); box.style.cssText = "position:absolute;left:-10000px;top:0"; box.innerHTML = "<style>" + css.replace(/@page\{[^}]*\}/g, "") + "</style>" + h; document.body.appendChild(box);
-  encaixarEtq(box); const out = [...box.querySelectorAll(".et")].map((e) => e.outerHTML).join(""); box.remove(); return out;
+  encaixarEtq(box); const out = [...box.querySelectorAll(".et, .ent")].map((e) => e.outerHTML).join(""); box.remove(); return out;
 }
 async function esperarImagensEtq(h) {
   const srcs = [...new Set((h.match(/src="(etiqueta-[^"]+)"/g) || []).map((x) => x.slice(5, -1)))];
