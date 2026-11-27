@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127030319';
+  var VERSAO = '20261127082334';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -233,7 +233,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127030319">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127082334">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
@@ -279,6 +279,8 @@ canvas{width:100%;height:150px;border:1px dashed var(--bege);border-radius:12px;
 .topo-mon{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;margin:-18px -14px 12px;padding:max(10px,env(safe-area-inset-top)) 14px 10px;background:rgba(251,248,244,.96);border-bottom:1px solid var(--areia2);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}.topo-mon button{border:1px solid var(--bege);background:var(--areia);color:var(--vinho);border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;font-size:14px}.topo-mon span{flex:1;text-align:right;font-size:12.5px;color:var(--tinta2)}.ler-mini{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.ler-mini .btn{flex:1 1 auto}
 .aviso-ex{border:2px dashed var(--cara);background:#FBF6F0;border-radius:14px;padding:12px 14px;margin:0 0 12px}
 .aviso-ex b{color:var(--vinho)}
+.afer-mon{display:flex;align-items:center;gap:10px;margin:2px 0 8px}.afer-st{font-size:13px;color:#7a6a5e}
+.dica{font-size:13.5px;line-height:1.4;color:#6b5a4e;background:#F6F0E9;border-left:3px solid var(--cara);border-radius:8px;padding:8px 10px;margin:8px 0 0}
 small{color:var(--tinta2)}
 .padrao-fundo{position:fixed;inset:0;background:var(--papel);pointer-events:none;z-index:0}.padrao-fundo i{position:absolute;inset:0;background:#C49A6C;opacity:.26;-webkit-mask:url("padrao-cvh.svg") center/1920px 1920px repeat;mask:url("padrao-cvh.svg") center/1920px 1920px repeat}
 #app{position:relative;z-index:1}
@@ -366,6 +368,7 @@ function cartaoAfer(r, i) {
     : '<select data-a="m">' + MOMENTOS.map((m) => '<option' + (m === r.m ? " selected" : "") + ">" + esc(m) + "</option>").join("") + '<option value="__outro">Outro horário…</option></select>';
   return '<div class="afer" data-i="' + i + '"><div class="afer-cab"><div><label>Momento</label>' + mom + '</div><div><label>Hora</label><input type="time" data-a="h" value="' + esc(r.h || "") + '"></div>' +
     (n > 1 ? '<button type="button" class="afer-x" data-del="' + i + '" aria-label="Tirar esta aferição">×</button>' : "") + "</div>" +
+    '<div class="afer-mon so-edicao"><button type="button" class="btn sec peq" data-mon="' + i + '">Foto do monitor</button><span class="afer-st" id="monSt' + i + '">preenche esta aferição</span></div>' +
     '<div class="g3">' + [["t", "T (°C)"], ["fc", "FC (bpm)"], ["fr", "FR (mpm)"]].map(([k, l]) => '<div><label>' + l + '</label><input inputmode="decimal" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
     '<div class="g2">' + [["spo2", "SpO2 (%)"], ["lac", "Lactato (mmol/L)"]].map(([k, l]) => '<div><label>' + l + '</label><input inputmode="decimal" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
     '<label>Pressão arterial (mmHg)</label><div class="g3">' + [["pas", "Sistólica"], ["pad", "Diastólica"], ["pam", "Média"]].map(([k, l]) => '<div><input inputmode="numeric" placeholder="' + l + '" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
@@ -389,12 +392,13 @@ function pintar() {
       campo("Clínica", "clinica") + campo("Indicação da transfusão", "indicacao") + "</div>" +
     '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + "</div>" +
       '<label>Componente</label>' + chips("bolsa.componente", comp, { cls: "comp" }) + blocoTipo() +
-      '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Não feita", "Incompatível"]) +
+      '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Amostra guardada", "Incompatível"].concat(D.prova === "Não feita" ? ["Não feita"] : [])) +
+      '<p class="dica" id="provaDica"' + (D.prova === "Amostra guardada" ? "" : " hidden") + '>Emergência: amostra do paciente coletada antes da transfusão e guardada para fazer a prova de compatibilidade depois.</p>' +
       '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" + '<div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPre">Foto do Hemochromax (hematócrito antes)</button></div>' +
       '<label>Acesso</label>' + chips("acesso", ACESSOS) +
       '<div class="g2">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + "</div>" + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') +
       '<div class="g2">' + campo("Início", "inicio", 'type="time"') + campo("Término", "fim", 'type="time"') + "</div></div>" +
-    '<div class="cx"><h2>Parâmetros clínicos</h2><div class="ler-mini so-edicao"><button class="btn sec" id="bMonitor">Foto do monitor de parâmetros</button></div><p id="monSt"><small>A leitura cria uma aferição com a hora atual e todos os parâmetros da tela. Confira antes de seguir.</small></p><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button></div></div>' +
+    '<div class="cx"><h2>Parâmetros clínicos</h2><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button><button class="btn sec" id="bAferFoto">+ Aferição com foto do monitor</button></div></div>' +
     '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", [["não", "Não"], ["sim", "Sim"]]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, { multi: true }) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", [["não", "Não"], ["sim", "Sim"]]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
     '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + '</div><div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPos">Foto do Hemochromax (preenche o próximo vazio)</button></div><p id="hcxSt"></p><label>Evolução e observações</label><textarea data-p="obs">' + esc(D.obs || "") + "</textarea></div>" +
     '<div class="cx"><h2>Fotos do paciente</h2><p><small>Mucosa, acesso, reação ou o que ajudar. Elas entram no PDF.</small></p>' + chips("_legFoto", LEG_FOTO) + '<div class="bts so-edicao"><button class="btn sec" id="bFoto">Tirar ou escolher foto</button></div><div class="fotos" id="fotos"></div></div></div>' +
@@ -415,16 +419,15 @@ async function sair(avisar) {
   setTimeout(() => { if (window.opener && !window.opener.closed) { window.close(); } if (history.length > 1) history.back(); else location.href = "intensivet.html"; }, avisar ? 900 : 50);
 }
 function escolherFoto(fn) { const f = $("#arqFoto"); f.onchange = () => { const x = f.files && f.files[0]; f.value = ""; if (x) fn(x); }; f.click(); }
-async function lerMonitor(file) {
-  const s = $("#monSt"); s.innerHTML = "<small>Lendo o monitor…</small>";
+async function lerMonitor(file, idx) {
+  const s = $("#monSt" + idx) || {}; s.innerHTML = "Lendo o monitor…";
   try { const d = await srv("monLerFoto", T, { tipo: "monitor", b64: await imagemMenor(file, 1800, 0.88) }) || {}, now = new Date();
     const v = (x) => x == null || x === "" ? "" : String(x).replace(".", ",");
-    const ult = D.afericoes[D.afericoes.length - 1] || {}, vazio = !["t", "fc", "fr", "pas", "pad", "pam", "spo2", "lac", "muc", "tpc", "obs"].some((k) => ult[k]);
-    const r = vazio ? ult : (D.afericoes.push({ m: MOMENTOS[Math.min(MOMENTOS.length - 1, MOMENTOS.indexOf(ult.m) + 1)] || "Antes" }), D.afericoes[D.afericoes.length - 1]);
+    const r = D.afericoes[idx]; if (!r) return;
     r.h = r.h || d.hora || (p2(now.getHours()) + ":" + p2(now.getMinutes()));
     const n = [["fc", d.fc], ["fr", d.fr], ["t", d.t], ["pas", d.pas], ["pad", d.pad], ["pam", d.pam], ["spo2", d.spo2]].filter(([k, x]) => v(x) && (r[k] = v(x))).length;
     const extra = d.etco2 ? "ETCO2 " + v(d.etco2) + " mmHg" : ""; if (extra) r.obs = [r.obs, extra].filter(Boolean).join(" · ");
-    salvarDepois(); pintar(); const s2 = $("#monSt"); s2.innerHTML = n ? '<span class="ok">' + n + " parâmetros lidos na aferição de " + esc(r.m) + ". Confira.</span>" : '<span class="erro">Não consegui ler os parâmetros. Tire a foto de frente para a tela.</span>';
+    salvarDepois(); pintar(); const s2 = $("#monSt" + idx); if (s2) s2.innerHTML = n ? '<span class="ok">' + n + " parâmetros lidos. Confira.</span>" : '<span class="erro">Não consegui ler. Tire a foto de frente para a tela.</span>';
   } catch (e) { s.innerHTML = '<span class="erro">' + esc(e.message || "Não consegui ler a foto.") + "</span>"; }
 }
 async function lerHemochromax(file, alvo) {
@@ -444,6 +447,7 @@ function ligar() {
     if (box.dataset.multi) { const L = pega(p) || []; poe(p, L.includes(b.dataset.v) ? L.filter((x) => x !== b.dataset.v) : L.concat([b.dataset.v])); } else poe(p, pega(p) === b.dataset.v ? "" : b.dataset.v);
     if (p !== "_legFoto") salvarDepois();
     if (p === "reacao.houve" || p === "paciente.especie") return pintar();
+    if (p === "prova") { const d = document.getElementById("provaDica"); if (d) d.hidden = pega(p) !== "Amostra guardada"; }
     box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", box.dataset.multi ? (pega(p) || []).includes(x.dataset.v) : pega(p) === x.dataset.v)); });
   // tipo sanguíneo: um do DEA 1 e um do DAL; tocar de novo desmarca (sem DAL marcado, o PDF não fala do DAL)
   document.querySelectorAll(".esc[data-tipo] button").forEach((b) => b.onclick = () => { const k = b.dataset.k; D.bolsa[k] = D.bolsa[k] === b.dataset.v ? "" : b.dataset.v; D.bolsa.tipo = tipoBolsaTxt(); salvarDepois();
@@ -458,13 +462,16 @@ function ligar() {
     c.querySelectorAll(".esc[data-ac] button").forEach((b) => b.onclick = () => { const k = b.parentNode.dataset.ac; r[k] = r[k] === b.dataset.v ? "" : b.dataset.v; salvarDepois(); b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", r[k] === x.dataset.v)); });
   });
   document.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { if (!confirm("Tirar esta aferição da ficha?")) return; D.afericoes.splice(+b.dataset.del, 1); salvarDepois(); pintar(); });
+  const bF = $("#bAferFoto"); if (bF) bF.onclick = () => escolherFoto((f) => { const u = D.afericoes[D.afericoes.length - 1] || {};
+    if (["t", "fc", "fr", "pas", "pad", "pam", "spo2", "lac", "muc", "tpc", "obs"].some((k) => u[k]) || !D.afericoes.length) $("#bAfer").onclick();   // a última vazia é usada
+    lerMonitor(f, D.afericoes.length - 1); });
   const bA = $("#bAfer"); if (bA) bA.onclick = () => { const ult = D.afericoes[D.afericoes.length - 1] || {}, i = MOMENTOS.indexOf(ult.m), d = new Date();
     D.afericoes.push({ m: MOMENTOS[Math.min(MOMENTOS.length - 1, i + 1)] || MOMENTOS[0], h: p2(d.getHours()) + ":" + p2(d.getMinutes()) }); salvarDepois(); pintar();
     const L = document.querySelectorAll(".afer"); L[L.length - 1].scrollIntoView({ behavior: "smooth", block: "start" }); };
   document.querySelectorAll('input[type="time"][data-p]').forEach((el) => el.addEventListener("focus", () => { if (!el.value) { const d = new Date(); el.value = p2(d.getHours()) + ":" + p2(d.getMinutes()); el.oninput(); } }));
   $("#pdfA4").onclick = () => exportar(false); $("#pdfCel").onclick = () => exportar(true);
   $("#bVoltar").onclick = () => sair(false); $("#bSalvarSair").onclick = () => sair(true);
-  $("#bMonitor").onclick = () => escolherFoto((f) => lerMonitor(f));
+  document.querySelectorAll("[data-mon]").forEach((b) => b.onclick = () => escolherFoto((f) => lerMonitor(f, +b.dataset.mon)));
   document.querySelectorAll("[data-hcx]").forEach((b) => b.onclick = () => escolherFoto((f) => lerHemochromax(f, b.dataset.hcx)));
   $("#bLer").onclick = () => { const f = $("#arqLer"); f.onchange = () => { lerArquivos(f.files); f.value = ""; }; f.click(); };
   $("#bColar").onclick = colarImagem;
@@ -551,7 +558,7 @@ const bloco = (h, mt) => '<div style="padding-top:' + (mt == null ? 14 : mt) + '
 function blocosPdf(cel) {
   const P = D.paciente, B = D.bolsa, A = F.assinatura, out = [];
   out.push(bloco((cel ? "" : tituloPdf(false)) + tit("Paciente") + kv([["Paciente", P.nome], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : ""], ["Responsável", D.responsavel], ["Telefone", D.telefone], ["Clínica", D.clinica || F.clinica], ["Indicação", D.indicacao]], cel ? 2 : 3), 0));
-  out.push(bloco(tit("Hemocomponente") + kv([["Bolsa", B.id], ["Componente", B.componente], ["Volume da bolsa", B.volume ? B.volume + " mL" : ""], ["Tipo sanguíneo da bolsa", tipoBolsaTxt(B)], ["Prova de compatibilidade", D.prova], ["Hematócrito antes", D.htPre ? String(D.htPre).replace(".", ",") + "%" : ""],
+  out.push(bloco(tit("Hemocomponente") + kv([["Bolsa", B.id], ["Componente", B.componente], ["Volume da bolsa", B.volume ? B.volume + " mL" : ""], ["Tipo sanguíneo da bolsa", tipoBolsaTxt(B)], ["Prova de compatibilidade", D.prova === "Amostra guardada" ? "Não feita antes da transfusão (emergência); amostra pré-transfusional guardada para fazer depois" : D.prova], ["Hematócrito antes", D.htPre ? String(D.htPre).replace(".", ",") + "%" : ""],
     ["Pré-medicação", D.premed], ["Acesso", D.acesso], ["Taxa inicial", D.taxa1 ? D.taxa1 + " mL/kg/h" : ""], ["Taxa após 15 min", D.taxa2 ? D.taxa2 + " mL/kg/h" : ""], ["Volume transfundido", D.volTx ? D.volTx + " mL" : ""], ["Horário", [D.inicio ? "início " + D.inicio : "", D.fim ? "término " + D.fim : ""].filter(Boolean).join(" · ")]], cel ? 2 : 3)));
   const AF = D.afericoes.filter((r) => ["h", "t", "fc", "fr", "pas", "pad", "pam", "spo2", "lac", "muc", "tpc", "obs"].some((k) => r[k]));
   if (AF.length) {
