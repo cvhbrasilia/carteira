@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127192159">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127193222">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -927,10 +927,17 @@ button.pdf{font-family:inherit;cursor:pointer}
 .mm-lam>.mm-arte{inset:0;z-index:1;background:center/100% 100% no-repeat;pointer-events:none}
 /* computador: páginas-modelo alargadas (1211 × 1817, moldura maior, o que fica à esquerda continua no lugar e o resto vai 9,52 u para a direita) */
 .pg.mm.lg>.mm-lam{width:min(100cqw,calc(100cqh * 1211 / 1817));aspect-ratio:1211/1817;font-size:calc(min(100cqw,calc(100cqh * 1211 / 1817)) * 866 / 1211 / 23.9);--u:calc(100cqw * 866 / 1211 / 23.9)}
-.pg.lg .mm-t-l.a{left:calc(50% - var(--u)*8.55)}.pg.lg .mm-t-l.b{right:calc(50% - var(--u)*8.55)}.pg.lg .mm-t-txt{width:calc(var(--u)*26.12)}
-.pg.lg .mm-lp{right:calc(var(--u)*10.72)}.pg.lg .mm-f-foto{width:calc(var(--u)*26.32)}
-.pg.lg .mm-a-f.a,.pg.lg .mm-a-toque.a,.pg.lg .mm-a-mais.a{left:calc(var(--u)*12.52)}.pg.lg .mm-a-f.b,.pg.lg .mm-a-toque.b,.pg.lg .mm-a-mais.b{left:calc(var(--u)*20.68)}
-.pg.lg .mm-a-d.a{left:calc(var(--u)*11.7)}.pg.lg .mm-a-d.b{left:calc(var(--u)*19.75)}
+.pg.lg .mm-c-nome{left:calc(var(--u)*4.6);top:calc(var(--u)*20.6);max-width:8.5em}
+.pg.lg .mm-l-int{display:none}.pg.lg .mm-lp{left:calc(var(--u)*2.55);right:calc(var(--u)*1.66);height:calc(var(--u)*4)}.pg.lg .mm-lp.fim{top:calc(var(--u)*24.3)}.pg.lg .mm-lp.ini{top:calc(var(--u)*36.46);height:calc(var(--u)*3.8)}
+.pg.lg .mm-l-c2{border-color:transparent;background:transparent;padding-left:1.1em}.pg.lg .mm-l-b2{display:none}.pg.lg .mm-lpts{left:calc(var(--u)*2.35);top:calc(var(--u)*28.6);height:calc(var(--u)*7.6)}
+.pg.lg .mm-t-tit{top:calc(var(--u)*7.3)}.pg.lg .mm-t-l.a{left:calc(50% - var(--u)*8.55)}.pg.lg .mm-t-l.b{right:calc(50% - var(--u)*8.55)}.pg.lg .mm-t-l{top:calc(var(--u)*7.85)}.pg.lg .mm-t-txt{left:calc(var(--u)*5);width:calc(var(--u)*23.4);top:calc(var(--u)*9.9);bottom:calc(var(--u)*6.8)}.pg.lg .mm-t-txt.seg{top:calc(var(--u)*5.6)}
+.pg.lg .mm-a-tit{left:calc(var(--u)*13.7);top:calc(var(--u)*6.5);transform:translate(-50%,-50%) rotate(-2deg);font-family:Lora,Georgia,serif;font-style:italic;font-weight:700;font-size:2.3em;line-height:1;color:#7B1A1A;white-space:nowrap}
+.pg.lg .mm-a-f.a,.pg.lg .mm-a-toque.a,.pg.lg .mm-a-mais.a{left:calc(var(--u)*10.2);top:calc(var(--u)*19.96);width:calc(var(--u)*15.93);height:calc(var(--u)*15.85);--r:-6.84deg}
+.pg.lg .mm-a-f.b,.pg.lg .mm-a-toque.b,.pg.lg .mm-a-mais.b{left:calc(var(--u)*22.92);top:calc(var(--u)*31.81);width:calc(var(--u)*15.62);height:calc(var(--u)*15.71);--r:7.7deg}
+.pg.lg .mm-a-mais.a,.pg.lg .mm-a-mais.b{width:auto;height:auto}
+.pg.lg .mm-a-d.a{left:calc(var(--u)*11.32);top:calc(var(--u)*29.3);--r:-6.84deg}.pg.lg .mm-a-d.b{left:calc(var(--u)*21.68);top:calc(var(--u)*41.03);--r:7.7deg}
+.pg.lg .mm-f-foto{left:calc(var(--u)*4.57);top:calc(var(--u)*5.12);width:calc(var(--u)*24.41);height:calc(var(--u)*31.04);border-radius:calc(var(--u)*.9)}
+.pg.lg .mm-f-nome{top:calc(var(--u)*40.1);font-size:2.1em}.pg.lg .mm-f-datas{top:calc(var(--u)*42.1)}.pg.lg .mm-f-datas span{background:transparent}.pg.lg .mm-f-msg{top:calc(var(--u)*44.75);font-size:.9em}.pg.lg .mm-f-ass{top:calc(var(--u)*47.25)}.pg.lg .mm-f-ass b{font-size:.85em}
 .mm-rod{left:calc(var(--u)*1.3);right:calc(var(--u)*1.3);top:calc(var(--u)*48.25);border-top:1px solid #E6D9CE;padding-top:calc(var(--u)*.35);display:grid;grid-template-columns:1fr auto;align-items:center;row-gap:calc(var(--u)*.12);font-size:.56em;line-height:1.1;color:#8B7B70}
 .mm-rod b{color:#7B1A1A;font-size:1.05em}.mm-rod small{grid-column:1/3;font-size:.72em;color:#A0928A}
 .mm-c-nome{left:calc(var(--u)*2.07);top:calc(var(--u)*20.3);transform:translateY(-50%);max-width:6.2em;font-size:3.43em;line-height:.98;font-weight:800;color:#F7F0E7;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;overflow-wrap:break-word}
@@ -1191,7 +1198,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127192159';
+  var VERSAO = '20261127193222';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3772,14 +3779,16 @@ function paginasMemorial(an, M, regs) {
   // recordações: duas fotos por página nas Polaroides do modelo, com a data embaixo
   if (F.length || ed) {
     abas.push({ t: 'mm-alb', i: ps.length });
-    const vazio = k => '<div class="mm-a-f ' + 'ab'[k] + ' mm-a-vazio"></div>', tvazio = k => ed ? '<button class="mm-a-mais ' + 'ab'[k] + '" data-acao="memed-add">Acrescente mais recordações aqui</button>' : '';
+    // família (e "Como a família vê"): também acrescenta fotos, pelo link da carteira
+    const fam = !ed && (E.modo !== 'painel' || E.memPrevia) && E.token !== 'demo';
+    const vazio = k => '<div class="mm-a-f ' + 'ab'[k] + ' mm-a-vazio"></div>', tvazio = k => ed ? '<button class="mm-a-mais ' + 'ab'[k] + '" data-acao="memed-add">Acrescente mais recordações aqui</button>' : fam ? '<button class="mm-a-mais ' + 'ab'[k] + '" data-acao="memfam-add">Toque para acrescentar uma recordação</button>' : '';
     // editando: sempre sobra lugar para mais recordações (com as fotos em número par, entra uma página nova com as duas Polaroides vazias)
     const nAlb = ed ? (F.length % 2 === 0 ? F.length + 2 : F.length) : Math.max(F.length, 1);
     for (let i = 0; i < nAlb; i += 2) {
       const par = F.slice(i, i + 2), ult = i + 2 >= nAlb;
       ps.push(pg('album', [0, 1].map(k => par[k] ? '<div class="mm-a-f ' + 'ab'[k] + '">' + fotoImg(par[k]) + '</div>' : vazio(k)).join(''),
         [0, 1].map(k => par[k] ? '<span class="mm-a-d ' + 'ab'[k] + '">' + (par[k].data ? brMem(par[k].data) : '') + '</span><i class="mm-a-toque ' + 'ab'[k] + '" data-acao="' + (ed ? 'memed-foto' : 'memo-ampliar') + '" data-id="' + par[k].id + '"' + (par[k].tipo === 'video' ? ' data-v="video"' : '') + '></i>' : tvazio(k)).join('') +
-        (ult ? bt('memed-add', '+ Adicionar fotos', 'baixo') : '')));
+        (lg ? '<h2 class="mm-a-tit">Recordações</h2>' : '') + (ult ? bt('memed-add', '+ Adicionar fotos', 'baixo') + (fam && par.length === 2 ? '<button class="mm-ed baixo" data-acao="memfam-add">+ Acrescentar fotos</button>' : '') : '')));
     }
   }
   // última página: a foto principal na moldura, o nome, as datas e a mensagem
@@ -3998,6 +4007,18 @@ function memEdPrincipal() {
   if (!F.length) return toast('Ponha fotos no memorial primeiro.');
   abrirFolha('Foto principal', '<p class="nota">Toque na foto que vai na última página.</p><div class="me-g">' + F.map(f => '<button class="me-gf' + (m.principal === f.id ? ' on' : '') + '" data-id="' + f.id + '">' + fotoImg(f) + '</button>').join('') + '</div>', c => {
     c.querySelectorAll('.me-gf').forEach(b => b.onclick = () => memEdSalvar({ principal: b.dataset.id }, 'Foto principal trocada.', pag)); });
+}
+// família acrescenta fotos ao memorial pela carteira; no painel ("Como a família vê") usa o envio do painel
+function memFamAdd() {
+  if (E.modo === 'painel') return memEdAdd();
+  $$('.hom-arq').forEach(x => x.remove()); const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.multiple = true; i.className = 'hom-arq'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
+  i.onchange = async () => { const aid = E.memAberto, an = animalDe(aid), fs = [...i.files]; i.remove(); if (!fs.length || !an) return;
+    let ok = 0, erro = '';
+    for (const [k, f] of fs.entries()) { toast(fs.length > 1 ? 'Enviando ' + (k + 1) + ' de ' + fs.length + '…' : 'Enviando a foto…', 600000);
+      try { const m = await api('memorialFotoFamilia', E.token, aid, { b64: await fotoPendJpeg(f), mime: 'image/jpeg' }); if (m) an.memorial = m; ok++; } catch (e) { erro = e.message; } }
+    toast(ok ? (ok === 1 ? 'Foto acrescentada às Recordações.' : ok + ' fotos acrescentadas às Recordações.') + (erro ? ' ' + erro : '') : erro || 'Nada foi enviado.', 6000);
+    if (ok) { try { E.d = await api('carteiraPublica', E.token); } catch (_) {} E.memIni = 'albfim'; abrirMemorial(aid); } };
+  i.click();
 }
 function memEdAdd() {
   $$('.hom-arq').forEach(x => x.remove()); const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,video/*'; i.multiple = true; i.className = 'hom-arq'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
@@ -10334,6 +10355,7 @@ const ACOES = {
   'memed-texto': () => memEdTexto(),
   'memed-foto': b => memEdFoto(b.dataset.id),
   'memed-add': () => memEdAdd(),
+  'memfam-add': () => memFamAdd(),
   'memed-princ': () => memEdPrincipal(),
   'mem-salvar': () => memSalvar(),
   // publicar pede confirmação antes de mandar para a carteira do responsável
