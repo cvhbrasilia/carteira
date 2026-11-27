@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127190519">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127191900">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -958,7 +958,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .mm-a-toque{z-index:3;cursor:zoom-in}
 .mm-a-d{transform:translate(-50%,-50%) rotate(var(--r));font-size:.74em;line-height:1;color:#8B7B70;letter-spacing:.04em;white-space:nowrap}
 .mm-a-d.a{left:calc(var(--u)*6.95);top:calc(var(--u)*28.54);--r:-6.54deg}.mm-a-d.b{left:calc(var(--u)*15);top:calc(var(--u)*37.94);--r:7.43deg}
-.mm-lam>.mm-a-vazio{background:#EDE2D3}.mm-a-vazio:after{content:"";position:absolute;inset:-20%;background:#D3BEA4;-webkit-mask:var(--padrao) center/9em 9em repeat;mask:var(--padrao) center/9em 9em repeat;opacity:.75}
+.mm-lam>.mm-a-vazio{background:#EFE6DA}.mm-a-vazio:after{content:"";position:absolute;inset:0;background:#C6B098;-webkit-mask:url("padrao-recordacao.webp") center/cover no-repeat;mask:url("padrao-recordacao.webp") center/cover no-repeat;opacity:.6}
 .mm-f-foto{left:calc(var(--u)*3.53);top:calc(var(--u)*3.73);width:calc(var(--u)*16.8);height:calc(var(--u)*21.95)}
 .mm-f-nome{left:0;right:0;top:calc(var(--u)*30.6);transform:translateY(-50%);text-align:center;font-size:2.48em;line-height:1;font-weight:800;color:#5F130F;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap}
 .mm-f-datas,.mm-f-ass{left:calc(var(--u)*3.2);right:calc(var(--u)*3.2);display:flex;align-items:center;gap:.65em;transform:translateY(-50%);line-height:1}.mm-f-datas span,.mm-f-ass span{flex:1;height:1.5px;background:#C6B098}
@@ -1192,7 +1192,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127190519';
+  var VERSAO = '20261127191900';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3774,8 +3774,10 @@ function paginasMemorial(an, M, regs) {
   if (F.length || ed) {
     abas.push({ t: 'mm-alb', i: ps.length });
     const vazio = k => '<div class="mm-a-f ' + 'ab'[k] + ' mm-a-vazio"></div>', tvazio = k => ed ? '<button class="mm-a-mais ' + 'ab'[k] + '" data-acao="memed-add">Acrescente mais recordações aqui</button>' : '';
-    for (let i = 0; i < Math.max(F.length, 1); i += 2) {
-      const par = F.slice(i, i + 2), ult = i + 2 >= F.length;
+    // editando: sempre sobra lugar para mais recordações (com as fotos em número par, entra uma página nova com as duas Polaroides vazias)
+    const nAlb = ed ? (F.length % 2 === 0 ? F.length + 2 : F.length) : Math.max(F.length, 1);
+    for (let i = 0; i < nAlb; i += 2) {
+      const par = F.slice(i, i + 2), ult = i + 2 >= nAlb;
       ps.push(pg('album', [0, 1].map(k => par[k] ? '<div class="mm-a-f ' + 'ab'[k] + '">' + fotoImg(par[k]) + '</div>' : vazio(k)).join(''),
         [0, 1].map(k => par[k] ? '<span class="mm-a-d ' + 'ab'[k] + '">' + (par[k].data ? brMem(par[k].data) : '') + '</span><i class="mm-a-toque ' + 'ab'[k] + '" data-acao="' + (ed ? 'memed-foto' : 'memo-ampliar') + '" data-id="' + par[k].id + '"' + (par[k].tipo === 'video' ? ' data-v="video"' : '') + '></i>' : tvazio(k)).join('') +
         (ult ? bt('memed-add', '+ Adicionar fotos', 'baixo') : '')));
