@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127083048';
+  var VERSAO = '20261127083126';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -233,7 +233,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127083048">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127083126">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
@@ -399,7 +399,7 @@ function pintar() {
       '<label>Acesso</label>' + chips("acesso", ACESSOS) +
       '<div class="g2">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + "</div>" + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') +
       '<div class="g2">' + campo("Início", "inicio", 'type="time"') + campo("Término", "fim", 'type="time"') + "</div></div>" +
-    '<div class="cx"><h2>Parâmetros clínicos</h2><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button><button class="btn sec" id="bAferFoto">+ Aferição com foto do monitor</button></div></div>' +
+    '<div class="cx"><h2>Parâmetros clínicos</h2><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button></div></div>' +
     '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", [["não", "Não"], ["sim", "Sim"]]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, { multi: true }) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", [["não", "Não"], ["sim", "Sim"]]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
     '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + '</div><div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPos">Foto do Hemochromax (preenche o próximo vazio)</button></div><p id="hcxSt"></p><label>Evolução e observações</label><textarea data-p="obs">' + esc(D.obs || "") + "</textarea></div>" +
     '<div class="cx"><h2>Fotos</h2><div class="dica">Todas as fotos são opcionais e entram no PDF. Elas ficam como registro da transfusão e ajudam a:<ul><li>comprovar qual bolsa foi usada (foto da etiqueta);</li><li>mostrar como o paciente estava antes, durante e depois;</li><li>investigar uma reação transfusional, se acontecer.</li></ul>Escolha o tipo da foto e depois toque em tirar ou escolher.</div><label>Tipo da foto</label>' + chips("_legFoto", LEG_FOTO) + '<div class="bts so-edicao"><button class="btn sec" id="bFoto">Tirar ou escolher foto</button></div><div class="fotos" id="fotos"></div></div></div>' +
@@ -463,9 +463,6 @@ function ligar() {
     c.querySelectorAll(".esc[data-ac] button").forEach((b) => b.onclick = () => { const k = b.parentNode.dataset.ac; r[k] = r[k] === b.dataset.v ? "" : b.dataset.v; salvarDepois(); b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", r[k] === x.dataset.v)); });
   });
   document.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { if (!confirm("Tirar esta aferição da ficha?")) return; D.afericoes.splice(+b.dataset.del, 1); salvarDepois(); pintar(); });
-  const bF = $("#bAferFoto"); if (bF) bF.onclick = () => escolherFoto((f) => { const u = D.afericoes[D.afericoes.length - 1] || {};
-    if (["t", "fc", "fr", "pas", "pad", "pam", "spo2", "lac", "muc", "tpc", "obs"].some((k) => u[k]) || !D.afericoes.length) $("#bAfer").onclick();   // a última vazia é usada
-    lerMonitor(f, D.afericoes.length - 1); });
   const bA = $("#bAfer"); if (bA) bA.onclick = () => { const ult = D.afericoes[D.afericoes.length - 1] || {}, i = MOMENTOS.indexOf(ult.m), d = new Date();
     D.afericoes.push({ m: MOMENTOS[Math.min(MOMENTOS.length - 1, i + 1)] || MOMENTOS[0], h: p2(d.getHours()) + ":" + p2(d.getMinutes()) }); salvarDepois(); pintar();
     const L = document.querySelectorAll(".afer"); L[L.length - 1].scrollIntoView({ behavior: "smooth", block: "start" }); };
