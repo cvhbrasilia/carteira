@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127085426">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127092716">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -919,7 +919,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .item:first-of-type{border-top:0}
 .item .t{flex:1;min-width:0}
 .item .t b{display:block;font-size:16px;color:var(--vinho)}
-.item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci-it .t small{white-space:normal}.ci-doa{display:flex;gap:12px;align-items:baseline;padding:7px 2px;border-bottom:1px solid #F0E8DE}.ci-doa b{color:var(--vinho);min-width:92px}.ci-doa span{font-size:13.5px;color:var(--tinta2)}
+.item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci-it .t small{white-space:normal}.memo-capa .capa-meio{display:flex;flex-direction:column;align-items:center;text-align:center}.memo-cf{width:9.5em;height:9.5em;border-radius:50%;background:#C6B098 center/cover no-repeat;border:.25em solid #EEE5DB;margin:.3em auto .6em;box-shadow:0 .4em 1.2em rgba(0,0,0,.25)}.memo-datas{font-size:1.1em;letter-spacing:.12em;color:#EEE5DB}.pg.memo{background:#FFFDF9}.memo-txt{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.8em;padding:.6em .3em}.memo-txt p{font-size:.98em;line-height:1.55;color:var(--tinta);text-wrap:pretty}.memo-foto{flex:1;display:flex;flex-direction:column;gap:.55em;margin:0;min-height:0}.memo-foto img{flex:1;min-height:0;width:100%;object-fit:contain;border-radius:.5em;background:#F4ECE2}.memo-foto figcaption{text-align:center;color:var(--vinho);font-size:.95em;font-weight:600}.memo-foto figcaption small{display:block;color:var(--tinta2);font-weight:400;font-size:.75em;margin-top:.2em}.memo-fim{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;text-align:center}.memo-fim b{font-size:2em;color:var(--vinho)}.memo-fim span{color:var(--tinta2);letter-spacing:.08em}.pill.memo-bt{background:#EEE5DB;color:var(--vinho)}.hom-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:10px}.hom-f{border:1px solid #EADFD2;border-radius:12px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:6px}.hom-f img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#F4ECE2}.hom-sel{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--vinho)}.hom-leg{font:inherit;font-size:13px;padding:6px 8px;border:1px solid #E3D7C8;border-radius:8px}.hom-pe{display:flex;justify-content:space-between;align-items:center;gap:6px}.hom-pe small{color:var(--tinta2);font-size:11.5px}.ci-doa{display:flex;gap:12px;align-items:baseline;padding:7px 2px;border-bottom:1px solid #F0E8DE}.ci-doa b{color:var(--vinho);min-width:92px}.ci-doa span{font-size:13.5px;color:var(--tinta2)}
 .item .seta{color:var(--dourado);font-size:20px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .chip-an{border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);font-weight:700;font-size:13px;border-radius:999px;padding:5px 11px}
@@ -1124,7 +1124,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127085426';
+  var VERSAO = '20261127092716';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -2980,7 +2980,7 @@ async function ctnDados(an, fotoAnimal) {
     fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || (E.d.responsavel || {}).nome || '', cpf, vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', celId: d.cel ? (d.cel.id || (typeof d.cel === 'string' ? d.cel : '')) : '', corte: meta.corte || null, rot: +(meta.rot || 0) };
 }
 // situação no Clube do Doador na carteirinha: ativo ou aposentado; afastado, arquivado ou não doador não mostra nada
-const clubeStatus = an => { if (!an || an.doador !== '1') return ''; if (an.aposentadoEm) return 'aposentado'; return an.ativo !== '0' && !an.afastadoMotivo && !an.inativoMotivo ? 'ativo' : ''; };
+const clubeStatus = an => { if (!an || an.doador !== '1') return ''; if (an.falecidoEm) return 'memoria'; if (an.aposentadoEm) return 'aposentado'; return an.ativo !== '0' && !an.afastadoMotivo && !an.inativoMotivo ? 'ativo' : ''; };
 // ícone discreto antes do texto: círculo com visto (ativo) ou medalha com fita (aposentado), só em traço
 function ctnIconeClube(x, cx, cy, r, tipo) {
   x.save(); x.lineWidth = r * 0.16; x.lineCap = 'round'; x.lineJoin = 'round';
@@ -3009,7 +3009,8 @@ function ctnFrente(R, D) {
   ctnTxt(x, [843, 423], nome, pn, 700, CTN.ESC, { sp: pn * 0.055 });
   // situação no Clube do Doador logo abaixo do nome, pequena e discreta (só ativo ou aposentado)
   const dy = D.clube ? 34 : 0;
-  if (D.clube) { ctnIconeClube(x, 868, 466, 19, D.clube); const fem = /^f/i.test(D.sexo || ''); ctnTxt(x, [900, 481], D.clube === 'aposentado' ? (fem ? 'Doadora aposentada' : 'Doador aposentado') : (fem ? 'Doadora ativa' : 'Doador ativo'), 44, 400, '#7A6A60'); }
+  if (D.clube === 'memoria') ctnTxt(x, [868, 481], 'Em memória', 44, 400, '#7A6A60');
+  else if (D.clube) { ctnIconeClube(x, 868, 466, 19, D.clube); const fem = /^f/i.test(D.sexo || ''); ctnTxt(x, [900, 481], D.clube === 'aposentado' ? (fem ? 'Doadora aposentada' : 'Doador aposentado') : (fem ? 'Doadora ativa' : 'Doador ativo'), 44, 400, '#7A6A60'); }
   // raça · sexo (o ponto em dourado)
   { const pr = ctnCabe(x, D.raca + ' · ' + D.sexo, 68, 400, 640, 40); let xx = 847;
     if (D.raca) xx += ctnTxt(x, [xx, 529 + dy], D.raca, pr, 400, CTN.ESC);
@@ -3083,7 +3084,7 @@ async function ctnBaixarImg(an, C) {
 // situação no Clube do Doador, mudada pela carteirinha no painel: ativo, afastado temporariamente (só aparece no painel) ou aposentado (medalha na carteirinha)
 function mudarStatusClube(aid, depois) {
   const an = animalDe(aid); if (!an) return;
-  const sit = an.aposentadoMotivo ? 'apo' : an.inativoMotivo ? 'ina' : an.afastadoMotivo ? 'afa' : 'ativo';
+  const sit = an.falecidoEm ? 'fal' : an.aposentadoMotivo ? 'apo' : an.inativoMotivo ? 'ina' : an.afastadoMotivo ? 'afa' : 'ativo';
   const opc = (L, v) => L.map(m => '<option' + (m === v ? ' selected' : '') + '>' + esc(m) + '</option>').join('') + (v && !L.includes(v) ? '<option selected>' + esc(v) + '</option>' : '');
   const radio = (v, t, d) => '<label class="check larga st-op"><input type="radio" name="stSit" value="' + v + '"' + (sit === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><small>' + d + '</small></span></label>';
   abrirFolha('Situação de ' + an.nome,
@@ -3097,17 +3098,24 @@ function mudarStatusClube(aid, depois) {
     radio('apo', 'Doador aposentado', 'Aparece na carteirinha com a medalha de ouro, para sempre.') +
     '<div class="grade st-sub" id="stApo"><div class="campo"><label for="stApoM">Motivo</label><select id="stApoM">' + opc(MOTIVOS_APO, an.aposentadoMotivo) + '</select></div><div class="campo"><label for="stApoEm">Aposentado em</label><input id="stApoEm" type="date" value="' + esc(an.aposentadoEm || hoje()) + '"></div>' +
     '<div class="campo larga"><label for="stApoObs">Observação (só aparece no painel)</label><input id="stApoObs" autocomplete="off" value="' + esc(an.aposentadoObs || '') + '"></div></div>' +
+    radio('fal', 'Falecido', 'Sai de todas as contas, listas, lembretes e avisos ao responsável. Na carteirinha aparece Em memória.') +
+    '<div class="grade st-sub" id="stFal"><div class="campo"><label for="stFalEm">Data do falecimento</label><input id="stFalEm" type="date" value="' + esc(an.falecidoEm || hoje()) + '"></div>' +
+    '<div class="campo larga"><label for="stFalObs">Observação (só aparece no painel)</label><input id="stFalObs" autocomplete="off" value="' + esc(an.falecidoObs || '') + '"></div></div>' +
     '<button class="btn" id="stSalvar">Salvar a situação</button></div>', () => {
-      const ver = () => { const v = ($('input[name=stSit]:checked') || {}).value; $('#stAfa').hidden = v !== 'afa'; $('#stIna').hidden = v !== 'ina'; $('#stApo').hidden = v !== 'apo'; };
+      const ver = () => { const v = ($('input[name=stSit]:checked') || {}).value; $('#stAfa').hidden = v !== 'afa'; $('#stIna').hidden = v !== 'ina'; $('#stApo').hidden = v !== 'apo'; $('#stFal').hidden = v !== 'fal'; };
       $$('input[name=stSit]').forEach(x => x.onchange = ver); ver();
       $('#stSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
         const v = ($('input[name=stSit]:checked') || {}).value, a = animalDe(aid);
         const salvo = await api('salvarAnimal', E.sessao, { id: a.id, responsavelId: a.responsavelId, nome: a.nome, especie: a.especie, sexo: a.sexo, raca: a.raca, nascimento: a.nascimento, tipoSanguineo: a.tipoSanguineo, dal: a.dal, microchip: a.microchip, doador: true, ativo: a.ativo !== '0',
           aposentadoMotivo: v === 'apo' ? vl('stApoM') : '', aposentadoEm: v === 'apo' ? vl('stApoEm') : '', aposentadoObs: v === 'apo' ? vl('stApoObs') : '',
           afastadoMotivo: v === 'afa' ? vl('stAfaM') : '', afastadoEm: v === 'afa' ? vl('stAfaEm') : '', afastadoObs: v === 'afa' ? vl('stAfaObs') : '',
-          inativoMotivo: v === 'ina' ? vl('stInaM') : '', inativoEm: v === 'ina' ? vl('stInaEm') : '', inativoObs: v === 'ina' ? vl('stInaObs') : '' });
+          inativoMotivo: v === 'ina' ? vl('stInaM') : '', inativoEm: v === 'ina' ? vl('stInaEm') : '', inativoObs: v === 'ina' ? vl('stInaObs') : '',
+          falecidoEm: v === 'fal' ? vl('stFalEm') : '', falecidoObs: v === 'fal' ? vl('stFalObs') : '' });
         const i = E.d.animais.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.animais[i] = salvo;
-        toast(v === 'apo' ? 'Doador aposentado.' : v === 'ina' ? 'Doador marcado como inativo.' : v === 'afa' ? 'Doador afastado temporariamente.' : 'Doador ativo.');
+        toast(v === 'fal' ? 'Registrado o falecimento de ' + a.nome + '.' : v === 'apo' ? 'Doador aposentado.' : v === 'ina' ? 'Doador marcado como inativo.' : v === 'afa' ? 'Doador afastado temporariamente.' : 'Doador ativo.');
+        // falecido: sempre pergunta antes de criar o memorial
+        if (v === 'fal' && pode('admin') && !memorialDe(salvo).criadoEm) return abrirFolha('Memorial de ' + a.nome, '<p class="nota">Criar agora o memorial de ' + esc(a.nome) + '? Ele fica no painel até você publicar para o responsável.</p><div class="acoes-form"><button class="btn" data-acao="mem-abrir" data-id="' + aid + '">Criar o memorial</button><button class="btn sec2" id="memDepois">Agora não</button></div>',
+          () => { $('#memDepois').onclick = () => { fecharFolha(); if (depois) depois(); else abrirCarteirinha(aid); }; });
         if (depois) depois(); else abrirCarteirinha(aid);
       });
     });
@@ -3607,13 +3615,98 @@ let tmRes;
 addEventListener('resize', () => { clearTimeout(tmRes); tmRes = setTimeout(() => { if (E.livro && !E.livro.ocupado) { dimensionar(); if (livroAberto() !== !!E.duplo) return reabrir(); E.livro.medir(); E.livro.mostrar(); } }, 120); });
 
 /* ═════════════ carteira ═════════════ */
+/* ── Em memória: fotos guardadas ao longo das doações, situação de falecido e o memorial em forma de livro ── */
+const fotosHom = an => { try { const L = JSON.parse((an && an.homenagemFotos) || '[]'); return Array.isArray(L) ? L : []; } catch (_) { return []; } };
+const memorialDe = an => { if (!an) return {}; if (an.memorial && typeof an.memorial === 'object') return an.memorial; try { return JSON.parse(an.memorial || '{}') || {}; } catch (_) { return {}; } };
+const urlFoto = id => window.CVH_SERVIDOR && CVH_SERVIDOR.arquivo ? CVH_SERVIDOR.arquivo(id) : '';
+const anoDe = d => String(d || '').slice(0, 4);
+// páginas do memorial: capa, o texto do CVH, uma página por foto e o fechamento
+function paginasMemorial(an, M) {
+  const F = M.fotos || [], capaF = F[0], nasc = anoDe(an.nascimento), fal = anoDe(M.falecidoEm);
+  const ps = ['<section class="pg capa memo-capa"><i class="lg-capa" role="img" aria-label="CVH Centro Veterinário de Hemoterapia"></i><div class="capa-meio"><p class="capa-sobre">Em memória de</p><h1' + capaTam(an.nome) + '>' + esc(an.nome) + '</h1>' +
+    (capaF ? '<div class="memo-cf" style="background-image:url(\'' + urlFoto(capaF.id) + '\')"></div>' : '') + (nasc || fal ? '<p class="memo-datas">' + [nasc, fal].filter(Boolean).join(' · ') + '</p>' : '') + '</div><i class="capa-tubo"></i>' +
+    '<p class="capa-dica">Arraste para o lado para virar a página</p></section>'];
+  // texto em páginas de até ~900 letras, sem quebrar parágrafo no meio quando dá
+  const par = String(M.texto || '').split(/\n\s*\n|\n/).map(t => t.trim()).filter(Boolean), blocos = []; let cur = [];
+  par.forEach(p => { if (cur.length && (cur.join(' ').length + p.length) > 900) { blocos.push(cur); cur = []; } cur.push(p); });
+  if (cur.length) blocos.push(cur);
+  const memoPg = (corpo, cls) => '<section class="pg memo ' + (cls || '') + '"><i class="marca"></i>' + corpo + '<footer class="rod"><span>CVH · Centro Veterinário de Hemoterapia</span><b>{{PG}}</b></footer></section>';
+  blocos.forEach(b => ps.push(memoPg('<div class="memo-txt">' + b.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>')));
+  F.forEach(f => ps.push(memoPg('<figure class="memo-foto"><img src="' + urlFoto(f.id) + '" alt="' + esc(f.legenda || an.nome) + '" loading="lazy"><figcaption>' + esc(f.legenda || '') + (f.data ? '<small>' + br(f.data) + '</small>' : '') + '</figcaption></figure>')));
+  ps.push(memoPg('<div class="memo-fim"><b>' + esc(an.nome) + '</b><span>Homenagem do CVH</span></div>', 'memo-ult'));
+  return ps.map((h, i) => h.replace('{{PG}}', i ? String(i) : ''));
+}
+// abre o memorial como livro (carteira do responsável e "ver como o responsável vê" no painel)
+function abrirMemorial(aid, deVolta) {
+  const an = animalDe(aid); if (!an) return;
+  const M = E.modo === 'painel' ? memorialPainel(an) : memorialDe(an); if (!M) return toast('O memorial ainda não foi criado.');
+  E.memVolta = deVolta || null; E.livro = null;
+  const barra = '<div class="barra"><button class="pill" data-acao="memo-voltar" data-id="' + aid + '">‹ Voltar</button><div class="titulo">Em memória de ' + esc(an.nome) + '</div>' +
+    ((M.fotos || []).length ? '<button class="pill" data-acao="memo-salvar" data-id="' + aid + '">Salvar as fotos</button>' : '') + '</div>';
+  raiz.innerHTML = FUNDO_PADRAO('pasta') + '<div class="app">' + barra + '<div class="palco"><div class="par"><div class="livro esq lado-esq" id="livroEsq"><div class="lv-pg"></div></div><div class="livro" id="livro"></div></div></div></div>';
+  dimensionar();
+  const duplo = E.duplo = livroAberto();
+  $('#livroEsq').hidden = !duplo; $('#livro').classList.toggle('duplo', duplo); $('.par').classList.toggle('aberto', duplo);
+  E.abas = [];
+  E.livro = new Livro($('#livro'), paginasMemorial(an, M), 0, () => {}, duplo ? $('#livroEsq') : null);
+}
+// no painel o memorial é montado com o que está salvo (publicado ou não)
+function memorialPainel(an) {
+  const m = memorialDe(an), F = fotosHom(an); if (!m.criadoEm) return null;
+  return { texto: m.texto || '', falecidoEm: an.falecidoEm, fotos: (m.fotos || []).map(id => F.find(f => f.id === id)).filter(Boolean) };
+}
+async function salvarFotosMemorial(aid) {
+  const an = animalDe(aid), M = E.modo === 'painel' ? memorialPainel(an) : memorialDe(an), F = (M && M.fotos) || []; if (!F.length) return;
+  toast('Preparando as fotos…');
+  try {
+    const arqs = await Promise.all(F.map(async (f, i) => { const r = await fetch(urlFoto(f.id)); if (!r.ok) throw new Error('Não consegui baixar as fotos.'); const b = await r.blob(); return new File([b], an.nome + ' ' + String(i + 1).padStart(2, '0') + '.jpg', { type: b.type || 'image/jpeg' }); }));
+    if (navigator.canShare && navigator.canShare({ files: arqs })) { await navigator.share({ files: arqs, title: 'Em memória de ' + an.nome }); return; }
+    arqs.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); });
+  } catch (e) { if (e && e.name !== 'AbortError') toast(e.message || 'Não consegui salvar as fotos.', 5000); }
+}
+// tela do painel: fotos guardadas para a homenagem (qualquer doador) e, para o falecido, o memorial
+function telaMemorial(aid) {
+  const an = animalDe(aid); if (!an) return; E.livro = null; fecharFolha(); E.memAid = aid;
+  const F = fotosHom(an), m = memorialDe(an), fal = !!an.falecidoEm, adm = pode('admin'), sel = new Set(m.fotos || []);
+  const foto = f => '<div class="hom-f"><img src="' + urlFoto(f.id) + '" alt="" loading="lazy">' +
+    (fal && adm ? '<label class="hom-sel"><input type="checkbox" data-hom-sel="' + f.id + '"' + (sel.has(f.id) ? ' checked' : '') + '> no memorial</label>' : '') +
+    '<input class="hom-leg" data-hom-leg="' + f.id + '" placeholder="Legenda (opcional)" value="' + esc(f.legenda || '') + '"><div class="hom-pe"><small>' + esc(br(f.data)) + (f.por ? ' · ' + esc(f.por) : '') + '</small><button class="mini" data-acao="hom-apagar" data-id="' + f.id + '">Apagar</button></div></div>';
+  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="' + (E.modulo === 'memoria' ? 'modulo" data-k="memoria' : 'abrir-animal" data-id="' + aid) + '">‹ Voltar</button></div>' +
+    '<header class="topo"><div class="t"><span>' + (fal ? 'Em memória' + (an.falecidoEm ? ' · ' + br(an.falecidoEm) : '') : 'Fotos para a homenagem') + '</span><b>' + esc(an.nome) + '</b></div></header>' +
+    (fal && an.falecidoObs ? '<p class="nota">' + esc(an.falecidoObs) + '</p>' : '') +
+    (fal && adm ? '<section class="cartao"><h3>Memorial</h3>' + (m.criadoEm ? '<p class="nota">' + (m.publicado ? 'Publicado na carteira do responsável' + (m.publicadoEm ? ' em ' + esc(brHora(m.publicadoEm)) : '') + '.' : 'Ainda não publicado. O responsável só vê depois de publicar.') + '</p>' : '<p class="nota">O memorial ainda não foi criado.</p>') +
+      '<label for="memTxt">Texto da homenagem</label><textarea id="memTxt" rows="9" placeholder="Texto sobre a passagem do animal">' + esc(m.texto || '') + '</textarea>' +
+      '<p class="nota">Marque abaixo as fotos que entram no memorial. A primeira marcada vai para a capa.</p>' +
+      '<div class="acoes-form"><button class="btn" data-acao="mem-salvar">Salvar o memorial</button>' + (m.criadoEm ? '<button class="btn sec2" data-acao="mem-ver">Ver como o responsável vê</button><button class="btn sec2" data-acao="mem-publicar" data-v="' + (m.publicado ? '' : '1') + '">' + (m.publicado ? 'Tirar da carteira do responsável' : 'Publicar para o responsável') + '</button>' : '') + '</div></section>' : '') +
+    '<section class="cartao"><h3>Fotos guardadas · ' + F.length + '</h3><p class="nota">' + (fal ? 'Ficam só no painel. O responsável vê apenas as que entrarem no memorial publicado.' : 'Fotos tiradas ao longo das doações. Ficam guardadas só no painel e são liberadas ao responsável apenas no memorial, como homenagem do CVH.') + '</p>' +
+      '<div class="acoes-form"><button class="btn sec2" data-acao="hom-add">Adicionar foto</button></div><div class="hom-g">' + F.slice().reverse().map(foto).join('') + '</div></section></div></main>';
+  raiz.querySelectorAll('[data-hom-leg]').forEach(i => i.onchange = async () => { try { const L = await api('homenagemLegenda', E.sessao, aid, i.dataset.homLeg, i.value); an.homenagemFotos = JSON.stringify(L); toast('Legenda salva.'); } catch (e) { toast(e.message, 5000); } });
+}
+async function memSalvar(publicar) {
+  const aid = E.memAid, an = animalDe(aid); if (!an) return;
+  const o = { texto: ($('#memTxt') || {}).value || '', fotos: [...raiz.querySelectorAll('[data-hom-sel]:checked')].map(i => i.dataset.homSel) };
+  if (publicar !== undefined) o.publicar = publicar;
+  try { const m = await api('memorialSalvar', E.sessao, aid, o); an.memorial = JSON.stringify(m); toast(publicar === true ? 'Memorial publicado na carteira do responsável.' : publicar === false ? 'Memorial tirado da carteira do responsável.' : 'Memorial salvo.'); telaMemorial(aid); }
+  catch (e) { toast(e.message, 6000); }
+}
+// módulo Em memória: falecidos e doadores com fotos guardadas
+function telaModMemoria() {
+  E.livro = null; fecharFolha(); E.modulo = 'memoria';
+  const fal = E.d.animais.filter(a => a.falecidoEm).sort((a, b) => b.falecidoEm.localeCompare(a.falecidoEm));
+  const com = E.d.animais.filter(a => !a.falecidoEm && fotosHom(a).length).sort((a, b) => a.nome.localeCompare(b.nome));
+  const li = (a, sub) => '<button class="item" data-acao="mem-abrir" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + '</b><small>' + esc(sub) + '</small></div><span class="seta">›</span></button>';
+  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
+    '<header class="topo"><div class="t"><span>Homenagem do CVH</span><b>Em memória</b></div></header>' +
+    '<section class="cartao"><h3>Falecidos · ' + fal.length + '</h3>' + (fal.length ? fal.map(a => { const m = memorialDe(a); return li(a, [(respDe(a) || {}).nome, 'falecido em ' + br(a.falecidoEm), m.publicado ? 'memorial publicado' : m.criadoEm ? 'memorial não publicado' : 'sem memorial'].filter(Boolean).join(' · ')); }).join('') : '<p class="vazio-p">Nenhum animal marcado como falecido.</p>') + '</section>' +
+    '<section class="cartao"><h3>Fotos guardadas para a homenagem · ' + com.length + '</h3>' + (com.length ? com.map(a => li(a, [(respDe(a) || {}).nome, fotosHom(a).length + (fotosHom(a).length === 1 ? ' foto' : ' fotos')].filter(Boolean).join(' · '))).join('') : '<p class="vazio-p">Nenhuma foto guardada ainda. As fotos entram pelo menu do animal, em "Fotos para a homenagem".</p>') + '</section></div></main>';
+}
 function abrirCarteira(id, ini) {
   E.animal = id;
   const an = animalDe(id), painel = E.modo === 'painel';
   let barra = '';
   if (painel) barra = '<div class="barra"><button class="pill" data-acao="voltar-resp">‹ Voltar</button><div class="titulo">' + esc(an.nome) + (E.previa ? ' · prévia do responsável' : '') + '</div>' + (E.previa ? '<button class="pill av-bt" id="btAvisos" data-acao="avisos" aria-label="Avisos">' + IC_SINO + '</button>' : '') + (pode('admin') && !E.previa && !E.comoResp ? '<button class="pill rev-pill' + (revSit(id) ? ' rev-' + revSit(id) : '') + '" data-acao="rev-abrir">' + (revSit(id) ? REV_NOME[revSit(id)] : 'Revisão') + ((E.rev && E.rev[id] || {}).nota ? ' · nota' : '') + '</button>' : '') + '<button class="pill escura" data-acao="menu-animal">Opções</button></div>';
   else if (E.d.temporario) barra = '<div class="barra"><div class="titulo"></div><span class="av-tmp">Link temporário, válido até ' + br(E.d.temporario.expiraEm) + '</span></div>';
-  else { const n = contaAvisos(id); barra = '<div class="barra">' + BT_PAINEL() + (E.d.animais.length > 1 ? '<button class="pill" data-acao="escolha">‹ Meus animais</button>' : '') + '<div class="titulo"></div><button class="pill av-bt" id="btAvisos" data-acao="avisos" aria-label="Avisos">' + IC_SINO + (n ? '<i>' + n + '</i>' : '') + '</button><button class="pill escura" data-acao="menu-resp">Opções</button></div>'; }
+  else { const n = contaAvisos(id); barra = '<div class="barra">' + BT_PAINEL() + (E.d.animais.length > 1 ? '<button class="pill" data-acao="escolha">‹ Meus animais</button>' : '') + '<div class="titulo"></div>' + (an.memorial && an.memorial.texto !== undefined ? '<button class="pill memo-bt" data-acao="memo-abrir" data-id="' + an.id + '">Em memória</button>' : '') + '<button class="pill av-bt" id="btAvisos" data-acao="avisos" aria-label="Avisos">' + IC_SINO + (n ? '<i>' + n + '</i>' : '') + '</button><button class="pill escura" data-acao="menu-resp">Opções</button></div>'; }
   raiz.innerHTML = FUNDO_PADRAO('pasta') + '<div class="app">' + barra + '<div class="palco"><div class="par"><div class="livro esq lado-esq" id="livroEsq"><div class="lv-pg"></div></div><div class="livro" id="livro"></div></div></div></div>' + '';
   dimensionar();
   const duplo = E.duplo = livroAberto();
@@ -4609,7 +4702,7 @@ async function telaInteligencia() {
   E.livro = null;
   if (!E.alertas) { carregando('Calculando os indicadores'); try { await carregarAlertas(); } catch (_) { } }
   if (!E.hpRes) { try { E.hpRes = await api('hemoResumoDoadores', E.sessao); } catch (_) { E.hpRes = { ult: {}, prim: {}, porMes: {} }; } }
-  const h = hoje(), todos = E.d.animais.filter(a => a.doador === '1'), ativosD = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm && !a.inativoMotivo), apos = todos.filter(a => a.aposentadoEm), inat = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm && a.inativoMotivo);
+  const h = hoje(), todos = E.d.animais.filter(a => a.doador === '1'), ativosD = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm && !a.inativoMotivo && !a.falecidoEm), apos = todos.filter(a => a.aposentadoEm && !a.falecidoEm), inat = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm && a.inativoMotivo && !a.falecidoEm);
   const st = ativosD.map(statusDoador), cnt = k => st.filter(x => x.sit === k).length;
   E.ciSt = st;
   const kpi = (n, t, cor, s, v) => '<button class="ci-k" data-acao="ci-ver" data-v="' + v + '" style="--c:' + cor + '"><b>' + n + '</b><span>' + t + '</span>' + (s ? '<small>' + s + '</small>' : '') + '</button>';
@@ -4850,6 +4943,7 @@ const MODS = [
   { k: 'lixeira', perm: 'admin', t: 'Lixeira', d: 'Tudo o que foi apagado nos últimos 30 dias, com quem apagou; restaurar com um toque', ic: svgIc('<path d="M4.5 6.5h15M9.5 6.5V4.8c0-.7.5-1.3 1.2-1.3h2.6c.7 0 1.2.6 1.2 1.3v1.7M6.3 6.5l.9 12.6c.1 1 .9 1.4 1.7 1.4h6.2c.8 0 1.6-.4 1.7-1.4l.9-12.6"/><path d="M9.6 14.6a2.6 2.6 0 1 0 .9-2.4M9.4 10.9v1.6h1.6"/>') },
   { k: 'cartaovacina', perm: 'carteiras', t: 'Cartão de vacina', d: 'Folhas do cartão físico com o cabeçalho do animal, para imprimir no papel timbrado, e digitalização do cartão por foto', ic: svgIc('<rect x="4" y="3" width="16" height="18" rx="2.2"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M15.500 15.800l1.400 1.400 2.600-2.800"/>') },
   { k: 'requisicoes', perm: 'requisicoes', t: 'Requisição de exames', d: 'Pedidos de exames para a Citopet, prontos com as coletas do dia, para imprimir no papel timbrado', ic: svgIc('<rect x="3.6" y="2.6" width="6.8" height="3" rx=".9"/><path d="M4.700 5.600v12.400a2.300 2.300 0 0 0 4.600 0V5.600M4.700 12.600h4.600"/><rect x="13.6" y="2.6" width="6.8" height="3" rx=".9"/><path d="M14.700 5.600v12.400a2.300 2.300 0 0 0 4.600 0V5.600M14.700 10.400h4.600"/>') },
+  { k: 'memoria', perm: 'admin', t: 'Em memória', d: 'Fotos guardadas ao longo das doações e o memorial de cada doador que partiu', ic: svgIc('<path d="M12 20.5c-4.400-2.800-8-6.200-8-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 8 2.700c0 4-3.600 7.400-8 10.200z"/><path d="M9 11.500h6M12 9v5.500"/>') },
 ];
 // número fixo de cada módulo (para abrir rápido pelo número); módulo novo entra no fim da lista com o próximo número
 MODS.forEach((m, i) => { m.n = i + 1; });
@@ -7874,7 +7968,7 @@ async function abrirModulo(nome, aid, rid) {
     // à prova de erros: o que a ficha precisa conferir antes de ir para a carteira (intervalo, impedimentos e pendências do doador)
     E.ponte.admin = pode('admin');
     if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
-      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, afastado: an.aposentadoEm ? '' : an.inativoMotivo ? 'Inativo (' + an.inativoMotivo.toLowerCase() + ')' : (an.afastadoMotivo || ''), intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
+      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, afastado: an.falecidoEm ? 'Falecido' : an.aposentadoEm ? '' : an.inativoMotivo ? 'Inativo (' + an.inativoMotivo.toLowerCase() + ')' : (an.afastadoMotivo || ''), intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
         vacinas: regsDe(aid).filter(r => r.tipo === 'vacina' && r.excluido !== '1').map(r => ({ data: r.data, produtos: produtos(r) })),
         doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })).concat(((E.hpRes || {}).ult || {})[aid] ? [{ data: E.hpRes.ult[aid], numero: 'HemoPlus' }] : []) }; } }
   if (nome === 'tcle') {
@@ -8998,6 +9092,7 @@ function menuAnimal() {
     '<button class="btn sec2" data-acao="ir-resp">Responsável e link da carteira</button>' +
     (pode(['carteiras', 'cadastro']) ? '<button class="btn sec2" data-acao="link-temp">Link temporário de compartilhamento</button>' : '') +
     '<button class="btn sec2" data-acao="pd-animal">Criar pendência sobre este animal</button>' +
+    (pode(['cadastro', 'carteiras', 'fichas']) ? '<button class="btn sec2" data-acao="mem-abrir" data-id="' + an.id + '">' + (an.falecidoEm ? 'Em memória' + (pode('admin') ? ' e memorial' : '') : 'Fotos para a homenagem') + (fotosHom(an).length ? ' (' + fotosHom(an).length + ')' : '') + '</button>' : '') +
     (pode('auditoria') ? '<button class="btn sec2" data-acao="auditoria-animal">Histórico de alterações deste animal</button>' : '') +
     '</div>' + (E.d.config.temGemini ? '' : '<p class="nota">A importação por foto precisa da chave do Gemini em Ajustes.</p>'));
 }
@@ -9486,6 +9581,7 @@ const ACOES = {
     if (m.k === 'lixeira') { E.modulo = m.k; return telaLixeira(); }
     if (m.k === 'certificados') { E.modulo = m.k; return telaCertificados(); }
     if (m.k === 'inteligencia') { E.modulo = m.k; return telaInteligencia(); }
+    if (m.k === 'memoria') { E.modulo = m.k; return telaModMemoria(); }
     if (m.k === 'perfil') { E.modulo = m.k; return telaPerfis(); }
     if (m.k === 'relatorios') { E.modulo = m.k; return telaRelatorios(); }
     if (m.k === 'qualidade') { E.modulo = m.k; return abrirModulo('qualidade'); }
@@ -9818,6 +9914,19 @@ const ACOES = {
   'ci-min-tirar': b => { E.minEd.splice(+b.dataset.i, 1); pintarMinEd(); },
   'ci-min-ok': async b => { b.disabled = true; try { E.estSaldo.minimo = await api('estMinimoSalvar', E.sessao, E.minEd); fecharFolha(); toast('Estoque mínimo salvo.'); pintarEstMinimo(); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'ci-ver': b => folhaCI(b.dataset.v),
+  'mem-abrir': b => { fecharFolha(); telaMemorial(b.dataset.id); },
+  'memo-abrir': b => abrirMemorial(b.dataset.id),
+  'memo-voltar': b => { if (E.modo === 'painel') telaMemorial(b.dataset.id); else abrirCarteira(b.dataset.id); },
+  'memo-salvar': b => salvarFotosMemorial(b.dataset.id),
+  'mem-ver': () => abrirMemorial(E.memAid),
+  'mem-salvar': () => memSalvar(),
+  'mem-publicar': b => memSalvar(!!b.dataset.v),
+  'hom-add': () => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.multiple = true;
+    i.onchange = async () => { const aid = E.memAid, an = animalDe(aid); let L = null;
+      for (const f of [...i.files]) { toast('Enviando a foto…'); try { L = await api('homenagemFoto', E.sessao, aid, { b64: await fotoPendJpeg(f), mime: 'image/jpeg' }); } catch (e) { toast(e.message, 6000); break; } }
+      if (L) { an.homenagemFotos = JSON.stringify(L); toast('Foto guardada.'); telaMemorial(aid); } }; i.click(); },
+  'hom-apagar': async b => { if (!confirm('Apagar esta foto da homenagem?')) return; const aid = E.memAid, an = animalDe(aid);
+    try { const L = await api('homenagemApagar', E.sessao, aid, b.dataset.id); an.homenagemFotos = JSON.stringify(L); const m = memorialDe(an); if (m.fotos) { m.fotos = m.fotos.filter(x => x !== b.dataset.id); an.memorial = JSON.stringify(m); } telaMemorial(aid); } catch (e) { toast(e.message, 5000); } },
   'ci-situacao': b => mudarStatusClube(b.dataset.id, () => { fecharFolha(); if (document.querySelector('.ci-k')) telaInteligencia(); }),
   'ci-graf-p': b => { $$('#ciGP .filtro').forEach(x => x.classList.toggle('on', x === b)); E.ciGP = +b.dataset.v; $('#ciGInfo').textContent = ''; pintarGrafCI(); },
   'ci-graf-cheio': () => grafCICheio(),
