@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127141212">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127143702">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -926,6 +926,12 @@ button.pdf{font-family:inherit;cursor:pointer}
 .pg>.mm-lam{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100cqw,calc(100cqh * 866 / 1817));aspect-ratio:866/1817;font-size:calc(min(100cqw,calc(100cqh * 866 / 1817)) / 23.9);container-type:inline-size;--u:calc(100cqw / 23.9)}
 .mm-lam>*{position:absolute;margin:0;z-index:2}
 .mm-lam>.mm-arte{inset:0;z-index:1;background:center/100% 100% no-repeat;pointer-events:none}
+/* computador: páginas-modelo alargadas (1211 × 1817, moldura maior, o que fica à esquerda continua no lugar e o resto vai 9,52 u para a direita) */
+.pg.mm.lg>.mm-lam{width:min(100cqw,calc(100cqh * 1211 / 1817));aspect-ratio:1211/1817;font-size:calc(min(100cqw,calc(100cqh * 1211 / 1817)) * 866 / 1211 / 23.9);--u:calc(100cqw * 866 / 1211 / 23.9)}
+.pg.lg .mm-t-l.a{left:calc(50% - var(--u)*8.55)}.pg.lg .mm-t-l.b{right:calc(50% - var(--u)*8.55)}.pg.lg .mm-t-txt{width:calc(var(--u)*26.12)}
+.pg.lg .mm-lp{right:calc(var(--u)*10.72)}.pg.lg .mm-f-foto{width:calc(var(--u)*26.32)}
+.pg.lg .mm-a-f.a,.pg.lg .mm-a-toque.a,.pg.lg .mm-a-mais.a{left:calc(var(--u)*12.52)}.pg.lg .mm-a-f.b,.pg.lg .mm-a-toque.b,.pg.lg .mm-a-mais.b{left:calc(var(--u)*20.68)}
+.pg.lg .mm-a-d.a{left:calc(var(--u)*11.7)}.pg.lg .mm-a-d.b{left:calc(var(--u)*19.75)}
 .mm-rod{left:calc(var(--u)*1.3);right:calc(var(--u)*1.3);top:calc(var(--u)*48.25);border-top:1px solid #E6D9CE;padding-top:calc(var(--u)*.35);display:grid;grid-template-columns:1fr auto;align-items:center;row-gap:calc(var(--u)*.12);font-size:.56em;line-height:1.1;color:#8B7B70}
 .mm-rod b{color:#7B1A1A;font-size:1.05em}.mm-rod small{grid-column:1/3;font-size:.72em;color:#A0928A}
 .mm-c-nome{left:calc(var(--u)*2.07);top:calc(var(--u)*20.3);transform:translateY(-50%);max-width:6.2em;font-size:3.43em;line-height:.98;font-weight:800;color:#F7F0E7;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;overflow-wrap:break-word}
@@ -976,6 +982,8 @@ button.pdf{font-family:inherit;cursor:pointer}
 .enq{display:flex;flex-direction:column;gap:10px}.enq-q{width:min(78vw,320px);aspect-ratio:4/4.4;margin:0 auto;overflow:hidden;border-radius:10px;background:#F4ECE2;touch-action:none;cursor:grab}.enq-q img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .mem-bts{display:flex;flex-direction:column;gap:22px;margin-top:14px}.mem-bts>.btn{align-self:flex-start}.mem-par{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mem-par .btn{width:100%;white-space:normal;line-height:1.25}
 .mem-op{display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid #DCCDBB;border-radius:12px;background:#F7F1EA;font-weight:600;color:var(--vinho);cursor:pointer}.mem-op:has(input:checked){background:#C6B098;border-color:#C49A6C}#aMemBox .mem-op{color:#5F130F;opacity:1;text-transform:none;letter-spacing:0;font-size:15px;justify-content:center;margin:0}#aMemBox .mem-op input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:none;accent-color:#A83D3D}
+.mm-play{position:absolute;left:50%;top:50%;z-index:2;width:2.6em;height:2.6em;margin:-1.3em 0 0 -1.3em;border-radius:50%;background:rgba(95,19,15,.72);box-shadow:0 0 0 .15em rgba(255,255,255,.85);pointer-events:none}.mm-play:after{content:"";position:absolute;left:52%;top:50%;transform:translate(-40%,-50%);border-left:.8em solid #fff;border-top:.5em solid transparent;border-bottom:.5em solid transparent}
+.hom-img .mm-play,.me-f .mm-play,.me-gf .mm-play{font-size:14px}.me-f,.me-gf{position:relative}.mm-amp video{max-width:100%;max-height:100%;border-radius:6px;background:#000}
 .hom-arr{touch-action:none;cursor:grab;flex:1}.hom-f.arrastando{opacity:.6;outline:2px dashed #A83D3D;outline-offset:2px}
 .hom-selbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}.hom-selbar .btn{flex:1;min-width:140px}.hom-del{display:flex;gap:8px;align-items:center;justify-content:flex-start;font-size:13.5px;color:var(--tinta2);cursor:pointer}.hom-del input{width:20px;height:20px;min-height:0;flex:none;margin:0;padding:0;accent-color:#A83D3D}
 .ud-g{padding:8px 0 4px;border-bottom:1px solid #EFE6DB}.ud-g h3{font-size:15px;color:var(--vinho);margin:4px 2px 6px}.ud-g h3 small{font-weight:400;color:var(--tinta2);font-size:12.5px}.ud-a{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;font:inherit;background:#FBF7F2;border:1px solid #EADFD2;border-radius:10px;padding:8px 10px;margin:0 0 6px;cursor:pointer;color:var(--tinta)}.ud-a em{font-style:normal;font-size:11.5px;color:#fff;background:#C49A6C;border-radius:99px;padding:1px 7px;margin-left:4px}.ud-a small{color:var(--tinta2);font-size:13px}.ud-l{margin:-2px 0 8px 10px}
@@ -1184,7 +1192,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127141212';
+  var VERSAO = '20261127143702';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3668,6 +3676,7 @@ function dimensionar() {
   // memorial: a página tem a proporção das páginas-modelo, sem faixas sobrando em cima, embaixo ou dos lados
   // no computador (livro aberto), as páginas do memorial têm o mesmo tamanho das da carteira
   if (E.memAberto && $('#livro.mm-livro') && !matchMedia('(pointer: fine)').matches) { const ar = 1817 / 866; h = Math.min(r.height, (r.width - G) * ar, 470 * ar); w = h / ar; }
+  else if (E.memAberto && $('#livro.mm-livro')) h = Math.min(h, w * 1817 / 1211);   // computador: a largura da carteira, na proporção dos modelos largos
   lv.style.width = Math.floor(w) + 'px'; lv.style.height = Math.floor(h) + 'px';
   lv.style.fontSize = Math.min(w / 23, h / 41).toFixed(2) + 'px';
   const es = $('#livroEsq'); if (es) { es.style.width = lv.style.width; es.style.height = lv.style.height; es.style.fontSize = lv.style.fontSize; }
@@ -3695,7 +3704,7 @@ async function guardarFotosMem(ids) {
 }
 // texto padrão da página Homenagem (o Plínio pode editar em cada memorial)
 const MEM_TEXTO_PADRAO = 'Alguns encontros são capazes de transformar nossas vidas para sempre, e você foi um deles. Com seu jeito único, sua presença doce e seu amor incondicional, você encheu nossos dias de alegria, companheirismo e um afeto que palavras não conseguem medir.\n\nVocê nos ensinou, todos os dias, sobre lealdade, confiança e a beleza das pequenas coisas: um olhar carinhoso, a alegria de nos receber, a companhia silenciosa nos momentos difíceis e a forma leve com que fazia tudo parecer melhor.\n\nSua partida deixa saudade, mas também um coração cheio de gratidão por tudo o que vivemos juntos. As lembranças que construímos seguirão conosco, como um abraço que permanece, mesmo na sua ausência.\n\nObrigado por tanto amor, por tantas alegrias e por ter sido parte da nossa história.\nVocê sempre será lembrado, com muito carinho, respeito e amor.';
-const fotoImg = (f, cls) => { const c = f.crop || {}, z = c.z || 1; return '<img class="' + (cls || '') + '" src="' + urlFoto(f.id) + '" alt="" decoding="sync" draggable="false" style="object-position:' + (c.x != null ? c.x : 50) + '% ' + (c.y != null ? c.y : 50) + '%;' + (z > 1 ? 'transform:scale(' + z + ');transform-origin:' + (c.x != null ? c.x : 50) + '% ' + (c.y != null ? c.y : 50) + '%' : '') + '">'; };
+const fotoImg = (f, cls) => { const c = f.crop || {}, z = c.z || 1, vid = f.tipo === 'video'; if (vid && !f.poster) return '<i class="mm-play"></i>'; return (vid ? '<i class="mm-play"></i>' : '') + '<img class="' + (cls || '') + '" src="' + urlFoto(vid ? f.poster : f.id) + '" alt="" decoding="sync" draggable="false" style="object-position:' + (c.x != null ? c.x : 50) + '% ' + (c.y != null ? c.y : 50) + '%;' + (z > 1 ? 'transform:scale(' + z + ');transform-origin:' + (c.x != null ? c.x : 50) + '% ' + (c.y != null ? c.y : 50) + '%' : '') + '">'; };
 const brMem = d => /^\d{4}$/.test(String(d || '')) ? d : br(d);
 // páginas do memorial: as páginas-modelo do Plínio (memorial-*.webp) com o nome, as fotos, as datas, o texto e a linha do tempo por cima.
 // Cada página é uma lâmina na proporção do modelo; 1em da lâmina = 1/23,9 da largura.
@@ -3703,10 +3712,12 @@ const MM_AR = { texto: '866/1817' };
 const mmDireitos = () => '© ' + new Date().getFullYear() + ' CVH · Todos os direitos reservados';
 // texto da homenagem dividido em páginas pelo espaço real da moldura (letra confortável no celular, sem zoom);
 // o que não cabe passa para a página seguinte, quantas forem precisas, cortando entre palavras
+// no computador as páginas do memorial usam as versões largas dos modelos
+const memLarga = () => matchMedia('(pointer: fine)').matches;
 function paginarTextoMem(texto) {
   const pars = String(texto || '').split(/\n\s*\n/).map(t => t.trim()).filter(Boolean);
   if (!pars.length) return [''];
-  const caixa = document.createElement('section'); caixa.className = 'pg mm mm-texto'; caixa.style.cssText = 'position:fixed;left:-99999px;top:0;width:390px;height:818px;visibility:hidden';
+  const caixa = document.createElement('section'); caixa.className = 'pg mm mm-texto' + (memLarga() ? ' lg' : ''); caixa.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + (memLarga() ? 545 : 390) + 'px;height:818px;visibility:hidden';
   caixa.innerHTML = '<div class="mm-lam"><div class="mm-t-txt"></div></div>'; document.body.appendChild(caixa);
   const box = caixa.querySelector('.mm-t-txt'), html = L => L.map(p => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
   const cabe = L => { box.innerHTML = html(L); return box.scrollHeight <= box.clientHeight + 1; };
@@ -3731,8 +3742,9 @@ function paginasMemorial(an, M, regs) {
   const F = M.fotos || [], P = F.find(f => f.id === M.principal) || F[F.length - 1];
   const nome = esc(an.nome), Ln = String(an.nome || '').length;
   const rod = '<footer class="mm-rod"><span>CVH · Centro Veterinário de Hemoterapia</span><b>{{PG}}</b><small>' + mmDireitos() + '</small></footer>';
-  const pg = (k, fundo, frente) => '<section class="pg mm mm-' + k.replace(/\d$/, '') + '"><div class="mm-lam">' + (fundo || '') +
-    '<i class="mm-arte" style="background-image:url(&quot;memorial-' + k + '.webp&quot;)"></i>' + frente + (k === 'capa' ? '' : rod) + '</div></section>';
+  const lg = memLarga();
+  const pg = (k, fundo, frente) => '<section class="pg mm mm-' + k.replace(/\d$/, '') + (lg ? ' lg' : '') + '"><div class="mm-lam">' + (fundo || '') +
+    '<i class="mm-arte" style="background-image:url(&quot;memorial-' + k + (lg ? '-l' : '') + '.webp&quot;)"></i>' + frente + (k === 'capa' ? '' : rod) + '</div></section>';
   const ps = [], abas = [], ed = E.modo === 'painel' && E.memEdit;
   const bt = (acao, txt, cls) => ed ? '<button class="mm-ed ' + (cls || '') + '" data-acao="' + acao + '">' + txt + '</button>' : '';
   // capa
@@ -3756,7 +3768,7 @@ function paginasMemorial(an, M, regs) {
     for (let i = 0; i < Math.max(F.length, 1); i += 2) {
       const par = F.slice(i, i + 2), ult = i + 2 >= F.length;
       ps.push(pg('album', [0, 1].map(k => par[k] ? '<div class="mm-a-f ' + 'ab'[k] + '">' + fotoImg(par[k]) + '</div>' : vazio(k)).join(''),
-        [0, 1].map(k => par[k] ? '<span class="mm-a-d ' + 'ab'[k] + '">' + (par[k].data ? brMem(par[k].data) : '') + '</span><i class="mm-a-toque ' + 'ab'[k] + '" data-acao="' + (ed ? 'memed-foto' : 'memo-ampliar') + '" data-id="' + par[k].id + '"></i>' : tvazio(k)).join('') +
+        [0, 1].map(k => par[k] ? '<span class="mm-a-d ' + 'ab'[k] + '">' + (par[k].data ? brMem(par[k].data) : '') + '</span><i class="mm-a-toque ' + 'ab'[k] + '" data-acao="' + (ed ? 'memed-foto' : 'memo-ampliar') + '" data-id="' + par[k].id + '"' + (par[k].tipo === 'video' ? ' data-v="video"' : '') + '></i>' : tvazio(k)).join('') +
         (ult ? bt('memed-add', '+ Adicionar fotos', 'baixo') : '')));
     }
   }
@@ -3774,7 +3786,7 @@ async function abrirMemorial(aid, prev) {
   const M = E.modo === 'painel' ? memorialPainel(an) : memorialDe(an); if (!M) return toast('O memorial ainda não foi criado.');
   E.animal = aid; E.livro = null; E.memAberto = aid; E.memPrevia = E.modo === 'painel';
   carregando('Abrindo o memorial');
-  await guardarFotosMem((M.fotos || []).map(f => f.id));
+  await guardarFotosMem((M.fotos || []).map(f => f.tipo === 'video' ? f.poster : f.id));
   // a letra da homenagem precisa estar carregada para medir quanto texto cabe em cada página
   try { await Promise.race([Promise.all(['italic 16px Lora', '700 16px Lora'].map(f => document.fonts.load(f))), new Promise(ok => setTimeout(ok, 2500))]); } catch (_) {}
   const vol = E.modo === 'painel' ? '<button class="pill" data-acao="memo-voltar" data-id="' + aid + '">‹ Voltar</button>' : (E.d.animais.length > 1 ? '<button class="pill" data-acao="escolha">‹ Meus animais</button>' : '');
@@ -3785,7 +3797,7 @@ async function abrirMemorial(aid, prev) {
   $('#livroEsq').hidden = !duplo; $('#livro').classList.toggle('duplo', duplo); $('.par').classList.toggle('aberto', duplo);
   const R = paginasMemorial(an, M, regsDe(aid));
   // livro aberto no computador: se a última página cair à esquerda, a da direita leva a arte das borboletas no lugar da folha em branco
-  if (duplo && (R.ps.length - 1) % 2 === 1) R.ps.push('<section class="pg mm mm-fecho"><div class="mm-lam"><i class="mm-arte" style="background-image:url(&quot;memorial-fecho.webp&quot;)"></i></div></section>');
+  if (duplo && (R.ps.length - 1) % 2 === 1) R.ps.push('<section class="pg mm mm-fecho' + (memLarga() ? ' lg' : '') + '"><div class="mm-lam"><i class="mm-arte" style="background-image:url(&quot;memorial-fecho' + (memLarga() ? '-l' : '') + '.webp&quot;)"></i></div></section>');
   E.abas = R.abas.concat([{ t: 'mm-arq', i: -1 }]);
   if (E.memIni === 'albfim') { const a = R.abas.find(x => x.t === 'mm-alb'); E.memIni = a ? a.i + Math.max(0, Math.ceil((M.fotos || []).length / 2) - 1) : 0; }
   E.livro = new Livro($('#livro'), R.ps, Math.min(E.memIni || 0, R.ps.length - 1), pintarAbas, duplo ? $('#livroEsq') : null); E.memIni = 0;
@@ -3795,15 +3807,16 @@ function memorialPainel(an) {
   const m = memorialDe(an), F = fotosHom(an); if (!m.criadoEm) return null;
   return { texto: m.texto || '', falecidoEm: an.falecidoEm, principal: m.principal || '', fotos: (m.fotos || []).map(id => F.find(f => f.id === id)).filter(Boolean) };
 }
-function ampliarFotoMem(id) {
-  const ov = document.createElement('div'); ov.className = 'mm-amp'; ov.innerHTML = '<img src="' + urlFoto(id) + '" alt=""><button class="mm-amp-x" aria-label="Fechar">×</button>';
-  ov.onclick = () => ov.remove(); document.body.appendChild(ov);
+function ampliarFotoMem(id, video) {
+  const ov = document.createElement('div'); ov.className = 'mm-amp';
+  ov.innerHTML = (video ? '<video src="' + CVH_SERVIDOR.arquivo(id) + '" controls autoplay playsinline></video>' : '<img src="' + urlFoto(id) + '" alt="">') + '<button class="mm-amp-x" aria-label="Fechar">×</button>';
+  ov.onclick = e => { if (video && e.target.tagName === 'VIDEO') return; const v = ov.querySelector('video'); if (v) v.pause(); ov.remove(); }; document.body.appendChild(ov);
 }
 async function salvarFotosMemorial(aid) {
   const an = animalDe(aid), M = E.modo === 'painel' ? memorialPainel(an) : memorialDe(an), F = (M && M.fotos) || []; if (!F.length) return;
   toast('Preparando as fotos…');
   try {
-    const arqs = await Promise.all(F.map(async (f, i) => { const r = await fetch(E.memBlob[f.id] || CVH_SERVIDOR.arquivo(f.id)); if (!r.ok) throw new Error('Não consegui baixar as fotos.'); const b = await r.blob(); return new File([b], an.nome + ' ' + String(i + 1).padStart(2, '0') + '.jpg', { type: b.type || 'image/jpeg' }); }));
+    const arqs = await Promise.all(F.map(async (f, i) => { const r = await fetch(f.tipo === 'video' ? CVH_SERVIDOR.arquivo(f.id) : E.memBlob[f.id] || CVH_SERVIDOR.arquivo(f.id)); if (!r.ok) throw new Error('Não consegui baixar as fotos.'); const b = await r.blob(); return new File([b], an.nome + ' ' + String(i + 1).padStart(2, '0') + (f.tipo === 'video' ? (/quicktime/.test(b.type) ? '.mov' : '.mp4') : '.jpg'), { type: b.type || 'image/jpeg' }); }));
     if (navigator.canShare && navigator.canShare({ files: arqs })) { await navigator.share({ files: arqs, title: 'Em memória de ' + an.nome }); return; }
     arqs.forEach(f => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); });
   } catch (e) { if (e && e.name !== 'AbortError') toast(e.message || 'Não consegui salvar as fotos.', 5000); }
@@ -3823,7 +3836,7 @@ function telaMemorial(aid) {
   // uma seleção só: com o memorial criado, marcar é pôr no memorial (salva na hora); as marcadas também podem ser apagadas de uma vez
   const comMem = fal && adm && !!m.criadoEm;
   const foto = (f, k) => '<div class="hom-f' + (m.principal === f.id ? ' princ' : '') + '"><label class="hom-del"><input type="checkbox" data-hom-del="' + f.id + '"' + (comMem ? ' data-hom-sel="' + f.id + '"' + (sel.has(f.id) ? ' checked' : '') : '') + '> ' + (comMem ? 'No memorial' : 'Selecionar') + '</label><div class="hom-img" data-acao="hom-enq" data-id="' + f.id + '">' + fotoImg(f) + (m.principal === f.id ? '<span class="hom-tag">Principal</span>' : '') + '</div>' +
-    '<input class="hom-leg" data-hom-leg="' + f.id + '" placeholder="Legenda (opcional)" value="' + esc(f.legenda || '') + '">' +
+    (f.tipo === 'video' ? '<button class="mini" data-acao="hom-ver" data-id="' + f.id + '">▶ Ver o vídeo</button>' : '') + '<input class="hom-leg" data-hom-leg="' + f.id + '" placeholder="Legenda (opcional)" value="' + esc(f.legenda || '') + '">' +
     '<input class="hom-leg" type="date" data-hom-data="' + f.id + '" value="' + esc(f.data || '') + '" aria-label="Data da foto">' +
     '<div class="hom-pe"><button class="mini hom-arr" data-arr="' + f.id + '" aria-label="Arrastar para mudar a ordem">↕ Arrastar</button>' +
     (fal && adm && m.criadoEm && m.principal !== f.id ? '<button class="mini" data-acao="hom-princ" data-id="' + f.id + '">Principal</button>' : '') + '<button class="mini" data-acao="hom-enq" data-id="' + f.id + '">Enquadrar</button><button class="mini" data-acao="hom-apagar" data-id="' + f.id + '">Excluir</button></div>' +
@@ -3840,7 +3853,7 @@ function telaMemorial(aid) {
       '<div class="mem-bts"><button class="btn" data-acao="mem-salvar">Salvar o memorial</button><button class="btn sec2" data-acao="mem-editar">Abrir no painel para editar</button><div class="mem-par"><button class="btn sec2" data-acao="mem-ver">Ver como a família vê</button><button class="btn sec2" data-acao="mem-publicar" data-v="' + (m.publicado ? '' : '1') + '">' + (m.publicado ? 'Tirar da carteira da família' : 'Liberar para a família') + '</button></div></div>'
       : '<p class="nota">O memorial ainda não foi criado. Ao criar, todas as fotos do acervo entram em ordem cronológica, num rascunho que só a equipe vê.</p><div class="mem-bts"><button class="btn" data-acao="mem-criar">Criar memorial</button></div>') + '</section>' : '') +
     '<section class="cartao"><h3>Acervo · ' + F.length + (F.length === 1 ? ' foto' : ' fotos') + '</h3><p class="nota">' + (fal ? 'Fica só no painel. A família vê apenas as fotos que entrarem no memorial liberado.' : 'Fotos tiradas ao longo da trajetória do doador. Ficam guardadas só no painel e são liberadas à família apenas no memorial, como homenagem do CVH.') + ' Toque na foto para ajustar o enquadramento. Segure em Arrastar e leve a foto para cima ou para baixo para mudar a ordem; o memorial segue a mesma ordem.</p>' +
-      '<div class="acoes-form"><button class="btn sec2" data-acao="hom-add">Fotografar ou escolher da galeria</button></div>' + (F.length ? '<div class="hom-selbar"><button class="btn sec2 peq" id="homSelT" data-acao="hom-sel-todas">Selecionar todas</button><button class="btn peq" id="homApSel" data-acao="hom-apagar-sel" disabled>Apagar as selecionadas</button></div>' : '') + '<div class="hom-g">' + F.map(foto).join('') + '</div></section></div></main>';
+      '<div class="acoes-form"><button class="btn sec2" data-acao="hom-add">Fotografar, filmar ou escolher da galeria</button></div>' + (F.length ? '<div class="hom-selbar"><button class="btn sec2 peq" id="homSelT" data-acao="hom-sel-todas">Selecionar todas</button><button class="btn peq" id="homApSel" data-acao="hom-apagar-sel" disabled>Apagar as selecionadas</button></div>' : '') + '<div class="hom-g">' + F.map(foto).join('') + '</div></section></div></main>';
   raiz.querySelectorAll('[data-hom-del]').forEach(i => i.onchange = () => { memContarSel(); if (comMem) memSelSalvar(); });
   memContarSel();
   raiz.querySelectorAll('[data-hom-leg]').forEach(i => i.onchange = () => homEditar(aid, i.dataset.homLeg, { legenda: i.value }, 'Legenda salva.'));
@@ -3918,6 +3931,35 @@ async function memSalvar(o) {
     toast(o.publicar === true ? 'Memorial liberado para a família.' : o.publicar === false ? 'Memorial tirado da carteira da família.' : o.criar ? 'Memorial criado. Revise e libere quando estiver pronto.' : 'Memorial salvo.'); telaMemorial(aid); }
   catch (e) { toast(e.message, 6000); }
 }
+// envio de fotos e vídeos do acervo: foto vai reduzida; vídeo vai direto ao armazenamento (com a capa tirada do próprio vídeo)
+function capaVideo(f) {
+  return new Promise(ok => { const v = document.createElement('video'), u = URL.createObjectURL(f); let feito = false; const fim = r => { if (feito) return; feito = true; URL.revokeObjectURL(u); ok(r); };
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = u; setTimeout(() => fim(''), 12000);
+    v.onloadeddata = () => { try { v.currentTime = Math.min(0.6, (v.duration || 1) / 3); } catch (_) { fim(''); } };
+    v.onseeked = () => { try { const k = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight)), c = document.createElement('canvas'); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+      c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); fim(c.toDataURL('image/jpeg', 0.85).split(',')[1]); } catch (_) { fim(''); } };
+    v.onerror = () => fim(''); v.load(); });
+}
+async function enviarMidiasHom(aid, fs) {
+  let L = null, ok = 0, erro = '';
+  for (const [k, f] of fs.entries()) {
+    const video = /^video\//.test(f.type || '') || /\.(mov|mp4|m4v|3gp)$/i.test(f.name || ''), qual = video ? 'o vídeo' : 'a foto';
+    toast(fs.length > 1 ? 'Enviando ' + (k + 1) + ' de ' + fs.length + '…' : 'Enviando ' + qual + '…', 600000);
+    try {
+      if (!video) L = await api('homenagemFoto', E.sessao, aid, { b64: await fotoPendJpeg(f), mime: 'image/jpeg' });
+      else {
+        const mime = f.type || 'video/quicktime', poster = await capaVideo(f);
+        const r = await api('homVideoInicio', E.sessao, aid, { nome: f.name || 'video', mime, bytes: f.size });
+        const up = await fetch(r.url, { method: 'PUT', headers: { 'Content-Type': mime, 'x-upsert': 'true' }, body: f });
+        if (!up.ok) throw new Error('O vídeo não foi enviado (' + up.status + '). Tente de novo.');
+        L = await api('homVideoFim', E.sessao, aid, { id: r.id, poster });
+      }
+      ok++;
+    } catch (e) { erro = e.message; if (/60 fotos/.test(erro)) break; }
+  }
+  const an = animalDe(aid); if (L && an) an.homenagemFotos = JSON.stringify(L);
+  return { L, ok, erro };
+}
 // memorial aberto no painel para editar: muda direto no livro e volta para a mesma página
 const memPagAtual = () => (E.livro && E.livro.i) || 0;
 async function memEdSalvar(o, msg, pagina) {
@@ -3948,14 +3990,12 @@ function memEdPrincipal() {
     c.querySelectorAll('.me-gf').forEach(b => b.onclick = () => memEdSalvar({ principal: b.dataset.id }, 'Foto principal trocada.', pag)); });
 }
 function memEdAdd() {
-  $$('.hom-arq').forEach(x => x.remove()); const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.multiple = true; i.className = 'hom-arq'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
+  $$('.hom-arq').forEach(x => x.remove()); const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,video/*'; i.multiple = true; i.className = 'hom-arq'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
   i.onchange = async () => { const aid = E.memAberto, an = animalDe(aid), fs = [...i.files]; i.remove(); if (!fs.length || !an) return;
-    const antes = new Set(fotosHom(an).map(f => f.id)); let L = null, ok = 0, erro = '';
-    for (const [k, f] of fs.entries()) { toast(fs.length > 1 ? 'Enviando a foto ' + (k + 1) + ' de ' + fs.length + '…' : 'Enviando a foto…', 60000);
-      try { L = await api('homenagemFoto', E.sessao, aid, { b64: await fotoPendJpeg(f), mime: 'image/jpeg' }); ok++; } catch (e) { erro = e.message; if (/60 fotos/.test(erro)) break; } }
-    if (!L) return toast('Nenhuma foto foi enviada: ' + (erro || 'tente de novo.'), 8000);
-    an.homenagemFotos = JSON.stringify(L); const novas = L.filter(f => !antes.has(f.id)).map(f => f.id), m = memorialDe(an);
-    try { await memEdSalvar({ fotos: (m.fotos || []).concat(novas) }, (ok === 1 ? 'Foto acrescentada.' : ok + ' fotos acrescentadas.') + (erro ? ' ' + (fs.length - ok) + ' não foram: ' + erro : ''), 'albfim'); } catch (e) { toast(e.message, 6000); } };
+    const antes = new Set(fotosHom(an).map(f => f.id)), r = await enviarMidiasHom(aid, fs);
+    if (!r.L) return toast('Nada foi enviado: ' + (r.erro || 'tente de novo.'), 9000);
+    const novas = r.L.filter(f => !antes.has(f.id)).map(f => f.id), m = memorialDe(an);
+    try { await memEdSalvar({ fotos: (m.fotos || []).concat(novas) }, (r.ok === 1 ? 'Acrescentado ao memorial.' : r.ok + ' arquivos acrescentados.') + (r.erro ? ' ' + (fs.length - r.ok) + ' não foram: ' + r.erro : ''), 'albfim'); } catch (e) { toast(e.message, 6000); } };
   i.click();
 }
 // módulo Em memória: todos os doadores, pela situação das recordações e do memorial
@@ -10259,7 +10299,8 @@ const ACOES = {
   'mem-criar-de': b => { fecharFolha(); E.memAid = b.dataset.id; telaMemorial(b.dataset.id); memSalvar({ criar: true }); },
   'memo-abrir': b => { E.arquivos = null; abrirMemorial(b.dataset.id); },
   'memo-voltar': b => telaMemorial(b.dataset.id),
-  'memo-ampliar': b => ampliarFotoMem(b.dataset.id),
+  'memo-ampliar': b => ampliarFotoMem(b.dataset.id, b.dataset.v === 'video'),
+  'hom-ver': b => ampliarFotoMem(b.dataset.id, true),
   'memo-arq': b => { E.arquivos = b.dataset.id; abrirCarteira(b.dataset.id); },
   'mem-criar': () => memSalvar({ criar: true }),
   'mem-txt-padrao': () => { const t = $('#memTxt'); if (t && (!t.value.trim() || confirm('Trocar o texto atual pelo texto padrão?'))) t.value = MEM_TEXTO_PADRAO; },
@@ -10282,13 +10323,10 @@ const ACOES = {
       () => { $('#memNao').onclick = fecharFolha; $('#memSim').onclick = () => { fecharFolha(); memSalvar({ publicar: true }); }; }); },
   'hom-add': () => {
     // o campo precisa estar na página: no iPhone, um campo solto às vezes some antes de escolher as fotos e nada é enviado
-    $$('.hom-arq').forEach(x => x.remove()); const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.multiple = true; i.className = 'hom-arq'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
-    i.onchange = async () => { const aid = E.memAid, an = animalDe(aid), fs = [...i.files]; i.remove(); if (!fs.length) return;
-      let L = null, ok = 0, erro = '';
-      for (const [k, f] of fs.entries()) { toast(fs.length > 1 ? 'Enviando a foto ' + (k + 1) + ' de ' + fs.length + '…' : 'Enviando a foto…', 60000);
-        try { L = await api('homenagemFoto', E.sessao, aid, { b64: await fotoPendJpeg(f), mime: 'image/jpeg' }); ok++; } catch (e) { erro = e.message; if (/60 fotos/.test(erro)) break; } }
-      if (L) an.homenagemFotos = JSON.stringify(L);
-      toast(ok ? (ok === 1 ? 'Foto guardada.' : ok + ' fotos guardadas.') + (erro ? ' ' + (fs.length - ok) + ' não foram: ' + erro : '') : 'Nenhuma foto foi enviada: ' + (erro || 'tente de novo.'), erro ? 8000 : 3000);
+    $$('.hom-arq').forEach(x => x.remove()); const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*,video/*'; i.multiple = true; i.className = 'hom-arq'; i.style.cssText = 'position:fixed;left:-9999px;opacity:0'; document.body.appendChild(i);
+    i.onchange = async () => { const aid = E.memAid, fs = [...i.files]; i.remove(); if (!fs.length) return;
+      const r = await enviarMidiasHom(aid, fs);
+      toast(r.ok ? (r.ok === 1 ? 'Guardado no acervo.' : r.ok + ' arquivos guardados.') + (r.erro ? ' ' + (fs.length - r.ok) + ' não foram: ' + r.erro : '') : 'Nada foi enviado: ' + (r.erro || 'tente de novo.'), r.erro ? 9000 : 3000);
       telaMemorial(aid); };
     i.click(); },
   'hom-apagar': async b => { if (!confirm('Apagar esta foto da homenagem?')) return; memApagarFotos([b.dataset.id]); },
