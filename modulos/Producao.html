@@ -809,8 +809,9 @@ async function abrirRem(id) {
   if (r.situacao === "transito") ac = bt("remEntrega", "Marcar entregue agora") + bt("remUber", "Link do Uber");
   if (r.situacao === "preparo" || r.situacao === "transito") ac += bt("remQR", "Etiqueta do QR da caixa");
   if ((r.situacao === "preparo" || r.situacao === "transito") && (r.dados || {}).chaveEntrega) ac += bt("remNovoQR", "Novo QR de recebimento");
+  if (S.admin && ["transito", "entregue", "recebida", "concluida"].includes(r.situacao)) ac += bt("remDesfazer", "Desfazer a saída (teste ou engano)", "perigo");
   // celular que não abriu ou emergência sem tempo de ler os QR: o administrador registra o que foi informado
-  if (S.admin && ["transito", "entregue", "recebida"].includes(r.situacao)) ac += bt("remInformar", "Informar que chegou e foi guardada");
+  if (S.admin && ["transito", "entregue", "recebida", "concluida"].includes(r.situacao)) ac += bt("remInformar", "Informar que chegou e foi guardada");
   const us = r.unidades.map((i) => S.uni.find((u) => u.id === i)).filter(Boolean);
   abrirGaveta("Remessa " + r.id, '<dl class="dl"><dt>Destino</dt><dd>' + esc(r.destino) + "</dd><dt>Finalidade</dt><dd>" + esc(r.finalidade || "") + "</dd><dt>Situação</dt><dd>" + esc(ROT_REM[r.situacao] || r.situacao) + "</dd><dt>Preparada</dt><dd>" + esc(hora(r.criado)) + " · " + esc(r.criado_por) + "</dd>" +
     (r.saida_em ? "<dt>Saída</dt><dd>" + esc(hora(r.saida_em)) + (r.modalidade ? " · " + esc(r.modalidade) : "") + "</dd>" : "") + (r.link_uber ? '<dt>Uber</dt><dd><a href="' + esc(r.link_uber) + '" target="_blank" rel="noopener">acompanhar</a></dd>' : "") +
@@ -1647,6 +1648,7 @@ document.addEventListener("click", async (ev) => {
       if (a === "remUber") { $("#rForm").innerHTML = '<label>Link do Uber</label><input type="text" id="rUber" value="' + esc((r && r.link_uber) || "") + '"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remUberOk" data-v="' + esc(v) + '">Salvar</button></div>'; return; }
       if (a === "remUberOk") await est("estRemessaAcao", v, "uber", { link: $("#rUber").value.trim() });
       if (a === "remCancelar") await est("estRemessaAcao", v, "cancelar", {});
+      if (a === "remDesfazer") { if (!confirm("Desfazer a saída da caixa " + v + "? As bolsas voltam para o CVH como estavam antes da saída, e o recebimento e a guarda na Intensivet são apagados.")) return; await est("estRemessaAcao", v, "desfazer", { motivo: "teste" }); }
       if (a === "apNovo") { const o = await est("estAparelhoCriar", { setor: v }); const base = await ponte("origem"); const link = base + (v === "motoboy" ? "motoboy.html?k=" + o.token : (v === "internacao" ? "internacao.html" : "recepcao.html") + "?k=" + o.token + "&s=" + v); await recarregar(); $("#apLink").innerHTML = '<label>Abra este link no celular ' + (v === "recepcao" ? "da recepção" : v === "motoboy" ? "do motoboy" : "da internação") + ' (uma vez só) e adicione à tela inicial</label><input type="text" readonly value="' + esc(link) + '" onclick="this.select()"><div class="bts"><button class="btn sec peq" data-a="copiar" data-v="' + esc(link) + '">Copiar o link</button></div>'; return; }
       if (a === "apDesativar") { await est("estAparelhoDesativar", v); await recarregar(); toast("Celular desativado."); return; }
       await recarregar(); if (S.remAberta && $("#gaveta").classList.contains("on")) await abrirRem(S.remAberta);
