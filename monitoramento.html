@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127082334';
+  var VERSAO = '20261127082654';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -233,7 +233,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127082334">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127082654">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
@@ -280,6 +280,7 @@ canvas{width:100%;height:150px;border:1px dashed var(--bege);border-radius:12px;
 .aviso-ex{border:2px dashed var(--cara);background:#FBF6F0;border-radius:14px;padding:12px 14px;margin:0 0 12px}
 .aviso-ex b{color:var(--vinho)}
 .afer-mon{display:flex;align-items:center;gap:10px;margin:2px 0 8px}.afer-st{font-size:13px;color:#7a6a5e}
+.dica ul{margin:4px 0 4px;padding-left:18px}
 .dica{font-size:13.5px;line-height:1.4;color:#6b5a4e;background:#F6F0E9;border-left:3px solid var(--cara);border-radius:8px;padding:8px 10px;margin:8px 0 0}
 small{color:var(--tinta2)}
 .padrao-fundo{position:fixed;inset:0;background:var(--papel);pointer-events:none;z-index:0}.padrao-fundo i{position:absolute;inset:0;background:#C49A6C;opacity:.26;-webkit-mask:url("padrao-cvh.svg") center/1920px 1920px repeat;mask:url("padrao-cvh.svg") center/1920px 1920px repeat}
@@ -326,7 +327,7 @@ const MUCOSAS = ["Perlácea", "Hipocorada", "Normocorada", "Hipercorada"];
 const TPCS = ["1 s", "2 s", "3 s", "4 s", "5 s", "> 5 s"];
 // gato só recebe CH e PFC no CVH (não há CP, crio nem desleucocitado)
 const COMP_CAO = ["CH", ["CH desleucocitado", "CH desleuco"], "PFC", "PPC", "CP", "CRIO"], COMP_GATO = ["CH", "PFC"];
-const LEG_FOTO = ["Mucosa", "Acesso", "Reação", "Outra"];
+const LEG_FOTO = ["Etiqueta da bolsa", "Mucosa", "Acesso", "Reação", "Outra"];
 let F = null, D = {}, tSalvar = null, tracos = 0, FOTOS = {}, LIDOS = new Set();
 function st(m, ms) { const e = $("#st"); e.textContent = m; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), ms || 1800); }
 const gato = () => /fel|gat/i.test(pega("paciente.especie"));
@@ -401,7 +402,7 @@ function pintar() {
     '<div class="cx"><h2>Parâmetros clínicos</h2><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button><button class="btn sec" id="bAferFoto">+ Aferição com foto do monitor</button></div></div>' +
     '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", [["não", "Não"], ["sim", "Sim"]]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, { multi: true }) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", [["não", "Não"], ["sim", "Sim"]]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
     '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + '</div><div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPos">Foto do Hemochromax (preenche o próximo vazio)</button></div><p id="hcxSt"></p><label>Evolução e observações</label><textarea data-p="obs">' + esc(D.obs || "") + "</textarea></div>" +
-    '<div class="cx"><h2>Fotos do paciente</h2><p><small>Mucosa, acesso, reação ou o que ajudar. Elas entram no PDF.</small></p>' + chips("_legFoto", LEG_FOTO) + '<div class="bts so-edicao"><button class="btn sec" id="bFoto">Tirar ou escolher foto</button></div><div class="fotos" id="fotos"></div></div></div>' +
+    '<div class="cx"><h2>Fotos</h2><div class="dica">Todas as fotos são opcionais e entram no PDF. Elas ficam como registro da transfusão e ajudam a:<ul><li>comprovar qual bolsa foi usada (foto da etiqueta);</li><li>mostrar como o paciente estava antes, durante e depois;</li><li>investigar uma reação transfusional, se acontecer.</li></ul>Escolha o tipo da foto e depois toque em tirar ou escolher.</div><label>Tipo da foto</label>' + chips("_legFoto", LEG_FOTO) + '<div class="bts so-edicao"><button class="btn sec" id="bFoto">Tirar ou escolher foto</button></div><div class="fotos" id="fotos"></div></div></div>' +
     '<div class="cx"><h2>Assinatura do médico veterinário</h2>' + (A ? '<p class="ok">Assinada por ' + esc(A.nome) + " (" + esc(A.crmv) + ") em " + esc(hora(A.em)) + '.</p><div class="bts"><button class="btn sec peq" id="reabrir">Reabrir para editar</button></div>' :
       '<div class="g2"><div><label>Nome</label><input id="aNome" value="' + esc((OPV && OPV.n) || D.vet.nome || "") + '"></div><div><label>CRMV-' + esc(ufCrmv((OPV && OPV.c) || D.vet.crmv)) + '</label><input id="aCrmv" inputmode="numeric" pattern="[0-9]*" placeholder="Número" value="' + esc(numCrmv((OPV && OPV.c) || D.vet.crmv)) + '"></div></div><label>Assinatura com o dedo</label><canvas id="aCv" width="900" height="260"></canvas><div class="bts"><button class="btn sec peq" id="aLimpar">Limpar</button><button class="btn" id="aOk">Assinar a ficha</button></div><p id="aSt"></p>') + "</div>" +
     '<div class="cx"><h2>Exportar</h2><p><small>O PDF sai com tudo o que está preenchido' + (A ? " e a assinatura" : " (ainda sem assinatura)") + '. Use para anexar ao prontuário do paciente.</small></p><div class="bts"><button class="btn peq" id="pdfA4">PDF A4</button><button class="btn sec peq" id="pdfCel">PDF para celular</button></div></div>' +
@@ -579,7 +580,7 @@ function blocosPdf(cel) {
   if (D.htPos.some(Boolean)) out.push(bloco(tit("Hematócrito depois da transfusão") + kv(HTMOM.map((m, i) => [m, D.htPos[i] ? String(D.htPos[i]).replace(".", ",") + "%" : ""]), 4)));
   if (D.obs) out.push(bloco(tit("Evolução e observações") + '<div style="font-size:12.5px;color:' + COR.tinta + ';white-space:pre-wrap;line-height:1.5">' + esc(D.obs) + "</div>"));
   const FT = D.fotos.filter((f) => FOTOS[f.id]);
-  if (FT.length) { const por = cel ? 2 : 4; out.push(bloco(tit("Fotos do paciente"), 16));
+  if (FT.length) { const por = cel ? 2 : 4; out.push(bloco(tit("Fotos"), 16));
     for (let i = 0; i < FT.length; i += por) out.push('<div style="display:grid;grid-template-columns:repeat(' + por + ',minmax(0,1fr));gap:10px;padding-bottom:10px">' + FT.slice(i, i + por).map((f) => '<div><div style="aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:' + COR.areia + '"><img src="' + FOTOS[f.id] + '" style="width:100%;height:100%;object-fit:cover;display:block"></div>' + (f.legenda ? '<div style="font-size:10px;color:' + COR.tinta2 + ';margin-top:3px">' + esc(f.legenda) + "</div>" : "") + "</div>").join("") + "</div>"); }
   out.push(bloco('<div style="display:flex;justify-content:flex-end"><div style="width:' + (cel ? "100%" : "260px") + ';text-align:center">' + (A && A.img ? '<img src="' + A.img + '" style="height:58px;max-width:100%;object-fit:contain;display:block;margin:0 auto">' : '<div style="height:58px"></div>') +
     '<div style="border-top:1px solid ' + COR.vinho + ';padding-top:5px;font-size:12.5px;font-weight:700;color:' + COR.vinho + '">' + esc(A ? A.nome : D.vet.nome || "Médico veterinário") + '</div><div style="font-size:10.5px;color:' + COR.tinta2 + '">' + esc(A ? [A.crmv, "assinado em " + hora(A.em)].filter(Boolean).join(" · ") : (D.vet.crmv || "") + " · sem assinatura") + "</div></div></div>", 26));
