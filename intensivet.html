@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127022909';
+  var VERSAO = '20261127030319';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -200,9 +200,11 @@
   }
   function bloqueado(t) {
     if (!t || !t.closest) return true;
-    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,.ci-gw,video')) return true;
     var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
     var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    // tela cheia por cima de tudo (gráfico da Central de inteligência): não atualiza ao arrastar
+    if (document.querySelector('.ci-cheio,.sem-puxar')) return true;
     return false;
   }
   function mostrar(txt, p) {
@@ -310,6 +312,8 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 #alarme .btn{background:#fff;color:var(--verm);margin-top:16px;padding:16px 28px;font-size:18px}
 .mascara{-webkit-text-security:disc;text-security:disc}
 .cx.teste{border:2px dashed #C49A6C}.cx.teste h2{color:#5F130F}.cx.teste .op{display:flex;gap:8px;align-items:center;margin:6px 0}
+.padrao-fundo{position:fixed;inset:0;background:var(--papel);pointer-events:none;z-index:0}.padrao-fundo i{position:absolute;inset:0;background:#C49A6C;opacity:.26;-webkit-mask:url("padrao-cvh.svg") center/1920px 1920px repeat;mask:url("padrao-cvh.svg") center/1920px 1920px repeat}
+#app{position:relative;z-index:1}
 </style><style id="paleta-cvh">
 /* paleta inteira do manual (26/11/2026): o vinho fica no botão principal; secundários em areia, destaques em caramelo, títulos em vinho com traço caramelo */
 .btn.sec,.btn.sec2{background:#EEE5DB;color:#5F130F;border-color:#C6B098}
@@ -325,6 +329,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 </style>
 </head>
 <body>
+<div class="padrao-fundo" aria-hidden="true"><i></i></div>
 <div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
 <div id="veu"></div><div id="modal" role="dialog" aria-modal="true"></div>
 <div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
@@ -517,6 +522,7 @@ function relogio(fimMs) { const s = Math.round((fimMs - agora()) / 1000), a = Ma
 /* ── login individual: cada médico veterinário entra com o próprio usuário (sai sozinho depois de 30 min parado) ── */
 // celular público: a entrada do médico veterinário fica só na memória da página (fechar ou recarregar encerra) e termina depois de 10 minutos sem uso
 let OP = null;
+const opHash = () => OP ? "#op=" + encodeURIComponent(JSON.stringify({ n: OP.nome || "", c: OP.crmv || "" })) : "";
 try { localStorage.removeItem("cvh_int_op"); } catch (e) {}
 const opMexeu = () => { if (OP) OP.t = Date.now(); };
 const opFim = (msg) => { const o = OP; OP = null; TESTE.semFoto = false; TESTE.semQR = false; if (!o) { pintar(); return; }
@@ -1104,8 +1110,8 @@ document.addEventListener("click", async (ev) => {
       const exBt = OP && OP.adm ? '<div class="cx teste" style="margin-top:12px"><h2>Administrador · modo de teste</h2><p><small>Abre a ficha com dados fictícios para conferir os campos, a assinatura e o PDF. Nada é salvo.</small></p><div class="bts"><button class="btn sec" data-a="monitEx">Abrir ficha de exemplo</button></div></div>' : "";
       if (!L.length) return modal('<h2>Ficha de monitoramento</h2><p>A ficha é aberta para a bolsa que foi retirada para uso. Toque em Retirar para uso na bolsa do estoque e depois abra a ficha por aqui.</p>' + exBt + '<div class="bts"><button class="btn" data-a="fechar">Entendi</button></div>');
       return modal('<h2>Ficha de monitoramento</h2><p>Escolha a bolsa da transfusão.</p>' + L.map((u) => '<div class="bolsa">' + linhaBolsa(u) + "<small>" + esc((((u.dados || {}).uso || {}).paciente || {}).nome || "retirada " + hora(((u.dados || {}).uso || {}).retiradaEm)) + '</small><div class="bts"><button class="btn peq" data-a="monit" data-v="' + esc(u.id) + '">Abrir a ficha</button></div></div>').join("") + exBt + '<div class="bts"><button class="btn sec" data-a="fechar">Voltar</button></div>'); }
-    if (a === "monitEx") { const url = location.origin + location.pathname.replace(/[^/]*$/, "") + "monitoramento.html?m=exemplo"; const w = window.open(url, "_blank"); if (!w) location.href = url; return; }
-    if (a === "monit") { b.disabled = true; const w = window.open("", "_blank"); try { const t = await srv("intMonLink", v), url = location.origin + location.pathname.replace(/[^/]*$/, "") + "monitoramento.html?m=" + t; if (w) w.location = url; else location.href = url; } catch (e) { if (w) w.close(); toast(e.message, 6000); } finally { b.disabled = false; } return; }
+    if (a === "monitEx") { const url = location.origin + location.pathname.replace(/[^/]*$/, "") + "monitoramento.html?m=exemplo" + opHash(); const w = window.open(url, "_blank"); if (!w) location.href = url; return; }
+    if (a === "monit") { b.disabled = true; const w = window.open("", "_blank"); try { const t = await srv("intMonLink", v), url = location.origin + location.pathname.replace(/[^/]*$/, "") + "monitoramento.html?m=" + t + opHash(); if (w) w.location = url; else location.href = url; } catch (e) { if (w) w.close(); toast(e.message, 6000); } finally { b.disabled = false; } return; }
     if (a === "acChip") return acChip(b.dataset.k, v);
     if (a === "acHtAdd") return acHtAdd();
     if (a === "acHtDel") { ev.preventDefault(); AC.hts.splice(+v, 1); return pintarHts(); }

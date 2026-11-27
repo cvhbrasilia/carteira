@@ -126,9 +126,11 @@
   }
   function bloqueado(t) {
     if (!t || !t.closest) return true;
-    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,.ci-gw,video')) return true;
     var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
     var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    // tela cheia por cima de tudo (gráfico da Central de inteligência): não atualiza ao arrastar
+    if (document.querySelector('.ci-cheio,.sem-puxar')) return true;
     return false;
   }
   function mostrar(txt, p) {
@@ -157,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127022909">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127030319">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1123,7 +1125,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127022909';
+  var VERSAO = '20261127030319';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -2979,7 +2981,7 @@ async function ctnDados(an, fotoAnimal) {
     fotoDea: dea, fotoDal: dal, foto, resp: rp.nome || (E.d.responsavel || {}).nome || '', cpf, vet: { nome: v.nome || '', crmv: v.crmv || '', rubrica: v.rubrica || '' }, codigo: d.codigo || '', celId: d.cel ? (d.cel.id || (typeof d.cel === 'string' ? d.cel : '')) : '', corte: meta.corte || null, rot: +(meta.rot || 0) };
 }
 // situação no Clube do Doador na carteirinha: ativo ou aposentado; afastado, arquivado ou não doador não mostra nada
-const clubeStatus = an => { if (!an || an.doador !== '1') return ''; if (an.aposentadoEm) return 'aposentado'; return an.ativo !== '0' && !an.afastadoMotivo ? 'ativo' : ''; };
+const clubeStatus = an => { if (!an || an.doador !== '1') return ''; if (an.aposentadoEm) return 'aposentado'; return an.ativo !== '0' && !an.afastadoMotivo && !an.inativoMotivo ? 'ativo' : ''; };
 // ícone discreto antes do texto: círculo com visto (ativo) ou medalha com fita (aposentado), só em traço
 function ctnIconeClube(x, cx, cy, r, tipo) {
   x.save(); x.lineWidth = r * 0.16; x.lineCap = 'round'; x.lineJoin = 'round';
@@ -3080,29 +3082,34 @@ async function ctnBaixarImg(an, C) {
   for (const f of arqs) { const l = document.createElement('a'); l.href = URL.createObjectURL(f); l.download = f.name; document.body.appendChild(l); l.click(); l.remove(); await new Promise(r => setTimeout(r, 400)); }
 }
 // situação no Clube do Doador, mudada pela carteirinha no painel: ativo, afastado temporariamente (só aparece no painel) ou aposentado (medalha na carteirinha)
-function mudarStatusClube(aid) {
+function mudarStatusClube(aid, depois) {
   const an = animalDe(aid); if (!an) return;
-  const sit = an.aposentadoMotivo ? 'apo' : an.afastadoMotivo ? 'afa' : 'ativo';
+  const sit = an.aposentadoMotivo ? 'apo' : an.inativoMotivo ? 'ina' : an.afastadoMotivo ? 'afa' : 'ativo';
   const opc = (L, v) => L.map(m => '<option' + (m === v ? ' selected' : '') + '>' + esc(m) + '</option>').join('') + (v && !L.includes(v) ? '<option selected>' + esc(v) + '</option>' : '');
   const radio = (v, t, d) => '<label class="check larga st-op"><input type="radio" name="stSit" value="' + v + '"' + (sit === v ? ' checked' : '') + '> <span><b>' + t + '</b><br><small>' + d + '</small></span></label>';
-  abrirFolha('Status de ' + an.nome,
+  abrirFolha('Situação de ' + an.nome,
     '<div class="st-box">' + radio('ativo', 'Doador ativo', 'Aparece na carteirinha com o check verde.') +
     radio('afa', 'Afastado temporariamente', 'Tratamento, cirurgia, cio. Na carteirinha não aparece nada; no painel bloqueia a ficha de doação.') +
-    '<div class="grade st-sub" id="stAfa"><div class="campo"><label for="stAfaM">Motivo</label><select id="stAfaM">' + opc(MOTIVOS_AFA, an.afastadoMotivo) + '</select></div><div class="campo"><label for="stAfaEm">Afastado desde</label><input id="stAfaEm" type="date" value="' + esc(an.afastadoEm || hoje()) + '"></div></div>' +
+    '<div class="grade st-sub" id="stAfa"><div class="campo"><label for="stAfaM">Motivo</label><select id="stAfaM">' + opc(MOTIVOS_AFA, an.afastadoMotivo) + '</select></div><div class="campo"><label for="stAfaEm">Afastado desde</label><input id="stAfaEm" type="date" value="' + esc(an.afastadoEm || hoje()) + '"></div>' +
+    '<div class="campo larga"><label for="stAfaObs">Observação (só aparece no painel)</label><input id="stAfaObs" autocomplete="off" value="' + esc(an.afastadoObs || '') + '"></div></div>' +
+    radio('ina', 'Inativo', 'Sem contato, mudou de cidade ou parou de doar. Sai das contas da Central e da convocação. Na carteirinha não aparece nada; no painel bloqueia a ficha de doação até voltar a ativo.') +
+    '<div class="grade st-sub" id="stIna"><div class="campo"><label for="stInaM">Motivo</label><select id="stInaM">' + opc(MOTIVOS_INA, an.inativoMotivo) + '</select></div><div class="campo"><label for="stInaEm">Inativo desde</label><input id="stInaEm" type="date" value="' + esc(an.inativoEm || hoje()) + '"></div>' +
+    '<div class="campo larga"><label for="stInaObs">Observação (só aparece no painel)</label><input id="stInaObs" autocomplete="off" value="' + esc(an.inativoObs || '') + '"></div></div>' +
     radio('apo', 'Doador aposentado', 'Aparece na carteirinha com a medalha de ouro, para sempre.') +
     '<div class="grade st-sub" id="stApo"><div class="campo"><label for="stApoM">Motivo</label><select id="stApoM">' + opc(MOTIVOS_APO, an.aposentadoMotivo) + '</select></div><div class="campo"><label for="stApoEm">Aposentado em</label><input id="stApoEm" type="date" value="' + esc(an.aposentadoEm || hoje()) + '"></div>' +
     '<div class="campo larga"><label for="stApoObs">Observação (só aparece no painel)</label><input id="stApoObs" autocomplete="off" value="' + esc(an.aposentadoObs || '') + '"></div></div>' +
-    '<button class="btn" id="stSalvar">Salvar o status</button></div>', () => {
-      const ver = () => { const v = ($('input[name=stSit]:checked') || {}).value; $('#stAfa').hidden = v !== 'afa'; $('#stApo').hidden = v !== 'apo'; };
+    '<button class="btn" id="stSalvar">Salvar a situação</button></div>', () => {
+      const ver = () => { const v = ($('input[name=stSit]:checked') || {}).value; $('#stAfa').hidden = v !== 'afa'; $('#stIna').hidden = v !== 'ina'; $('#stApo').hidden = v !== 'apo'; };
       $$('input[name=stSit]').forEach(x => x.onchange = ver); ver();
       $('#stSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
         const v = ($('input[name=stSit]:checked') || {}).value, a = animalDe(aid);
         const salvo = await api('salvarAnimal', E.sessao, { id: a.id, responsavelId: a.responsavelId, nome: a.nome, especie: a.especie, sexo: a.sexo, raca: a.raca, nascimento: a.nascimento, tipoSanguineo: a.tipoSanguineo, dal: a.dal, microchip: a.microchip, doador: true, ativo: a.ativo !== '0',
           aposentadoMotivo: v === 'apo' ? vl('stApoM') : '', aposentadoEm: v === 'apo' ? vl('stApoEm') : '', aposentadoObs: v === 'apo' ? vl('stApoObs') : '',
-          afastadoMotivo: v === 'afa' ? vl('stAfaM') : '', afastadoEm: v === 'afa' ? vl('stAfaEm') : '' });
+          afastadoMotivo: v === 'afa' ? vl('stAfaM') : '', afastadoEm: v === 'afa' ? vl('stAfaEm') : '', afastadoObs: v === 'afa' ? vl('stAfaObs') : '',
+          inativoMotivo: v === 'ina' ? vl('stInaM') : '', inativoEm: v === 'ina' ? vl('stInaEm') : '', inativoObs: v === 'ina' ? vl('stInaObs') : '' });
         const i = E.d.animais.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.animais[i] = salvo;
-        toast(v === 'apo' ? 'Doador aposentado.' : v === 'afa' ? 'Doador afastado temporariamente.' : 'Doador ativo.');
-        abrirCarteirinha(aid);
+        toast(v === 'apo' ? 'Doador aposentado.' : v === 'ina' ? 'Doador marcado como inativo.' : v === 'afa' ? 'Doador afastado temporariamente.' : 'Doador ativo.');
+        if (depois) depois(); else abrirCarteirinha(aid);
       });
     });
 }
@@ -4603,7 +4610,7 @@ async function telaInteligencia() {
   E.livro = null;
   if (!E.alertas) { carregando('Calculando os indicadores'); try { await carregarAlertas(); } catch (_) { } }
   if (!E.hpRes) { try { E.hpRes = await api('hemoResumoDoadores', E.sessao); } catch (_) { E.hpRes = { ult: {}, prim: {}, porMes: {} }; } }
-  const h = hoje(), todos = E.d.animais.filter(a => a.doador === '1'), ativosD = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm), apos = todos.filter(a => a.aposentadoEm);
+  const h = hoje(), todos = E.d.animais.filter(a => a.doador === '1'), ativosD = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm && !a.inativoMotivo), apos = todos.filter(a => a.aposentadoEm), inat = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm && a.inativoMotivo);
   const st = ativosD.map(statusDoador), cnt = k => st.filter(x => x.sit === k).length;
   E.ciSt = st;
   const kpi = (n, t, cor, s, v) => '<button class="ci-k" data-acao="ci-ver" data-v="' + v + '" style="--c:' + cor + '"><b>' + n + '</b><span>' + t + '</span>' + (s ? '<small>' + s + '</small>' : '') + '</button>';
@@ -4612,10 +4619,11 @@ async function telaInteligencia() {
   const tabG = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0])).map(([k, g]) => { const [esp, tp] = k.split('|'); return '<button class="ci-g" data-acao="ci-ver" data-v="g:' + esc(k) + '"><span>' + esp + ' · <b>' + esc(tp) + '</b></span><div class="ci-bar"><i style="width:' + (g.tot / maxG * 100) + '%"></i><i class="ok" style="width:' + (g.apto / maxG * 100) + '%"></i></div><em>' + g.apto + ' de ' + g.tot + ' ›</em></button>'; }).join('');
   const mot = {}; st.filter(x => x.sit !== 'apto').forEach(x => x.mot.forEach(m => mot[m] = (mot[m] || 0) + 1));
   if (apos.length) mot['Aposentado'] = apos.length;
+  if (inat.length) mot['Inativo'] = inat.length;
   const maxM = Math.max(1, ...Object.values(mot));
   const tabM = Object.entries(mot).sort((a, b) => b[1] - a[1]).map(([m, n]) => '<button class="ci-g" data-acao="ci-ver" data-v="m:' + esc(m) + '"><span>' + esc(m) + '</span><div class="ci-bar"><i class="m" style="width:' + (n / maxM * 100) + '%"></i></div><em>' + n + ' ›</em></button>').join('');
   const doa12 = Object.entries(E.hpRes.porMes || {}).filter(([m]) => m >= somaMeses(h.slice(0, 7) + '-01', -11).slice(0, 7)).reduce((t, [, n]) => t + n, 0) || st.reduce((t, x) => t + x.ult12, 0);
-  const linhaD = x => '<button class="item" data-acao="ci-doador" data-id="' + x.an.id + '"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc((respDe(x.an) || {}).nome || '') +
+  const linhaD = x => '<button class="item" data-acao="ci-doador" data-id="' + x.an.id + '"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc([(respDe(x.an) || {}).nome, canilTxt(respDe(x.an))].filter(Boolean).join(' · ')) +
     (x.ult ? ' · última doação ' + br(x.ult) : ' · sem doação registrada') + (x.sit === 'intervalo' ? ' · liberado em ' + br(x.libera) + (x.emerg ? ' (em emergência já pode)' : '') : '') + (x.pend.length ? ' · pendência: ' + esc(x.pend.slice(0, 2).join(', ')) : '') + (x.imp.length ? ' · ' + esc(x.imp.slice(0, 2).join(', ')) : '') + '</small></div><span class="ci-st" style="--c:' + SIT_INT[x.sit][1] + '">' + SIT_INT[x.sit][0].replace(/s para doar$/, '').replace(/^Aguardando /, '') + '</span></button>';
   E.ciLinha = linhaD;
   const ordem = { apto: 0, intervalo: 1, imp: 2 };
@@ -4688,7 +4696,8 @@ function folhaCI(v) {
   else if (v === 'exames') { tit = 'Exames para revisar'; L = st.filter(x => E.alertas && ativos(E.alertas).some(a => a.animalId === x.an.id && a.nivel === 'normal')); }
   else if (v === 'doa12') { tit = 'Doações em 12 meses'; L = st.filter(x => x.ult && x.ult >= somaDiasIso(hoje(), -365)).sort((a, b) => b.ult.localeCompare(a.ult)); nota = 'Doadores com doação nos últimos 12 meses, da mais recente para a mais antiga.'; }
   else if (v.startsWith('g:')) { const [esp, tp] = v.slice(2).split('|'); tit = esp + ' · ' + tp; L = st.filter(x => (ehGato(x.an) ? 'Gatos' : 'Cães') === esp && (tipoSang(x.an) || 'Sem tipagem') === tp).sort((a, b) => ({ apto: 0, intervalo: 1, imp: 2 })[a.sit] - ({ apto: 0, intervalo: 1, imp: 2 })[b.sit] || ord(a, b)); nota = 'Aptos primeiro.'; }
-  else if (v.startsWith('m:')) { const m = v.slice(2); tit = m; L = m === 'Aposentado' ? [] : st.filter(x => x.mot.includes(m)); if (m === 'Aposentado') return abrirFolha('Aposentados', E.d.animais.filter(a => a.doador === '1' && a.aposentadoEm).map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + '</b><small>' + esc((a.aposentadoMotivo || 'aposentado') + ' · ' + br(a.aposentadoEm)) + '</small></div><span class="seta">›</span></button>').join('') || '<p class="vazio-p">Nenhum.</p>'); }
+  else if (v.startsWith('m:')) { const m = v.slice(2); tit = m; L = m === 'Aposentado' || m === 'Inativo' ? [] : st.filter(x => x.mot.includes(m));
+    if (m === 'Inativo') return abrirFolha('Inativos', E.d.animais.filter(a => a.doador === '1' && a.ativo !== '0' && !a.aposentadoEm && a.inativoMotivo).sort((a, b) => a.nome.localeCompare(b.nome)).map(a => '<button class="item" data-acao="ci-doador" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + '</b><small>' + esc([a.inativoMotivo, a.inativoEm ? 'desde ' + br(a.inativoEm) : '', a.inativoObs].filter(Boolean).join(' · ')) + '</small></div><span class="seta">›</span></button>').join('')); if (m === 'Aposentado') return abrirFolha('Aposentados', E.d.animais.filter(a => a.doador === '1' && a.aposentadoEm).map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + '</b><small>' + esc((a.aposentadoMotivo || 'aposentado') + ' · ' + br(a.aposentadoEm)) + '</small></div><span class="seta">›</span></button>').join('') || '<p class="vazio-p">Nenhum.</p>'); }
   if (!['intervalo', 'doa12'].includes(v) && !v.startsWith('g:')) L = L.slice().sort(ord);
   abrirFolha(tit + ' (' + L.length + ')', (nota ? '<p class="nota">' + esc(nota) + '</p>' : '') + (L.length ? L.map(linha).join('') : '<p class="vazio-p">Nenhum doador.</p>'));
 }
@@ -4703,8 +4712,8 @@ function buscaGlobal(q) {
 function buscaGlobalDados(q) {
   q = semAc(q.trim()); if (q.length < 2) return '';
   const tem = t => semAc(t).includes(q), out = [];
-  E.d.animais.forEach(a => { const rp = respDe(a) || {}; if (tem([a.nome, a.microchip, a.raca, tipoTxt(a)].join(' '))) out.push({ g: 'Animal', t: a.nome + (tipoTxt(a) ? ' · ' + tipoTxt(a) : ''), d: rp.nome || '', acao: 'bg-animal', id: a.id }); });
-  (E.d.responsaveis || []).forEach(r => { if (tem([r.nome, r.cpf, r.telefone, r.email].join(' '))) out.push({ g: 'Responsável', t: r.nome, d: [r.telefone, r.email].filter(Boolean).join(' · '), acao: 'bg-resp', id: r.id }); });
+  E.d.animais.forEach(a => { const rp = respDe(a) || {}; if (tem([a.nome, a.microchip, a.raca, tipoTxt(a)].join(' '))) out.push({ g: 'Animal', t: a.nome + (tipoTxt(a) ? ' · ' + tipoTxt(a) : ''), d: [rp.nome, canilTxt(rp)].filter(Boolean).join(' · '), acao: 'bg-animal', id: a.id }); });
+  (E.d.responsaveis || []).forEach(r => { if (tem([r.nome, r.cpf, r.telefone, r.email, canilTxt(r)].join(' '))) out.push({ g: 'Responsável', t: r.nome, d: [canilTxt(r), r.telefone, r.email].filter(Boolean).join(' · '), acao: 'bg-resp', id: r.id }); });
   E.d.registros.forEach(r => {
     const a = animalDe(r.animalId); if (!a) return; const d = r.dados || {}, f = d.ficha || {};
     if (r.tipo === 'doacao' && tem([d.numero, f.lote, f.numero].join(' '))) out.push({ g: 'Bolsa', t: 'Doação ' + (d.numero ? 'nº ' + d.numero : '') + (f.lote ? ' · lote ' + f.lote : ''), d: a.nome + ' · ' + br(r.data), acao: 'ver-ficha', id: r.id });
@@ -5213,6 +5222,8 @@ function calcularAlertas(res, sits) {
     }
   }
   const N = { super: 3, urgente: 2, normal: 1 };
+  // prioridade escolhida pelo administrador: só sobe o nível calculado
+  out.forEach(a => { const p = (sit[a.chave] || {}).prioridade; a.prioridade = p || ''; if (p && N[p] > N[a.nivel]) { a.nivelCalc = a.nivel; a.nivel = p; } });
   return out.sort((a, b) => N[b.nivel] - N[a.nivel] || (a.data < b.data ? 1 : -1));
 }
 async function carregarAlertas(forcar) {
@@ -5222,7 +5233,7 @@ async function carregarAlertas(forcar) {
   E.resultados = d.resultados.map(normalizarResultado); E.cfgLab = d.config || {}; E.alertas = calcularAlertas(d.resultados, d.situacoes);
   return E.alertas;
 }
-const recalcular = () => { E.alertas = calcularAlertas(E.resultados || [], (E.alertas || []).filter(a => a.situacao).map(a => ({ chave: a.chave, situacao: a.situacao, nota: a.nota }))); };
+const recalcular = () => { E.alertas = calcularAlertas(E.resultados || [], (E.alertas || []).filter(a => a.situacao || a.prioridade).map(a => ({ chave: a.chave, situacao: a.situacao, nota: a.nota, prioridade: a.prioridade }))); };
 const ativos = l => (l || []).filter(a => a.situacao !== 'arquivado');
 async function telaAlertas(filtro) {
   E.livro = null; E.filtroAl = filtro || E.filtroAl || 'ativos';
@@ -5254,14 +5265,17 @@ function cartaoAlerta(a) {
   const an = animalDe(a.animalId) || {}, rp = respDe(an) || {};
   const rot = { super: 'Super alerta', urgente: 'Urgente', normal: a.tipo === 'tendencia' || a.tipo === 'perfil' ? 'Alerta exploratório' : 'Alerta' }[a.nivel];
   const outros = rp.id ? E.d.animais.filter(x => x.responsavelId === rp.id).map(x => x.nome).join(' ') : '';
-  return '<article class="alerta-c ' + a.nivel + (a.situacao === 'visto' ? ' visto' : '') + (a.situacao === 'impedimento' ? ' imped' : '') + '" data-busca="' + esc(semAc([an.nome, rp.nome, outros, a.titulo].join(' '))) + '"><div class="al-top"><span class="al-niv">' + rot + '</span><span class="al-an">' + esc(an.nome || '') + (rp.nome ? ' · ' + esc(rp.nome) : '') + '</span></div>' +
+  const sobe = a.nivel === 'normal' ? 'urgente' : a.nivel === 'urgente' ? 'super' : '';
+  const btPri = a.situacao === 'arquivado' ? '' : (sobe ? '<button class="btn sec2 peq" data-acao="alerta-prioridade" data-k="' + esc(a.chave) + '" data-v="' + sobe + '">Subir prioridade</button>' : '') +
+    (a.nivelCalc ? '<button class="btn sec2 peq" data-acao="alerta-prioridade" data-k="' + esc(a.chave) + '" data-v="">Voltar à prioridade original</button>' : '');
+  return '<article class="alerta-c ' + a.nivel + (a.situacao === 'visto' ? ' visto' : '') + (a.situacao === 'impedimento' ? ' imped' : '') + '" data-busca="' + esc(semAc([an.nome, rp.nome, outros, a.titulo].join(' '))) + '"><div class="al-top"><span class="al-niv">' + rot + (a.nivelCalc ? ' · prioridade subida' : '') + '</span><span class="al-an">' + esc(an.nome || '') + (rp.nome ? ' · ' + esc(rp.nome) : '') + '</span></div>' +
     (a.situacao === 'impedimento' ? '<p class="al-imp">Impedimento para doar marcado' + (a.vistoPor ? ' por ' + esc(a.vistoPor) : '') + '</p>' : '') + '<h4>' + esc(a.titulo) + '</h4><p class="al-det">' + esc(a.detalhe || '') + '</p>' + (a.hist ? '<p class="al-hist">Últimos: ' + esc(a.hist) + '</p>' : '') +
     a.notas.map(n => '<p class="al-nota">' + esc(n) + '</p>').join('') + (a.nota ? '<p class="al-minha">Sua nota: ' + esc(a.nota) + '</p>' : '') +
     '<div class="al-bts"><button class="btn sec2 peq" data-acao="alerta-perfil" data-id="' + a.animalId + '">Perfil e resultados</button>' +
     (a.situacao === 'arquivado' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="">Reativar</button>' :
       (a.situacao !== 'visto' && a.situacao !== 'impedimento' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="visto">Marcar como visto</button>' : '') +
       (a.situacao === 'impedimento' ? '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="visto">Tirar o impedimento</button>' : '<button class="btn sec2 peq rc-del" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="impedimento">Impedimento para doar</button>') +
-      '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="arquivado">Arquivar</button>') + '</div></article>';
+      '<button class="btn sec2 peq" data-acao="alerta-marcar" data-k="' + esc(a.chave) + '" data-v="arquivado">Arquivar</button>') + btPri + '</div></article>';
 }
 // gráfico cronológico: intervalo populacional (faixa clara), faixa histórica individual (tracejado) e cada resultado
 function graficoSerie(l, pf) {
@@ -5670,14 +5684,15 @@ function triagemDoador(aid) {
   const an = animalDe(aid); if (!an) return '';
   const regs = regsDe(aid), h = hoje(), imp = [], pend = [], info = [];
   if (an.ativo === '0' || an.aposentadoMotivo) imp.push('Doador aposentado' + (an.aposentadoMotivo ? ': ' + an.aposentadoMotivo : '') + '.');
-  if (an.afastadoMotivo && !an.aposentadoMotivo) imp.push('Afastado temporariamente: ' + an.afastadoMotivo.toLowerCase() + (an.afastadoEm ? ', desde ' + br(an.afastadoEm) : '') + '.');
+  if (an.inativoMotivo && !an.aposentadoMotivo) imp.push('Doador inativo: ' + an.inativoMotivo.toLowerCase() + (an.inativoObs ? ' (' + an.inativoObs + ')' : '') + '.');
+  if (an.afastadoMotivo && !an.aposentadoMotivo) imp.push('Afastado temporariamente: ' + an.afastadoMotivo.toLowerCase() + (an.afastadoEm ? ', desde ' + br(an.afastadoEm) : '') + (an.afastadoObs ? ' (' + an.afastadoObs + ')' : '') + '.');
   if (pode('admin') && E.alertas) {
     const meus = ativos(E.alertas).filter(a => a.animalId === aid);
     meus.filter(a => a.nivel !== 'normal' || a.situacao === 'impedimento').forEach(a => imp.push((a.situacao === 'impedimento' ? 'Impedimento marcado: ' : a.nivel === 'super' ? 'Super alerta: ' : '') + a.titulo + ' (' + br(a.data) + ').'));
     const nn = meus.filter(a => a.nivel === 'normal' && a.situacao !== 'impedimento').length; if (nn) pend.push(nn + (nn === 1 ? ' alerta laboratorial para avaliar.' : ' alertas laboratoriais para avaliar.'));
   }
   pendencias(regs).filter(p => p.data < h).forEach(p => pend.push(p.rot + (p.det ? ' (' + p.det + ')' : '') + ' venceu em ' + br(p.data) + '.'));
-  if (an.doador === '1' && !regs.some(r => r.tipo === 'tcle')) pend.push('Sem termo de consentimento assinado na carteira.');
+  // termo de consentimento não conta como pendência por enquanto (os termos estão sendo atualizados)
   const doa = regs.filter(r => r.tipo === 'doacao').sort(porData), ult = doa[doa.length - 1];
   if (ult) { const n = dias(ult.data, h); info.push('Última doação há ' + n + (n === 1 ? ' dia' : ' dias') + ' (' + br(ult.data) + '). ' + doa.length + (doa.length === 1 ? ' doação registrada.' : ' doações registradas.')); }
   // todas as doações, não só a última: sedação anotada em qualquer ficha e observações de cada coleta
@@ -7642,6 +7657,8 @@ function voltarAoPainel() {
   E.modo = 'painel'; E.d = s.d; E.token = s.token; E.comoResp = false; E.salvo = null;
   telaResp(s.resp);
 }
+// canil ou criatório do responsável, guardado sem a palavra "Canil"
+const canilTxt = r => { const c = String((r || {}).canil || '').trim(); return !c ? '' : /^(canil|gatil|criat[oó]rio)\b/i.test(c) ? c : 'Canil ' + c; };
 function telaResp(id) {
   E.livro = null; E.animal = null; E.resp = id;
   const r = E.d.responsaveis.find(x => x.id === id);
@@ -7649,7 +7666,7 @@ function telaResp(id) {
   const link = linkDe(r), cad = pode(['cadastro', 'carteiras']);
   raiz.innerHTML = '<main class="tela"><div class="tela-c">' +
     '<div class="barra" style="padding:0"><button class="pill" data-acao="inicio">‹ Voltar</button></div>' +
-    '<header class="topo"><div class="t"><span>Responsável</span><b>' + esc(r.nome) + '</b></div>' + (cad ? '<button class="pill" data-acao="editar-resp">Editar</button>' : '') + '</header>' +
+    '<header class="topo"><div class="t"><span>Responsável' + (canilTxt(r) ? ' · ' + esc(canilTxt(r)) : '') + '</span><b>' + esc(r.nome) + '</b></div>' + (cad ? '<button class="pill" data-acao="editar-resp">Editar</button>' : '') + '</header>' +
     '<section class="cartao"><h3>Contato</h3><p>' + (r.email ? esc(r.email) : '<span class="vazio-p">Sem e-mail. Os lembretes chegam só para o CVH.</span>') + '</p>' + (r.telefone ? '<p>' + esc(r.telefone) + '</p>' : '') +
       (contatosDe(r).length ? '<div class="ct-sec" style="margin-top:12px"><h4>Contatos secundários</h4>' + contatosDe(r).map(c => '<div class="ct-v"><div><b>' + esc(c.nome || 'Sem nome') + '</b><small>' + esc([c.relacao, c.telefone].filter(Boolean).join(' · ')) + '</small></div>' + (zapTel(c.telefone) ? '<a class="btn sec2 peq" target="_blank" rel="noopener" href="' + esc(zapTel(c.telefone)) + '">WhatsApp</a>' : '') + '</div>').join('') + '</div>' : '') + '</section>' +
     (cad ? '<section class="cartao"><h3>Link da carteira</h3><p class="nota">O responsável abre por este link e só consegue ver. Ele mostra todos os animais cadastrados aqui.</p>' +
@@ -7856,7 +7873,7 @@ async function abrirModulo(nome, aid, rid) {
     // à prova de erros: o que a ficha precisa conferir antes de ir para a carteira (intervalo, impedimentos e pendências do doador)
     E.ponte.admin = pode('admin');
     if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
-      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, afastado: an.aposentadoEm ? '' : (an.afastadoMotivo || ''), intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
+      E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, afastado: an.aposentadoEm ? '' : an.inativoMotivo ? 'Inativo (' + an.inativoMotivo.toLowerCase() + ')' : (an.afastadoMotivo || ''), intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
         vacinas: regsDe(aid).filter(r => r.tipo === 'vacina' && r.excluido !== '1').map(r => ({ data: r.data, produtos: produtos(r) })),
         doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })).concat(((E.hpRes || {}).ult || {})[aid] ? [{ data: E.hpRes.ult[aid], numero: 'HemoPlus' }] : []) }; } }
   if (nome === 'tcle') {
@@ -8566,7 +8583,7 @@ function preencherDoacao(j) {
 /* ── animal e responsável ── */
 function abrirFormResp(r) {
   r = r || {};
-  abrirFolha(r.id ? 'Editar responsável' : 'Novo responsável', '<div class="grade">' + campo('rNome', 'Nome', inp('rNome', r.nome, 'autocomplete="off"'), 'larga') +
+  abrirFolha(r.id ? 'Editar responsável' : 'Novo responsável', '<div class="grade">' + campo('rNome', 'Nome', inp('rNome', r.nome, 'autocomplete="off"'), 'larga') + campo('rCanil', 'Canil ou criatório (se tiver)', inp('rCanil', r.canil, 'autocomplete="off" placeholder="Ex.: Molosso di Jerivá"'), 'larga') +
     campo('rEmail', 'E-mail (recebe os lembretes)', inp('rEmail', r.email, 'type="email" autocomplete="off"'), 'larga') + campo('rTel', 'Telefone (WhatsApp)', inp('rTel', r.telefone, 'type="tel" placeholder="(61) 999990000"'), 'larga') +
     campo('rCpf', 'CPF', inp('rCpf', r.cpf, 'inputmode="numeric" placeholder="000.000.000-00"')) + campo('rCep', 'CEP', '<div class="cep-l">' + inp('rCep', r.cep, 'inputmode="numeric" placeholder="00000-000"') + '<button type="button" class="btn sec2 peq" id="bCep">Buscar</button></div>') +
     campo('rLog', 'Endereço', inp('rLog', r.logradouro), 'larga') + campo('rNum', 'Número', inp('rNum', r.numero)) + campo('rComp', 'Complemento', inp('rComp', r.complemento)) +
@@ -8577,7 +8594,7 @@ function abrirFormResp(r) {
       ligarContatosForm();
       $('#bCep').onclick = async () => { try { const c = await api('apiCep', vl('rCep')); if (!c) return toast('CEP não encontrado.'); $('#rLog').value = c.logradouro || ''; $('#rBairro').value = c.bairro || ''; $('#rCidade').value = c.cidade || ''; $('#rUf').value = c.uf || ''; $('#rNum').focus(); } catch (e) { toast(e.message); } };
       $('#bSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
-        const salvo = await api('salvarResponsavel', E.sessao, { id: r.id, nome: vl('rNome'), email: vl('rEmail'), telefone: vl('rTel'), cpf: vl('rCpf'), cep: vl('rCep'), logradouro: vl('rLog'), numero: vl('rNum'), complemento: vl('rComp'), bairro: vl('rBairro'), cidade: vl('rCidade'), uf: vl('rUf').toUpperCase(), contatos: lerContatosForm() });
+        const salvo = await api('salvarResponsavel', E.sessao, { id: r.id, nome: vl('rNome'), canil: vl('rCanil'), email: vl('rEmail'), telefone: vl('rTel'), cpf: vl('rCpf'), cep: vl('rCep'), logradouro: vl('rLog'), numero: vl('rNum'), complemento: vl('rComp'), bairro: vl('rBairro'), cidade: vl('rCidade'), uf: vl('rUf').toUpperCase(), contatos: lerContatosForm() });
         const i = E.d.responsaveis.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.responsaveis[i] = salvo; else E.d.responsaveis.push(salvo);
         fecharFolha(); telaResp(salvo.id); toast('Responsável salvo.');
       });
@@ -8597,17 +8614,19 @@ function abrirFormAnimal(a) {
     campo('aTipo', 'Tipo sanguíneo', '<select id="aTipo"></select>') + '<div class="campo" id="aDalBox"><label for="aDal">DAL</label>' + sel('aDal', ['Não tipado', 'Positivo', 'Negativo'], a.dal || 'Não tipado') + '</div>' + campo('aChip', 'Microchip', inp('aChip', a.microchip, 'inputmode="numeric"')) +
     '<label class="check larga"><input type="checkbox" id="aDoador"' + (a.doador === '1' ? ' checked' : '') + '> Participa do Clube do Doador</label>' +
     '<div class="larga" id="aApoBox"' + (a.doador === '1' ? '' : ' hidden') + '><div class="grade">' +
-    campo('aApo', 'Situação no Clube do Doador', '<select id="aApo"><option value="">Doador ativo</option>' + MOTIVOS_AFA.map(m => '<option value="afa:' + esc(m) + '"' + (!a.aposentadoMotivo && m === a.afastadoMotivo ? ' selected' : '') + '>Afastado temporariamente: ' + esc(m.toLowerCase()) + '</option>').join('') +
-      (!a.aposentadoMotivo && a.afastadoMotivo && !MOTIVOS_AFA.includes(a.afastadoMotivo) ? '<option selected value="afa:' + esc(a.afastadoMotivo) + '">Afastado temporariamente: ' + esc(a.afastadoMotivo) + '</option>' : '') + MOTIVOS_APO.map(m => '<option value="' + esc(m) + '"' + (m === a.aposentadoMotivo ? ' selected' : '') + '>Aposentado: ' + esc(m.toLowerCase()) + '</option>').join('') +
+    campo('aApo', 'Situação no Clube do Doador', '<select id="aApo"><option value="">Doador ativo</option>' + MOTIVOS_AFA.map(m => '<option value="afa:' + esc(m) + '"' + (!a.aposentadoMotivo && !a.inativoMotivo && m === a.afastadoMotivo ? ' selected' : '') + '>Afastado temporariamente: ' + esc(m.toLowerCase()) + '</option>').join('') +
+      (!a.aposentadoMotivo && !a.inativoMotivo && a.afastadoMotivo && !MOTIVOS_AFA.includes(a.afastadoMotivo) ? '<option selected value="afa:' + esc(a.afastadoMotivo) + '">Afastado temporariamente: ' + esc(a.afastadoMotivo) + '</option>' : '') + MOTIVOS_INA.map(m => '<option value="ina:' + esc(m) + '"' + (!a.aposentadoMotivo && m === a.inativoMotivo ? ' selected' : '') + '>Inativo: ' + esc(m.toLowerCase()) + '</option>').join('') +
+      (!a.aposentadoMotivo && a.inativoMotivo && !MOTIVOS_INA.includes(a.inativoMotivo) ? '<option selected value="ina:' + esc(a.inativoMotivo) + '">Inativo: ' + esc(a.inativoMotivo) + '</option>' : '') +
+      MOTIVOS_APO.map(m => '<option value="' + esc(m) + '"' + (m === a.aposentadoMotivo ? ' selected' : '') + '>Aposentado: ' + esc(m.toLowerCase()) + '</option>').join('') +
       (a.aposentadoMotivo && !MOTIVOS_APO.includes(a.aposentadoMotivo) ? '<option selected value="' + esc(a.aposentadoMotivo) + '">Aposentado: ' + esc(a.aposentadoMotivo) + '</option>' : '') + '</select>', 'larga') +
-    '<div class="campo" data-apo>' + '<label for="aApoEm" id="aApoEmR">Aposentado em</label>' + inp('aApoEm', a.aposentadoEm || a.afastadoEm || hoje(), 'type="date"') + '</div>' +
-    '<div class="campo larga" data-apo>' + '<label for="aApoObs">Observação (só aparece no painel)</label>' + inp('aApoObs', a.aposentadoObs, 'autocomplete="off"') + '</div>' +
+    '<div class="campo" data-apo>' + '<label for="aApoEm" id="aApoEmR">Aposentado em</label>' + inp('aApoEm', a.aposentadoEm || a.inativoEm || a.afastadoEm || hoje(), 'type="date"') + '</div>' +
+    '<div class="campo larga" data-apo>' + '<label for="aApoObs">Observação (só aparece no painel)</label>' + inp('aApoObs', a.aposentadoObs || a.inativoObs || a.afastadoObs, 'autocomplete="off"') + '</div>' +
     '</div></div>' +
     (a.id ? '<label class="check larga"><input type="checkbox" id="aArq"' + (a.ativo === '0' ? ' checked' : '') + '> Arquivar (some do link do responsável)</label>' : '') + '</div>' +
     '<button class="btn" id="bSalvar">Salvar</button>' + (a.id && pode('admin') ? '<button class="btn perigo" id="bExcluirAn">Excluir animal</button>' : ''), () => {
       const tipos = () => { const e = vl('aEsp'); $('#aTipo').innerHTML = TIPOS[e].map(t => '<option' + (t === (a.tipoSanguineo || '') ? ' selected' : '') + '>' + t + '</option>').join(''); };
       $('#aEsp').onchange = () => { tipos(); $('#aDalBox').hidden = vl('aEsp') !== 'Canina'; }; tipos(); $('#aDalBox').hidden = vl('aEsp') !== 'Canina';
-      const apo = () => { $('#aApoBox').hidden = !$('#aDoador').checked; const afa = /^afa:/.test(vl('aApo')); $$('[data-apo]').forEach(x => x.hidden = !vl('aApo') || (afa && x.querySelector('#aApoObs'))); $('#aApoEmR').textContent = afa ? 'Afastado desde' : 'Aposentado em'; };
+      const apo = () => { $('#aApoBox').hidden = !$('#aDoador').checked; const afa = /^afa:/.test(vl('aApo')), ina = /^ina:/.test(vl('aApo')); $$('[data-apo]').forEach(x => x.hidden = !vl('aApo')); $('#aApoEmR').textContent = afa ? 'Afastado desde' : ina ? 'Inativo desde' : 'Aposentado em'; };
       $('#aDoador').onchange = apo; $('#aApo').onchange = apo; apo();
       const bx = $('#bExcluirAn');
       if (bx) bx.onclick = () => excluirCadastro('animal', a);
@@ -8615,8 +8634,9 @@ function abrirFormAnimal(a) {
         const tipo = vl('aTipo'), nasc = nascISO(vl('aNasc'));
         if (nasc === null) throw new Error('Confira o nascimento. Use dd/mm/aaaa, mm/aaaa ou só o ano com 4 dígitos.');
         const salvo = await api('salvarAnimal', E.sessao, { id: a.id, responsavelId: a.responsavelId, nome: vl('aNome'), especie: vl('aEsp'), sexo: vl('aSexo'), raca: vl('aRaca'), nascimento: nasc, tipoSanguineo: tipo === 'Não tipado' ? '' : tipo, dal: vl('aEsp') === 'Canina' && vl('aDal') !== 'Não tipado' ? vl('aDal') : '', microchip: vl('aChip'), doador: $('#aDoador').checked,
-          aposentadoMotivo: $('#aDoador').checked && !/^afa:/.test(vl('aApo')) ? vl('aApo') : '', aposentadoEm: vl('aApoEm'), aposentadoObs: vl('aApoObs'),
-          afastadoMotivo: $('#aDoador').checked && /^afa:/.test(vl('aApo')) ? vl('aApo').slice(4) : '', afastadoEm: vl('aApoEm'), ativo: !($('#aArq') && $('#aArq').checked) });
+          aposentadoMotivo: $('#aDoador').checked && !/^(afa|ina):/.test(vl('aApo')) ? vl('aApo') : '', aposentadoEm: vl('aApoEm'), aposentadoObs: vl('aApoObs'),
+          afastadoMotivo: $('#aDoador').checked && /^afa:/.test(vl('aApo')) ? vl('aApo').slice(4) : '', afastadoEm: vl('aApoEm'), afastadoObs: vl('aApoObs'),
+          inativoMotivo: $('#aDoador').checked && /^ina:/.test(vl('aApo')) ? vl('aApo').slice(4) : '', inativoEm: vl('aApoEm'), inativoObs: vl('aApoObs'), ativo: !($('#aArq') && $('#aArq').checked) });
         const i = E.d.animais.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.animais[i] = salvo; else E.d.animais.push(salvo);
         fecharFolha();
         E.previa = false;
@@ -8625,6 +8645,7 @@ function abrirFormAnimal(a) {
       });
     });
 }
+const MOTIVOS_INA = ['Sem contato com o responsável', 'Mudou de cidade', 'Responsável não quer mais doar', 'Outro motivo'];
 const MOTIVOS_AFA = ['Tratamento', 'Cirurgia', 'Gestação ou cio', 'Peso abaixo do mínimo', 'A pedido do responsável', 'Outro motivo'];
 const MOTIVOS_APO = ['Idade', 'Doença crônica', 'Doença infecciosa', 'Peso abaixo do mínimo', 'Comportamento na coleta', 'A pedido do responsável', 'Óbito', 'Outro motivo'];
 async function excluirCadastro(tipo, o) {
@@ -9554,6 +9575,12 @@ const ACOES = {
   'hist-lista': () => { E.modulo = 'historico'; telaInicio(); },
   'hist-editar': b => { E.modulo = 'historico'; abrirModulo('historico', b.dataset.id); },
   'hs-filtro': b => { E.hsFiltro = b.dataset.v; aplicarFiltroHs(); },
+  'alerta-prioridade': async b => {
+    const a = E.alertas.find(x => x.chave === b.dataset.k); if (!a) return; b.disabled = true;
+    try { await api('priorizarAlerta', E.sessao, a.chave, a.animalId, b.dataset.v); a.prioridade = b.dataset.v; if (a.nivelCalc) { a.nivel = a.nivelCalc; delete a.nivelCalc; } recalcular();
+      toast(b.dataset.v ? (b.dataset.v === 'super' ? 'Subiu para super alerta.' : 'Subiu para urgente.') : 'Voltou à prioridade original.');
+      if (document.querySelector('#pfTela')) perfilAnimal(a.animalId); else telaAlertas(); } catch (e) { toast(e.message, 5000); b.disabled = false; }
+  },
   'alerta-marcar': async b => {
     const a = E.alertas.find(x => x.chave === b.dataset.k); if (!a) return; b.disabled = true;
     try { const o = await api('marcarAlerta', E.sessao, a.chave, a.animalId, b.dataset.v, ''); a.situacao = b.dataset.v; if (o && o.vistoPor) a.vistoPor = o.vistoPor; if (document.querySelector('#pfTela')) perfilAnimal(a.animalId); else telaAlertas(); } catch (e) { toast(e.message, 5000); b.disabled = false; }
@@ -9779,10 +9806,11 @@ const ACOES = {
   'ci-min-tirar': b => { E.minEd.splice(+b.dataset.i, 1); pintarMinEd(); },
   'ci-min-ok': async b => { b.disabled = true; try { E.estSaldo.minimo = await api('estMinimoSalvar', E.sessao, E.minEd); fecharFolha(); toast('Estoque mínimo salvo.'); pintarEstMinimo(); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
   'ci-ver': b => folhaCI(b.dataset.v),
+  'ci-situacao': b => mudarStatusClube(b.dataset.id, () => { fecharFolha(); if (document.querySelector('.ci-k')) telaInteligencia(); }),
   'ci-graf-p': b => { $$('#ciGP .filtro').forEach(x => x.classList.toggle('on', x === b)); E.ciGP = +b.dataset.v; $('#ciGInfo').textContent = ''; pintarGrafCI(); },
   'ci-graf-cheio': () => grafCICheio(),
   'ci-filtro': b => { $$('#ciF .filtro').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; $('#ciLista').innerHTML = E.ciLinhas.filter(x => v === 'todos' || (v === 'pend' ? x.pend : x.sit === v)).sort((a, c) => a.ord - c.ord || String(a.nome).localeCompare(String(c.nome))).map(x => x.html).join('') || '<p class="vazio-p">Nenhum doador nesta situação.</p>'; },
-  'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div class="acoes-form"><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); },
+  'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div class="acoes-form"><button class="btn sec2" data-acao="ci-situacao" data-id="' + an.id + '">Situação do doador</button><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); },
   avisos: () => telaAvisos(E.animal),
   'av-ir': b => { fecharFolha(); abrirCarteira(E.animal, b.dataset.id); },
   'foto-ficha': b => fotoFicha(b.dataset.id, b),

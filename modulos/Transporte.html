@@ -949,9 +949,11 @@ window.CVH_VOLTAR = () => { if ($("#gaveta").classList.contains("on")) { fecharG
   }
   function bloqueado(t) {
     if (!t || !t.closest) return true;
-    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,.ci-gw,video')) return true;
     var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
     var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    // tela cheia por cima de tudo (gráfico da Central de inteligência): não atualiza ao arrastar
+    if (document.querySelector('.ci-cheio,.sem-puxar')) return true;
     return false;
   }
   function mostrar(txt, p) {

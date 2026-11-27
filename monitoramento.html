@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127022909';
+  var VERSAO = '20261127030319';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -200,9 +200,11 @@
   }
   function bloqueado(t) {
     if (!t || !t.closest) return true;
-    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,.ci-gw,video')) return true;
     var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
     var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    // tela cheia por cima de tudo (gráfico da Central de inteligência): não atualiza ao arrastar
+    if (document.querySelector('.ci-cheio,.sem-puxar')) return true;
     return false;
   }
   function mostrar(txt, p) {
@@ -231,7 +233,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127022909">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127030319">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
@@ -278,8 +280,13 @@ canvas{width:100%;height:150px;border:1px dashed var(--bege);border-radius:12px;
 .aviso-ex{border:2px dashed var(--cara);background:#FBF6F0;border-radius:14px;padding:12px 14px;margin:0 0 12px}
 .aviso-ex b{color:var(--vinho)}
 small{color:var(--tinta2)}
+.padrao-fundo{position:fixed;inset:0;background:var(--papel);pointer-events:none;z-index:0}.padrao-fundo i{position:absolute;inset:0;background:#C49A6C;opacity:.26;-webkit-mask:url("padrao-cvh.svg") center/1920px 1920px repeat;mask:url("padrao-cvh.svg") center/1920px 1920px repeat}
+#app{position:relative;z-index:1}
+.esc.comp{gap:5px;flex-wrap:nowrap}.esc.comp button{padding:10px 4px;font-size:14.5px;white-space:nowrap;min-width:0}
+.mlivre{display:flex;gap:6px}.mvolta{flex:none;width:42px;border:1px solid var(--areia2);background:var(--areia);border-radius:11px;color:var(--vinho);font-size:16px}
 </style>
 </head><body>
+<div class="padrao-fundo" aria-hidden="true"><i></i></div>
 <div class="wrap" id="app"><p>Abrindo a ficha…</p></div><div class="st" id="st"></div>
 <input type="file" id="arqLer" accept="application/pdf,image/*" hidden><input type="file" id="arqFoto" accept="image/*" hidden>
 <script>
@@ -290,6 +297,10 @@ const hora = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : p2(d.get
 const T = new URLSearchParams(location.search).get("m") || "";
 // ficha de exemplo (administrador testando na Mini Estação): abre com dados fictícios e nada vai para o servidor
 const EXEMPLO = T === "exemplo";
+// médico veterinário que entrou na estação (vem no endereço, depois do #, e não vai para o servidor)
+const OPV = (() => { try { const m = location.hash.match(/op=([^&]+)/); return m ? JSON.parse(decodeURIComponent(m[1])) : null; } catch (_) { return null; } })();
+const ufCrmv = (c) => ((String(c || "").match(/CRMV[-\s]*([A-Za-z]{2})\b/) || [])[1] || "DF").toUpperCase();
+const numCrmv = (c) => String(c || "").replace(/^\s*CRMV[-\s]*[A-Za-z]{2}\b/i, "").replace(/\D/g, "");
 const EX = { assinatura: null, fotos: {}, dados: { paciente: { nome: "Thor", especie: "Canina", raca: "Labrador", sexo: "Macho", peso: "28", idade: "6 anos" }, responsavel: "Responsável de exemplo", clinica: "Intensivet", indicacao: "Anemia hemolítica imunomediada", vet: { nome: "", crmv: "" },
   bolsa: { id: "567-3 CH", componente: "CH", volume: "160", dea: "neg", dal: "" }, prova: "Compatível", htPre: "12", acesso: "Cefálica", taxa1: "2", taxa2: "10",
   afericoes: [{ m: "Antes", h: "14:00", t: "38,6", fc: "128", fr: "32", pas: "110", pad: "70", pam: "83", muc: "Hipocorada", tpc: "2 s" }], reacao: {}, htPos: [], fotos: [] } };
@@ -312,7 +323,7 @@ const HTMOM = ["Logo após", "Após 6 h", "Após 12 h", "Após 24 h"];
 const MUCOSAS = ["Perlácea", "Hipocorada", "Normocorada", "Hipercorada"];
 const TPCS = ["1 s", "2 s", "3 s", "4 s", "5 s", "> 5 s"];
 // gato só recebe CH e PFC no CVH (não há CP, crio nem desleucocitado)
-const COMP_CAO = ["CH", "CH desleucocitado", "PFC", "PPC", "CP", "CRIO"], COMP_GATO = ["CH", "PFC"];
+const COMP_CAO = ["CH", ["CH desleucocitado", "CH desleuco"], "PFC", "PPC", "CP", "CRIO"], COMP_GATO = ["CH", "PFC"];
 const LEG_FOTO = ["Mucosa", "Acesso", "Reação", "Outra"];
 let F = null, D = {}, tSalvar = null, tracos = 0, FOTOS = {}, LIDOS = new Set();
 function st(m, ms) { const e = $("#st"); e.textContent = m; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), ms || 1800); }
@@ -350,10 +361,13 @@ function blocoTipo() {
   return '<label>Tipo sanguíneo da bolsa</label>' + '<div class="esc etq" data-tipo="1">' + [["dea", "neg", "DEA 1−"], ["dea", "pos", "DEA 1+"], ["dal", "neg", "DAL−"], ["dal", "pos", "DAL+"]].map(([k, v, r]) => '<button type="button" data-k="' + k + '" data-v="' + v + '" class="' + (D.bolsa[k] === v ? "on" : "") + '">' + r + "</button>").join("") + "</div>";
 }
 function cartaoAfer(r, i) {
-  const n = D.afericoes.length, ops = MOMENTOS.includes(r.m) || !r.m ? MOMENTOS : MOMENTOS.concat([r.m]);
-  return '<div class="afer" data-i="' + i + '"><div class="afer-cab"><div><label>Momento</label><select data-a="m">' + ops.map((m) => '<option' + (m === r.m ? " selected" : "") + ">" + esc(m) + "</option>").join("") + '</select></div><div><label>Hora</label><input type="time" data-a="h" value="' + esc(r.h || "") + '"></div>' +
+  const n = D.afericoes.length, livre = r.livre || (r.m && !MOMENTOS.includes(r.m));
+  const mom = livre ? '<div class="mlivre"><input data-a="m" placeholder="Ex.: 45 min" value="' + esc(r.m || "") + '"><button type="button" class="mvolta" data-lista="' + i + '" aria-label="Voltar para a lista">▾</button></div>'
+    : '<select data-a="m">' + MOMENTOS.map((m) => '<option' + (m === r.m ? " selected" : "") + ">" + esc(m) + "</option>").join("") + '<option value="__outro">Outro horário…</option></select>';
+  return '<div class="afer" data-i="' + i + '"><div class="afer-cab"><div><label>Momento</label>' + mom + '</div><div><label>Hora</label><input type="time" data-a="h" value="' + esc(r.h || "") + '"></div>' +
     (n > 1 ? '<button type="button" class="afer-x" data-del="' + i + '" aria-label="Tirar esta aferição">×</button>' : "") + "</div>" +
     '<div class="g3">' + [["t", "T (°C)"], ["fc", "FC (bpm)"], ["fr", "FR (mpm)"]].map(([k, l]) => '<div><label>' + l + '</label><input inputmode="decimal" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
+    '<div class="g2">' + [["spo2", "SpO2 (%)"], ["lac", "Lactato (mmol/L)"]].map(([k, l]) => '<div><label>' + l + '</label><input inputmode="decimal" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
     '<label>Pressão arterial (mmHg)</label><div class="g3">' + [["pas", "Sistólica"], ["pad", "Diastólica"], ["pam", "Média"]].map(([k, l]) => '<div><input inputmode="numeric" placeholder="' + l + '" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
     '<label>Mucosas</label><div class="esc duas" data-ac="muc">' + MUCOSAS.map((m) => '<button type="button" data-v="' + m + '" class="' + (r.muc === m ? "on" : "") + '">' + m + "</button>").join("") + "</div>" +
     '<label>TPC</label><div class="esc etq" data-ac="tpc">' + TPCS.map((m) => '<button type="button" data-v="' + m + '" class="' + (r.tpc === m ? "on" : "") + '">' + esc(m) + "</button>").join("") + "</div>" +
@@ -374,18 +388,18 @@ function pintar() {
       '<div class="g2">' + campo("Responsável", "responsavel") + campo("Telefone do responsável", "telefone", 'inputmode="tel"') + "</div>" +
       campo("Clínica", "clinica") + campo("Indicação da transfusão", "indicacao") + "</div>" +
     '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + "</div>" +
-      '<label>Componente</label>' + chips("bolsa.componente", comp) + blocoTipo() +
+      '<label>Componente</label>' + chips("bolsa.componente", comp, { cls: "comp" }) + blocoTipo() +
       '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Não feita", "Incompatível"]) +
       '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" + '<div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPre">Foto do Hemochromax (hematócrito antes)</button></div>' +
       '<label>Acesso</label>' + chips("acesso", ACESSOS) +
       '<div class="g2">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + "</div>" + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') +
       '<div class="g2">' + campo("Início", "inicio", 'type="time"') + campo("Término", "fim", 'type="time"') + "</div></div>" +
-    '<div class="cx"><h2>Sinais vitais</h2><div class="ler-mini so-edicao"><button class="btn sec" id="bMonitor">Foto do monitor de parâmetros</button></div><p id="monSt"><small>A leitura cria uma aferição com a hora atual e todos os parâmetros da tela. Confira antes de seguir.</small></p><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button></div></div>' +
+    '<div class="cx"><h2>Parâmetros clínicos</h2><div class="ler-mini so-edicao"><button class="btn sec" id="bMonitor">Foto do monitor de parâmetros</button></div><p id="monSt"><small>A leitura cria uma aferição com a hora atual e todos os parâmetros da tela. Confira antes de seguir.</small></p><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button></div></div>' +
     '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", [["não", "Não"], ["sim", "Sim"]]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, { multi: true }) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", [["não", "Não"], ["sim", "Sim"]]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
     '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + '</div><div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPos">Foto do Hemochromax (preenche o próximo vazio)</button></div><p id="hcxSt"></p><label>Evolução e observações</label><textarea data-p="obs">' + esc(D.obs || "") + "</textarea></div>" +
     '<div class="cx"><h2>Fotos do paciente</h2><p><small>Mucosa, acesso, reação ou o que ajudar. Elas entram no PDF.</small></p>' + chips("_legFoto", LEG_FOTO) + '<div class="bts so-edicao"><button class="btn sec" id="bFoto">Tirar ou escolher foto</button></div><div class="fotos" id="fotos"></div></div></div>' +
     '<div class="cx"><h2>Assinatura do médico veterinário</h2>' + (A ? '<p class="ok">Assinada por ' + esc(A.nome) + " (" + esc(A.crmv) + ") em " + esc(hora(A.em)) + '.</p><div class="bts"><button class="btn sec peq" id="reabrir">Reabrir para editar</button></div>' :
-      '<div class="g2"><div><label>Nome</label><input id="aNome" value="' + esc(D.vet.nome || "") + '"></div><div><label>CRMV</label><input id="aCrmv" value="' + esc(D.vet.crmv || "") + '"></div></div><label>Assinatura com o dedo</label><canvas id="aCv" width="900" height="260"></canvas><div class="bts"><button class="btn sec peq" id="aLimpar">Limpar</button><button class="btn" id="aOk">Assinar a ficha</button></div><p id="aSt"></p>') + "</div>" +
+      '<div class="g2"><div><label>Nome</label><input id="aNome" value="' + esc((OPV && OPV.n) || D.vet.nome || "") + '"></div><div><label>CRMV-' + esc(ufCrmv((OPV && OPV.c) || D.vet.crmv)) + '</label><input id="aCrmv" inputmode="numeric" pattern="[0-9]*" placeholder="Número" value="' + esc(numCrmv((OPV && OPV.c) || D.vet.crmv)) + '"></div></div><label>Assinatura com o dedo</label><canvas id="aCv" width="900" height="260"></canvas><div class="bts"><button class="btn sec peq" id="aLimpar">Limpar</button><button class="btn" id="aOk">Assinar a ficha</button></div><p id="aSt"></p>') + "</div>" +
     '<div class="cx"><h2>Exportar</h2><p><small>O PDF sai com tudo o que está preenchido' + (A ? " e a assinatura" : " (ainda sem assinatura)") + '. Use para anexar ao prontuário do paciente.</small></p><div class="bts"><button class="btn peq" id="pdfA4">PDF A4</button><button class="btn sec peq" id="pdfCel">PDF para celular</button></div></div>' +
     '<p><small>' + (EXEMPLO ? "Ficha de exemplo: nada é salvo." : "As alterações são salvas sozinhas. Dúvidas, fale com o CVH.") + "</small></p>";
   ligar(); pintarFotos();
@@ -405,11 +419,11 @@ async function lerMonitor(file) {
   const s = $("#monSt"); s.innerHTML = "<small>Lendo o monitor…</small>";
   try { const d = await srv("monLerFoto", T, { tipo: "monitor", b64: await imagemMenor(file, 1800, 0.88) }) || {}, now = new Date();
     const v = (x) => x == null || x === "" ? "" : String(x).replace(".", ",");
-    const ult = D.afericoes[D.afericoes.length - 1] || {}, vazio = !["t", "fc", "fr", "pas", "pad", "pam", "muc", "tpc", "obs"].some((k) => ult[k]);
+    const ult = D.afericoes[D.afericoes.length - 1] || {}, vazio = !["t", "fc", "fr", "pas", "pad", "pam", "spo2", "lac", "muc", "tpc", "obs"].some((k) => ult[k]);
     const r = vazio ? ult : (D.afericoes.push({ m: MOMENTOS[Math.min(MOMENTOS.length - 1, MOMENTOS.indexOf(ult.m) + 1)] || "Antes" }), D.afericoes[D.afericoes.length - 1]);
     r.h = r.h || d.hora || (p2(now.getHours()) + ":" + p2(now.getMinutes()));
-    const n = [["fc", d.fc], ["fr", d.fr], ["t", d.t], ["pas", d.pas], ["pad", d.pad], ["pam", d.pam]].filter(([k, x]) => v(x) && (r[k] = v(x))).length;
-    const extra = [d.spo2 ? "SpO2 " + v(d.spo2) + "%" : "", d.etco2 ? "ETCO2 " + v(d.etco2) + " mmHg" : ""].filter(Boolean).join(" · "); if (extra) r.obs = [r.obs, extra].filter(Boolean).join(" · ");
+    const n = [["fc", d.fc], ["fr", d.fr], ["t", d.t], ["pas", d.pas], ["pad", d.pad], ["pam", d.pam], ["spo2", d.spo2]].filter(([k, x]) => v(x) && (r[k] = v(x))).length;
+    const extra = d.etco2 ? "ETCO2 " + v(d.etco2) + " mmHg" : ""; if (extra) r.obs = [r.obs, extra].filter(Boolean).join(" · ");
     salvarDepois(); pintar(); const s2 = $("#monSt"); s2.innerHTML = n ? '<span class="ok">' + n + " parâmetros lidos na aferição de " + esc(r.m) + ". Confira.</span>" : '<span class="erro">Não consegui ler os parâmetros. Tire a foto de frente para a tela.</span>';
   } catch (e) { s.innerHTML = '<span class="erro">' + esc(e.message || "Não consegui ler a foto.") + "</span>"; }
 }
@@ -436,7 +450,10 @@ function ligar() {
     b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", D.bolsa[x.dataset.k] === x.dataset.v)); });
   // aferições: cada uma num cartão; os campos gravam na hora
   document.querySelectorAll(".afer").forEach((c) => { const r = D.afericoes[+c.dataset.i];
-    c.querySelectorAll("[data-a]").forEach((el) => el.oninput = el.onchange = () => { r[el.dataset.a] = el.value; salvarDepois(); });
+    c.querySelectorAll("[data-a]").forEach((el) => el.oninput = el.onchange = () => {
+      if (el.dataset.a === "m" && el.value === "__outro") { r.m = ""; r.livre = 1; salvarDepois(); pintar(); const q = document.querySelector('.afer[data-i="' + c.dataset.i + '"] input[data-a="m"]'); if (q) q.focus(); return; }
+      r[el.dataset.a] = el.value; salvarDepois(); });
+    const mv = c.querySelector("[data-lista]"); if (mv) mv.onclick = () => { delete r.livre; if (!MOMENTOS.includes(r.m)) r.m = MOMENTOS[0]; salvarDepois(); pintar(); };
     const h = c.querySelector('input[data-a="h"]'); h.addEventListener("focus", () => { if (!h.value) { const d = new Date(); h.value = p2(d.getHours()) + ":" + p2(d.getMinutes()); r.h = h.value; salvarDepois(); } });
     c.querySelectorAll(".esc[data-ac] button").forEach((b) => b.onclick = () => { const k = b.parentNode.dataset.ac; r[k] = r[k] === b.dataset.v ? "" : b.dataset.v; salvarDepois(); b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", r[k] === x.dataset.v)); });
   });
@@ -460,7 +477,7 @@ function ligar() {
   cv.onpointerup = cv.onpointercancel = () => { des = false; };
   $("#aLimpar").onclick = () => { cx.fillRect(0, 0, cv.width, cv.height); tracos = 0; };
   $("#aOk").onclick = async () => { const s2 = $("#aSt"); if (tracos < 8) { s2.className = "erro"; s2.textContent = "Assine no quadro."; return; }
-    $("#aOk").disabled = true; try { clearTimeout(tSalvar); D.vet = { nome: $("#aNome").value.trim(), crmv: $("#aCrmv").value.trim() }; await srv("monSalvar", T, D); await srv("monAssinar", T, { nome: D.vet.nome, crmv: D.vet.crmv, assinatura: cv.toDataURL("image/png").split(",")[1] }); abrir(); } catch (e) { $("#aOk").disabled = false; s2.className = "erro"; s2.textContent = e.message || String(e); } };
+    $("#aOk").disabled = true; try { clearTimeout(tSalvar); const nc = $("#aCrmv").value.replace(/\D/g, ""); D.vet = { nome: $("#aNome").value.trim(), crmv: nc ? "CRMV-" + ufCrmv((OPV && OPV.c) || D.vet.crmv) + " " + nc : "" }; await srv("monSalvar", T, D); await srv("monAssinar", T, { nome: D.vet.nome, crmv: D.vet.crmv, assinatura: cv.toDataURL("image/png").split(",")[1] }); abrir(); } catch (e) { $("#aOk").disabled = false; s2.className = "erro"; s2.textContent = e.message || String(e); } };
 }
 /* ── leitura automática: hemograma, print do SimplesVet ou requisição ── */
 const b64De = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
@@ -536,15 +553,18 @@ function blocosPdf(cel) {
   out.push(bloco((cel ? "" : tituloPdf(false)) + tit("Paciente") + kv([["Paciente", P.nome], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : ""], ["Responsável", D.responsavel], ["Telefone", D.telefone], ["Clínica", D.clinica || F.clinica], ["Indicação", D.indicacao]], cel ? 2 : 3), 0));
   out.push(bloco(tit("Hemocomponente") + kv([["Bolsa", B.id], ["Componente", B.componente], ["Volume da bolsa", B.volume ? B.volume + " mL" : ""], ["Tipo sanguíneo da bolsa", tipoBolsaTxt(B)], ["Prova de compatibilidade", D.prova], ["Hematócrito antes", D.htPre ? String(D.htPre).replace(".", ",") + "%" : ""],
     ["Pré-medicação", D.premed], ["Acesso", D.acesso], ["Taxa inicial", D.taxa1 ? D.taxa1 + " mL/kg/h" : ""], ["Taxa após 15 min", D.taxa2 ? D.taxa2 + " mL/kg/h" : ""], ["Volume transfundido", D.volTx ? D.volTx + " mL" : ""], ["Horário", [D.inicio ? "início " + D.inicio : "", D.fim ? "término " + D.fim : ""].filter(Boolean).join(" · ")]], cel ? 2 : 3)));
-  const AF = D.afericoes.filter((r) => ["h", "t", "fc", "fr", "pas", "pad", "pam", "muc", "tpc", "obs"].some((k) => r[k]));
+  const AF = D.afericoes.filter((r) => ["h", "t", "fc", "fr", "pas", "pad", "pam", "spo2", "lac", "muc", "tpc", "obs"].some((k) => r[k]));
   if (AF.length) {
-    const cols = cel ? [["Momento", 17], ["T", 11], ["FC", 10], ["FR", 10], ["PA (S/D/M)", 22], ["Muc. / TPC", 30]] : [["Momento", 13], ["Hora", 8], ["T (°C)", 9], ["FC", 8], ["FR", 8], ["PA S/D/M (mmHg)", 18], ["Mucosas", 18], ["TPC", 8]];
+    const temSp = AF.some((r) => r.spo2), temLac = AF.some((r) => r.lac);
+    let cols = cel ? [["Momento", 17], ["T", 10], ["FC", 10], ["FR", 9], ["PA (S/D/M)", 21], ["SpO2", 10], ["Lact.", 9], ["Muc. / TPC", 24]] : [["Momento", 12], ["Hora", 7], ["T (°C)", 8], ["FC", 7], ["FR", 7], ["PA S/D/M (mmHg)", 16], ["SpO2 (%)", 9], ["Lactato", 9], ["Mucosas", 16], ["TPC", 7]];
+    const fora = (c) => (c.startsWith("SpO2") && !temSp) || (c.startsWith("Lact") && !temLac), soma = cols.filter(([c]) => !fora(c)).reduce((a, [, w]) => a + w, 0);
+    const keep = cols.map(([c]) => !fora(c)); cols = cols.filter((_, j) => keep[j]).map(([c, w]) => [c, Math.round(w * 1000 / soma) / 10]);
     const cab = '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:' + (cel ? 10.5 : 11) + 'px"><tr>' + cols.map(([c, w]) => '<th style="width:' + w + '%;text-align:left;background:' + COR.areia + ";color:" + COR.vinho + ';font-size:9.5px;letter-spacing:.04em;padding:6px 5px">' + c + "</th>").join("") + "</tr></table>";
     const pa = (r) => [r.pas, r.pad, r.pam].some(Boolean) ? [r.pas || "–", r.pad || "–", r.pam || "–"].join("/") : "";
-    const linha = (r, i) => { const v = cel ? [r.m + (r.h ? " " + r.h : ""), r.t, r.fc, r.fr, pa(r), [r.muc, r.tpc].filter(Boolean).join(" · ")] : [r.m, r.h, r.t, r.fc, r.fr, pa(r), r.muc, r.tpc];
-      return '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:' + (cel ? 10.5 : 11.5) + 'px;background:' + (i % 2 ? "#FBF8F4" : "#fff") + '"><tr>' + v.map((x, j) => '<td style="width:' + cols[j][1] + '%;padding:6px 5px;border-bottom:1px solid ' + COR.areia + ";color:" + COR.tinta + (j === 0 ? ";font-weight:700" : "") + '">' + esc(x || "") + "</td>").join("") + "</tr>" +
+    const linha = (r, i) => { const v = (cel ? [r.m + (r.h ? " " + r.h : ""), r.t, r.fc, r.fr, pa(r), r.spo2, r.lac, [r.muc, r.tpc].filter(Boolean).join(" · ")] : [r.m, r.h, r.t, r.fc, r.fr, pa(r), r.spo2, r.lac, r.muc, r.tpc]).filter((_, j) => keep[j]);
+      return '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:' + (cel ? 10.5 : 11.5) + 'px;background:' + (i % 2 ? "rgba(238,229,219,.38)" : "transparent") + '"><tr>' + v.map((x, j) => '<td style="width:' + cols[j][1] + '%;padding:6px 5px;border-bottom:1px solid ' + COR.areia + ";color:" + COR.tinta + (j === 0 ? ";font-weight:700" : "") + '">' + esc(x || "") + "</td>").join("") + "</tr>" +
         (r.obs ? '<tr><td colspan="' + v.length + '" style="padding:0 5px 6px;border-bottom:1px solid ' + COR.areia + ";color:" + COR.tinta2 + ';font-size:10.5px">' + esc(r.obs) + "</td></tr>" : "") + "</table>"; };
-    out.push({ html: bloco(tit("Sinais vitais") + cab), cab });
+    out.push({ html: bloco(tit("Parâmetros clínicos") + cab), cab });
     AF.forEach((r, i) => out.push({ html: linha(r, i), repete: cab }));
   }
   const rc = D.reacao || {};
@@ -572,12 +592,17 @@ async function exportar(cel) {
     const BL = blocosPdf(cel);
     box = document.createElement("div"); box.style.cssText = "position:fixed;left:-20000px;top:0"; document.body.appendChild(box);
     const esperarImgs = async (el) => { await Promise.all([...el.querySelectorAll("img")].map((im) => im.complete && im.naturalWidth ? 0 : new Promise((ok) => { im.onload = im.onerror = ok; }))); };
-    const pdf = await PDFLib.PDFDocument.create(), foto = async (el, w, h) => { const url = await htmlToImage.toJpeg(el, { width: w, height: h, pixelRatio: 2, quality: 0.93, backgroundColor: "#ffffff", cacheBust: false }); return pdf.embedJpg(await (await fetch(url)).arrayBuffer()); };
+    // o papel timbrado e a logo entram direto no PDF (no iPhone a imagem dentro do html às vezes some); o conteúdo vai por cima, com fundo transparente
+    const pdf = await PDFLib.PDFDocument.create(), bytes = async (u) => (await fetch(u)).arrayBuffer();
+    const foto = async (el, w, h) => { const op = { width: w, height: h, pixelRatio: 2, cacheBust: false };
+      if (el.querySelector("img")) await htmlToImage.toPng(el, op).catch(() => {});   // primeira passada carrega as fotos no Safari
+      return pdf.embedPng(await bytes(await htmlToImage.toPng(el, op))); };
     if (cel) {
-      const W = 430; box.innerHTML = '<div style="width:' + W + "px;padding:26px 24px 30px;background:#fff;font-family:" + FONTE + ';box-sizing:border-box"><img src="' + base + 'logo-cvh-horizontal.png" style="height:34px;display:block;margin-bottom:18px">' + tituloPdf(true) + '<div style="padding-bottom:12px;border-bottom:2px solid ' + COR.areia + ';margin-bottom:14px">' + cabecalhoPdf(true) + "</div>" + BL.map((b) => b.html).join("") +
+      const W = 430, logo = await pdf.embedPng(await bytes(base + "logo-cvh-horizontal.png")); box.innerHTML = '<div style="width:' + W + "px;padding:26px 24px 30px;background:#fff;font-family:" + FONTE + ';box-sizing:border-box"><div style="height:34px;margin-bottom:18px"></div>' + tituloPdf(true) + '<div style="padding-bottom:12px;border-bottom:2px solid ' + COR.areia + ';margin-bottom:14px">' + cabecalhoPdf(true) + "</div>" + BL.map((b) => b.html).join("") +
         '<div style="margin-top:22px;font-size:9px;color:' + COR.tinta2 + ';text-align:center">CVH - Centro Veterinário de Hemoterapia · (61) 9 8237-2772 · cvh.vet.br</div></div>';
       const el = box.firstChild; await esperarImgs(el); const H = Math.ceil(el.getBoundingClientRect().height), img = await foto(el, W, H), k = 595.28 / W;
-      pdf.addPage([595.28, H * k]).drawImage(img, { x: 0, y: 0, width: 595.28, height: H * k });
+      const pg = pdf.addPage([595.28, H * k]), lh = 34 * k; pg.drawRectangle({ x: 0, y: 0, width: 595.28, height: H * k, color: PDFLib.rgb(1, 1, 1) });
+      pg.drawImage(img, { x: 0, y: 0, width: 595.28, height: H * k }); pg.drawImage(logo, { x: 24 * k, y: H * k - 26 * k - lh, width: lh * logo.width / logo.height, height: lh });
     } else {
       // A4 em px (96 dpi) e a área útil do papel timbrado, a mesma dos laudos
       const W = 794, Hp = 1123, X = 91, TOPO = 168, FIM = 985, CW = W - 2 * X;
@@ -585,15 +610,16 @@ async function exportar(cel) {
       const alt = async (h) => { med.innerHTML = h; await esperarImgs(med); return Math.ceil(med.getBoundingClientRect().height); };
       const pags = [[]]; let y = 0;
       for (const b of BL) { let h = await alt(b.html);
-        if (y + h > FIM - TOPO && pags[pags.length - 1].length) { pags.push([]); y = 0; if (b.repete) { pags[pags.length - 1].push(bloco(tit("Sinais vitais (continuação)") + b.repete, 0)); y += await alt(bloco(tit("Sinais vitais (continuação)") + b.repete, 0)); } }
+        if (y + h > FIM - TOPO && pags[pags.length - 1].length) { pags.push([]); y = 0; if (b.repete) { pags[pags.length - 1].push(bloco(tit("Parâmetros clínicos (continuação)") + b.repete, 0)); y += await alt(bloco(tit("Parâmetros clínicos (continuação)") + b.repete, 0)); } }
         pags[pags.length - 1].push(y === 0 && !b.repete ? b.html.replace(/^<div style="padding-top:\d+px">/, '<div style="padding-top:0">') : b.html); y += h; }
+      const timb = await pdf.embedJpg(await bytes(base + "timbrado-a4.jpg"));
       for (let i = 0; i < pags.length; i++) {
-        box.innerHTML = '<div style="position:relative;width:' + W + "px;height:" + Hp + "px;background:#fff;font-family:" + FONTE + ';overflow:hidden"><img src="' + base + 'timbrado-a4.jpg" style="position:absolute;left:0;top:0;width:' + W + "px;height:" + Hp + 'px">' +
+        box.innerHTML = '<div style="position:relative;width:' + W + "px;height:" + Hp + "px;font-family:" + FONTE + ';overflow:hidden">' +
           '<div style="position:absolute;right:' + X + 'px;top:58px;text-align:right;width:250px">' + cabecalhoPdf(false) + "</div>" +
           '<div style="position:absolute;left:' + X + "px;top:" + TOPO + "px;width:" + CW + 'px">' + pags[i].join("") + "</div>" +
           (pags.length > 1 ? '<div style="position:absolute;right:' + X + 'px;top:' + (FIM + 8) + 'px;font-size:9px;color:' + COR.tinta2 + '">' + (i + 1) + " / " + pags.length + "</div>" : "") + "</div>";
         const el = box.firstChild; await esperarImgs(el); const img = await foto(el, W, Hp);
-        pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 });
+        const pg = pdf.addPage([595.28, 841.89]); pg.drawImage(timb, { x: 0, y: 0, width: 595.28, height: 841.89 }); pg.drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 });
       }
     }
     const blob = new Blob([await pdf.save()], { type: "application/pdf" }), a = document.createElement("a");

@@ -157,7 +157,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127020917">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127022909">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -708,7 +708,7 @@ a.btn{text-decoration:none}
 .ci-min{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid #EADFD3}.ci-min:first-of-type{border-top:0}.ci-min>div{flex:1 1 220px}.ci-min small{display:block;color:#7A6A62;font-size:13px}.ci-min.baixo b{color:#A83D3D}.min-l{display:grid;grid-template-columns:1fr 1fr 1.3fr 64px 34px;gap:6px;margin-bottom:6px;align-items:center}.min-l select,.min-l input{padding:8px;border:1px solid #DCCDBE;border-radius:10px;background:#fff;font:inherit;min-width:0}
 .ci-g{display:grid;grid-template-columns:minmax(120px,190px) 1fr 70px;gap:10px;align-items:center;margin:8px 0;font-size:13.5px}.ci-g em{font-style:normal;font-weight:700;text-align:right;color:var(--vinho)}
 .ci-bar{position:relative;height:12px;background:#F5EFE7;border-radius:99px;overflow:hidden}.ci-bar i{position:absolute;left:0;top:0;bottom:0;background:#E9C9C2;border-radius:99px}.ci-bar i.ok{background:#2F7D4F}.ci-bar i.m{background:#A83D3D}
-.ci-graf{width:100%;height:auto;display:block}.ci-lg{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:4px;vertical-align:middle}.ci-lg.l{background:var(--verm-bt,#A83D3D);height:3px}.ci-lg.b{background:#E9C9C2}
+.ci-graf{width:100%;height:auto;display:block}button.ci-k{font:inherit;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none;color:inherit}button.ci-g{width:100%;background:none;border:0;padding:6px 4px;border-radius:10px;font:inherit;text-align:left;color:inherit;cursor:pointer}button.ci-g:active,button.ci-k:active{background:#F7EFE6}.ci-gw{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}.ci-gw svg{display:block}.ci-cheio{position:fixed;inset:0;z-index:300;background:#FBF8F4;display:flex;align-items:center;justify-content:center}.ci-cheio-c{width:100%;height:100%;padding:max(12px,env(safe-area-inset-top)) 14px 14px;box-sizing:border-box;display:flex;flex-direction:column}.ci-cheio.deitado .ci-cheio-c{position:absolute;width:100vh;height:100vw;left:50%;top:50%;transform:translate(-50%,-50%) rotate(90deg)}.ci-cheio-t{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.ci-cheio-t b{color:var(--vinho)}.ci-cheio .ci-gw{flex:1}.ci-lg{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:4px;vertical-align:middle}.ci-lg.l{background:var(--verm-bt,#A83D3D);height:3px}.ci-lg.b{background:#E9C9C2}
 .ci-st{font-size:11.5px;font-weight:700;color:var(--c);border:1px solid var(--c);border-radius:99px;padding:3px 9px;white-space:nowrap}
 .and-h{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--vermelho);margin:0 0 6px}.and-box{border-left:4px solid #C49A6C}.and-del{display:flex;justify-content:flex-end;margin:-4px 0 8px}.and-del .lnk{background:none;border:0;font:inherit;font-size:13px;padding:4px 2px;cursor:pointer;text-decoration:underline}
 .and-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.and-tg em{font-style:normal;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEE5DB;color:#5F130F}.and-tg em.and-ppt{background:#C49A6C;color:#fff}
@@ -1123,7 +1123,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127020917';
+  var VERSAO = '20261127022909';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -4128,6 +4128,7 @@ async function carregarPainel() {
   await renovarChaveArquivos();
   E.d = await api('painelDados', E.sessao);
   E.u = E.d.usuario;
+  E.hpRes = null; api('hemoResumoDoadores', E.sessao).then(r => { E.hpRes = r; }).catch(() => {});
   if (E.u.trocarSenha) return telaTrocarSenha();
   E.rev = {}; if (pode('admin')) { try { E.rev = await api('revisaoListar', E.sessao) || {}; } catch (_) { E.rev = {}; } }
   telaHome();
@@ -4527,8 +4528,10 @@ const IC_SINO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6
 /* ═════════════ central de inteligência dos doadores ═════════════ */
 function statusDoador(an) {
   const regs = regsDe(an.id), h = hoje(), mot = [], imp = [], pend = [];
-  const doa = regs.filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado)).sort(porData).filter((r, i, l) => !i || l[i - 1].data !== r.data), ult = doa[doa.length - 1];
-  const libera = ult ? somaMeses(ult.data, INTERVALO_DOACAO_MESES) : '';
+  const doa = regs.filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado)).sort(porData).filter((r, i, l) => !i || l[i - 1].data !== r.data);
+  // última doação: a mais recente entre as fichas do painel e as coletas do HemoPlus (critério principal da aptidão)
+  const ultP = doa.length ? doa[doa.length - 1].data : '', ultH = ((E.hpRes || {}).ult || {})[an.id] || '', ult = ultH > ultP ? ultH : ultP;
+  const libera = ult ? somaMeses(ult, INTERVALO_DOACAO_MESES) : '';
   if (E.alertas) ativos(E.alertas).filter(a => a.animalId === an.id).forEach(a => {
     if (a.nivel !== 'normal') { imp.push(a.titulo); mot.push(a.tipo === 'positivo' ? 'Agente infeccioso positivo' : a.nivel === 'super' ? 'Super alerta laboratorial' : 'Alerta laboratorial urgente'); }
     else pend.push(a.titulo);
@@ -4536,13 +4539,14 @@ function statusDoador(an) {
   if (E.alertas && ativos(E.alertas).some(a => a.animalId === an.id && a.nivel === 'normal')) mot.push('Exame para revisar');
   const pv = pendencias(regs).filter(p => p.data < h);
   pv.forEach(p => { pend.push(p.rot + ' vencido'); mot.push(p.tipo === 'vacina' ? 'Vacina vencida' : p.tipo === 'reforco' ? 'Reforço de vermífugo vencido' : p.rot + ' vencido'); });
-  if (!regs.some(r => r.tipo === 'tcle')) { pend.push('Sem termo de consentimento'); mot.push('Sem termo de consentimento'); }
-  const intervalo = libera && somaDiasIso(libera, -TOLERANCIA_DIAS) > h;
-  if (intervalo) mot.push('Intervalo entre doações');
+  // termo de consentimento ainda não conta como pendência (os termos estão sendo atualizados)
+  const intervalo = !!libera && libera > h, emerg = intervalo && somaDiasIso(libera, -TOLERANCIA_DIAS) <= h;
+  if (intervalo) mot.push(emerg ? 'Intervalo quase cumprido (só em emergência)' : 'Intervalo entre doações');
   const ult12 = doa.filter(r => r.data >= somaDiasIso(h, -365)).length;
   const afa = !!(an.afastadoMotivo && !an.aposentadoEm); if (afa) mot.push('Afastado temporariamente');
-  const sit = imp.length || afa ? 'imp' : pend.length ? 'pend' : intervalo ? 'intervalo' : 'apto';
-  return { an, sit, imp, pend, mot: [...new Set(mot)], ult: ult ? ult.data : '', libera, nDoa: doa.length, ult12, vacVenc: pv.some(p => p.tipo === 'vacina') };
+  // pendência não tira a aptidão: aparece para conferir na triagem
+  const sit = imp.length || afa ? 'imp' : intervalo ? 'intervalo' : 'apto';
+  return { an, sit, imp, pend, emerg, mot: [...new Set(mot)], ult, libera, nDoa: doa.length, ult12, vacVenc: pv.some(p => p.tipo === 'vacina') };
 }
 const SIT_INT = { apto: ['Aptos para doar', '#2F7D4F'], intervalo: ['Aguardando intervalo', '#C49A6C'], pend: ['Com pendências', '#D08A2E'], imp: ['Possível impedimento', '#A83D3D'] };
 /* ── estoque mínimo e convocação de doadores aptos ── */
@@ -4556,7 +4560,7 @@ function contaMin(m, linhas) {
 }
 function doadoresPara(m) {
   const st = E.ciSt || [], h = hoje(), ok = x => (ehGato(x.an) ? 'gato' : 'cao') === m.especie && (!m.tipo || grupoTipo(x.an.especie, x.an.tipoSanguineo) === m.tipo);
-  return { aptos: st.filter(x => ok(x) && x.sit === 'apto'), logo: st.filter(x => ok(x) && x.sit === 'intervalo' && x.libera <= somaDiasIso(h, 14)).sort((a, b) => a.libera.localeCompare(b.libera)) };
+  return { aptos: st.filter(x => ok(x) && x.sit === 'apto'), emerg: st.filter(x => ok(x) && x.sit === 'intervalo' && x.emerg), logo: st.filter(x => ok(x) && x.sit === 'intervalo' && !x.emerg && x.libera <= somaDiasIso(h, 14)).sort((a, b) => a.libera.localeCompare(b.libera)) };
 }
 async function pintarEstMinimo(recarregar) {
   const el = $('#ciEst'); if (!el) return;
@@ -4579,8 +4583,9 @@ function folhaConvocar(i) {
   const item = (x, convite) => { const rp = respDe(x.an) || {}, w = zapTel(rp.telefone);
     return '<div class="item"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc(rp.nome || 'sem responsável') + (rp.telefone ? ' · ' + esc(rp.telefone) : ' · sem telefone') + (x.ult ? ' · última doação ' + br(x.ult) : ' · sem doação registrada') + (!convite ? ' · liberado em ' + br(x.libera) : '') + '</small></div>' +
       (convite && w ? '<a class="btn peq" target="_blank" rel="noopener" href="' + esc(w + '?text=' + encodeURIComponent(msgConvite(x, m))) + '">WhatsApp</a>' : '') + '</div>'; };
-  abrirFolha('Convocar · ' + rotMin(m), '<p class="nota">Aptos agora: intervalo cumprido, sem pendência e sem alerta. O WhatsApp abre com o convite pronto para o responsável. A liberação final continua sendo do médico veterinário na triagem.</p>' +
+  abrirFolha('Convocar · ' + rotMin(m), '<p class="nota">Aptos agora: 3 meses desde a última doação (painel ou HemoPlus) e sem impedimento. Pendências aparecem na triagem. O WhatsApp abre com o convite pronto para o responsável. A liberação final continua sendo do médico veterinário na triagem.</p>' +
     (D.aptos.length ? D.aptos.map(x => item(x, true)).join('') : '<p class="vazio-p">Nenhum doador apto agora para este tipo.</p>') +
+    (D.emerg.length ? '<h4 style="margin:16px 0 4px">Exceção por estoque baixo</h4><p class="nota">Falta menos de 1 semana para completar 3 meses da última doação. Só com o estoque abaixo do mínimo.</p>' + D.emerg.map(x => item(x, true)).join('') : '') +
     (D.logo.length ? '<h4 style="margin:16px 0 4px">Liberados nos próximos 14 dias</h4>' + D.logo.map(x => item(x, false)).join('') : ''));
 }
 function folhaMinimo() {
@@ -4597,50 +4602,95 @@ function pintarMinEd() {
 async function telaInteligencia() {
   E.livro = null;
   if (!E.alertas) { carregando('Calculando os indicadores'); try { await carregarAlertas(); } catch (_) { } }
+  if (!E.hpRes) { try { E.hpRes = await api('hemoResumoDoadores', E.sessao); } catch (_) { E.hpRes = { ult: {}, prim: {}, porMes: {} }; } }
   const h = hoje(), todos = E.d.animais.filter(a => a.doador === '1'), ativosD = todos.filter(a => a.ativo !== '0' && !a.aposentadoEm), apos = todos.filter(a => a.aposentadoEm);
   const st = ativosD.map(statusDoador), cnt = k => st.filter(x => x.sit === k).length;
-  const kpi = (n, t, cor, s) => '<div class="ci-k" style="--c:' + cor + '"><b>' + n + '</b><span>' + t + '</span>' + (s ? '<small>' + s + '</small>' : '') + '</div>';
-  // disponibilidade por espécie e tipo sanguíneo
+  E.ciSt = st;
+  const kpi = (n, t, cor, s, v) => '<button class="ci-k" data-acao="ci-ver" data-v="' + v + '" style="--c:' + cor + '"><b>' + n + '</b><span>' + t + '</span>' + (s ? '<small>' + s + '</small>' : '') + '</button>';
   const grupos = {}; st.forEach(x => { const k = (ehGato(x.an) ? 'Gatos' : 'Cães') + '|' + (tipoSang(x.an) || 'Sem tipagem'); (grupos[k] = grupos[k] || { tot: 0, apto: 0 }); grupos[k].tot++; if (x.sit === 'apto') grupos[k].apto++; });
   const maxG = Math.max(1, ...Object.values(grupos).map(g => g.tot));
-  const tabG = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0])).map(([k, g]) => { const [esp, tp] = k.split('|'); return '<div class="ci-g"><span>' + esp + ' · <b>' + esc(tp) + '</b></span><div class="ci-bar"><i style="width:' + (g.tot / maxG * 100) + '%"></i><i class="ok" style="width:' + (g.apto / maxG * 100) + '%"></i></div><em>' + g.apto + ' de ' + g.tot + '</em></div>'; }).join('');
-  // motivos de inaptidão
+  const tabG = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0])).map(([k, g]) => { const [esp, tp] = k.split('|'); return '<button class="ci-g" data-acao="ci-ver" data-v="g:' + esc(k) + '"><span>' + esp + ' · <b>' + esc(tp) + '</b></span><div class="ci-bar"><i style="width:' + (g.tot / maxG * 100) + '%"></i><i class="ok" style="width:' + (g.apto / maxG * 100) + '%"></i></div><em>' + g.apto + ' de ' + g.tot + ' ›</em></button>'; }).join('');
   const mot = {}; st.filter(x => x.sit !== 'apto').forEach(x => x.mot.forEach(m => mot[m] = (mot[m] || 0) + 1));
-  apos.forEach(a => { mot['Aposentado'] = (mot['Aposentado'] || 0) + 1; });
+  if (apos.length) mot['Aposentado'] = apos.length;
   const maxM = Math.max(1, ...Object.values(mot));
-  const tabM = Object.entries(mot).sort((a, b) => b[1] - a[1]).map(([m, n]) => '<div class="ci-g"><span>' + esc(m) + '</span><div class="ci-bar"><i class="m" style="width:' + (n / maxM * 100) + '%"></i></div><em>' + n + '</em></div>').join('');
-  // evolução: doadores ativos e doações por mês nos últimos 12 meses
-  const meses = [...Array(12).keys()].map(i => somaMeses(h.slice(0, 7) + '-01', i - 11).slice(0, 7));
-  const prim = {}; todos.forEach(a => { const d = regsDe(a.id).filter(r => r.tipo === 'doacao').sort(porData)[0]; if (d) prim[a.id] = d.data; });
-  const ativosMes = meses.map(m => todos.filter(a => prim[a.id] && prim[a.id].slice(0, 7) <= m && !(a.aposentadoEm && a.aposentadoEm.slice(0, 7) < m)).length);
-  const doaMes = meses.map(m => new Set(E.d.registros.filter(r => r.tipo === 'doacao' && r.data.slice(0, 7) === m && !(r.dados && r.dados.naoColetado) && animalDe(r.animalId)).map(r => r.animalId + r.data)).size);
-  const W = 640, Hh = 190, mx = Math.max(2, Math.ceil(Math.max(...ativosMes, ...doaMes) / 2) * 2), x = i => 30 + i * (W - 50) / 11, y = v => Hh - 26 - v / mx * (Hh - 50);
-  const graf = '<svg class="ci-graf" viewBox="0 0 ' + W + ' ' + Hh + '" role="img" aria-label="Doadores ativos e doações por mês">' +
-    [0, 0.5, 1].map(f => '<line x1="30" x2="' + (W - 20) + '" y1="' + y(mx * f) + '" y2="' + y(mx * f) + '" stroke="#EADFD3"/><text x="24" y="' + (y(mx * f) + 4) + '" text-anchor="end" font-size="10" fill="#7A6A62">' + Math.round(mx * f) + '</text>').join('') +
-    doaMes.map((v, i) => '<rect x="' + (x(i) - 9) + '" y="' + y(v) + '" width="18" height="' + (Hh - 26 - y(v)) + '" rx="3" fill="#E9C9C2"><title>' + v + ' doações</title></rect>').join('') +
-    '<polyline points="' + ativosMes.map((v, i) => x(i) + ',' + y(v)).join(' ') + '" fill="none" stroke="#5F130F" stroke-width="2.4" stroke-linejoin="round"/>' +
-    ativosMes.map((v, i) => '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="3.5" fill="#5F130F"><title>' + v + ' doadores ativos</title></circle>').join('') +
-    meses.map((m, i) => '<text x="' + x(i) + '" y="' + (Hh - 8) + '" text-anchor="middle" font-size="10" fill="#7A6A62">' + MESES_PT[+m.slice(5) - 1].slice(0, 3) + '</text>').join('') + '</svg>';
+  const tabM = Object.entries(mot).sort((a, b) => b[1] - a[1]).map(([m, n]) => '<button class="ci-g" data-acao="ci-ver" data-v="m:' + esc(m) + '"><span>' + esc(m) + '</span><div class="ci-bar"><i class="m" style="width:' + (n / maxM * 100) + '%"></i></div><em>' + n + ' ›</em></button>').join('');
+  const doa12 = Object.entries(E.hpRes.porMes || {}).filter(([m]) => m >= somaMeses(h.slice(0, 7) + '-01', -11).slice(0, 7)).reduce((t, [, n]) => t + n, 0) || st.reduce((t, x) => t + x.ult12, 0);
   const linhaD = x => '<button class="item" data-acao="ci-doador" data-id="' + x.an.id + '"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc((respDe(x.an) || {}).nome || '') +
-    (x.ult ? ' · última doação ' + br(x.ult) : ' · sem doação registrada') + (x.sit === 'intervalo' ? ' · liberado em ' + br(x.libera) : '') + (x.mot.length && x.sit !== 'apto' ? ' · ' + esc(x.mot.slice(0, 2).join(', ')) : '') + '</small></div><span class="ci-st" style="--c:' + SIT_INT[x.sit][1] + '">' + SIT_INT[x.sit][0] + '</span></button>';
-  const ordem = { apto: 0, pend: 1, imp: 2, intervalo: 3 };
+    (x.ult ? ' · última doação ' + br(x.ult) : ' · sem doação registrada') + (x.sit === 'intervalo' ? ' · liberado em ' + br(x.libera) + (x.emerg ? ' (em emergência já pode)' : '') : '') + (x.pend.length ? ' · pendência: ' + esc(x.pend.slice(0, 2).join(', ')) : '') + (x.imp.length ? ' · ' + esc(x.imp.slice(0, 2).join(', ')) : '') + '</small></div><span class="ci-st" style="--c:' + SIT_INT[x.sit][1] + '">' + SIT_INT[x.sit][0].replace(/s para doar$/, '').replace(/^Aguardando /, '') + '</span></button>';
+  E.ciLinha = linhaD;
+  const ordem = { apto: 0, intervalo: 1, imp: 2 };
+  const nPend = st.filter(x => x.pend.length).length;
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Clube do Doador</span><b>Central de inteligência</b></div></header>' +
-    '<div class="ci-ks">' + kpi(ativosD.length, 'Doadores ativos', '#5F130F', apos.length ? apos.length + ' aposentados' : '') + kpi(cnt('apto'), 'Aptos para doar', SIT_INT.apto[1], 'intervalo cumprido e sem pendência') +
-      kpi(cnt('intervalo'), 'Aguardando intervalo', SIT_INT.intervalo[1], 'temporariamente inaptos') + kpi(cnt('pend'), 'Com pendências', SIT_INT.pend[1], 'vacina, termo ou exame') +
-      kpi(cnt('imp'), 'Possível impedimento', SIT_INT.imp[1], 'alerta urgente ou positivo') + kpi(st.filter(x => x.vacVenc).length, 'Vacinas vencidas', '#A83D3D') +
-      kpi(st.filter(x => x.pend.some(p => /alerta|exame|revis/i.test(p)) || (E.alertas && ativos(E.alertas).some(a => a.animalId === x.an.id && a.nivel === 'normal'))).length, 'Exames para revisar', '#3F6E9E') +
-      kpi(st.reduce((t, x) => t + x.ult12, 0), 'Doações em 12 meses', '#C49A6C') + '</div>' +
+    '<div class="ci-ks">' + kpi(ativosD.length, 'Doadores ativos', '#5F130F', apos.length ? apos.length + ' aposentados' : '', 'ativos') + kpi(cnt('apto'), 'Aptos para doar', SIT_INT.apto[1], '3 meses desde a última doação', 'apto') +
+      kpi(cnt('intervalo'), 'Aguardando intervalo', SIT_INT.intervalo[1], st.filter(x => x.emerg).length + ' já podem em emergência', 'intervalo') + kpi(nPend, 'Com pendências', '#D08A2E', 'vacina, vermífugo ou exame · não tira a aptidão', 'pend') +
+      kpi(cnt('imp'), 'Possível impedimento', SIT_INT.imp[1], 'alerta urgente, positivo ou afastado', 'imp') + kpi(st.filter(x => x.vacVenc).length, 'Vacinas vencidas', '#A83D3D', '', 'vac') +
+      kpi(st.filter(x => E.alertas && ativos(E.alertas).some(a => a.animalId === x.an.id && a.nivel === 'normal')).length, 'Exames para revisar', '#3F6E9E', '', 'exames') +
+      kpi(doa12, 'Doações em 12 meses', '#C49A6C', 'painel e HemoPlus', 'doa12') + '</div>' +
     '<section class="cartao" id="ciEst"><h3>Estoque mínimo e convocação</h3><p class="nota">Calculando o estoque…</p></section>' +
-    '<section class="cartao"><h3>Disponíveis por espécie e tipo sanguíneo</h3><p class="nota">Barra clara = doadores ativos. Barra verde = aptos agora.</p>' + (tabG || '<p class="vazio-p">Sem doadores ativos.</p>') + '</section>' +
+    '<section class="cartao"><h3>Disponíveis por espécie e tipo sanguíneo</h3><p class="nota">Barra clara = doadores ativos. Barra verde = aptos agora. Toque para ver os doadores.</p>' + (tabG || '<p class="vazio-p">Sem doadores ativos.</p>') + '</section>' +
     '<section class="cartao"><h3>Motivos mais frequentes de inaptidão</h3>' + (tabM || '<p class="vazio-p">Nenhum doador inapto agora.</p>') + '</section>' +
-    '<section class="cartao"><h3>Evolução nos últimos 12 meses</h3><p class="nota"><i class="ci-lg l"></i>doadores ativos · <i class="ci-lg b"></i>doações no mês</p>' + graf + '</section>' +
-    '<section class="cartao"><h3>Situação de cada doador</h3><div class="filtros" id="ciF">' + ['todos', 'apto', 'intervalo', 'pend', 'imp'].map(k => '<button class="filtro' + (k === 'todos' ? ' on' : '') + '" data-acao="ci-filtro" data-v="' + k + '">' + (k === 'todos' ? 'Todos' : SIT_INT[k][0]) + ' <b>' + (k === 'todos' ? st.length : cnt(k)) + '</b></button>').join('') + '</div>' +
+    '<section class="cartao"><h3>Evolução</h3><div class="filtros" id="ciGP">' + [[6, '6 meses'], [12, '12 meses'], [24, '2 anos'], [0, 'Tudo']].map(([n, t]) => '<button class="filtro' + (n === 12 ? ' on' : '') + '" data-acao="ci-graf-p" data-v="' + n + '">' + t + '</button>').join('') + '<button class="filtro" data-acao="ci-graf-cheio">Tela cheia ⤢</button></div>' +
+      '<p class="nota"><i class="ci-lg l"></i>doadores ativos · <i class="ci-lg b"></i>doações no mês · toque num mês para ver os números</p><div class="ci-gw" id="ciGW"></div><p class="nota" id="ciGInfo"></p></section>' +
+    '<section class="cartao"><h3>Situação de cada doador</h3><div class="filtros" id="ciF">' + [['todos', 'Todos', st.length], ['apto', 'Aptos', cnt('apto')], ['intervalo', 'Aguardando intervalo', cnt('intervalo')], ['pend', 'Com pendências', nPend], ['imp', 'Possível impedimento', cnt('imp')]].map(([k, t, n], i) => '<button class="filtro' + (!i ? ' on' : '') + '" data-acao="ci-filtro" data-v="' + k + '">' + t + ' <b>' + n + '</b></button>').join('') + '</div>' +
       '<div id="ciLista">' + st.slice().sort((a, b) => ordem[a.sit] - ordem[b.sit] || String(a.an.nome).localeCompare(String(b.an.nome))).map(linhaD).join('') + '</div></section>' +
-    '<p class="nota">A situação é calculada com o cadastro, as fichas, os alertas laboratoriais e o intervalo de ' + INTERVALO_DOACAO_MESES + ' meses entre doações. A liberação final é sempre do médico veterinário.</p></div></main>';
-  E.ciLinhas = st.map(x => ({ sit: x.sit, html: linhaD(x), ord: ordem[x.sit], nome: x.an.nome }));
+    '<p class="nota">A aptidão vem da última doação (fichas do painel e coletas do HemoPlus) com intervalo de ' + INTERVALO_DOACAO_MESES + ' meses; com o estoque abaixo do mínimo, quem está a menos de 1 semana dos 3 meses entra como exceção. Pendências aparecem para conferir, sem tirar a aptidão. A liberação final é sempre do médico veterinário.</p></div></main>';
+  E.ciLinhas = st.map(x => ({ sit: x.sit, pend: x.pend.length > 0, html: linhaD(x), ord: ordem[x.sit], nome: x.an.nome }));
   telaClasse('tela-ci');
-  E.ciSt = st; pintarEstMinimo();
+  E.ciGP = 12; pintarGrafCI(); pintarEstMinimo();
+}
+// gráfico da evolução: período escolhido, rola para o lado, toque num mês mostra os números; tela cheia deitada no celular
+function dadosGrafCI() {
+  const h = hoje(), todos = E.d.animais.filter(a => a.doador === '1'), R = E.hpRes || {}, pm = R.porMes || {}, prim = Object.assign({}, R.prim || {});
+  todos.forEach(a => { const d = regsDe(a.id).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado)).sort(porData)[0]; if (d && (!prim[a.id] || d.data < prim[a.id])) prim[a.id] = d.data; });
+  const inicio = Object.keys(pm).concat(Object.values(prim).map(d => String(d).slice(0, 7))).filter(Boolean).sort()[0] || h.slice(0, 7);
+  const meses = []; for (let m = inicio; m <= h.slice(0, 7); m = somaMeses(m + '-01', 1).slice(0, 7)) meses.push(m);
+  return meses.map(m => ({ m, ativos: todos.filter(a => prim[a.id] && prim[a.id].slice(0, 7) <= m && !(a.aposentadoEm && a.aposentadoEm.slice(0, 7) < m)).length, doa: pm[m] || 0 }));
+}
+function svgGrafCI(L, alto, sel) {
+  const larg = Math.max(320, L.length * 46 + 50), Hh = alto || 210, mx = Math.max(2, Math.ceil(Math.max(...L.map(x => Math.max(x.ativos, x.doa))) / 2) * 2);
+  const x = i => 34 + i * 46 + 23, y = v => Hh - 30 - v / mx * (Hh - 56);
+  return '<svg viewBox="0 0 ' + larg + ' ' + Hh + '" width="' + larg + '" height="' + Hh + '" role="img" aria-label="Doadores ativos e doações por mês">' +
+    [0, 0.5, 1].map(f => '<line x1="30" x2="' + (larg - 6) + '" y1="' + y(mx * f) + '" y2="' + y(mx * f) + '" stroke="#EADFD3"/><text x="26" y="' + (y(mx * f) + 4) + '" text-anchor="end" font-size="10" fill="#7A6A62">' + Math.round(mx * f) + '</text>').join('') +
+    L.map((v, i) => '<g data-ci-m="' + i + '" style="cursor:pointer"><rect x="' + (x(i) - 23) + '" y="0" width="46" height="' + Hh + '" fill="' + (sel === i ? '#F7EFE6' : 'transparent') + '"/><rect x="' + (x(i) - 10) + '" y="' + y(v.doa) + '" width="20" height="' + Math.max(0, Hh - 30 - y(v.doa)) + '" rx="3" fill="#E9C9C2"/>' +
+      (v.doa ? '<text x="' + x(i) + '" y="' + (y(v.doa) - 4) + '" text-anchor="middle" font-size="10" fill="#A83D3D">' + v.doa + '</text>' : '') + '<text x="' + x(i) + '" y="' + (Hh - 14) + '" text-anchor="middle" font-size="10" fill="#7A6A62">' + MESES_PT[+v.m.slice(5) - 1].slice(0, 3) + '</text>' +
+      (v.m.slice(5) === '01' || i === 0 ? '<text x="' + x(i) + '" y="' + (Hh - 2) + '" text-anchor="middle" font-size="9" fill="#9B8A80">' + v.m.slice(0, 4) + '</text>' : '') + '</g>').join('') +
+    '<polyline points="' + L.map((v, i) => x(i) + ',' + y(v.ativos)).join(' ') + '" fill="none" stroke="#A83D3D" stroke-width="2.4" stroke-linejoin="round" pointer-events="none"/>' +
+    L.map((v, i) => '<circle cx="' + x(i) + '" cy="' + y(v.ativos) + '" r="' + (sel === i ? 5 : 3.5) + '" fill="#A83D3D" pointer-events="none"/>').join('') + '</svg>';
+}
+function pintarGrafCI(sel) {
+  const box = $('#ciGW'); if (!box) return; const T = dadosGrafCI(), L = E.ciGP ? T.slice(-E.ciGP) : T;
+  box.innerHTML = svgGrafCI(L, 210, sel); box.scrollLeft = box.scrollWidth;
+  if (sel != null && L[sel]) { const v = L[sel]; $('#ciGInfo').textContent = MESES_PT[+v.m.slice(5) - 1] + ' de ' + v.m.slice(0, 4) + ': ' + v.ativos + ' doadores ativos e ' + v.doa + (v.doa === 1 ? ' doação' : ' doações') + '.'; box.scrollLeft = Math.max(0, sel * 46 - box.clientWidth / 2); }
+  box.querySelectorAll('[data-ci-m]').forEach(g => g.onclick = () => pintarGrafCI(+g.dataset.ciM));
+}
+function grafCICheio() {
+  const T = dadosGrafCI(); let sel = null;
+  const ov = document.createElement('div'); ov.className = 'ci-cheio'; document.body.appendChild(ov);
+  const pinta = () => { const deitar = innerHeight > innerWidth; ov.classList.toggle('deitado', deitar); const alto = Math.max(220, (deitar ? innerWidth : innerHeight) - 120);
+    ov.innerHTML = '<div class="ci-cheio-c"><div class="ci-cheio-t"><b>Evolução · doadores ativos e doações por mês</b><button class="x" data-ci-x aria-label="Fechar">×</button></div><div class="ci-gw">' + svgGrafCI(T, alto, sel) + '</div><p class="nota" id="ciCInfo">' + (sel != null ? esc(MESES_PT[+T[sel].m.slice(5) - 1] + ' de ' + T[sel].m.slice(0, 4) + ': ' + T[sel].ativos + ' doadores ativos e ' + T[sel].doa + ' doações.') : 'Arraste para o lado para caminhar pelos meses. Toque num mês para ver os números.') + '</p></div>';
+    const gw = ov.querySelector('.ci-gw'); gw.scrollLeft = sel != null ? Math.max(0, sel * 46 - gw.clientWidth / 2) : gw.scrollWidth;
+    ov.querySelectorAll('[data-ci-m]').forEach(g => g.onclick = () => { sel = +g.dataset.ciM; pinta(); }); ov.querySelector('[data-ci-x]').onclick = fechar; };
+  const fechar = () => { removeEventListener('resize', pinta); try { screen.orientation.unlock(); } catch (_) {} try { if (document.fullscreenElement) document.exitFullscreen(); } catch (_) {} ov.remove(); };
+  addEventListener('resize', pinta); pinta();
+  try { (ov.requestFullscreen ? ov.requestFullscreen() : Promise.reject()).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {}); } catch (_) {}
+}
+// listas da Central: o que cada cartão, tipo sanguíneo ou motivo está contando
+function folhaCI(v) {
+  const st = E.ciSt || [], ord = (a, b) => String(a.an.nome).localeCompare(String(b.an.nome)), linha = E.ciLinha;
+  let tit = '', L = [], nota = '';
+  if (v === 'ativos') { tit = 'Doadores ativos'; L = st; }
+  else if (v === 'apto') { tit = 'Aptos para doar'; L = st.filter(x => x.sit === 'apto'); nota = '3 meses ou mais desde a última doação e sem impedimento. Pendências aparecem para conferir na triagem.'; }
+  else if (v === 'intervalo') { tit = 'Aguardando intervalo'; L = st.filter(x => x.sit === 'intervalo').sort((a, b) => a.libera.localeCompare(b.libera)); nota = 'Em ordem de liberação. Quem está a menos de 1 semana dos 3 meses pode doar em emergência de estoque baixo.'; }
+  else if (v === 'pend') { tit = 'Com pendências'; L = st.filter(x => x.pend.length); nota = 'As pendências não tiram a aptidão. Toque no doador para ver cada uma.'; }
+  else if (v === 'imp') { tit = 'Possível impedimento'; L = st.filter(x => x.sit === 'imp'); }
+  else if (v === 'vac') { tit = 'Vacinas vencidas'; L = st.filter(x => x.vacVenc); }
+  else if (v === 'exames') { tit = 'Exames para revisar'; L = st.filter(x => E.alertas && ativos(E.alertas).some(a => a.animalId === x.an.id && a.nivel === 'normal')); }
+  else if (v === 'doa12') { tit = 'Doações em 12 meses'; L = st.filter(x => x.ult && x.ult >= somaDiasIso(hoje(), -365)).sort((a, b) => b.ult.localeCompare(a.ult)); nota = 'Doadores com doação nos últimos 12 meses, da mais recente para a mais antiga.'; }
+  else if (v.startsWith('g:')) { const [esp, tp] = v.slice(2).split('|'); tit = esp + ' · ' + tp; L = st.filter(x => (ehGato(x.an) ? 'Gatos' : 'Cães') === esp && (tipoSang(x.an) || 'Sem tipagem') === tp).sort((a, b) => ({ apto: 0, intervalo: 1, imp: 2 })[a.sit] - ({ apto: 0, intervalo: 1, imp: 2 })[b.sit] || ord(a, b)); nota = 'Aptos primeiro.'; }
+  else if (v.startsWith('m:')) { const m = v.slice(2); tit = m; L = m === 'Aposentado' ? [] : st.filter(x => x.mot.includes(m)); if (m === 'Aposentado') return abrirFolha('Aposentados', E.d.animais.filter(a => a.doador === '1' && a.aposentadoEm).map(a => '<button class="item" data-acao="abrir-animal" data-id="' + a.id + '"><div class="t"><b>' + esc(a.nome) + '</b><small>' + esc((a.aposentadoMotivo || 'aposentado') + ' · ' + br(a.aposentadoEm)) + '</small></div><span class="seta">›</span></button>').join('') || '<p class="vazio-p">Nenhum.</p>'); }
+  if (!['intervalo', 'doa12'].includes(v) && !v.startsWith('g:')) L = L.slice().sort(ord);
+  abrirFolha(tit + ' (' + L.length + ')', (nota ? '<p class="nota">' + esc(nota) + '</p>' : '') + (L.length ? L.map(linha).join('') : '<p class="vazio-p">Nenhum doador.</p>'));
 }
 
 /* ═════════════ busca global ═════════════ */
@@ -7808,7 +7858,7 @@ async function abrirModulo(nome, aid, rid) {
     if (an) { let st = null; try { st = statusDoador(an); } catch (_) { st = null; }
       E.ponte.triagem = { imp: st ? st.imp : [], pend: st ? st.pend : [], doador: an.doador === '1', aposentado: !!an.aposentadoEm, afastado: an.aposentadoEm ? '' : (an.afastadoMotivo || ''), intervaloMeses: INTERVALO_DOACAO_MESES, toleranciaDias: TOLERANCIA_DIAS,
         vacinas: regsDe(aid).filter(r => r.tipo === 'vacina' && r.excluido !== '1').map(r => ({ data: r.data, produtos: produtos(r) })),
-        doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })) }; } }
+        doacoes: regsDe(aid).filter(r => r.tipo === 'doacao' && !(r.dados && r.dados.naoColetado) && !(((r.dados || {}).ficha || {}).tempo === 'NC')).map(r => ({ data: r.data, numero: String((r.dados || {}).numero || '') })).concat(((E.hpRes || {}).ult || {})[aid] ? [{ data: E.hpRes.ult[aid], numero: 'HemoPlus' }] : []) }; } }
   if (nome === 'tcle') {
     E.ponte.resp = rp.id ? { id: rp.id, nome: rp.nome, email: rp.email, tel: rp.telefone, cpf: rp.cpf || '', cep: rp.cep || '', logradouro: rp.logradouro || '', numero: rp.numero || '', complemento: rp.complemento || '', bairro: rp.bairro || '', cidade: rp.cidade || '', uf: rp.uf || '' } : null;
     E.ponte.animais = rp.id ? E.d.animais.filter(a => a.responsavelId === rp.id).map(a => ({ id: a.id, nome: a.nome, especie: a.especie, raca: a.raca, sexo: a.sexo, nascimento: a.nascimento, doador: a.doador, ativo: a.ativo })) : [];
@@ -9728,7 +9778,10 @@ const ACOES = {
   'ci-min-mais': () => { E.minEd.push({ especie: 'cao', componente: 'CH', tipo: '', min: 1 }); pintarMinEd(); },
   'ci-min-tirar': b => { E.minEd.splice(+b.dataset.i, 1); pintarMinEd(); },
   'ci-min-ok': async b => { b.disabled = true; try { E.estSaldo.minimo = await api('estMinimoSalvar', E.sessao, E.minEd); fecharFolha(); toast('Estoque mínimo salvo.'); pintarEstMinimo(); } catch (e) { b.disabled = false; toast(e.message, 5000); } },
-  'ci-filtro': b => { $$('#ciF .filtro').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; $('#ciLista').innerHTML = E.ciLinhas.filter(x => v === 'todos' || x.sit === v).sort((a, c) => a.ord - c.ord || String(a.nome).localeCompare(String(c.nome))).map(x => x.html).join('') || '<p class="vazio-p">Nenhum doador nesta situação.</p>'; },
+  'ci-ver': b => folhaCI(b.dataset.v),
+  'ci-graf-p': b => { $$('#ciGP .filtro').forEach(x => x.classList.toggle('on', x === b)); E.ciGP = +b.dataset.v; $('#ciGInfo').textContent = ''; pintarGrafCI(); },
+  'ci-graf-cheio': () => grafCICheio(),
+  'ci-filtro': b => { $$('#ciF .filtro').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; $('#ciLista').innerHTML = E.ciLinhas.filter(x => v === 'todos' || (v === 'pend' ? x.pend : x.sit === v)).sort((a, c) => a.ord - c.ord || String(a.nome).localeCompare(String(c.nome))).map(x => x.html).join('') || '<p class="vazio-p">Nenhum doador nesta situação.</p>'; },
   'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div class="acoes-form"><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); },
   avisos: () => telaAvisos(E.animal),
   'av-ir': b => { fecharFolha(); abrirCarteira(E.animal, b.dataset.id); },
