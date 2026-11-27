@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127011207';
+  var VERSAO = '20261127011803';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -186,7 +186,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127011207">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127011803">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
@@ -232,7 +232,18 @@ const $ = (q) => document.querySelector(q), esc = (t) => String(t == null ? "" :
 const p2 = (n) => String(n).padStart(2, "0");
 const hora = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
 const T = new URLSearchParams(location.search).get("m") || "";
-const srv = (fn, ...a) => window.CVH_SERVIDOR.chamar(fn, a);
+// ficha de exemplo (administrador testando na Mini Estação): abre com dados fictícios e nada vai para o servidor
+const EXEMPLO = new URLSearchParams(location.search).get("m") === "exemplo";
+const EX = { assinatura: null, dados: { paciente: { nome: "Thor (exemplo)", especie: "Canina", peso: "28", idade: "6 anos" }, responsavel: "Responsável de exemplo", indicacao: "Anemia hemolítica imunomediada", vet: { nome: "", crmv: "" },
+  bolsa: { id: "567-3 CH", componente: "CH com SAG", volume: "160", tipo: "DEA 1 negativo" }, prova: "Compatível", htPre: "12", acesso: "Cefálica", taxa1: "2", taxa2: "10", sinais: [{ m: "Antes", h: "14:00", t: "38,6", fc: "128", fr: "32", pas: "110", muc: "pálidas / 2 s" }], reacao: {}, htPos: [] } };
+const srv = (fn, ...a) => {
+  if (!EXEMPLO) return window.CVH_SERVIDOR.chamar(fn, a);
+  if (fn === "monDados") return Promise.resolve({ id: "exemplo", dados: JSON.parse(JSON.stringify(EX.dados)), assinatura: EX.assinatura, clinica: "Intensivet", unidade: "567-3 CH" });
+  if (fn === "monSalvar") { EX.dados = JSON.parse(JSON.stringify(a[1] || {})); return Promise.resolve({ ok: true }); }
+  if (fn === "monAssinar") { EX.assinatura = { nome: a[1].nome || "Médico veterinário de exemplo", crmv: a[1].crmv || "", em: new Date().toISOString(), imagem: a[1].assinatura }; return Promise.resolve({ ok: true }); }
+  if (fn === "monReabrir") { EX.assinatura = null; return Promise.resolve({ ok: true }); }
+  return Promise.resolve({ ok: true });
+};
 const MOMENTOS = ["Antes", "5 min", "15 min", "30 min", "1 h", "2 h", "3 h", "4 h", "Fim", "1 h depois"];
 const SINAIS = ["Febre", "Tremores", "Urticária ou prurido", "Edema facial", "Vômito ou salivação", "Taquicardia", "Taquipneia ou dispneia", "Hipotensão ou colapso", "Hemoglobinúria"];
 const ACESSOS = ["Cefálica", "Safena", "Jugular", "Intraóssea", "Outro"];
@@ -254,7 +265,7 @@ function poe(path, val) { const ks = path.split("."), last = ks.pop(); const o =
 const chips = (path, ops, multi) => { const cur = pega(path); return '<div class="esc" data-c="' + path + '"' + (multi ? ' data-multi="1"' : "") + ">" + ops.map((o) => '<button type="button" data-v="' + esc(o) + '" class="' + ((multi ? (cur || []).includes(o) : cur === o) ? "on" : "") + '">' + esc(o) + "</button>").join("") + "</div>"; };
 function pintar() {
   const A = F.assinatura, lock = !!A;
-  $("#app").innerHTML = '<h1>Ficha de monitoramento da transfusão</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + (F.unidade ? " · bolsa " + esc(F.unidade) : "") + "</div>" +
+  $("#app").innerHTML = (EXEMPLO ? '<div class="cx" style="border:2px dashed #C49A6C;background:#FBF6F0"><b style="color:#5F130F">Ficha de exemplo para teste</b><p style="margin:4px 0 0"><small>Dados fictícios. Pode preencher, assinar e gerar o PDF; nada é salvo e nada vai para a Intensivet nem para o CVH.</small></p></div>' : '') + '<h1>Ficha de monitoramento da transfusão</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + (F.unidade ? " · bolsa " + esc(F.unidade) : "") + "</div>" +
     '<div class="' + (lock ? "lock" : "") + '">' +
     '<div class="cx"><h2>Paciente</h2><div class="g2">' + campo("Nome", "paciente.nome") + campo("Espécie", "paciente.especie") + campo("Peso (kg)", "paciente.peso", 'inputmode="decimal"') + campo("Idade", "paciente.idade") + "</div>" + campo("Responsável", "responsavel") + campo("Indicação da transfusão", "indicacao") + "</div>" +
     '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Componente", "bolsa.componente") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + campoTipoBolsa() + "</div>" +

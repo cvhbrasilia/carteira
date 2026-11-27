@@ -112,7 +112,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127011207">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127011803">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -182,8 +182,7 @@ button{cursor:pointer}
 .padrao-fundo{--pf:var(--papel2);position:fixed;inset:0;background:var(--pf);pointer-events:none}
 .padrao-fundo i{position:absolute;inset:0;background:var(--dourado);opacity:.36;-webkit-mask:var(--padrao) center/1920px 1920px repeat;mask:var(--padrao) center/1920px 1920px repeat}
 .padrao-fundo b{position:absolute;inset:0;background:linear-gradient(transparent 0,color-mix(in srgb,var(--pf) 45%,transparent) 11%,var(--pf) 30%,var(--pf) 70%,color-mix(in srgb,var(--pf) 45%,transparent) 89%,transparent 100%)}
-.padrao-fundo.topo i{opacity:.3;-webkit-mask-position:center top;mask-position:center top}
-.padrao-fundo.topo b{background:linear-gradient(transparent 0,color-mix(in srgb,var(--pf) 55%,transparent) 9%,var(--pf) 22%)}
+.padrao-fundo.cheio i{opacity:.26}.padrao-fundo.cheio b{display:none}
 .padrao-fundo.pasta{--pf:var(--pasta)}.padrao-fundo.pasta i{background:#EEE5DB;opacity:.32}
 .tela.com-padrao{background:transparent}
 .ctn-pg .tela-c{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
@@ -1079,7 +1078,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127011207';
+  var VERSAO = '20261127011803';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -5870,7 +5869,7 @@ function telaHome() {
   const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte'));
   E.meusMods = meus;
   if (pode('admin') && temPasskey() && ehCelular() && !navigator.webdriver) setTimeout(async () => { try { if (localStorage.getItem('cvh_faceid_ofertado') || await apiBruto('chaveTem', E.sessao)) return; localStorage.setItem('cvh_faceid_ofertado', '1'); if (confirm('Cadastrar o Face ID ou a digital neste aparelho? Você passa a entrar e confirmar ações graves sem digitar a senha.')) { await cadastrarFaceId(); toast('Face ID cadastrado.'); } } catch (_) {} }, 1500);
-  raiz.innerHTML = FUNDO_PADRAO('topo') + '<main class="tela tela-home com-padrao"><div class="tela-c">' +
+  raiz.innerHTML = FUNDO_PADRAO('cheio') + '<main class="tela tela-home com-padrao"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
@@ -9130,8 +9129,8 @@ async function telaHpImport() {
     (novos.length ? '<section class="cartao"><h3>Animais novos (' + novos.length + ')</h3>' + novos.map(a => ck('a' + a.numdoa, !conf.has(a.numdoa), esc(a.nome), esc([a.especie, a.raca, a.sexo, tip(a)].filter(Boolean).join(' · ')) + '<br>' + esc('Responsável ' + a.responsavel + ' · ' + a.coletas + (a.coletas === 1 ? ' coleta' : ' coletas') + (a.ultima ? ', última em ' + br(a.ultima) : '')),
       (a.aposentar ? tag('Óbito em ' + br(a.aposentar.em) + ', entra aposentado', 'vi') : a.bloqueio ? tag(a.bloqueio.tipo.toLowerCase() + ' no HemoPlus desde ' + br(a.bloqueio.em)) : '') + (conf.has(a.numdoa) ? tag('conferir', 'vi') : ''))).join('') + '</section>' : '') +
     (exist.length ? '<section class="cartao"><h3>Já no painel (' + exist.length + ')</h3><p class="nota">Ficam vinculados ao HemoPlus. Só o que está vazio no painel é preenchido; o que já existe não muda.</p>' + exist.map(a => { const pr = Object.keys(a.preencher || {});
-      if (a.como === 'vínculo gravado' && !pr.length && !a.aposentar) return '<div class="hp-it hp-ok"><span class="hp-v">✓</span><div><b>' + esc(a.painelNome) + (a.painelNome !== a.nome ? ' <small style="display:inline">(' + esc(a.nome) + ' no HemoPlus)</small>' : '') + '</b><small>' + esc('Já vinculado ao HemoPlus · ' + a.coletas + (a.coletas === 1 ? ' coleta' : ' coletas') + (a.faltam ? ', ' + a.faltam + ' sem ficha no painel' : '')) + '</small></div></div>';
-      return ck('a' + a.numdoa, !conf.has(a.numdoa), esc(a.painelNome) + (a.painelNome !== a.nome ? ' <small style="display:inline">(' + esc(a.nome) + ' no HemoPlus)</small>' : ''), esc('Pelo ' + a.como + ' · ' + a.coletas + (a.coletas === 1 ? ' coleta' : ' coletas') + (a.faltam ? ', ' + a.faltam + ' sem ficha no painel' : '')) + '<br>' + esc(pr.length ? 'Completa: ' + pr.map(x => rot[x] || x).join(', ') : 'Nada a completar'),
+      if (a.como === 'vínculo gravado' && !pr.length && !a.aposentar) return '<div class="hp-it hp-ok"><span class="hp-v">✓</span><div><b>' + esc(a.painelNome) + (semAc(a.painelNome) !== semAc(a.nome) ? ' <small style="display:inline">(' + esc(a.nome) + ' no HemoPlus)</small>' : '') + '</b><small>' + esc('Já vinculado ao HemoPlus · ' + a.coletas + (a.coletas === 1 ? ' coleta' : ' coletas') + (a.faltam ? ', ' + a.faltam + ' sem ficha no painel' : '')) + '</small></div></div>';
+      return ck('a' + a.numdoa, !conf.has(a.numdoa), esc(a.painelNome) + (semAc(a.painelNome) !== semAc(a.nome) ? ' <small style="display:inline">(' + esc(a.nome) + ' no HemoPlus)</small>' : ''), esc('Pelo ' + a.como + ' · ' + a.coletas + (a.coletas === 1 ? ' coleta' : ' coletas') + (a.faltam ? ', ' + a.faltam + ' sem ficha no painel' : '')) + '<br>' + esc(pr.length ? 'Completa: ' + pr.map(x => rot[x] || x).join(', ') : 'Nada a completar'),
         (a.aposentar ? tag('Óbito no HemoPlus em ' + br(a.aposentar.em), 'vi') : '') + (conf.has(a.numdoa) ? tag('conferir', 'vi') : '')); }).join('') + '</section>' : '') +
     (semR.length ? '<section class="cartao"><h3>Sem responsável no HemoPlus (' + semR.length + ')</h3><p class="nota">Não entram agora: o painel não cadastra animal sem responsável. Complete o vínculo no HemoPlus e abra a conferência de novo.</p><p class="nota">' + semR.map(a => esc(a.nome + ' (' + a.coletas + (a.coletas === 1 ? ' coleta)' : ' coletas)'))).join(', ') + '</p></section>' : '') +
     (R.painelSemHP.length ? '<section class="cartao"><h3>Doadores do painel que não estão no HemoPlus (' + R.painelSemHP.length + ')</h3><p class="nota">' + R.painelSemHP.map(esc).join(', ') + '</p></section>' : '') +
