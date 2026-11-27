@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127202504">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127210305">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1210,7 +1210,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127202504';
+  var VERSAO = '20261127210305';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6340,6 +6340,8 @@ async function telaAgenda(dia) {
   if (pode('admin') && !E.alertas && !E.carregandoAl) { E.carregandoAl = true; carregarAlertas().then(() => { E.carregandoAl = false; if ($('.ag-tira') && E.diaAg === d0) telaAgenda(d0); }).catch(() => { E.carregandoAl = false; }); }
   const itens = E.agenda.itens, h = hoje(), prev = previsoesDoacao();
   const doDia = itens.filter(a => a.data === d0 && a.status !== 'contato' && !(a.status === 'cancelado' && /^Previsão cancelada/.test(a.titulo || ''))).sort((a, b) => a.hora.localeCompare(b.hora));
+  // faltou nos últimos 7 dias, sem outro agendamento do mesmo animal depois e sem "não vai remarcar"
+  const remarcar = pode('agenda') ? itens.filter(a => a.status === 'faltou' && a.data >= somaDiasIso(h, -7) && a.data <= h && !a.naoRemarcar && !(a.animalId && itens.some(n => n.id !== a.id && n.animalId === a.animalId && !['cancelado', 'faltou', 'contato'].includes(n.status) && n.data >= a.data))).sort((x, y) => x.data.localeCompare(y.data)) : [];
   const prevDia = prev.filter(p => p.data === d0), chamar = prev.filter(p => p.data <= somaDiasIso(h, AVISO_DIAS) && !p.contato);
   const dias = [...Array(7).keys()].map(i => somaDiasIso(sem, i));
   const tira = dias.map(d => { const n = itens.filter(a => a.data === d && a.status !== 'cancelado' && a.status !== 'contato').concat(prev.filter(p => p.data === d).map(() => ({ tipo: 'doacao' }))); return '<button class="ag-dia' + (d === d0 ? ' on' : '') + (d === h ? ' hoje' : '') + '" data-acao="ag-dia" data-v="' + d + '"><span>' + DIAS_S[diaSemana(d)] + '</span><b>' + +d.slice(8) + '</b><i>' + n.slice(0, 4).map(a => '<em style="background:' + AG_TIPO[a.tipo][1] + '"></em>').join('') + '</i></button>'; }).join('');
@@ -6351,6 +6353,8 @@ async function telaAgenda(dia) {
     '<div class="ag-nav"><button class="pill" data-acao="ag-dia" data-v="' + somaDiasIso(sem, -7) + '" aria-label="Semana anterior">‹</button><div class="ag-tira">' + tira + '</div><button class="pill" data-acao="ag-dia" data-v="' + somaDiasIso(sem, 7) + '" aria-label="Próxima semana">›</button></div>' +
     '<div class="ag-topo">' + (d0 !== h ? '<button class="btn sec2 peq" data-acao="ag-dia" data-v="' + h + '">Hoje</button>' : '') + '<input type="date" class="ag-ir" value="' + d0 + '" aria-label="Ir para a data">' + (pode('agenda') ? '<button class="btn peq" data-acao="ag-novo" data-v="' + d0 + '">+ Agendar</button>' : '') + '</div>' +
     (resumo ? '<div class="ag-resumo">' + resumo + '</div>' : '') +
+    (remarcar.length ? '<section class="ag-chamar"><h3>Para remarcar (' + remarcar.length + ')</h3><p class="nota">Faltaram nos últimos 7 dias e ainda não têm outro agendamento. No 6º dia chega um aviso; depois saem desta lista.</p>' + remarcar.map(a => { const an = a.animalId ? animalDe(a.animalId) : null, rp = an ? respDe(an) : null;
+      return '<div class="item"><div class="t"><b>' + esc((an ? an.nome : a.titulo) || '') + ' · faltou ' + br(a.data).slice(0, 5) + ' às ' + a.hora + '</b><small>' + esc(((AG_TIPO[a.tipo] || AG_TIPO.outro)[0]) + (rp ? ' · ' + rp.nome + (rp.telefone ? ' · ' + rp.telefone : '') : '')) + '</small></div><div class="mini-bts"><button class="btn peq" data-acao="ag-reagendar" data-id="' + a.id + '">Reagendar</button><button class="btn sec2 peq" data-acao="ag-nao-remarcar" data-id="' + a.id + '">Não vai remarcar</button></div></div>'; }).join('') + '</section>' : '') +
     (chamar.length && d0 === h ? '<section class="ag-chamar"><h3>Chamar para doar (' + chamar.length + ')</h3><p class="nota">Doadores que completam 3 meses da última doação nos próximos ' + AVISO_DIAS + ' dias ou que já estão liberados. Quem tem pendência aparece primeiro.</p>' + chamar.map(cartaoPrevisao).join('') + '</section>' : '') +
     '<div class="ag-corpo">' +
     '<section id="agLista">' + (doDia.length || prevDia.length ? doDia.map(cartaoAgenda).join('') + prevDia.filter(p => !(d0 === h && chamar.includes(p))).map(cartaoPrevisao).join('') : '<p class="vazio-p">Nada agendado para este dia.</p>') + '</section>' +
@@ -10232,6 +10236,8 @@ const ACOES = {
   'ag-editar': b => formAgenda(E.agenda.itens.find(x => x.id === b.dataset.id)),
   'ag-ficha': b => { E.modulo = 'fichas'; E.voltarFichas = null; telaFichas(b.dataset.id); },
   // faltou: novo agendamento com o mesmo animal, tipo, horário e duração (o que faltou fica registrado)
+  'ag-nao-remarcar': async b => { const a = E.agenda.itens.find(x => x.id === b.dataset.id); if (!a || !confirm('Tirar ' + ((animalDe(a.animalId) || {}).nome || 'este agendamento') + ' da lista para remarcar?')) return; b.disabled = true;
+    try { Object.assign(a, await api('agendaSalvar', E.sessao, Object.assign({}, a, { naoRemarcar: true }))); telaAgenda(E.diaAg); } catch (e) { toast(e.message, 5000); b.disabled = false; } },
   'ag-reagendar': b => { const a = E.agenda.itens.find(x => x.id === b.dataset.id); if (!a) return;
     formAgenda({ animalId: a.animalId, responsavelId: a.responsavelId, tipo: a.tipo, hora: a.hora, duracao: a.duracao, titulo: a.titulo, obs: a.obs, data: somaDiasIso(a.data > hoje() ? a.data : hoje(), 7) }); },
   'ag-status': async b => {
