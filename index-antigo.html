@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127131154">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127131718">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -920,39 +920,41 @@ button.pdf{font-family:inherit;cursor:pointer}
 .item .t{flex:1;min-width:0}
 .item .t b{display:block;font-size:16px;color:var(--vinho)}
 .item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci-it .t small{white-space:normal}.pill.memo-bt{background:#EEE5DB;color:var(--vinho)}
-/* memorial: páginas-modelo do Plínio; cada página é uma lâmina na proporção do modelo (1em = 1/23,9 da largura) */
-.pg.mm{container-type:size;padding:0;--pap:#FAF5F2;--tom:#C6B098;background:var(--pap)}.pg.mm::before{display:none}.pg.mm-texto{--pap:#FDFBF7}.pg.mm-album{--pap:#FAF2EC}.pg.mm-foto{--pap:#FAF3EE}.pg.mm-capa{--pap:#5A0F0E;--tom:#C49A6C;background:linear-gradient(#6D1312,#470B0B)}.mm-lam{background-color:var(--pap)}.mm-lam:before{content:"";position:absolute;z-index:-1;left:0;right:0;top:-3em;bottom:-3em;background:linear-gradient(transparent,var(--pap) 3em,var(--pap) calc(100% - 3em),transparent);pointer-events:none}.pg.mm-capa .mm-lam{background-color:transparent}.pg.mm-capa .mm-lam:before{display:none}
-.pg>.mm-lam{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100cqw,calc(100cqh * (var(--ar))));aspect-ratio:var(--ar);font-size:calc(min(100cqw,calc(100cqh * (var(--ar)))) / 23.9)}
-.pg>.mm-lam{container-type:inline-size;--u:calc(100cqw / 23.9)}.mm-lam>*{position:absolute;margin:0;z-index:2}
+/* memorial: páginas-modelo do Plínio (866 × 1817, proporção da página do app); 1em = 1/23,9 da largura da página */
+.pg.mm{container-type:size;padding:0;background:#FBF6F2}.pg.mm::before{display:none}.pg.mm-capa{background:linear-gradient(#5E0B0B,#4E0808)}
+.pg>.mm-lam{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100cqw,calc(100cqh * 866 / 1817));aspect-ratio:866/1817;font-size:calc(min(100cqw,calc(100cqh * 866 / 1817)) / 23.9);container-type:inline-size;--u:calc(100cqw / 23.9)}
+.mm-lam>*{position:absolute;margin:0;z-index:2}
 .mm-lam>.mm-arte{inset:0;z-index:1;background:center/100% 100% no-repeat;pointer-events:none}
-.mm-num{right:calc(var(--u)*1.4);top:calc(var(--u)*39.68);transform:translateY(-50%);font-size:.62em;line-height:1;font-weight:700;color:#7B1A1A}
-.mm-dir{left:calc(var(--u)*1.49);top:calc(var(--u)*40.3);font-size:.4em;line-height:1;color:#9A8A80;letter-spacing:.02em;white-space:nowrap}
-.mm-texto .mm-num{right:calc(var(--u)*1.5);top:calc(var(--u)*38.34)}.mm-texto .mm-dir{left:calc(var(--u)*1.23);top:calc(var(--u)*38.96)}
-.mm-album .mm-num{right:calc(var(--u)*1.24);top:calc(var(--u)*37.98)}.mm-album .mm-dir{left:calc(var(--u)*1.14);top:calc(var(--u)*38.6)}
-.mm-foto .mm-num{right:calc(var(--u)*1.39);top:calc(var(--u)*38.6)}.mm-foto .mm-dir{left:calc(var(--u)*1.21);top:calc(var(--u)*39.22)}
-.mm-c-nome{left:calc(var(--u)*2.47);top:calc(var(--u)*16.83);transform:translateY(-50%);max-width:6em;font-size:3.43em;line-height:.98;font-weight:800;color:#F7F0E7;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;overflow-wrap:break-word}
-.mm-l-nome{right:calc(var(--u)*1.24);top:calc(var(--u)*1.68);transform:translateY(-50%);font-size:1.5em;line-height:1;font-weight:800;color:#5F130F;white-space:nowrap;text-transform:uppercase}
-.mm-l-c{left:4em;right:2.3em;display:flex;flex-direction:column;justify-content:center;gap:.14em;min-width:0}
-.mm-l-d{font-size:.74em;font-weight:700;letter-spacing:.08em;color:#7A6A62;line-height:1.1}.mm-l-t{font-size:1em;font-weight:800;color:#2E211D;line-height:1.1}
-.mm-l-d.so{font-size:1em;color:#5F130F;letter-spacing:.06em}.mm-l-x{font-size:.74em;color:#7A6A62;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mm-l-b,.mm-l-b2{width:1.22em;height:1.22em;border-radius:50%;box-sizing:border-box;background:var(--c);border:.1em solid var(--c);box-shadow:inset 0 0 0 .16em #fff}
-.mm-l-b{left:2.19em;transform:translate(-50%,-50%)}
-.mm-l-vazio{left:1.2em;right:1.4em;background:#FAF5F2}
-.mm-l-lista{left:1.6em;right:1.7em;top:7.3em;list-style:none;padding:0}.mm-l-lista:before{content:"";position:absolute;left:.55em;top:1.6em;bottom:1.6em;width:.09em;background:#E8D9D1}
-.mm-l-lista li{position:relative;margin:0 0 1.25em .62em;min-height:3.2em;display:flex}.mm-l-b2{position:absolute;left:-.61em;top:50%;transform:translateY(-50%);z-index:1}
-.mm-l-c2{flex:1;min-width:0;border:1.5px solid #E9DCD6;border-radius:.55em;background:#FCFAF9;padding:.55em .8em .55em 1.78em;display:flex;flex-direction:column;justify-content:center;gap:.14em}
-.mm-t-tit{left:0;right:0;top:calc(var(--u)*4.8);transform:translateY(-50%);text-align:center;font-family:Lora,Georgia,serif;font-weight:700;font-size:1.72em;line-height:1;color:#5F130F}
-.mm-t-txt{left:3.75em;top:7.14em;width:16.8em;bottom:6.3em;display:flex;flex-direction:column;gap:.75em;overflow:hidden}.mm-t-txt.seg{top:4.4em}
+.mm-rod{left:calc(var(--u)*1.3);right:calc(var(--u)*1.3);top:calc(var(--u)*48.25);border-top:1px solid #E6D9CE;padding-top:calc(var(--u)*.35);display:grid;grid-template-columns:1fr auto;align-items:center;row-gap:calc(var(--u)*.12);font-size:.56em;line-height:1.1;color:#8B7B70}
+.mm-rod b{color:#7B1A1A;font-size:1.05em}.mm-rod small{grid-column:1/3;font-size:.72em;color:#A0928A}
+.mm-c-nome{left:calc(var(--u)*2.07);top:calc(var(--u)*20.3);transform:translateY(-50%);max-width:6.2em;font-size:3.43em;line-height:.98;font-weight:800;color:#F7F0E7;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;overflow-wrap:break-word}
+.mm-c-dica{left:0;right:0;top:calc(var(--u)*49.78);transform:translateY(-50%);text-align:center;font-size:.48em;line-height:1;color:rgba(238,229,219,.6);letter-spacing:.06em}
+.mm-l-int{left:calc(var(--u)*1.25);top:calc(var(--u)*4.4);max-width:calc(var(--u)*12.6);font-size:.8em;line-height:1.35;color:#5A4A44}
+.mm-l-lista{left:calc(var(--u)*.4);right:calc(var(--u)*1.2);top:calc(var(--u)*4.4);list-style:none;padding:0}.mm-l-lista.um{top:calc(var(--u)*21.6)}
+.mm-l-lista:before{content:"";position:absolute;left:.57em;top:1.6em;bottom:1.6em;width:.09em;background:#E8D9D1}.mm-l-lista.um:before{top:-.4em}
+.mm-l-lista li{position:relative;margin:0 0 1.15em .62em;min-height:3.2em;display:flex}
+.mm-l-b2{position:absolute;left:-.61em;top:50%;transform:translateY(-50%);z-index:1;width:1.22em;height:1.22em;border-radius:50%;box-sizing:border-box;background:var(--c);border:.1em solid var(--c);box-shadow:inset 0 0 0 .16em #fff}
+.mm-l-c2{flex:1;min-width:0;border:1.5px solid #E9DCD6;border-radius:.55em;background:#FDFBFA;padding:.55em .8em .55em 1.4em;display:flex;flex-direction:column;justify-content:center;gap:.14em}
+.mm-l-d{font-size:.74em;font-weight:700;letter-spacing:.08em;color:#7A6A62;line-height:1.1}.mm-l-d.so{font-size:1em;color:#5F130F;letter-spacing:.06em}.mm-l-t{font-size:1em;font-weight:800;color:#2E211D;line-height:1.1}
+.mm-l-x{font-size:.74em;color:#7A6A62;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-t-tit{left:0;right:0;top:calc(var(--u)*6.35);transform:translateY(-50%);text-align:center;font-family:Lora,Georgia,serif;font-weight:700;font-size:1.72em;line-height:1;color:#5F130F}
+.mm-t-l{top:calc(var(--u)*6.9);width:calc(var(--u)*2.6);height:calc(var(--u)*.06);background:#C6B098}.mm-t-l.a{left:calc(var(--u)*3.4)}.mm-t-l.b{right:calc(var(--u)*3.4)}
+.mm-t-txt{left:calc(var(--u)*3.7);top:calc(var(--u)*8.8);width:calc(var(--u)*16.6);bottom:calc(var(--u)*6.4);display:flex;flex-direction:column;gap:.75em;overflow:hidden}.mm-t-txt.seg{top:calc(var(--u)*5.2)}
 .mm-t-txt p{font-family:Lora,Georgia,serif;font-style:italic;font-size:1.02em;line-height:1.45;color:#2E241E;margin:0;overflow-wrap:break-word}
 .mm-lam>.mm-a-f,.mm-lam>.mm-f-foto{z-index:0;overflow:hidden;background:#F1E8DD}.mm-a-f img,.mm-f-foto img{width:100%;height:100%;object-fit:cover;display:block}
 .mm-a-f,.mm-a-toque{transform:translate(-50%,-50%) rotate(var(--r))}
-.mm-a-f.a,.mm-a-toque.a{left:7.43em;top:15.78em;width:11.4em;height:12.59em;--r:-5.87deg}.mm-a-f.b,.mm-a-toque.b{left:16.46em;top:24.58em;width:11.09em;height:11.88em;--r:7.14deg}
-.mm-a-toque{z-index:3;cursor:zoom-in}.mm-lam>.mm-a-vazio{background:#EEE2D2}.mm-a-vazio:after{content:"";position:absolute;inset:-20%;background:#DDCAB2;-webkit-mask:url("padrao-cvh.svg") center/14em 14em repeat;mask:url("padrao-cvh.svg") center/14em 14em repeat;opacity:.55}
+.mm-a-f.a,.mm-a-toque.a{left:calc(var(--u)*7.77);top:calc(var(--u)*21.09);width:calc(var(--u)*11.6);height:calc(var(--u)*12.45);--r:-6.54deg}
+.mm-a-f.b,.mm-a-toque.b{left:calc(var(--u)*15.93);top:calc(var(--u)*30.82);width:calc(var(--u)*11.55);height:calc(var(--u)*12.2);--r:7.43deg}
+.mm-a-toque{z-index:3;cursor:zoom-in}
 .mm-a-d{transform:translate(-50%,-50%) rotate(var(--r));font-size:.74em;line-height:1;color:#8B7B70;letter-spacing:.04em;white-space:nowrap}
-.mm-a-d.a{left:calc(var(--u)*7.33);top:calc(var(--u)*22.77);--r:-5.6deg}.mm-a-d.b{left:calc(var(--u)*15.75);top:calc(var(--u)*31.19);--r:6.5deg}
-.mm-f-foto{left:3.31em;top:2.94em;width:16.84em;height:22.32em}
-.mm-f-nome{left:0;right:0;top:calc(var(--u)*29.1);transform:translateY(-50%);text-align:center;font-size:2.48em;line-height:1;font-weight:800;color:#5F130F;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap}
-.mm-f-datas{left:0;right:0;top:calc(var(--u)*30.96);transform:translateY(-50%);text-align:center;font-size:.97em;line-height:1;color:#7A6A62;letter-spacing:.03em;white-space:nowrap}.mm-f-datas i{font-style:normal;color:#5F130F;margin:0 .3em}
+.mm-a-d.a{left:calc(var(--u)*6.95);top:calc(var(--u)*28.54);--r:-6.54deg}.mm-a-d.b{left:calc(var(--u)*15);top:calc(var(--u)*37.94);--r:7.43deg}
+.mm-lam>.mm-a-vazio{background:#EEE2D2}.mm-a-vazio:after{content:"";position:absolute;inset:-20%;background:#DDCAB2;-webkit-mask:var(--padrao) center/14em 14em repeat;mask:var(--padrao) center/14em 14em repeat;opacity:.55}
+.mm-f-foto{left:calc(var(--u)*3.53);top:calc(var(--u)*3.73);width:calc(var(--u)*16.8);height:calc(var(--u)*21.95)}
+.mm-f-nome{left:0;right:0;top:calc(var(--u)*30.6);transform:translateY(-50%);text-align:center;font-size:2.48em;line-height:1;font-weight:800;color:#5F130F;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap}
+.mm-f-datas,.mm-f-ass{left:calc(var(--u)*3.2);right:calc(var(--u)*3.2);display:flex;align-items:center;gap:.65em;transform:translateY(-50%);line-height:1}.mm-f-datas span,.mm-f-ass span{flex:1;height:1.5px;background:#C6B098}
+.mm-f-datas{top:calc(var(--u)*32.85)}.mm-f-datas b{font-weight:400;font-size:.97em;color:#7A6A62;letter-spacing:.03em;white-space:nowrap}.mm-f-datas i{font-style:normal;color:#5F130F;margin:0 .3em}
+.mm-f-msg{left:0;right:0;top:calc(var(--u)*36.1);transform:translateY(-50%);text-align:center;font-family:Lora,Georgia,serif;font-style:italic;font-size:1.03em;line-height:1.2;color:#5F130F}
+.mm-f-ass{top:calc(var(--u)*39.4)}.mm-f-ass b{font-family:Lora,Georgia,serif;font-style:italic;font-weight:400;font-size:.74em;color:#5F130F;white-space:nowrap}
 .mm-amp{position:fixed;inset:0;z-index:400;background:rgba(20,8,6,.92);display:flex;align-items:center;justify-content:center;padding:max(14px,env(safe-area-inset-top)) 14px 14px}.mm-amp img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
 .mm-amp-x{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:28px}
 .hom-img{position:relative;aspect-ratio:4/4.4;overflow:hidden;border-radius:8px;background:#F4ECE2;cursor:pointer}.hom-img img{width:100%;height:100%;object-fit:cover;display:block}.hom-f.princ{border-color:#A83D3D}.hom-tag{position:absolute;left:6px;top:6px;background:#A83D3D;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
@@ -1167,7 +1169,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127131154';
+  var VERSAO = '20261127131718';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3647,7 +3649,7 @@ function dimensionar() {
   let w = Math.min(r.width - G, 470), h = Math.min(r.height, w * 2.1);
   if (h < w * 1.5) w = h / 1.5;
   // memorial: a página tem a proporção das páginas-modelo, sem faixas sobrando em cima, embaixo ou dos lados
-  if (E.memAberto && $('#livro.mm-livro')) { const ar = 1.68; h = Math.min(r.height, (r.width - G) * ar, 470 * ar); w = h / ar; }
+  if (E.memAberto && $('#livro.mm-livro')) { const ar = 1817 / 866; h = Math.min(r.height, (r.width - G) * ar, 470 * ar); w = h / ar; }
   lv.style.width = Math.floor(w) + 'px'; lv.style.height = Math.floor(h) + 'px';
   lv.style.fontSize = Math.min(w / 23, h / 41).toFixed(2) + 'px';
   const es = $('#livroEsq'); if (es) { es.style.width = lv.style.width; es.style.height = lv.style.height; es.style.fontSize = lv.style.fontSize; }
@@ -3679,15 +3681,15 @@ const fotoImg = (f, cls) => { const c = f.crop || {}, z = c.z || 1; return '<img
 const brMem = d => /^\d{4}$/.test(String(d || '')) ? d : br(d);
 // páginas do memorial: as páginas-modelo do Plínio (memorial-*.webp) com o nome, as fotos, as datas, o texto e a linha do tempo por cima.
 // Cada página é uma lâmina na proporção do modelo; 1em da lâmina = 1/23,9 da largura.
-const MM_AR = { capa: '754/1275', linha: '753/1293', linha2: '753/1293', texto: '778/1298', texto2: '778/1298', album: '774/1280', foto: '772/1293' };
+const MM_AR = { texto: '866/1817' };
 const mmDireitos = () => '© ' + new Date().getFullYear() + ' CVH · Todos os direitos reservados';
 // texto da homenagem dividido em páginas pelo espaço real da moldura (letra confortável no celular, sem zoom);
 // o que não cabe passa para a página seguinte, quantas forem precisas, cortando entre palavras
 function paginarTextoMem(texto) {
   const pars = String(texto || '').split(/\n\s*\n/).map(t => t.trim()).filter(Boolean);
   if (!pars.length) return [''];
-  const caixa = document.createElement('section'); caixa.className = 'pg mm mm-texto'; caixa.style.cssText = 'position:fixed;left:-99999px;top:0;width:390px;height:651px;visibility:hidden';
-  caixa.innerHTML = '<div class="mm-lam" style="--ar:' + MM_AR.texto + '"><div class="mm-t-txt"></div></div>'; document.body.appendChild(caixa);
+  const caixa = document.createElement('section'); caixa.className = 'pg mm mm-texto'; caixa.style.cssText = 'position:fixed;left:-99999px;top:0;width:390px;height:818px;visibility:hidden';
+  caixa.innerHTML = '<div class="mm-lam"><div class="mm-t-txt"></div></div>'; document.body.appendChild(caixa);
   const box = caixa.querySelector('.mm-t-txt'), html = L => L.map(p => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
   const cabe = L => { box.innerHTML = html(L); return box.scrollHeight <= box.clientHeight + 1; };
   const pags = []; let cur = [], fila = pars.slice();
@@ -3710,44 +3712,43 @@ function paginarTextoMem(texto) {
 function paginasMemorial(an, M, regs) {
   const F = M.fotos || [], P = F.find(f => f.id === M.principal) || F[F.length - 1];
   const nome = esc(an.nome), Ln = String(an.nome || '').length;
-  const pg = (cls, k, fundo, frente) => '<section class="pg mm mm-' + k.replace(/\d$/, '') + ' ' + cls + '"><div class="mm-lam" style="--ar:' + MM_AR[k] + '">' + (fundo || '') +
-    '<i class="mm-arte" style="background-image:url(&quot;memorial-' + k + '.webp&quot;)"></i>' + frente + (k === 'capa' ? '' : '<b class="mm-num">{{PG}}</b><small class="mm-dir">' + mmDireitos() + '</small>') + '</div></section>';
+  const rod = '<footer class="mm-rod"><span>CVH · Centro Veterinário de Hemoterapia</span><b>{{PG}}</b><small>' + mmDireitos() + '</small></footer>';
+  const pg = (k, fundo, frente) => '<section class="pg mm mm-' + k.replace(/\d$/, '') + '"><div class="mm-lam">' + (fundo || '') +
+    '<i class="mm-arte" style="background-image:url(&quot;memorial-' + k + '.webp&quot;)"></i>' + frente + (k === 'capa' ? '' : rod) + '</div></section>';
   const ps = [], abas = [];
   // capa
-  ps.push(pg('', 'capa', '', '<h1 class="mm-c-nome"' + (Ln > 7 ? ' style="font-size:' + Math.max(1.6, 3.43 * 7 / Math.max(...String(an.nome).split(/\s+/).map(p => p.length), 7)).toFixed(2) + 'em"' : '') + '>' + nome + '</h1>'));
-  // linha do tempo: os três cartões do modelo na primeira página; as outras seguem o mesmo desenho
+  ps.push(pg('capa', '', '<h1 class="mm-c-nome"' + (Ln > 7 ? ' style="font-size:' + Math.max(1.6, 3.43 * 7 / Math.max(...String(an.nome).split(/\s+/).map(p => p.length), 7)).toFixed(2) + 'em"' : '') + '>' + nome + '</h1>' +
+    '<p class="mm-c-dica">Arraste para o lado para virar a página</p>'));
+  // linha do tempo, sem lembretes, terminando no falecimento (só a data)
   const ev = (regs ? eventosLinha(an, regs) : []).filter(e => !e.futuro && e.t !== 'agenda').map(e => Object.assign({}, e, { det: String(e.det || '').replace(/\s*·\s*próxim[ao] em \d{2}\/\d{2}\/\d{4}/g, '') }));
-  if (M.falecidoEm) ev.unshift({ data: M.falecidoEm, t: 'mm-fim', tit: '', det: '' });   // a despedida aparece só com a data
+  if (M.falecidoEm) ev.unshift({ data: M.falecidoEm, t: 'mm-fim', tit: '', det: '' });
   if (ev.length) {
     abas.push({ t: 'linha', i: ps.length });
-    const nomeCab = '<b class="mm-l-nome"' + (Ln > 7 ? ' style="font-size:' + Math.max(.8, 1.5 * 7 / Ln).toFixed(2) + 'em"' : '') + '>' + nome + '</b>';
     const txt = e => '<span class="mm-l-d' + (e.t === 'mm-fim' ? ' so' : '') + '">' + br(e.data) + '</span>' + (e.tit ? '<b class="mm-l-t">' + esc(e.tit) + '</b>' : '') + (e.det ? '<small class="mm-l-x">' + esc(e.det) + '</small>' : '');
-    const CARD = [[20.09, 23.27, 21.3], [24.98, 29.04, 26.0], [30.38, 33.49, 31.49]];
-    const p1 = ev.slice(0, 3);
-    ps.push(pg('', 'linha', '', nomeCab + p1.map((e, k) => '<div class="mm-l-c" style="top:' + CARD[k][0] + 'em;height:' + (CARD[k][1] - CARD[k][0]).toFixed(2) + 'em">' + txt(e) + '</div>' +
-      (k ? '<i class="mm-l-b" style="top:' + CARD[k][2] + 'em;--c:' + (LT_COR[e.t] || '#A83D3D') + '"></i>' : '')).join('') +
-      CARD.slice(p1.length).map((c, k) => '<i class="mm-l-vazio" style="top:' + (CARD[p1.length + k - 1][1] + .25).toFixed(2) + 'em;height:' + (c[1] - CARD[p1.length + k - 1][1] + .1).toFixed(2) + 'em"></i>').join('')));
-    for (let i = 3; i < ev.length; i += 6)
-      ps.push(pg('', 'linha2', '', nomeCab + '<ul class="mm-l-lista">' + ev.slice(i, i + 6).map(e => '<li><i class="mm-l-b2" style="--c:' + (LT_COR[e.t] || '#A83D3D') + '"></i><div class="mm-l-c2">' + txt(e) + '</div></li>').join('') + '</ul>'));
+    const lista = (L, um) => '<ul class="mm-l-lista' + (um ? ' um' : '') + '">' + L.map(e => '<li><i class="mm-l-b2" style="--c:' + (e.t === 'mm-fim' ? '#5F130F' : LT_COR[e.t] || '#A83D3D') + '"></i><div class="mm-l-c2">' + txt(e) + '</div></li>').join('') + '</ul>';
+    const prim = 5, por = 9;
+    ps.push(pg('linha', '', '<p class="mm-l-int">A trajetória de ' + nome + ' no CVH, dos primeiros registros até a sua despedida.</p>' + lista(ev.slice(0, prim), true)));
+    for (let i = prim; i < ev.length; i += por) ps.push(pg('linha2', '', lista(ev.slice(i, i + por))));
   }
   // homenagem: o texto editável; continua em outra página quando não couber
   abas.push({ t: 'mm-hom', i: ps.length });
-  const blocos = paginarTextoMem(M.texto);
-  blocos.forEach((b, k) => ps.push(pg('', k ? 'texto2' : 'texto', '', (k ? '' : '<h2 class="mm-t-tit">Homenagem</h2>') +
+  paginarTextoMem(M.texto).forEach((b, k) => ps.push(pg('texto', '', (k ? '' : '<h2 class="mm-t-tit">Homenagem</h2><i class="mm-t-l a"></i><i class="mm-t-l b"></i>') +
     '<div class="mm-t-txt' + (k ? ' seg' : '') + '">' + b + '</div>')));
-  // recordações: duas fotos por página nas Polaroides do modelo, com a data entre os traços
+  // recordações: duas fotos por página nas Polaroides do modelo, com a data embaixo
   if (F.length) {
     abas.push({ t: 'mm-alb', i: ps.length });
     for (let i = 0; i < F.length; i += 2) {
       const par = F.slice(i, i + 2);
-      ps.push(pg('', 'album', par.map((f, k) => '<div class="mm-a-f ' + 'ab'[k] + '">' + fotoImg(f) + '</div>').join('') + (par.length < 2 ? '<div class="mm-a-f b mm-a-vazio"></div>' : ''),
+      ps.push(pg('album', par.map((f, k) => '<div class="mm-a-f ' + 'ab'[k] + '">' + fotoImg(f) + '</div>').join('') + (par.length < 2 ? '<div class="mm-a-f b mm-a-vazio"></div>' : ''),
         par.map((f, k) => '<span class="mm-a-d ' + 'ab'[k] + '">' + (f.data ? brMem(f.data) : '') + '</span><i class="mm-a-toque ' + 'ab'[k] + '" data-acao="memo-ampliar" data-id="' + f.id + '"></i>').join('')));
     }
   }
-  // última página: a foto principal na moldura, o nome e as datas; a mensagem já vem no modelo
+  // última página: a foto principal na moldura, o nome, as datas e a mensagem
   const datas = [an.nascimento ? brMem(an.nascimento) : '', M.falecidoEm ? br(M.falecidoEm) : ''].filter(Boolean).join(' <i>•</i> ');
-  ps.push(pg('', 'foto', P ? '<div class="mm-f-foto">' + fotoImg(P) + '</div>' : '',
-    '<h2 class="mm-f-nome"' + (Ln > 8 ? ' style="font-size:' + Math.max(1.3, 2.48 * 8 / Ln).toFixed(2) + 'em"' : '') + '>' + nome + '</h2>' + (datas ? '<p class="mm-f-datas">' + datas + '</p>' : '')));
+  ps.push(pg('foto', '<div class="mm-f-foto' + (P ? '' : ' mm-a-vazio') + '">' + (P ? fotoImg(P) : '') + '</div>',
+    '<h2 class="mm-f-nome"' + (Ln > 8 ? ' style="font-size:' + Math.max(1.3, 2.48 * 8 / Ln).toFixed(2) + 'em"' : '') + '>' + nome + '</h2>' +
+    (datas ? '<p class="mm-f-datas"><span></span><b>' + datas + '</b><span></span></p>' : '') +
+    '<p class="mm-f-msg">Sua história não termina aqui.<br>Parte dela continua nas vidas<br>que ajudou a salvar.</p><p class="mm-f-ass"><span></span><b>Uma homenagem da equipe CVH</b><span></span></p>'));
   return { ps: ps.map((h, i) => h.replace('{{PG}}', i ? String(i) : '')), abas };
 }
 // memorial como livro: carteira do responsável depois de liberado e "ver como o responsável vê" no painel
