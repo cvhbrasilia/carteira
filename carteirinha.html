@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127120452">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127121159">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -922,7 +922,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .item .t b{display:block;font-size:16px;color:var(--vinho)}
 .item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci-it .t small{white-space:normal}.pill.memo-bt{background:#EEE5DB;color:var(--vinho)}
 /* memorial: páginas-modelo do Plínio; cada página é uma lâmina na proporção do modelo (1em = 1/23,9 da largura) */
-.pg.mm{container-type:size;padding:0;background:#FAF6F3}.pg.mm::before{display:none}.pg.mm-capa{background:linear-gradient(160deg,#741A16,#4A0D0C)}
+.pg.mm{container-type:size;padding:0;--pap:#FAF5F2;--tom:#C6B098;background:var(--pap)}.pg.mm::before{display:none}.pg.mm-texto{--pap:#FDFBF7}.pg.mm-album{--pap:#FAF2EC}.pg.mm-foto{--pap:#FAF3EE}.pg.mm-capa{--pap:#5A0F0E;--tom:#C49A6C;background:linear-gradient(#6D1312 50%,#470B0B 50%)}.pg.mm::after{content:"";position:absolute;inset:0;z-index:0;background:var(--tom);opacity:.3;-webkit-mask:var(--padrao) center/960px 960px repeat;mask:var(--padrao) center/960px 960px repeat;pointer-events:none}.pg.mm-capa::after{opacity:.16}.mm-lam{background-color:var(--pap)}.mm-lam:before{content:"";position:absolute;z-index:-1;left:0;right:0;top:-3em;bottom:-3em;background:linear-gradient(transparent,var(--pap) 3em,var(--pap) calc(100% - 3em),transparent);pointer-events:none}.pg.mm-capa .mm-lam{background-color:transparent}.pg.mm-capa .mm-lam:before{background:linear-gradient(transparent,#6D1312 3em,#6D1312 50%,#470B0B 50%,#470B0B calc(100% - 3em),transparent)}
 .pg>.mm-lam{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100cqw,calc(100cqh * (var(--ar))));aspect-ratio:var(--ar);font-size:calc(min(100cqw,calc(100cqh * (var(--ar)))) / 23.9)}
 .pg>.mm-lam{container-type:inline-size;--u:calc(100cqw / 23.9)}.mm-lam>*{position:absolute;margin:0;z-index:2}
 .mm-lam>.mm-arte{inset:0;z-index:1;background:center/100% 100% no-repeat;pointer-events:none}
@@ -1166,7 +1166,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127120452';
+  var VERSAO = '20261127121159';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
