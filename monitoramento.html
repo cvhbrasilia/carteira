@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127012008';
+  var VERSAO = '20261127020917';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -107,7 +107,10 @@
   function ajustar() {
     if (!foco || !document.contains(foco)) return;
     var kb = alturaTeclado(); if (kb < 80) return; // sem teclado aberto (computador ou teclado externo)
-    var r = rolador(foco); abrirEspaco(r, kb + 40);
+    var r = rolador(foco);
+    // página que rola inteira (ficha de monitoramento, Mini Estação): o próprio iPhone sobe o campo; mexer junto faz a tela pular
+    if (r === document.scrollingElement || r === document.documentElement) return;
+    abrirEspaco(r, kb + 40);
     var b = foco.getBoundingClientRect(), off = deslocamento();
     var visTopo = vv.offsetTop + 8, visFim = vv.offsetTop + vv.height - 12;
     var cTopo = off + b.top, cFim = off + Math.min(b.bottom, b.top + 140);
@@ -185,47 +188,99 @@
   }, true);
 })();
 
+// Puxar para baixo no alto da tela atualiza o app (busca a versão nova e recarrega), como nos apps do celular.
+(function () {
+  if (window.top !== window || window.__puxar) return; window.__puxar = 1;
+  var y0 = null, x0 = 0, dy = 0, alvo = null, ind = null, LIM = 90;
+  function rolagem(el) {
+    for (var e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+      var s = getComputedStyle(e); if (/(auto|scroll)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 2) return e;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  function bloqueado(t) {
+    if (!t || !t.closest) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
+    var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    return false;
+  }
+  function mostrar(txt, p) {
+    if (!ind) { ind = document.createElement('div'); ind.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 6px);z-index:99999;transform:translate(-50%,-60px);background:#EEE5DB;color:#5F130F;border:1px solid #C6B098;border-radius:999px;padding:7px 14px;font:600 13px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 14px rgba(95,19,15,.15);pointer-events:none;transition:opacity .15s'; document.body.appendChild(ind); }
+    ind.textContent = txt; ind.style.opacity = '1'; ind.style.transform = 'translate(-50%,' + Math.round(p) + 'px)';
+  }
+  function esconder() { if (ind) { ind.style.opacity = '0'; ind.style.transform = 'translate(-50%,-60px)'; } }
+  document.addEventListener('touchstart', function (e) {
+    y0 = null; dy = 0; if (e.touches.length !== 1 || bloqueado(e.target)) return;
+    alvo = rolagem(e.target); if ((alvo.scrollTop || 0) > 0 || (window.scrollY || 0) > 0) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (y0 == null) return; var t = e.touches[0]; dy = t.clientY - y0;
+    if (Math.abs(t.clientX - x0) > Math.abs(dy) || (alvo && alvo.scrollTop > 0)) { y0 = null; esconder(); return; }
+    if (dy > 14) mostrar(dy > LIM ? 'Solte para atualizar' : '↓ Puxe para atualizar', Math.min(dy * 0.45, 46)); else esconder();
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (y0 == null) return; var ok = dy > LIM; y0 = null;
+    if (!ok) { esconder(); return; }
+    mostrar('Atualizando…', 40);
+    var fim = function () { location.reload(); };
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {}).then(fim); else fim(); } catch (_) { fim(); }
+    setTimeout(fim, 2500);
+  }, { passive: true });
+})();
+
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127012008">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127020917">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
-:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
+:root{--vinho:#5F130F;--verm:#A83D3D;--cara:#C49A6C;--bege:#C6B098;--areia:#EEE5DB;--areia2:#E2D6C8;--papel:#FBF8F4;--tinta:#2b2320;--tinta2:#6b5a52;--ok:#2F6B45}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--papel);color:var(--tinta);font:15.5px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
-.wrap{max-width:760px;margin:0 auto;padding:18px 12px 80px}
+.wrap{max-width:760px;margin:0 auto;padding:18px 14px 120px}
 h1{margin:0;font-size:20px;color:var(--vinho)}.sub{color:var(--tinta2);font-size:13px;margin:2px 0 10px}
-.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin:10px 0}
-.cx h2{margin:0 0 6px;font-size:15px;color:var(--vinho)}
-label{display:block;font-size:13px;font-weight:700;color:var(--tinta2);margin:9px 0 3px}
-input,textarea,select{width:100%;border:1px solid var(--areia2);border-radius:11px;padding:10px;font:inherit;background:#fff;min-width:0}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.esc{display:flex;flex-wrap:wrap;gap:6px}.esc button{flex:1 1 auto;border:1px solid var(--areia2);background:#fff;border-radius:11px;padding:9px 10px;font:inherit;font-weight:600;color:var(--vinho)}.esc button.on{background:var(--vinho);color:#fff;border-color:var(--vinho)}
-.btn{border:0;border-radius:13px;padding:13px 16px;background:var(--vinho);color:#fff;font:inherit;font-weight:700}
-.btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}.btn.peq{padding:8px 12px;font-size:14px}
+.cx{background:#fff;border:1px solid var(--areia2);border-radius:16px;padding:14px;margin:12px 0}
+.cx>h2{margin:0 0 8px;font-size:15px;color:var(--vinho);border-left:3px solid var(--cara);padding-left:8px;line-height:1.15}
+label,.rot{display:block;font-size:13px;font-weight:700;color:var(--tinta2);margin:10px 0 4px}
+/* 16 px nos campos: abaixo disso o iPhone aproxima a tela ao tocar e a página pula */
+input,textarea,select{display:block;width:100%;min-width:0;border:1px solid var(--areia2);border-radius:11px;padding:10px;font:inherit;font-size:16px;background:#fff;color:var(--tinta);-webkit-appearance:none;appearance:none}
+select{background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b5a52' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center;padding-right:30px}
+input[type=time]{min-height:44px;text-align:left}
+textarea{min-height:76px;resize:vertical}
+input.lido,textarea.lido{background:#FBF1DD;border-color:var(--cara)}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 10px}
+.esc{display:flex;flex-wrap:wrap;gap:6px}
+.esc button{flex:1 1 auto;border:1px solid var(--areia2);background:var(--areia);border-radius:11px;padding:10px 10px;font:inherit;font-size:15px;font-weight:600;color:var(--tinta)}
+.esc button.on{background:var(--bege);border-color:var(--cara);color:var(--vinho)}
+.esc.duas button{flex:1 1 40%}.esc.etq button{flex:1 1 0;min-width:0;padding:10px 4px;white-space:nowrap}
+.btn{border:0;border-radius:13px;padding:12px 16px;background:var(--verm);color:#fff;font:inherit;font-weight:700}
+.btn.sec{background:var(--areia);color:var(--vinho);border:1px solid var(--bege)}.btn.peq{padding:8px 12px;font-size:14px}
 .bts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-table{width:100%;border-collapse:collapse;font-size:13.5px}th{font-size:11.5px;color:var(--tinta2);text-align:left;padding:4px 3px}td{padding:3px}td input{padding:7px 6px;border-radius:8px}
-.tabw{overflow-x:auto}.tabw table{min-width:620px}
-.st{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:opacity .2s;z-index:9}.st.on{opacity:1}
-canvas{width:100%;height:150px;border:1px dashed #C6B098;border-radius:12px;touch-action:none;background:#fff;display:block}
+.ler{background:var(--areia);border:1px solid var(--bege);border-radius:16px;padding:14px;margin:12px 0}
+.ler b{color:var(--vinho)}.ler p{margin:4px 0 0;font-size:14px;color:var(--tinta2)}
+.ler .btn{flex:1 1 auto}
+.colar{margin-top:8px;border:1px dashed var(--bege);border-radius:12px;padding:10px;text-align:center;font-size:16px;color:var(--tinta2);background:#fff;height:46px;overflow:hidden;outline:none;-webkit-user-select:text;user-select:text;caret-color:transparent}
+.colar:empty::before{content:attr(data-ph);color:#9B8A80;font-size:14px}.colar *{display:none!important}
+.afer{border:1px solid var(--areia2);border-radius:14px;padding:4px 12px 12px;margin-top:10px;background:#FFFDFB}
+.afer-cab{display:flex;gap:10px;align-items:flex-end}.afer-cab>div{flex:1;min-width:0}
+.afer-x{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--areia2);background:var(--areia);color:var(--vinho);font-size:22px;line-height:1;margin-bottom:2px}
+.fotos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.foto{position:relative;border-radius:12px;overflow:hidden;background:var(--areia);aspect-ratio:1}
+.foto img{width:100%;height:100%;object-fit:cover;display:block}
+.foto span{position:absolute;left:0;right:0;bottom:0;background:rgba(43,35,32,.62);color:#fff;font-size:12px;padding:3px 6px}
+.foto button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.9);color:var(--vinho);font-size:18px;line-height:1}
+.st{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:opacity .2s;z-index:9;pointer-events:none;max-width:92vw}.st.on{opacity:1}
+canvas{width:100%;height:150px;border:1px dashed var(--bege);border-radius:12px;touch-action:none;background:#fff;display:block}
 .ok{color:var(--ok);font-weight:700}.erro{color:var(--verm);font-weight:700}
-.lock input,.lock textarea,.lock select{background:#f7f3ee;pointer-events:none}.lock .esc button{pointer-events:none}
+.lock input,.lock textarea,.lock select{background:#f7f3ee;pointer-events:none}.lock .esc button,.lock .afer-x,.lock .foto button,.lock .so-edicao{pointer-events:none;opacity:.6}
+.aviso-ex{border:2px dashed var(--cara);background:#FBF6F0;border-radius:14px;padding:12px 14px;margin:0 0 12px}
+.aviso-ex b{color:var(--vinho)}
 small{color:var(--tinta2)}
-</style><style id="paleta-cvh">
-/* paleta inteira do manual (26/11/2026): o vinho fica no botão principal; secundários em areia, destaques em caramelo, títulos em vinho com traço caramelo */
-.btn.sec,.btn.sec2{background:#EEE5DB;color:#5F130F;border-color:#C6B098}
-.btn.cara{background:#C49A6C;color:#3D0C09}
-.cx>h2:first-child,.cx>h3:first-child,.cartao>h3{color:#5F130F;border-left:3px solid #C49A6C;padding-left:8px;line-height:1.15}
-.mini{background:#EEE5DB;border-color:#C6B098}
-.filtro.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
-.mod{border-top:4px solid var(--mc,#C6B098);box-shadow:none}
-.mods .mod:nth-child(4n+1){--mc:#C49A6C}.mods .mod:nth-child(4n+2){--mc:#C6B098}.mods .mod:nth-child(4n+3){--mc:#A83D3D}.mods .mod:nth-child(4n+4){--mc:#5F130F}
-.mod i{background:#EEE5DB;border:1px solid #E3D5C5}
-.mod-n{background:#EEE5DB;color:#9B7A55}
-.filtros button.on,.ag-abas button.on,.mini.on{background:#C49A6C;color:#3D0C09;border-color:#C49A6C}
 </style>
 </head><body>
 <div class="wrap" id="app"><p>Abrindo a ficha…</p></div><div class="st" id="st"></div>
+<input type="file" id="arqLer" accept="application/pdf,image/*" hidden><input type="file" id="arqFoto" accept="image/*" hidden>
 <script>
 // ficha de monitoramento da transfusão: o médico veterinário preenche durante a transfusão, assina e exporta em PDF (A4 e celular)
 const $ = (q) => document.querySelector(q), esc = (t) => String(t == null ? "" : t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -233,65 +288,133 @@ const p2 = (n) => String(n).padStart(2, "0");
 const hora = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : p2(d.getDate()) + "/" + p2(d.getMonth() + 1) + "/" + d.getFullYear() + " às " + p2(d.getHours()) + ":" + p2(d.getMinutes()); };
 const T = new URLSearchParams(location.search).get("m") || "";
 // ficha de exemplo (administrador testando na Mini Estação): abre com dados fictícios e nada vai para o servidor
-const EXEMPLO = new URLSearchParams(location.search).get("m") === "exemplo";
-const EX = { assinatura: null, dados: { paciente: { nome: "Thor (exemplo)", especie: "Canina", peso: "28", idade: "6 anos" }, responsavel: "Responsável de exemplo", indicacao: "Anemia hemolítica imunomediada", vet: { nome: "", crmv: "" },
-  bolsa: { id: "567-3 CH", componente: "CH com SAG", volume: "160", tipo: "DEA 1 negativo" }, prova: "Compatível", htPre: "12", acesso: "Cefálica", taxa1: "2", taxa2: "10", sinais: [{ m: "Antes", h: "14:00", t: "38,6", fc: "128", fr: "32", pas: "110", muc: "pálidas / 2 s" }], reacao: {}, htPos: [] } };
+const EXEMPLO = T === "exemplo";
+const EX = { assinatura: null, fotos: {}, dados: { paciente: { nome: "Thor", especie: "Canina", raca: "Labrador", sexo: "Macho", peso: "28", idade: "6 anos" }, responsavel: "Responsável de exemplo", clinica: "Intensivet", indicacao: "Anemia hemolítica imunomediada", vet: { nome: "", crmv: "" },
+  bolsa: { id: "567-3 CH", componente: "CH", volume: "160", dea: "neg", dal: "" }, prova: "Compatível", htPre: "12", acesso: "Cefálica", taxa1: "2", taxa2: "10",
+  afericoes: [{ m: "Antes", h: "14:00", t: "38,6", fc: "128", fr: "32", pas: "110", pad: "70", pam: "83", muc: "Hipocorada", tpc: "2 s" }], reacao: {}, htPos: [], fotos: [] } };
 const srv = (fn, ...a) => {
   if (!EXEMPLO) return window.CVH_SERVIDOR.chamar(fn, a);
   if (fn === "monDados") return Promise.resolve({ id: "exemplo", dados: JSON.parse(JSON.stringify(EX.dados)), assinatura: EX.assinatura, clinica: "Intensivet", unidade: "567-3 CH" });
   if (fn === "monSalvar") { EX.dados = JSON.parse(JSON.stringify(a[1] || {})); return Promise.resolve({ ok: true }); }
-  if (fn === "monAssinar") { EX.assinatura = { nome: a[1].nome || "Médico veterinário de exemplo", crmv: a[1].crmv || "", em: new Date().toISOString(), imagem: a[1].assinatura }; return Promise.resolve({ ok: true }); }
+  if (fn === "monAssinar") { EX.assinatura = { nome: a[1].nome || "Médico veterinário de exemplo", crmv: a[1].crmv || "", em: new Date().toISOString(), img: "data:image/png;base64," + String(a[1].assinatura || "").replace(/^data:[^,]+,/, "") }; return Promise.resolve({ ok: true }); }
   if (fn === "monReabrir") { EX.assinatura = null; return Promise.resolve({ ok: true }); }
+  if (fn === "monFoto") { const id = "ex" + Date.now(); EX.fotos[id] = a[1].b64; return Promise.resolve({ id, legenda: a[1].legenda || "", em: new Date().toISOString() }); }
+  if (fn === "monFotoLer") return Promise.resolve({ b64: EX.fotos[a[1]] || "" });
+  if (fn === "monLerExame") return window.CVH_SERVIDOR.chamar("monLerExame", a).catch(() => { throw new Error("Na ficha de exemplo a leitura automática não fica disponível. Na ficha de verdade ela preenche sozinha."); });
   return Promise.resolve({ ok: true });
 };
 const MOMENTOS = ["Antes", "5 min", "15 min", "30 min", "1 h", "2 h", "3 h", "4 h", "Fim", "1 h depois"];
 const SINAIS = ["Febre", "Tremores", "Urticária ou prurido", "Edema facial", "Vômito ou salivação", "Taquicardia", "Taquipneia ou dispneia", "Hipotensão ou colapso", "Hemoglobinúria"];
 const ACESSOS = ["Cefálica", "Safena", "Jugular", "Intraóssea", "Outro"];
 const HTMOM = ["Logo após", "Após 6 h", "Após 12 h", "Após 24 h"];
-let F = null, D = {}, tSalvar = null, tracos = 0;
+const MUCOSAS = ["Perlácea", "Hipocorada", "Normocorada", "Hipercorada"];
+const TPCS = ["1 s", "2 s", "3 s", "4 s", "5 s", "> 5 s"];
+// gato só recebe CH e PFC no CVH (não há CP, crio nem desleucocitado)
+const COMP_CAO = ["CH", "CH desleucocitado", "PFC", "PPC", "CP", "CRIO"], COMP_GATO = ["CH", "PFC"];
+const LEG_FOTO = ["Mucosa", "Acesso", "Reação", "Outra"];
+let F = null, D = {}, tSalvar = null, tracos = 0, FOTOS = {}, LIDOS = new Set();
 function st(m, ms) { const e = $("#st"); e.textContent = m; e.classList.add("on"); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove("on"), ms || 1800); }
+const gato = () => /fel|gat/i.test(pega("paciente.especie"));
+// fichas antigas: tipo da bolsa em texto e sinais vitais em tabela viram os campos novos
+function normalizar() {
+  D.paciente = D.paciente || {}; D.vet = D.vet || {}; D.bolsa = D.bolsa || {}; D.reacao = D.reacao || {}; D.htPos = D.htPos || []; D.fotos = Array.isArray(D.fotos) ? D.fotos : [];
+  const b = D.bolsa, tp = String(b.tipo || "");
+  if (b.dea == null && b.dal == null && b.grupo == null && tp) {
+    if (/grupo\s*(ab|a|b)\b/i.test(tp)) b.grupo = tp.match(/grupo\s*(ab|a|b)\b/i)[1].toUpperCase();
+    else { b.dea = /dea\s*1\s*(\+|pos)/i.test(tp) ? "pos" : /dea\s*1\s*(-|–|−|neg)/i.test(tp) ? "neg" : ""; b.dal = /dal\s*(\+|pos)/i.test(tp) ? "pos" : /dal\s*(-|–|−|neg)/i.test(tp) ? "neg" : ""; }
+  }
+  if (/com sag/i.test(b.componente || "")) b.componente = "CH";
+  if (!Array.isArray(D.afericoes)) {
+    const velhos = (D.sinais || []).filter((r) => ["h", "t", "fc", "fr", "pas", "muc", "obs"].some((k) => r[k]));
+    D.afericoes = velhos.length ? velhos.map((r) => ({ m: r.m, h: r.h || "", t: r.t || "", fc: r.fc || "", fr: r.fr || "", pas: r.pas || "", obs: [r.muc, r.obs].filter(Boolean).join(" · ") })) : [{ m: "Antes" }];
+  }
+  delete D.sinais;
+}
 async function abrir() {
   try { F = await srv("monDados", T); } catch (e) { $("#app").innerHTML = '<h1>Ficha de monitoramento</h1><div class="cx"><p class="erro">' + esc(e.message || e) + "</p></div>"; return; }
-  D = F.dados || {}; D.paciente = D.paciente || {}; D.vet = D.vet || {}; D.bolsa = D.bolsa || {}; D.reacao = D.reacao || {}; D.sinais = D.sinais && D.sinais.length ? D.sinais : MOMENTOS.map((m) => ({ m })); D.htPos = D.htPos || [];
-  pintar();
+  D = F.dados || {}; normalizar(); pintar(); carregarFotos();
 }
-const v = (k, o) => esc(((o || D)[k]) == null ? "" : (o || D)[k]);
-// tipo sanguíneo da bolsa só por opção (nada digitado)
-const TIPOS_BOLSA = ["", "DEA 1 negativo", "DEA 1 positivo", "DEA 1 negativo · DAL negativo", "DEA 1 negativo · DAL positivo", "DEA 1 positivo · DAL negativo", "DEA 1 positivo · DAL positivo", "Grupo A", "Grupo B", "Grupo AB"];
-const campoTipoBolsa = () => { const v = String(pega("bolsa.tipo") || ""), L = TIPOS_BOLSA.includes(v) ? TIPOS_BOLSA : TIPOS_BOLSA.concat([v]); return '<div><label>Tipo sanguíneo da bolsa</label><select data-p="bolsa.tipo">' + L.map((o) => '<option value="' + esc(o) + '"' + (o === v ? " selected" : "") + ">" + esc(o || "não informado") + "</option>").join("") + "</select></div>"; };
-const campo = (rot, path, extra) => '<div><label>' + rot + '</label><input data-p="' + path + '" value="' + esc(pega(path)) + '" ' + (extra || "") + "></div>";
 function pega(path) { return path.split(".").reduce((o, k) => (o == null ? "" : o[k]), D) ?? ""; }
 function poe(path, val) { const ks = path.split("."), last = ks.pop(); const o = ks.reduce((x, k) => (x[k] = x[k] || {}), D); o[last] = val; }
-const chips = (path, ops, multi) => { const cur = pega(path); return '<div class="esc" data-c="' + path + '"' + (multi ? ' data-multi="1"' : "") + ">" + ops.map((o) => '<button type="button" data-v="' + esc(o) + '" class="' + ((multi ? (cur || []).includes(o) : cur === o) ? "on" : "") + '">' + esc(o) + "</button>").join("") + "</div>"; };
+const campo = (rot, path, extra) => '<div><label>' + rot + '</label><input data-p="' + path + '" value="' + esc(pega(path)) + '"' + (LIDOS.has(path) ? ' class="lido"' : "") + " " + (extra || "") + "></div>";
+const chips = (path, ops, o) => { o = o || {}; const cur = pega(path); return '<div class="esc' + (o.cls ? " " + o.cls : "") + '" data-c="' + path + '"' + (o.multi ? ' data-multi="1"' : "") + ">" + ops.map((x) => { const [v, r] = Array.isArray(x) ? x : [x, x]; return '<button type="button" data-v="' + esc(v) + '" class="' + ((o.multi ? (cur || []).includes(v) : cur === v) ? "on" : "") + '">' + esc(r) + "</button>"; }).join("") + "</div>"; };
+function tipoBolsaTxt(b) {
+  b = b || D.bolsa || {}; if (b.grupo) return "Grupo " + b.grupo;
+  const dea = b.dea === "pos" ? "DEA 1 positivo" : b.dea === "neg" ? "DEA 1 negativo" : "", dal = b.dal === "pos" ? "DAL positivo" : b.dal === "neg" ? "DAL negativo" : "";
+  return [dea, dal].filter(Boolean).join(" · ");
+}
+function blocoTipo() {
+  if (gato()) return '<label>Tipo sanguíneo da bolsa</label>' + chips("bolsa.grupo", [["A", "Grupo A"], ["B", "Grupo B"], ["AB", "Grupo AB"]], { cls: "etq" });
+  return '<label>Tipo sanguíneo da bolsa</label>' + '<div class="esc etq" data-tipo="1">' + [["dea", "neg", "DEA 1−"], ["dea", "pos", "DEA 1+"], ["dal", "neg", "DAL−"], ["dal", "pos", "DAL+"]].map(([k, v, r]) => '<button type="button" data-k="' + k + '" data-v="' + v + '" class="' + (D.bolsa[k] === v ? "on" : "") + '">' + r + "</button>").join("") + "</div>";
+}
+function cartaoAfer(r, i) {
+  const n = D.afericoes.length, ops = MOMENTOS.includes(r.m) || !r.m ? MOMENTOS : MOMENTOS.concat([r.m]);
+  return '<div class="afer" data-i="' + i + '"><div class="afer-cab"><div><label>Momento</label><select data-a="m">' + ops.map((m) => '<option' + (m === r.m ? " selected" : "") + ">" + esc(m) + "</option>").join("") + '</select></div><div><label>Hora</label><input type="time" data-a="h" value="' + esc(r.h || "") + '"></div>' +
+    (n > 1 ? '<button type="button" class="afer-x" data-del="' + i + '" aria-label="Tirar esta aferição">×</button>' : "") + "</div>" +
+    '<div class="g3">' + [["t", "T (°C)"], ["fc", "FC (bpm)"], ["fr", "FR (mpm)"]].map(([k, l]) => '<div><label>' + l + '</label><input inputmode="decimal" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
+    '<label>Pressão arterial (mmHg)</label><div class="g3">' + [["pas", "Sistólica"], ["pad", "Diastólica"], ["pam", "Média"]].map(([k, l]) => '<div><input inputmode="numeric" placeholder="' + l + '" data-a="' + k + '" value="' + esc(r[k] || "") + '"></div>').join("") + "</div>" +
+    '<label>Mucosas</label><div class="esc duas" data-ac="muc">' + MUCOSAS.map((m) => '<button type="button" data-v="' + m + '" class="' + (r.muc === m ? "on" : "") + '">' + m + "</button>").join("") + "</div>" +
+    '<label>TPC</label><div class="esc etq" data-ac="tpc">' + TPCS.map((m) => '<button type="button" data-v="' + m + '" class="' + (r.tpc === m ? "on" : "") + '">' + esc(m) + "</button>").join("") + "</div>" +
+    '<label>Observação</label><input data-a="obs" value="' + esc(r.obs || "") + '"></div>';
+}
 function pintar() {
-  const A = F.assinatura, lock = !!A;
-  $("#app").innerHTML = (EXEMPLO ? '<div class="cx" style="border:2px dashed #C49A6C;background:#FBF6F0"><b style="color:#5F130F">Ficha de exemplo para teste</b><p style="margin:4px 0 0"><small>Dados fictícios. Pode preencher, assinar e gerar o PDF; nada é salvo e nada vai para a Intensivet nem para o CVH.</small></p></div>' : '') + '<h1>Ficha de monitoramento da transfusão</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + (F.unidade ? " · bolsa " + esc(F.unidade) : "") + "</div>" +
+  const A = F.assinatura, lock = !!A, comp = gato() ? COMP_GATO : COMP_CAO;
+  if (D.bolsa.componente && !comp.includes(D.bolsa.componente) && gato()) D.bolsa.componente = "";
+  const y = window.scrollY;
+  $("#app").innerHTML = (EXEMPLO ? '<div class="aviso-ex"><b>Ficha de exemplo para teste</b><br><small>Dados fictícios. Pode preencher, assinar e gerar o PDF; nada é salvo e nada vai para a Intensivet nem para o CVH.</small></div>' : "") +
+    '<h1>Ficha de monitoramento da transfusão</h1><div class="sub">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + (F.unidade ? " · bolsa " + esc(F.unidade) : "") + "</div>" +
     '<div class="' + (lock ? "lock" : "") + '">' +
-    '<div class="cx"><h2>Paciente</h2><div class="g2">' + campo("Nome", "paciente.nome") + campo("Espécie", "paciente.especie") + campo("Peso (kg)", "paciente.peso", 'inputmode="decimal"') + campo("Idade", "paciente.idade") + "</div>" + campo("Responsável", "responsavel") + campo("Indicação da transfusão", "indicacao") + "</div>" +
-    '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Componente", "bolsa.componente") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + campoTipoBolsa() + "</div>" +
-      '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Não feita", "Incompatível"]) + '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" +
-      '<label>Acesso</label>' + chips("acesso", ACESSOS) + '<div class="g3">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') + "</div>" +
+    '<div class="ler so-edicao"><b>Preencher pelo hemograma, pelo print do SimplesVet ou pela requisição</b><p>Os dados do paciente, do responsável, do médico veterinário e o hematócrito entram sozinhos. Confira o que ficar em dourado.</p>' +
+      '<div class="bts"><button class="btn" id="bLer">Anexar arquivo ou foto</button><button class="btn sec" id="bColar">Colar imagem copiada</button></div><div class="colar" id="zColar" contenteditable="true" data-ph="ou toque e segure aqui e escolha Colar"></div><p id="lerSt"></p></div>' +
+    '<div class="cx"><h2>Paciente</h2><div class="g2">' + campo("Nome", "paciente.nome") + campo("Raça", "paciente.raca") + "</div>" +
+      '<label>Espécie</label>' + chips("paciente.especie", ["Canina", "Felina"]) + '<label>Sexo</label>' + chips("paciente.sexo", ["Macho", "Fêmea"]) +
+      '<div class="g2">' + campo("Peso (kg)", "paciente.peso", 'inputmode="decimal"') + campo("Idade", "paciente.idade") + "</div>" +
+      '<div class="g2">' + campo("Responsável", "responsavel") + campo("Telefone do responsável", "telefone", 'inputmode="tel"') + "</div>" +
+      campo("Clínica", "clinica") + campo("Indicação da transfusão", "indicacao") + "</div>" +
+    '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + "</div>" +
+      '<label>Componente</label>' + chips("bolsa.componente", comp) + blocoTipo() +
+      '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Não feita", "Incompatível"]) +
+      '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" +
+      '<label>Acesso</label>' + chips("acesso", ACESSOS) +
+      '<div class="g2">' + campo("Taxa inicial (mL/kg/h)", "taxa1", 'inputmode="decimal"') + campo("Taxa após 15 min (mL/kg/h)", "taxa2", 'inputmode="decimal"') + "</div>" + campo("Volume transfundido (mL)", "volTx", 'inputmode="numeric"') +
       '<div class="g2">' + campo("Início", "inicio", 'type="time"') + campo("Término", "fim", 'type="time"') + "</div></div>" +
-    '<div class="cx"><h2>Sinais vitais</h2><div class="tabw"><table><tr><th>Momento</th><th>Hora</th><th>T (°C)</th><th>FC</th><th>FR</th><th>PAS</th><th>Mucosas / TPC</th><th>Observação</th></tr>' +
-      D.sinais.map((r, i) => "<tr><td><b>" + esc(r.m) + "</b></td>" + ["h", "t", "fc", "fr", "pas", "muc", "obs"].map((k) => '<td><input data-s="' + i + '" data-k="' + k + '" value="' + v(k, r) + '"' + (k === "h" ? ' type="time"' : /t|fc|fr|pas/.test(k) && k !== "muc" ? ' inputmode="decimal"' : "") + "></td>").join("") + "</tr>").join("") + "</table></div></div>" +
-    '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", ["não", "sim"]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, true) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", ["não", "sim"]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
-    '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + "</div>" + campo("Evolução e observações", "obs") + "</div></div>" +
+    '<div class="cx"><h2>Sinais vitais</h2><div id="afers">' + D.afericoes.map(cartaoAfer).join("") + '</div><div class="bts so-edicao"><button class="btn sec" id="bAfer">+ Adicionar aferição</button></div></div>' +
+    '<div class="cx"><h2>Reação transfusional</h2>' + chips("reacao.houve", [["não", "Não"], ["sim", "Sim"]]) + (D.reacao.houve === "sim" ? '<label>Sinais</label>' + chips("reacao.sinais", SINAIS, { multi: true }) + campo("Outro sinal", "reacao.outro") + '<label>Transfusão interrompida?</label>' + chips("reacao.interrompida", [["não", "Não"], ["sim", "Sim"]]) + campo("Conduta", "reacao.conduta") : "") + "</div>" +
+    '<div class="cx"><h2>Hematócrito depois da transfusão</h2><div class="g2">' + HTMOM.map((m, i) => campo(m + " (%)", "htPos." + i, 'inputmode="decimal"')).join("") + '</div><label>Evolução e observações</label><textarea data-p="obs">' + esc(D.obs || "") + "</textarea></div>" +
+    '<div class="cx"><h2>Fotos do paciente</h2><p><small>Mucosa, acesso, reação ou o que ajudar. Elas entram no PDF.</small></p>' + chips("_legFoto", LEG_FOTO) + '<div class="bts so-edicao"><button class="btn sec" id="bFoto">Tirar ou escolher foto</button></div><div class="fotos" id="fotos"></div></div></div>' +
     '<div class="cx"><h2>Assinatura do médico veterinário</h2>' + (A ? '<p class="ok">Assinada por ' + esc(A.nome) + " (" + esc(A.crmv) + ") em " + esc(hora(A.em)) + '.</p><div class="bts"><button class="btn sec peq" id="reabrir">Reabrir para editar</button></div>' :
       '<div class="g2"><div><label>Nome</label><input id="aNome" value="' + esc(D.vet.nome || "") + '"></div><div><label>CRMV</label><input id="aCrmv" value="' + esc(D.vet.crmv || "") + '"></div></div><label>Assinatura com o dedo</label><canvas id="aCv" width="900" height="260"></canvas><div class="bts"><button class="btn sec peq" id="aLimpar">Limpar</button><button class="btn" id="aOk">Assinar a ficha</button></div><p id="aSt"></p>') + "</div>" +
-    '<div class="cx"><h2>Exportar</h2><p><small>O PDF sai com tudo o que está preenchido' + (A ? " e a assinatura" : " (ainda sem assinatura)") + '. Use para anexar ao prontuário da clínica.</small></p><div class="bts"><button class="btn peq" id="pdfA4">PDF A4</button><button class="btn sec peq" id="pdfCel">PDF para celular</button></div></div>' +
-    '<p><small>As alterações são salvas sozinhas. Dúvidas, fale com o CVH.</small></p>';
-  ligar();
+    '<div class="cx"><h2>Exportar</h2><p><small>O PDF sai com tudo o que está preenchido' + (A ? " e a assinatura" : " (ainda sem assinatura)") + '. Use para anexar ao prontuário do paciente.</small></p><div class="bts"><button class="btn peq" id="pdfA4">PDF A4</button><button class="btn sec peq" id="pdfCel">PDF para celular</button></div></div>' +
+    '<p><small>' + (EXEMPLO ? "Ficha de exemplo: nada é salvo." : "As alterações são salvas sozinhas. Dúvidas, fale com o CVH.") + "</small></p>";
+  ligar(); pintarFotos();
+  if (y) window.scrollTo(0, y);
 }
 function salvarDepois() { clearTimeout(tSalvar); tSalvar = setTimeout(async () => { try { await srv("monSalvar", T, D); st("Salvo"); } catch (e) { st(e.message, 4000); } }, 700); }
 function ligar() {
-  document.querySelectorAll("input[data-p],select[data-p]").forEach((el) => el.oninput = el.onchange = () => { const p = el.dataset.p; if (/^htPos\./.test(p)) { D.htPos[+p.split(".")[1]] = el.value; } else poe(p, el.value); salvarDepois(); });
-  document.querySelectorAll("input[data-s]").forEach((el) => el.oninput = () => { D.sinais[+el.dataset.s][el.dataset.k] = el.value; salvarDepois(); });
+  document.querySelectorAll("input[data-p],select[data-p],textarea[data-p]").forEach((el) => el.oninput = el.onchange = () => { const p = el.dataset.p; el.classList.remove("lido"); LIDOS.delete(p); if (/^htPos\./.test(p)) { D.htPos[+p.split(".")[1]] = el.value; } else poe(p, el.value); salvarDepois(); });
   document.querySelectorAll(".esc[data-c] button").forEach((b) => b.onclick = () => { const box = b.parentNode, p = box.dataset.c;
     if (box.dataset.multi) { const L = pega(p) || []; poe(p, L.includes(b.dataset.v) ? L.filter((x) => x !== b.dataset.v) : L.concat([b.dataset.v])); } else poe(p, pega(p) === b.dataset.v ? "" : b.dataset.v);
-    salvarDepois(); if (p === "reacao.houve") return pintar(); box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", box.dataset.multi ? (pega(p) || []).includes(x.dataset.v) : pega(p) === x.dataset.v)); });
-  // hora de cada momento: toca no campo vazio e já vem a hora atual
-  document.querySelectorAll('input[data-k="h"]').forEach((el) => el.addEventListener("focus", () => { if (!el.value) { const d = new Date(); el.value = p2(d.getHours()) + ":" + p2(d.getMinutes()); el.oninput(); } }));
+    if (p !== "_legFoto") salvarDepois();
+    if (p === "reacao.houve" || p === "paciente.especie") return pintar();
+    box.querySelectorAll("button").forEach((x) => x.classList.toggle("on", box.dataset.multi ? (pega(p) || []).includes(x.dataset.v) : pega(p) === x.dataset.v)); });
+  // tipo sanguíneo: um do DEA 1 e um do DAL; tocar de novo desmarca (sem DAL marcado, o PDF não fala do DAL)
+  document.querySelectorAll(".esc[data-tipo] button").forEach((b) => b.onclick = () => { const k = b.dataset.k; D.bolsa[k] = D.bolsa[k] === b.dataset.v ? "" : b.dataset.v; D.bolsa.tipo = tipoBolsaTxt(); salvarDepois();
+    b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", D.bolsa[x.dataset.k] === x.dataset.v)); });
+  // aferições: cada uma num cartão; os campos gravam na hora
+  document.querySelectorAll(".afer").forEach((c) => { const r = D.afericoes[+c.dataset.i];
+    c.querySelectorAll("[data-a]").forEach((el) => el.oninput = el.onchange = () => { r[el.dataset.a] = el.value; salvarDepois(); });
+    const h = c.querySelector('input[data-a="h"]'); h.addEventListener("focus", () => { if (!h.value) { const d = new Date(); h.value = p2(d.getHours()) + ":" + p2(d.getMinutes()); r.h = h.value; salvarDepois(); } });
+    c.querySelectorAll(".esc[data-ac] button").forEach((b) => b.onclick = () => { const k = b.parentNode.dataset.ac; r[k] = r[k] === b.dataset.v ? "" : b.dataset.v; salvarDepois(); b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", r[k] === x.dataset.v)); });
+  });
+  document.querySelectorAll("[data-del]").forEach((b) => b.onclick = () => { if (!confirm("Tirar esta aferição da ficha?")) return; D.afericoes.splice(+b.dataset.del, 1); salvarDepois(); pintar(); });
+  const bA = $("#bAfer"); if (bA) bA.onclick = () => { const ult = D.afericoes[D.afericoes.length - 1] || {}, i = MOMENTOS.indexOf(ult.m), d = new Date();
+    D.afericoes.push({ m: MOMENTOS[Math.min(MOMENTOS.length - 1, i + 1)] || MOMENTOS[0], h: p2(d.getHours()) + ":" + p2(d.getMinutes()) }); salvarDepois(); pintar();
+    const L = document.querySelectorAll(".afer"); L[L.length - 1].scrollIntoView({ behavior: "smooth", block: "start" }); };
+  document.querySelectorAll('input[type="time"][data-p]').forEach((el) => el.addEventListener("focus", () => { if (!el.value) { const d = new Date(); el.value = p2(d.getHours()) + ":" + p2(d.getMinutes()); el.oninput(); } }));
   $("#pdfA4").onclick = () => exportar(false); $("#pdfCel").onclick = () => exportar(true);
+  $("#bLer").onclick = () => { const f = $("#arqLer"); f.onchange = () => { lerArquivos(f.files); f.value = ""; }; f.click(); };
+  $("#bColar").onclick = colarImagem;
+  $("#bFoto").onclick = () => { const f = $("#arqFoto"); f.onchange = () => { enviarFotos(f.files); f.value = ""; }; f.click(); };
   const re = $("#reabrir"); if (re) re.onclick = async () => { const m = prompt("Motivo para reabrir a ficha (a assinatura atual será removida):"); if (!m) return; try { await srv("monReabrir", T, m); abrir(); } catch (e) { st(e.message, 4000); } };
   const cv = $("#aCv"); if (!cv) return; tracos = 0; const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.lineWidth = 4; cx.lineCap = "round"; cx.strokeStyle = "#2b2320"; let des = false;
   const pos = (e) => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * cv.width / b.width, (e.clientY - b.top) * cv.height / b.height]; };
@@ -300,38 +423,144 @@ function ligar() {
   cv.onpointerup = cv.onpointercancel = () => { des = false; };
   $("#aLimpar").onclick = () => { cx.fillRect(0, 0, cv.width, cv.height); tracos = 0; };
   $("#aOk").onclick = async () => { const s2 = $("#aSt"); if (tracos < 8) { s2.className = "erro"; s2.textContent = "Assine no quadro."; return; }
-    $("#aOk").disabled = true; try { clearTimeout(tSalvar); await srv("monSalvar", T, D); await srv("monAssinar", T, { nome: $("#aNome").value.trim(), crmv: $("#aCrmv").value.trim(), assinatura: cv.toDataURL("image/png").split(",")[1] }); abrir(); } catch (e) { $("#aOk").disabled = false; s2.className = "erro"; s2.textContent = e.message; } };
+    $("#aOk").disabled = true; try { clearTimeout(tSalvar); D.vet = { nome: $("#aNome").value.trim(), crmv: $("#aCrmv").value.trim() }; await srv("monSalvar", T, D); await srv("monAssinar", T, { nome: D.vet.nome, crmv: D.vet.crmv, assinatura: cv.toDataURL("image/png").split(",")[1] }); abrir(); } catch (e) { $("#aOk").disabled = false; s2.className = "erro"; s2.textContent = e.message || String(e); } };
 }
-/* ── PDF (A4 com páginas e celular em página única contínua) ── */
+/* ── leitura automática: hemograma, print do SimplesVet ou requisição ── */
+const b64De = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+async function imagemMenor(file, lado, q) {
+  const url = URL.createObjectURL(file); try {
+    const im = await new Promise((ok, er) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => er(new Error("Não consegui abrir a imagem.")); i.src = url; });
+    const k = Math.min(1, lado / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", q || 0.85).split(",")[1];
+  } finally { URL.revokeObjectURL(url); }
+}
+async function lerArquivos(files) {
+  const L = [...(files || [])].slice(0, 3); if (!L.length) return; const s = $("#lerSt");
+  for (const f of L) {
+    s.className = ""; s.textContent = "Lendo " + (f.name || "o arquivo") + "…";
+    try {
+      const pdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || "");
+      if (f.size > 8e6) throw new Error("Arquivo grande demais.");
+      const o = pdf ? { mime: "application/pdf", b64: b64De(new Uint8Array(await f.arrayBuffer())) } : { mime: "image/jpeg", b64: await imagemMenor(f, 1800, 0.88) };
+      const n = aplicarLeitura(await srv("monLerExame", T, o) || {});
+      s.className = n ? "ok" : ""; s.textContent = n ? n + (n === 1 ? " campo preenchido" : " campos preenchidos") + " (em dourado). Confira." : "Lido, mas não havia nada novo para preencher.";
+    } catch (e) { s.className = "erro"; s.textContent = e.message || "Não consegui ler. Preencha à mão."; }
+  }
+}
+function aplicarLeitura(d) {
+  const P = d.paciente || {}, R = d.responsavel || {}, V = d.vet || {}, X = d.valores || {}; let n = 0;
+  const put = (path, v) => { v = v == null ? "" : String(v).trim(); if (!v || String(pega(path) || "").trim()) return; poe(path, v); LIDOS.add(path); n++; };
+  put("paciente.nome", P.nome); put("paciente.raca", P.raca); put("paciente.idade", P.idade); put("paciente.peso", P.peso);
+  if (P.especie && !pega("paciente.especie")) { poe("paciente.especie", /fel|gat/i.test(P.especie) ? "Felina" : "Canina"); n++; }
+  if (P.sexo && !pega("paciente.sexo")) { poe("paciente.sexo", /f/i.test(P.sexo) ? "Fêmea" : "Macho"); n++; }
+  put("responsavel", R.nome); put("telefone", R.telefone); put("clinica", d.clinica); put("htPre", X.ht);
+  if (V.nome && !D.vet.nome) { D.vet.nome = V.nome; n++; } if (V.crmv && !D.vet.crmv) { D.vet.crmv = V.crmv; n++; }
+  if (n) { salvarDepois(); pintar(); } return n;
+}
+async function colarImagem() {
+  try { if (!navigator.clipboard || !navigator.clipboard.read) throw 0; const L = [];
+    for (const c of await navigator.clipboard.read()) { const t = c.types.find((x) => /^image\/|pdf/i.test(x)); if (t) L.push(new File([await c.getType(t)], /pdf/i.test(t) ? "colado.pdf" : "colado.jpg", { type: t })); }
+    if (!L.length) throw 0; lerArquivos(L);
+  } catch (_) { const z = $("#zColar"); z.focus(); st("Toque e segure no quadro tracejado e escolha Colar.", 4500); }
+}
+document.addEventListener("paste", (ev) => {
+  const dt = ev.clipboardData; if (!dt) return; const L = [...(dt.files || [])].filter((f) => /^image\/|pdf/i.test(f.type || ""));
+  if (L.length) { ev.preventDefault(); const z = $("#zColar"); if (z) z.innerHTML = ""; lerArquivos(L); return; }
+  const z = $("#zColar"); if (z && (ev.target === z || z.contains(ev.target))) setTimeout(async () => { const im = z.querySelector("img"); z.innerHTML = ""; if (!im) return st("Não há imagem copiada.", 3000);
+    try { const b = await (await fetch(im.src)).blob(); lerArquivos([new File([b], "colado.jpg", { type: b.type || "image/jpeg" })]); } catch (e) { st("Não consegui colar a imagem.", 3000); } }, 60);
+});
+/* ── fotos do paciente ── */
+async function enviarFotos(files) {
+  for (const f of [...(files || [])].slice(0, 6)) {
+    if (D.fotos.length >= 12) { st("A ficha já tem 12 fotos.", 3500); break; }
+    st("Enviando a foto…", 6000);
+    try { const b64 = await imagemMenor(f, 1400, 0.82), foto = await srv("monFoto", T, { b64, legenda: pega("_legFoto") || "" }); FOTOS[foto.id] = "data:image/jpeg;base64," + b64; D.fotos.push(foto); salvarDepois(); pintarFotos(); st("Foto guardada"); }
+    catch (e) { st(e.message || "Não consegui guardar a foto.", 4500); }
+  }
+}
+function pintarFotos() {
+  const box = $("#fotos"); if (!box) return;
+  box.innerHTML = D.fotos.map((f, i) => '<div class="foto">' + (FOTOS[f.id] ? '<img src="' + FOTOS[f.id] + '" alt="">' : "") + (f.legenda ? "<span>" + esc(f.legenda) + "</span>" : "") + '<button type="button" data-fdel="' + i + '" aria-label="Tirar a foto">×</button></div>').join("");
+  box.querySelectorAll("[data-fdel]").forEach((b) => b.onclick = () => { if (!confirm("Tirar esta foto da ficha?")) return; D.fotos.splice(+b.dataset.fdel, 1); salvarDepois(); pintarFotos(); });
+}
+async function carregarFotos() { for (const f of D.fotos) { if (FOTOS[f.id]) continue; try { const r = await srv("monFotoLer", T, f.id); if (r && r.b64) { FOTOS[f.id] = "data:image/jpeg;base64," + r.b64; pintarFotos(); } } catch (_) {} } }
+/* ── PDF no padrão dos laudos do CVH: A4 no papel timbrado (digital) e celular em página única com a logo ── */
 const carregarJs = (src) => new Promise((ok, erro) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => erro(new Error("Sem internet para gerar o PDF.")); document.head.appendChild(s); });
-function htmlPdf(cel) {
-  const A = F.assinatura, W = cel ? 430 : 794, lin = (r, x) => x ? '<tr><td style="color:#6b5a52;padding:3px 8px 3px 0;width:42%">' + r + "</td><td style=\"padding:3px 0\"><b>" + esc(x) + "</b></td></tr>" : "";
-  const vit = D.sinais.filter((r) => ["h", "t", "fc", "fr", "pas", "muc", "obs"].some((k) => r[k]));
-  return '<div style="width:' + W + "px;padding:" + (cel ? 20 : 44) + 'px;background:#fff;color:#2b2320;font:' + (cel ? 12.5 : 12) + 'px/1.45 Helvetica,Arial,sans-serif">' +
-    '<div style="color:#5F130F;font-weight:800;font-size:' + (cel ? 16 : 18) + 'px">Ficha de monitoramento da transfusão</div><div style="color:#6b5a52;font-size:11.5px;margin-bottom:12px">CVH - Centro Veterinário de Hemoterapia' + (F.clinica ? " · " + esc(F.clinica) : "") + "</div>" +
-    '<table style="width:100%;border-collapse:collapse">' + lin("Paciente", [D.paciente.nome, D.paciente.especie, D.paciente.peso ? D.paciente.peso + " kg" : "", D.paciente.idade].filter(Boolean).join(" · ")) + lin("Responsável", D.responsavel) + lin("Indicação", D.indicacao) +
-      lin("Bolsa", [D.bolsa.id, D.bolsa.componente, D.bolsa.volume ? D.bolsa.volume + " mL" : "", D.bolsa.tipo].filter(Boolean).join(" · ")) + lin("Prova de compatibilidade", D.prova) + lin("Hematócrito antes", D.htPre ? D.htPre + "%" : "") + lin("Pré-medicação", D.premed) + lin("Acesso", D.acesso) +
-      lin("Taxa", [D.taxa1 ? D.taxa1 + " mL/kg/h no início" : "", D.taxa2 ? D.taxa2 + " mL/kg/h após 15 min" : ""].filter(Boolean).join(" · ")) + lin("Volume transfundido", D.volTx ? D.volTx + " mL" : "") + lin("Horário", [D.inicio ? "início " + D.inicio : "", D.fim ? "término " + D.fim : ""].filter(Boolean).join(" · ")) + "</table>" +
-    (vit.length ? '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Sinais vitais</div><table style="width:100%;border-collapse:collapse;font-size:' + (cel ? 11 : 11.5) + 'px"><tr style="color:#6b5a52;text-align:left"><th>Momento</th><th>Hora</th><th>T</th><th>FC</th><th>FR</th><th>PAS</th><th>Mucosas</th><th>Obs.</th></tr>' + vit.map((r) => '<tr style="border-top:1px solid #eee">' + ["m", "h", "t", "fc", "fr", "pas", "muc", "obs"].map((k) => '<td style="padding:3px 4px 3px 0">' + esc(r[k] || "") + "</td>").join("") + "</tr>").join("") + "</table>" : "") +
-    '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Reação transfusional</div><div>' + (D.reacao.houve === "sim" ? "<b>Sim</b>: " + esc((D.reacao.sinais || []).concat(D.reacao.outro ? [D.reacao.outro] : []).join(", ")) + (D.reacao.interrompida === "sim" ? " · transfusão interrompida" : "") + (D.reacao.conduta ? "<br>Conduta: " + esc(D.reacao.conduta) : "") : D.reacao.houve === "não" ? "Não" : "Não informado") + "</div>" +
-    (D.htPos.some(Boolean) ? '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Hematócrito depois</div><div>' + HTMOM.map((m, i) => D.htPos[i] ? m + ": <b>" + esc(D.htPos[i]) + "%</b>" : "").filter(Boolean).join(" · ") + "</div>" : "") +
-    (D.obs ? '<div style="color:#5F130F;font-weight:700;margin:12px 0 4px">Evolução e observações</div><div style="white-space:pre-wrap">' + esc(D.obs) + "</div>" : "") +
-    '<div style="margin-top:22px;border-top:1px solid #5F130F;padding-top:6px;max-width:320px">' + (A ? '<img src="' + A.img + '" style="height:64px;max-width:100%;object-fit:contain;display:block">' : '<div style="height:64px"></div>') + "<b>" + esc(A ? A.nome : D.vet.nome || "") + "</b><br><small>" + esc(A ? A.crmv + " · assinado em " + hora(A.em) : "sem assinatura") + "</small></div></div>";
+const COR = { vinho: "#5F130F", verm: "#A83D3D", cara: "#C49A6C", areia: "#EEE5DB", tinta: "#2B2422", tinta2: "#7A6A63" };
+const FONTE = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const tit = (t) => '<div style="display:flex;align-items:center;gap:10px;margin:0 0 8px"><b style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:' + COR.verm + ';white-space:nowrap">' + esc(t) + '</b><i style="flex:1;height:1px;background:' + COR.cara + '"></i></div>';
+const kv = (pares, cols) => { const L = pares.filter((p) => p[1]); if (!L.length) return ""; return '<div style="display:grid;grid-template-columns:repeat(' + (cols || 2) + ',minmax(0,1fr));gap:9px 18px">' + L.map(([r, v]) => '<div><div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:' + COR.tinta2 + ';margin-bottom:1px">' + esc(r) + '</div><div style="font-size:12.5px;color:' + COR.tinta + ';font-weight:600">' + esc(v) + "</div></div>").join("") + "</div>"; };
+const bloco = (h, mt) => '<div style="padding-top:' + (mt == null ? 16 : mt) + 'px">' + h + "</div>";
+function blocosPdf(cel) {
+  const P = D.paciente, B = D.bolsa, A = F.assinatura, out = [];
+  out.push(bloco(tit("Paciente") + kv([["Paciente", P.nome], ["Espécie", P.especie], ["Raça", P.raca], ["Sexo", P.sexo], ["Idade", P.idade], ["Peso", P.peso ? String(P.peso).replace(".", ",") + " kg" : ""], ["Responsável", D.responsavel], ["Telefone", D.telefone], ["Clínica", D.clinica || F.clinica], ["Indicação", D.indicacao]], cel ? 2 : 3), 0));
+  out.push(bloco(tit("Hemocomponente") + kv([["Bolsa", B.id], ["Componente", B.componente], ["Volume da bolsa", B.volume ? B.volume + " mL" : ""], ["Tipo sanguíneo da bolsa", tipoBolsaTxt(B)], ["Prova de compatibilidade", D.prova], ["Hematócrito antes", D.htPre ? String(D.htPre).replace(".", ",") + "%" : ""],
+    ["Pré-medicação", D.premed], ["Acesso", D.acesso], ["Taxa inicial", D.taxa1 ? D.taxa1 + " mL/kg/h" : ""], ["Taxa após 15 min", D.taxa2 ? D.taxa2 + " mL/kg/h" : ""], ["Volume transfundido", D.volTx ? D.volTx + " mL" : ""], ["Horário", [D.inicio ? "início " + D.inicio : "", D.fim ? "término " + D.fim : ""].filter(Boolean).join(" · ")]], cel ? 2 : 3)));
+  const AF = D.afericoes.filter((r) => ["h", "t", "fc", "fr", "pas", "pad", "pam", "muc", "tpc", "obs"].some((k) => r[k]));
+  if (AF.length) {
+    const cols = cel ? [["Momento", 17], ["T", 11], ["FC", 10], ["FR", 10], ["PA (S/D/M)", 22], ["Muc. / TPC", 30]] : [["Momento", 13], ["Hora", 8], ["T (°C)", 9], ["FC", 8], ["FR", 8], ["PA S/D/M (mmHg)", 18], ["Mucosas", 18], ["TPC", 8]];
+    const cab = '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:' + (cel ? 10.5 : 11) + 'px"><tr>' + cols.map(([c, w]) => '<th style="width:' + w + '%;text-align:left;background:' + COR.areia + ";color:" + COR.vinho + ';font-size:9.5px;letter-spacing:.04em;padding:6px 5px">' + c + "</th>").join("") + "</tr></table>";
+    const pa = (r) => [r.pas, r.pad, r.pam].some(Boolean) ? [r.pas || "–", r.pad || "–", r.pam || "–"].join("/") : "";
+    const linha = (r, i) => { const v = cel ? [r.m + (r.h ? " " + r.h : ""), r.t, r.fc, r.fr, pa(r), [r.muc, r.tpc].filter(Boolean).join(" · ")] : [r.m, r.h, r.t, r.fc, r.fr, pa(r), r.muc, r.tpc];
+      return '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:' + (cel ? 10.5 : 11.5) + 'px;background:' + (i % 2 ? "#FBF8F4" : "#fff") + '"><tr>' + v.map((x, j) => '<td style="width:' + cols[j][1] + '%;padding:6px 5px;border-bottom:1px solid ' + COR.areia + ";color:" + COR.tinta + (j === 0 ? ";font-weight:700" : "") + '">' + esc(x || "") + "</td>").join("") + "</tr>" +
+        (r.obs ? '<tr><td colspan="' + v.length + '" style="padding:0 5px 6px;border-bottom:1px solid ' + COR.areia + ";color:" + COR.tinta2 + ';font-size:10.5px">' + esc(r.obs) + "</td></tr>" : "") + "</table>"; };
+    out.push({ html: bloco(tit("Sinais vitais") + cab), cab });
+    AF.forEach((r, i) => out.push({ html: linha(r, i), repete: cab }));
+  }
+  const rc = D.reacao || {};
+  out.push(bloco(tit("Reação transfusional") + '<div style="font-size:12.5px;color:' + COR.tinta + '">' + (rc.houve === "sim" ? "<b>Sim</b>. " + esc((rc.sinais || []).concat(rc.outro ? [rc.outro] : []).join(", ")) + (rc.interrompida === "sim" ? ". Transfusão interrompida." : "") + (rc.conduta ? '<br><span style="color:' + COR.tinta2 + '">Conduta:</span> ' + esc(rc.conduta) : "") : rc.houve === "não" ? "Não houve reação transfusional." : "Não informado.") + "</div>"));
+  if (D.htPos.some(Boolean)) out.push(bloco(tit("Hematócrito depois da transfusão") + kv(HTMOM.map((m, i) => [m, D.htPos[i] ? String(D.htPos[i]).replace(".", ",") + "%" : ""]), 4)));
+  if (D.obs) out.push(bloco(tit("Evolução e observações") + '<div style="font-size:12.5px;color:' + COR.tinta + ';white-space:pre-wrap;line-height:1.5">' + esc(D.obs) + "</div>"));
+  const FT = D.fotos.filter((f) => FOTOS[f.id]);
+  if (FT.length) { const por = cel ? 2 : 3; out.push(bloco(tit("Fotos do paciente"), 16));
+    for (let i = 0; i < FT.length; i += por) out.push('<div style="display:grid;grid-template-columns:repeat(' + por + ',minmax(0,1fr));gap:10px;padding-bottom:10px">' + FT.slice(i, i + por).map((f) => '<div><div style="aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:' + COR.areia + '"><img src="' + FOTOS[f.id] + '" style="width:100%;height:100%;object-fit:cover;display:block"></div>' + (f.legenda ? '<div style="font-size:10px;color:' + COR.tinta2 + ';margin-top:3px">' + esc(f.legenda) + "</div>" : "") + "</div>").join("") + "</div>"); }
+  out.push(bloco('<div style="display:flex;justify-content:flex-end"><div style="width:' + (cel ? "100%" : "260px") + ';text-align:center">' + (A && A.img ? '<img src="' + A.img + '" style="height:58px;max-width:100%;object-fit:contain;display:block;margin:0 auto">' : '<div style="height:58px"></div>') +
+    '<div style="border-top:1px solid ' + COR.vinho + ';padding-top:5px;font-size:12.5px;font-weight:700;color:' + COR.vinho + '">' + esc(A ? A.nome : D.vet.nome || "Médico veterinário") + '</div><div style="font-size:10.5px;color:' + COR.tinta2 + '">' + esc(A ? [A.crmv, "assinado em " + hora(A.em)].filter(Boolean).join(" · ") : (D.vet.crmv || "") + " · sem assinatura") + "</div></div></div>", 26));
+  return out.map((b) => typeof b === "string" ? { html: b } : b);
+}
+function cabecalhoPdf(cel) {
+  const P = D.paciente, linha = [P.especie, P.raca, P.sexo, P.idade, P.peso ? String(P.peso).replace(".", ",") + " kg" : ""].filter(Boolean).join("  ·  ");
+  return '<div style="font-size:9px;font-weight:700;letter-spacing:.16em;color:' + COR.verm + '">MONITORAMENTO DA TRANSFUSÃO</div><div style="font-size:' + (cel ? 20 : 17) + 'px;font-weight:800;color:' + COR.vinho + ';margin-top:3px">' + esc(P.nome || "Paciente") + '</div><div style="font-size:10.5px;color:' + COR.tinta2 + ';margin-top:2px">' + [linha, D.bolsa.id ? "Bolsa " + D.bolsa.id : ""].filter(Boolean).map(esc).join(cel ? "  ·  " : "<br>") + "</div>";
 }
 async function exportar(cel) {
-  st("Gerando o PDF…", 8000);
+  st("Gerando o PDF…", 15000);
+  let box = null;
   try {
-    if (!window.htmlToImage) await carregarJs("https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js");
-    if (!window.PDFLib) await carregarJs("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js");
-    const box = document.createElement("div"); box.style.cssText = "position:fixed;left:-10000px;top:0"; box.innerHTML = htmlPdf(cel); document.body.appendChild(box);
-    const el = box.firstChild, W = cel ? 430 : 794, Hh = Math.ceil(el.getBoundingClientRect().height);
-    const url = await htmlToImage.toJpeg(el, { width: W, height: Hh, pixelRatio: 2, quality: 0.92, backgroundColor: "#ffffff" }); box.remove();
-    const pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(await (await fetch(url)).arrayBuffer()), k = 595.28 / W;
-    if (cel) { const pg = pdf.addPage([595.28, Hh * k]); pg.drawImage(img, { x: 0, y: 0, width: 595.28, height: Hh * k }); }
-    else { const pgH = 1123; for (let y = 0; y < Hh; y += pgH) { const pg = pdf.addPage([595.28, 841.89]); pg.drawImage(img, { x: 0, y: 841.89 - (Hh - y) * k, width: 595.28, height: Hh * k }); } }
+    const base = location.pathname.replace(/[^/]*$/, "");
+    if (!window.htmlToImage) await carregarJs(base + "bibliotecas/html-to-image.js").catch(() => carregarJs("https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"));
+    if (!window.PDFLib) await carregarJs(base + "bibliotecas/pdf-lib.min.js").catch(() => carregarJs("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"));
+    const BL = blocosPdf(cel);
+    box = document.createElement("div"); box.style.cssText = "position:fixed;left:-20000px;top:0"; document.body.appendChild(box);
+    const esperarImgs = async (el) => { await Promise.all([...el.querySelectorAll("img")].map((im) => im.complete && im.naturalWidth ? 0 : new Promise((ok) => { im.onload = im.onerror = ok; }))); };
+    const pdf = await PDFLib.PDFDocument.create(), foto = async (el, w, h) => { const url = await htmlToImage.toJpeg(el, { width: w, height: h, pixelRatio: 2, quality: 0.93, backgroundColor: "#ffffff", cacheBust: false }); return pdf.embedJpg(await (await fetch(url)).arrayBuffer()); };
+    if (cel) {
+      const W = 430; box.innerHTML = '<div style="width:' + W + "px;padding:26px 24px 30px;background:#fff;font-family:" + FONTE + ';box-sizing:border-box"><img src="' + base + 'logo-cvh-horizontal.png" style="height:34px;display:block;margin-bottom:18px"><div style="padding-bottom:12px;border-bottom:2px solid ' + COR.areia + ';margin-bottom:14px">' + cabecalhoPdf(true) + "</div>" + BL.map((b) => b.html).join("") +
+        '<div style="margin-top:22px;font-size:9px;color:' + COR.tinta2 + ';text-align:center">CVH - Centro Veterinário de Hemoterapia · (61) 9 8237-2772 · cvh.vet.br</div></div>';
+      const el = box.firstChild; await esperarImgs(el); const H = Math.ceil(el.getBoundingClientRect().height), img = await foto(el, W, H), k = 595.28 / W;
+      pdf.addPage([595.28, H * k]).drawImage(img, { x: 0, y: 0, width: 595.28, height: H * k });
+    } else {
+      // A4 em px (96 dpi) e a área útil do papel timbrado, a mesma dos laudos
+      const W = 794, Hp = 1123, X = 91, TOPO = 168, FIM = 985, CW = W - 2 * X;
+      box.innerHTML = '<div id="med" style="width:' + CW + "px;font-family:" + FONTE + '"></div>'; const med = box.firstChild;
+      const alt = async (h) => { med.innerHTML = h; await esperarImgs(med); return Math.ceil(med.getBoundingClientRect().height); };
+      const pags = [[]]; let y = 0;
+      for (const b of BL) { let h = await alt(b.html);
+        if (y + h > FIM - TOPO && pags[pags.length - 1].length) { pags.push([]); y = 0; if (b.repete) { pags[pags.length - 1].push(bloco(tit("Sinais vitais (continuação)") + b.repete, 0)); y += await alt(bloco(tit("Sinais vitais (continuação)") + b.repete, 0)); } }
+        pags[pags.length - 1].push(y === 0 && !b.repete ? b.html.replace(/^<div style="padding-top:\d+px">/, '<div style="padding-top:0">') : b.html); y += h; }
+      for (let i = 0; i < pags.length; i++) {
+        box.innerHTML = '<div style="position:relative;width:' + W + "px;height:" + Hp + "px;background:#fff;font-family:" + FONTE + ';overflow:hidden"><img src="' + base + 'timbrado-a4.jpg" style="position:absolute;left:0;top:0;width:' + W + "px;height:" + Hp + 'px">' +
+          '<div style="position:absolute;right:' + X + 'px;top:58px;text-align:right;width:250px">' + cabecalhoPdf(false) + "</div>" +
+          '<div style="position:absolute;left:' + X + "px;top:" + TOPO + "px;width:" + CW + 'px">' + pags[i].join("") + "</div>" +
+          (pags.length > 1 ? '<div style="position:absolute;right:' + X + 'px;top:' + (FIM + 8) + 'px;font-size:9px;color:' + COR.tinta2 + '">' + (i + 1) + " / " + pags.length + "</div>" : "") + "</div>";
+        const el = box.firstChild; await esperarImgs(el); const img = await foto(el, W, Hp);
+        pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 });
+      }
+    }
     const blob = new Blob([await pdf.save()], { type: "application/pdf" }), a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "Monitoramento " + (D.paciente.nome || "transfusão") + (cel ? " celular" : "") + ".pdf"; document.body.appendChild(a); a.click(); a.remove(); st("PDF pronto");
-  } catch (e) { st(e.message || String(e), 5000); }
+  } catch (e) { st(e && e.message ? e.message : "Não consegui gerar o PDF. Tente de novo.", 5000); }
+  finally { if (box) box.remove(); }
 }
+window.CVH_MON = { D: () => D, blocosPdf, exportar };
 abrir();
 </script></body></html>

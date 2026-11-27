@@ -12,18 +12,18 @@ button{font:inherit;cursor:pointer}
 .topo h1{margin:0;font-size:22px;color:var(--vinho);letter-spacing:-.01em}
 .topo h1 small{display:block;font-size:12px;font-weight:500;color:var(--tinta2);letter-spacing:0}
 .bts{display:flex;flex-wrap:wrap;gap:8px}
-.btn{border:0;border-radius:10px;padding:9px 14px;background:var(--vinho);color:#fff;font-weight:600}
+.btn{border:0;border-radius:10px;padding:9px 14px;background:var(--verm-bt,#A83D3D);color:#fff;font-weight:600}
 .btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
 .btn.peq{padding:6px 10px;font-size:13px}
 .btn:disabled{opacity:.5}
 .periodo{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}
 .periodo button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--tinta2)}
-.periodo button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}
+.periodo button.on{background:var(--verm-bt,#A83D3D);border-color:var(--verm-bt,#A83D3D);color:#fff}
 .periodo select{border:1px solid var(--areia2);border-radius:999px;padding:5px 10px;font:inherit;font-size:13px;background:#fff;color:var(--tinta2)}
 .abas{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--areia2);margin-bottom:14px;scrollbar-width:none}
 .abas::-webkit-scrollbar{display:none}
 .abas button{border:0;background:none;padding:9px 12px;font-weight:600;color:var(--tinta2);border-bottom:3px solid transparent;white-space:nowrap}
-.abas button.on{color:var(--vinho);border-color:var(--vinho)}
+.abas button.on{color:var(--vinho);border-color:var(--verm-bt,#A83D3D)}
 .cx{background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 1px 6px rgba(95,19,15,.08)}
 .cx h2{margin:0 0 4px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--vinho)}
 .cx .sub{margin:0 0 10px;font-size:13px;color:var(--tinta2)}
@@ -82,11 +82,11 @@ button{font:inherit;cursor:pointer}
 .veu.on{display:block}
 .gaveta{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--papel);z-index:41;transform:translateX(105%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.18)}
 .gaveta.on{transform:none}
-.ex-sug,.ex-fil{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;align-items:center}.ex-fil b{font-size:12px;color:var(--tinta2);margin-right:4px}.ex-sug button,.ex-fil button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--tinta2)}.ex-sug button.on,.ex-fil button.on{background:var(--vinho);border-color:var(--vinho);color:#fff}.ex-sel{margin-bottom:6px}.ex-leit{font-size:14.5px;margin:8px 0 2px;color:var(--tinta)}.ex-leit b{color:var(--vinho)}.ex-bol summary{cursor:pointer;font-size:13px;color:var(--vinho);font-weight:600;margin:4px 0}
+.ex-sug,.ex-fil{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;align-items:center}.ex-fil b{font-size:12px;color:var(--tinta2);margin-right:4px}.ex-sug button,.ex-fil button{border:1px solid var(--areia2);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--tinta2)}.ex-sug button.on,.ex-fil button.on{background:var(--verm-bt,#A83D3D);border-color:var(--verm-bt,#A83D3D);color:#fff}.ex-sel{margin-bottom:6px}.ex-leit{font-size:14.5px;margin:8px 0 2px;color:var(--tinta)}.ex-leit b{color:var(--vinho)}.ex-bol summary{cursor:pointer;font-size:13px;color:var(--vinho);font-weight:600;margin:4px 0}
 .pl-cx{padding:12px}.pl-sc{overflow:auto;max-height:70vh;border:1px solid var(--areia2);border-radius:10px}
 table.pl{border-collapse:separate;border-spacing:0;font-size:12.5px;min-width:100%}
 table.pl th,table.pl td{border-right:1px solid #EFE6DD;border-bottom:1px solid #EFE6DD;padding:4px 6px;text-align:center;white-space:nowrap}
-table.pl th.pg{background:var(--vinho);color:#fff;font-size:11px;letter-spacing:.06em;text-transform:uppercase;position:sticky;top:0;z-index:2}
+table.pl th.pg{background:var(--verm-bt,#A83D3D);color:#fff;font-size:11px;letter-spacing:.06em;text-transform:uppercase;position:sticky;top:0;z-index:2}
 table.pl th.pg.calc{background:var(--verm)}
 table.pl th.ph{background:var(--areia);color:var(--vinho);font-size:11.5px;white-space:normal;min-width:84px;max-width:120px;position:sticky;top:26px;z-index:2;vertical-align:bottom}
 table.pl td.pc{background:#F7F2EC;color:var(--vinho);font-weight:600}
@@ -441,7 +441,7 @@ function mapa() {
     if (cels.every((c) => c.indexOf(" vz") > 0)) return "";
     return `<tr><td class="it"><button data-a="exp" data-item="${it.id}">${["PFC", "PC", "PIC", "CRIO"].includes(it.comp[0]) ? "Plasma" : it.comp[0]} · ${it.nome} <small>ⓘ</small></button></td>${cels.join("")}</tr>`; }).join("");
   return `<div class="mapa-sc"><table class="mapa"><tr><th class="it">Item</th>${ms.map((m) => "<th>" + mesTxt(m) + "</th>").join("")}</tr>${linhas || '<tr><td class="vazio" colspan="9">Nenhum item com critério avaliado ainda. Lance peso, pH e os demais dados nas bolsas.</td></tr>'}</table></div>
-    <div class="leg"><span><i style="background:#5F130F"></i>conforme (≥ ${fmt(S.P.conformidade, 0)}%)</span><span><i style="background:#A83D3D"></i>▼ abaixo de ${fmt(S.P.conformidade, 0)}%</span><span><i style="background:#f6f1ec"></i>sem avaliação</span></div>`;
+    <div class="leg"><span><i style="background:var(--verm-bt,#A83D3D)"></i>conforme (≥ ${fmt(S.P.conformidade, 0)}%)</span><span><i style="background:#A83D3D"></i>▼ abaixo de ${fmt(S.P.conformidade, 0)}%</span><span><i style="background:#f6f1ec"></i>sem avaliação</span></div>`;
 }
 function listaAchados(A) { if (!A.length) return '<p class="nota">Nada fora do esperado no período.</p>'; return '<div class="alertas">' + A.slice(0, 10).map((a) => `<div class="al${a.n ? "" : " inf"}"><b>${esc(a.t)}</b><br>${esc(a.d)}<button data-a="bolsa" data-v="${esc(a.r.bolsa)}">abrir bolsa</button></div>`).join("") + (A.length > 10 ? `<p class="nota">E mais ${A.length - 10}.</p>` : "") + "</div>"; }
 function amostragem() {
@@ -1196,7 +1196,10 @@ iniciar();
   function ajustar() {
     if (!foco || !document.contains(foco)) return;
     var kb = alturaTeclado(); if (kb < 80) return; // sem teclado aberto (computador ou teclado externo)
-    var r = rolador(foco); abrirEspaco(r, kb + 40);
+    var r = rolador(foco);
+    // página que rola inteira (ficha de monitoramento, Mini Estação): o próprio iPhone sobe o campo; mexer junto faz a tela pular
+    if (r === document.scrollingElement || r === document.documentElement) return;
+    abrirEspaco(r, kb + 40);
     var b = foco.getBoundingClientRect(), off = deslocamento();
     var visTopo = vv.offsetTop + 8, visFim = vv.offsetTop + vv.height - 12;
     var cTopo = off + b.top, cFim = off + Math.min(b.bottom, b.top + 140);
@@ -1272,6 +1275,48 @@ iniciar();
     if (inp.__cvhDireto) { inp.__cvhDireto = 0; return; }
     ev.preventDefault(); ev.stopPropagation(); abrir(inp);
   }, true);
+})();
+
+// Puxar para baixo no alto da tela atualiza o app (busca a versão nova e recarrega), como nos apps do celular.
+(function () {
+  if (window.top !== window || window.__puxar) return; window.__puxar = 1;
+  var y0 = null, x0 = 0, dy = 0, alvo = null, ind = null, LIM = 90;
+  function rolagem(el) {
+    for (var e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+      var s = getComputedStyle(e); if (/(auto|scroll)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 2) return e;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  function bloqueado(t) {
+    if (!t || !t.closest) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
+    var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    return false;
+  }
+  function mostrar(txt, p) {
+    if (!ind) { ind = document.createElement('div'); ind.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 6px);z-index:99999;transform:translate(-50%,-60px);background:#EEE5DB;color:#5F130F;border:1px solid #C6B098;border-radius:999px;padding:7px 14px;font:600 13px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 14px rgba(95,19,15,.15);pointer-events:none;transition:opacity .15s'; document.body.appendChild(ind); }
+    ind.textContent = txt; ind.style.opacity = '1'; ind.style.transform = 'translate(-50%,' + Math.round(p) + 'px)';
+  }
+  function esconder() { if (ind) { ind.style.opacity = '0'; ind.style.transform = 'translate(-50%,-60px)'; } }
+  document.addEventListener('touchstart', function (e) {
+    y0 = null; dy = 0; if (e.touches.length !== 1 || bloqueado(e.target)) return;
+    alvo = rolagem(e.target); if ((alvo.scrollTop || 0) > 0 || (window.scrollY || 0) > 0) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (y0 == null) return; var t = e.touches[0]; dy = t.clientY - y0;
+    if (Math.abs(t.clientX - x0) > Math.abs(dy) || (alvo && alvo.scrollTop > 0)) { y0 = null; esconder(); return; }
+    if (dy > 14) mostrar(dy > LIM ? 'Solte para atualizar' : '↓ Puxe para atualizar', Math.min(dy * 0.45, 46)); else esconder();
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (y0 == null) return; var ok = dy > LIM; y0 = null;
+    if (!ok) { esconder(); return; }
+    mostrar('Atualizando…', 40);
+    var fim = function () { location.reload(); };
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {}).then(fim); else fim(); } catch (_) { fim(); }
+    setTimeout(fim, 2500);
+  }, { passive: true });
 })();
 
 </script>

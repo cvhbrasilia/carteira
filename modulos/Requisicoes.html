@@ -25,8 +25,8 @@ html,body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.4 -app
 label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:var(--tinta2)}
 input,select,textarea{font:inherit;font-size:15px;color:var(--tinta);border:1px solid var(--areia2);border-radius:10px;padding:9px 10px;background:#fff;width:100%;min-width:0}
 textarea{resize:vertical}
-input:focus,select:focus,textarea:focus{outline:2px solid rgba(95,19,15,.25);border-color:var(--vinho)}
-.btn{border:0;background:var(--vinho);color:#fff;font:inherit;font-weight:700;font-size:15px;border-radius:12px;padding:12px 16px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(95,19,15,.25);border-color:var(--verm-bt,#A83D3D)}
+.btn{border:0;background:var(--verm-bt,#A83D3D);color:#fff;font:inherit;font-weight:700;font-size:15px;border-radius:12px;padding:12px 16px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.sec{background:#fff;color:var(--vinho);border:1px solid var(--areia2)}
 .btn.mini{font-size:13px;padding:7px 10px;border-radius:9px}
@@ -44,7 +44,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(95,19,15,.25);bor
 .cmp{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--tinta2)}
 .opc{display:flex;gap:6px;flex-wrap:wrap}.opc button{flex:1;min-width:64px;border:1px solid var(--areia2);background:#fff;color:var(--vinho);border-radius:10px;padding:9px 10px;font:inherit;font-size:14.5px;cursor:pointer}
 .cito{margin-top:10px;border-top:1px dashed var(--areia2);padding-top:10px}.cito .ct{display:block;color:var(--vinho);font-size:15px;margin-bottom:6px}.cito .obr{font-style:normal;font-size:12px;color:#A83D3D;font-weight:700}
-.opc button[aria-pressed=true]{background:var(--vinho);color:#fff;border-color:var(--vinho);font-weight:700}.add input{flex:1}
+.opc button[aria-pressed=true]{background:var(--verm-bt,#A83D3D);color:#fff;border-color:var(--verm-bt,#A83D3D);font-weight:700}.add input{flex:1}
 .rap{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 details.gr{border-top:1px solid var(--areia);padding:6px 0}details.gr summary{cursor:pointer;font-weight:700;color:var(--vinho);font-size:14px;padding:4px 0}details.gr summary small{color:var(--verm)}
 .exs{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;padding:4px 0 6px}@media (max-width:520px){.exs{grid-template-columns:1fr}}
@@ -57,12 +57,12 @@ input.loc{grid-column:1/-1;font-size:14px;padding:6px 8px;margin-bottom:4px}
 .barra-prev{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
 #modo-prev{display:flex;gap:4px;margin-left:auto}
 #modo-prev button{border:1px solid var(--areia2);background:#fff;color:var(--vinho);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
-#modo-prev button[aria-pressed=true]{background:var(--vinho);color:#fff;border-color:var(--vinho)}
+#modo-prev button[aria-pressed=true]{background:var(--verm-bt,#A83D3D);color:#fff;border-color:var(--verm-bt,#A83D3D)}
 #previa{display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 80px);overflow:auto;padding:2px}
 @media (max-width:900px){#previa{max-height:none}}
 .folha-wrap{background:#fff;box-shadow:0 1px 2px rgba(95,19,15,.18),0 6px 18px rgba(95,19,15,.08)}
 svg.folha{display:block;width:100%;height:auto;font-family:"Receita CVH",sans-serif}
-#toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-20px);background:var(--vinho);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:9;width:max-content;max-width:min(94vw,620px);line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}#toast.on{opacity:1;transform:translateX(-50%)}
+#toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-20px);background:var(--verm-bt,#A83D3D);color:#fff;padding:8px 14px;border-radius:12px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:9;width:max-content;max-width:min(94vw,620px);line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}#toast.on{opacity:1;transform:translateX(-50%)}
 </style><style id="paleta-cvh">
 /* paleta inteira do manual (26/11/2026): o vinho fica no botão principal; secundários em areia, destaques em caramelo, títulos em vinho com traço caramelo */
 .btn.sec,.btn.sec2{background:#EEE5DB;color:#5F130F;border-color:#C6B098}
@@ -902,7 +902,10 @@ iniciar();
   function ajustar() {
     if (!foco || !document.contains(foco)) return;
     var kb = alturaTeclado(); if (kb < 80) return; // sem teclado aberto (computador ou teclado externo)
-    var r = rolador(foco); abrirEspaco(r, kb + 40);
+    var r = rolador(foco);
+    // página que rola inteira (ficha de monitoramento, Mini Estação): o próprio iPhone sobe o campo; mexer junto faz a tela pular
+    if (r === document.scrollingElement || r === document.documentElement) return;
+    abrirEspaco(r, kb + 40);
     var b = foco.getBoundingClientRect(), off = deslocamento();
     var visTopo = vv.offsetTop + 8, visFim = vv.offsetTop + vv.height - 12;
     var cTopo = off + b.top, cFim = off + Math.min(b.bottom, b.top + 140);
@@ -978,6 +981,48 @@ iniciar();
     if (inp.__cvhDireto) { inp.__cvhDireto = 0; return; }
     ev.preventDefault(); ev.stopPropagation(); abrir(inp);
   }, true);
+})();
+
+// Puxar para baixo no alto da tela atualiza o app (busca a versão nova e recarrega), como nos apps do celular.
+(function () {
+  if (window.top !== window || window.__puxar) return; window.__puxar = 1;
+  var y0 = null, x0 = 0, dy = 0, alvo = null, ind = null, LIM = 90;
+  function rolagem(el) {
+    for (var e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+      var s = getComputedStyle(e); if (/(auto|scroll)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 2) return e;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  function bloqueado(t) {
+    if (!t || !t.closest) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
+    var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    return false;
+  }
+  function mostrar(txt, p) {
+    if (!ind) { ind = document.createElement('div'); ind.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 6px);z-index:99999;transform:translate(-50%,-60px);background:#EEE5DB;color:#5F130F;border:1px solid #C6B098;border-radius:999px;padding:7px 14px;font:600 13px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 14px rgba(95,19,15,.15);pointer-events:none;transition:opacity .15s'; document.body.appendChild(ind); }
+    ind.textContent = txt; ind.style.opacity = '1'; ind.style.transform = 'translate(-50%,' + Math.round(p) + 'px)';
+  }
+  function esconder() { if (ind) { ind.style.opacity = '0'; ind.style.transform = 'translate(-50%,-60px)'; } }
+  document.addEventListener('touchstart', function (e) {
+    y0 = null; dy = 0; if (e.touches.length !== 1 || bloqueado(e.target)) return;
+    alvo = rolagem(e.target); if ((alvo.scrollTop || 0) > 0 || (window.scrollY || 0) > 0) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (y0 == null) return; var t = e.touches[0]; dy = t.clientY - y0;
+    if (Math.abs(t.clientX - x0) > Math.abs(dy) || (alvo && alvo.scrollTop > 0)) { y0 = null; esconder(); return; }
+    if (dy > 14) mostrar(dy > LIM ? 'Solte para atualizar' : '↓ Puxe para atualizar', Math.min(dy * 0.45, 46)); else esconder();
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (y0 == null) return; var ok = dy > LIM; y0 = null;
+    if (!ok) { esconder(); return; }
+    mostrar('Atualizando…', 40);
+    var fim = function () { location.reload(); };
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {}).then(fim); else fim(); } catch (_) { fim(); }
+    setTimeout(fim, 2500);
+  }, { passive: true });
 })();
 
 </script>

@@ -4251,7 +4251,10 @@ async function lerHistorico(doc, nome) {
   function ajustar() {
     if (!foco || !document.contains(foco)) return;
     var kb = alturaTeclado(); if (kb < 80) return; // sem teclado aberto (computador ou teclado externo)
-    var r = rolador(foco); abrirEspaco(r, kb + 40);
+    var r = rolador(foco);
+    // página que rola inteira (ficha de monitoramento, Mini Estação): o próprio iPhone sobe o campo; mexer junto faz a tela pular
+    if (r === document.scrollingElement || r === document.documentElement) return;
+    abrirEspaco(r, kb + 40);
     var b = foco.getBoundingClientRect(), off = deslocamento();
     var visTopo = vv.offsetTop + 8, visFim = vv.offsetTop + vv.height - 12;
     var cTopo = off + b.top, cFim = off + Math.min(b.bottom, b.top + 140);
@@ -4327,6 +4330,48 @@ async function lerHistorico(doc, nome) {
     if (inp.__cvhDireto) { inp.__cvhDireto = 0; return; }
     ev.preventDefault(); ev.stopPropagation(); abrir(inp);
   }, true);
+})();
+
+// Puxar para baixo no alto da tela atualiza o app (busca a versão nova e recarrega), como nos apps do celular.
+(function () {
+  if (window.top !== window || window.__puxar) return; window.__puxar = 1;
+  var y0 = null, x0 = 0, dy = 0, alvo = null, ind = null, LIM = 90;
+  function rolagem(el) {
+    for (var e = el; e && e !== document.body && e !== document.documentElement; e = e.parentElement) {
+      var s = getComputedStyle(e); if (/(auto|scroll)/.test(s.overflowY) && e.scrollHeight > e.clientHeight + 2) return e;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  function bloqueado(t) {
+    if (!t || !t.closest) return true;
+    if (t.closest('input,textarea,select,canvas,[contenteditable="true"],.livro,.palco,.ctn-vira,.no-puxar,video')) return true;
+    var f = document.getElementById('folha'); if (f && !f.hidden && f.contains(t)) return true;
+    var m = document.getElementById('modal'); if (m && m.classList.contains('on')) return true;
+    return false;
+  }
+  function mostrar(txt, p) {
+    if (!ind) { ind = document.createElement('div'); ind.style.cssText = 'position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 6px);z-index:99999;transform:translate(-50%,-60px);background:#EEE5DB;color:#5F130F;border:1px solid #C6B098;border-radius:999px;padding:7px 14px;font:600 13px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 14px rgba(95,19,15,.15);pointer-events:none;transition:opacity .15s'; document.body.appendChild(ind); }
+    ind.textContent = txt; ind.style.opacity = '1'; ind.style.transform = 'translate(-50%,' + Math.round(p) + 'px)';
+  }
+  function esconder() { if (ind) { ind.style.opacity = '0'; ind.style.transform = 'translate(-50%,-60px)'; } }
+  document.addEventListener('touchstart', function (e) {
+    y0 = null; dy = 0; if (e.touches.length !== 1 || bloqueado(e.target)) return;
+    alvo = rolagem(e.target); if ((alvo.scrollTop || 0) > 0 || (window.scrollY || 0) > 0) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (y0 == null) return; var t = e.touches[0]; dy = t.clientY - y0;
+    if (Math.abs(t.clientX - x0) > Math.abs(dy) || (alvo && alvo.scrollTop > 0)) { y0 = null; esconder(); return; }
+    if (dy > 14) mostrar(dy > LIM ? 'Solte para atualizar' : '↓ Puxe para atualizar', Math.min(dy * 0.45, 46)); else esconder();
+  }, { passive: true });
+  document.addEventListener('touchend', function () {
+    if (y0 == null) return; var ok = dy > LIM; y0 = null;
+    if (!ok) { esconder(); return; }
+    mostrar('Atualizando…', 40);
+    var fim = function () { location.reload(); };
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {}).then(fim); else fim(); } catch (_) { fim(); }
+    setTimeout(fim, 2500);
+  }, { passive: true });
 })();
 
 </script>
