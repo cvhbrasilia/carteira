@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127130139">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127131154">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -935,7 +935,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .mm-l-nome{right:calc(var(--u)*1.24);top:calc(var(--u)*1.68);transform:translateY(-50%);font-size:1.5em;line-height:1;font-weight:800;color:#5F130F;white-space:nowrap;text-transform:uppercase}
 .mm-l-c{left:4em;right:2.3em;display:flex;flex-direction:column;justify-content:center;gap:.14em;min-width:0}
 .mm-l-d{font-size:.74em;font-weight:700;letter-spacing:.08em;color:#7A6A62;line-height:1.1}.mm-l-t{font-size:1em;font-weight:800;color:#2E211D;line-height:1.1}
-.mm-l-x{font-size:.74em;color:#7A6A62;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-l-d.so{font-size:1em;color:#5F130F;letter-spacing:.06em}.mm-l-x{font-size:.74em;color:#7A6A62;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mm-l-b,.mm-l-b2{width:1.22em;height:1.22em;border-radius:50%;box-sizing:border-box;background:var(--c);border:.1em solid var(--c);box-shadow:inset 0 0 0 .16em #fff}
 .mm-l-b{left:2.19em;transform:translate(-50%,-50%)}
 .mm-l-vazio{left:1.2em;right:1.4em;background:#FAF5F2}
@@ -1168,7 +1168,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127130139';
+  var VERSAO = '20261127131154';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3718,11 +3718,11 @@ function paginasMemorial(an, M, regs) {
   ps.push(pg('', 'capa', '', '<h1 class="mm-c-nome"' + (Ln > 7 ? ' style="font-size:' + Math.max(1.6, 3.43 * 7 / Math.max(...String(an.nome).split(/\s+/).map(p => p.length), 7)).toFixed(2) + 'em"' : '') + '>' + nome + '</h1>'));
   // linha do tempo: os três cartões do modelo na primeira página; as outras seguem o mesmo desenho
   const ev = (regs ? eventosLinha(an, regs) : []).filter(e => !e.futuro && e.t !== 'agenda').map(e => Object.assign({}, e, { det: String(e.det || '').replace(/\s*·\s*próxim[ao] em \d{2}\/\d{2}\/\d{4}/g, '') }));
-  if (M.falecidoEm) ev.unshift({ data: M.falecidoEm, t: 'mm-fim', tit: 'Falecimento', det: '' });
+  if (M.falecidoEm) ev.unshift({ data: M.falecidoEm, t: 'mm-fim', tit: '', det: '' });   // a despedida aparece só com a data
   if (ev.length) {
     abas.push({ t: 'linha', i: ps.length });
     const nomeCab = '<b class="mm-l-nome"' + (Ln > 7 ? ' style="font-size:' + Math.max(.8, 1.5 * 7 / Ln).toFixed(2) + 'em"' : '') + '>' + nome + '</b>';
-    const txt = e => '<span class="mm-l-d">' + br(e.data) + '</span><b class="mm-l-t">' + esc(e.tit) + '</b>' + (e.det ? '<small class="mm-l-x">' + esc(e.det) + '</small>' : '');
+    const txt = e => '<span class="mm-l-d' + (e.t === 'mm-fim' ? ' so' : '') + '">' + br(e.data) + '</span>' + (e.tit ? '<b class="mm-l-t">' + esc(e.tit) + '</b>' : '') + (e.det ? '<small class="mm-l-x">' + esc(e.det) + '</small>' : '');
     const CARD = [[20.09, 23.27, 21.3], [24.98, 29.04, 26.0], [30.38, 33.49, 31.49]];
     const p1 = ev.slice(0, 3);
     ps.push(pg('', 'linha', '', nomeCab + p1.map((e, k) => '<div class="mm-l-c" style="top:' + CARD[k][0] + 'em;height:' + (CARD[k][1] - CARD[k][0]).toFixed(2) + 'em">' + txt(e) + '</div>' +
