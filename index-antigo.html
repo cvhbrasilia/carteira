@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127152704">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127153106">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -332,7 +332,7 @@ button{cursor:pointer}
 .ctn-giro .lado{position:absolute;inset:0;width:100%;height:100%;border-radius:2.9%/4.6%;box-shadow:0 6px 22px rgba(95,19,15,.22);backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;-webkit-user-drag:none}
 .ctn-giro .vs{transform:rotateY(180deg)}
 .ctn-cam{position:absolute;inset:0;border-radius:2.9%/4.6%;pointer-events:none}
-.ctn-pg .cartao{padding:14px}.ctn-inst{text-align:center;margin-top:14px}
+.ctn-pg .cartao{padding:14px}.ctn-inst{text-align:center;margin-top:14px}.ctn-pg .tela-c>:first-child{margin-top:auto}.ctn-dir{text-align:center;margin:auto 0 0;padding-top:22px;font-size:15px;letter-spacing:.02em;color:#7A6A62}
 .ctn-dica{text-align:center;font-size:12.5px;color:#8A7A70;margin:10px 0 0}.ctn-bx{display:flex;flex-direction:column;gap:8px;margin-top:10px}.ctn-bx .btn{width:100%}
 .ctn-fmenu{margin:12px 0 4px;padding:12px;border:1px solid #E3D6C8;border-radius:12px;background:#FBF8F4}.ctn-fmenu>b{display:block;color:#5F130F;margin-bottom:8px}
 .ficha .val{font-size:.86em}
@@ -1191,7 +1191,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127152704';
+  var VERSAO = '20261127153106';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3099,6 +3099,7 @@ function ctnFrente(R, D) {
   if (D.gato) coluna(1385, 'Grupo', D.grupo, null);
   else if (D.dal) { coluna(1113, 'DEA 1', D.dea1, D.fotoDea, 'fita', 510); x.fillStyle = CTN.LINHA; x.fillRect(1382, 858, 4, 330); coluna(1656, 'DAL', D.dal, D.fotoDal, 'dal'); }
   else coluna(1385, 'DEA 1', D.dea1, D.fotoDea, 'fita', 562);
+  ctnTxt(x, [1958, 1250], '© ' + new Date().getFullYear() + ' CVH · Todos os direitos reservados', 38, 400, '#A08C7E', { a: 'e' });
   return cv;
 }
 function ctnVerso(R, D) {
@@ -3114,7 +3115,7 @@ function ctnVerso(R, D) {
   ctnTxt(x, [111, 1099], 'Médico veterinário', 54, 400, CTN.ESC);
   const wc = ctnTxt(x, [742, 1093], D.vet.crmv, 52, 400, CTN.ESC);
   ctnRubrica(x, D.vet.rubrica, 742 + wc / 2 - 150, 895, 300, 136);
-  ctnTxt(x, [110, 1212], '© ' + new Date().getFullYear() + ' CVH · Todos os direitos reservados', 34, 400, '#A08C7E');
+  ctnTxt(x, [110, 1212], '© ' + new Date().getFullYear() + ' CVH · Todos os direitos reservados', 42, 400, '#A08C7E');
   // QR Code: abre a verificação do laudo de tipagem, com os botões para baixar o laudo
   if (D.codigo) {
     const q = new QRLIB.QRCode(-1, QRLIB.L.M); q.addData(urlVerifCarteira(D.codigo)); q.make(); const n = q.getModuleCount(), area = 400, m = Math.floor(area / n), w = m * n, ox = 1425 + Math.round((497 - w) / 2), oy = 254 + Math.round((497 - w) / 2);
@@ -3263,7 +3264,7 @@ function abrirPaginaCtn(titulo, html, montar) {
   const dica = inst && de ? 'Para ter o ícone do Cartão doador: toque em Copiar o link, abra o link no Safari e lá toque em Compartilhar e depois em Adicionar à Tela de Início.'
     : inst ? '' : 'Para ter o Cartão doador como ícone no celular: no iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início. No Android, abra o menu do navegador e toque em Adicionar à tela inicial.';
   raiz.innerHTML = FUNDO_PADRAO() + '<main class="tela tela-media ctn-pg com-padrao"><div class="tela-c">' + volta + '<header class="topo"><div class="t"><span>CVH · Clube do Doador</span><b>Carteirinha de ' + esc(an.nome || '') + '</b></div></header><section class="cartao" id="ctnPgC">' + html + '</section>' +
-    (dica ? '<p class="nota ctn-inst">' + dica + '</p>' : '') + '</div></main>';
+    (dica ? '<p class="nota ctn-inst">' + dica + '</p>' : '') + '<p class="ctn-dir">' + mmDireitos() + '</p></div></main>';
   if (montar) montar($('#ctnPgC'));
 }
 async function iniciarCarteirinha() {

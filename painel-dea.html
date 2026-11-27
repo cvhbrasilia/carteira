@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127153106">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127175353">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1192,7 +1192,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127153106';
+  var VERSAO = '20261127175353';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6609,6 +6609,8 @@ function tipoMarcado() {
 }
 function tipoPorEspecie() { const g = /fel/i.test(vl('rcEsp')); document.querySelectorAll('#rcDea,#rcDal').forEach(x => x.hidden = g); const gt = $('#rcGato'); if (gt) gt.hidden = !g; }
 function formReceptor(rc, pre) {
+  // os pedidos (da Intensivet e das clínicas) completam o cadastro: carrega antes de abrir quando o formulário vem de fora do módulo de receptores
+  if (!E.recEst && (pode('estoque') || pode('producao') || pode('admin'))) { return estoqueTx(true).then(d => { E.recEst = d || {}; }, () => { E.recEst = {}; }).then(() => formReceptor(rc, pre)); }
   const F = fontesReceptor(), lig = rc ? ligacoesRec(rc, F) : (pre && pre.fontes ? F.filter(f => pre.fontes.includes(f.k)) : []), d = Object.assign({}, pre || {}, rc ? rc.dados : {});
   // campos vazios do cadastro são completados com o que os laudos e pedidos ligados trazem
   if (rc) { const j = juntarRec(lig); CAMPOS_REC.forEach(c => { if (!String(d[c] || '').trim() && j[c]) d[c] = j[c]; }); }
