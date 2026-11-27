@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127105347">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127105904">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -930,6 +930,9 @@ button.pdf{font-family:inherit;cursor:pointer}
 .mm-datas,.mm-ass{display:flex;align-items:center;gap:.6em;width:100%;color:var(--tinta2);font-size:.82em;letter-spacing:.04em}.mm-datas span,.mm-ass span{flex:1;height:1px;background:#C6B098}.mm-datas i{font-style:normal;color:var(--vinho)}
 .mm-frase{font-style:italic;color:var(--vinho);font-size:.92em;line-height:1.4;padding:0 .4em;text-wrap:balance}.mm-txt{font-size:.78em;line-height:1.45;color:var(--tinta);text-wrap:pretty}.mm-ass{font-style:italic;color:var(--vinho);font-size:.74em}
 .mm-txtpg{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.8em;padding:.6em .3em}.mm-txtpg p{font-size:.95em;line-height:1.55;color:var(--tinta);text-wrap:pretty}
+.pg.mm-pg-txt{padding:0}.mm-moldpg{position:absolute;left:3.5%;right:3.5%;top:2.2%;bottom:8.5%;width:93%;height:89.3%;overflow:visible;pointer-events:none}
+.mm-txtc{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;padding:4.3em 2.7em 2em 2.9em;min-height:0}.mm-ba{position:absolute;height:auto;overflow:visible;pointer-events:none;z-index:2}.mm-ht{display:flex;align-items:center;gap:.5em;font-size:2em;font-weight:800;color:var(--vinho);margin:0 0 .55em;line-height:1}.mm-ht span{flex:1;height:1px;background:#C6B098}
+.mm-txtb{display:flex;flex-direction:column;gap:.85em}.mm-txtb p{font-style:italic;font-size:.84em;line-height:1.5;color:var(--tinta);text-wrap:pretty}.pg.mm-pg-txt .rod{margin:0 1.6em .9em 1.6em}
 .mm-arte{position:relative;height:13em;margin:-.4em 0 -.35em .05em}.mm-arte svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .mm-lt-fim .lt-b{width:1.15em;height:1.15em}.mm-lt-fim .lt-d{font-size:.8em;color:var(--vinho);padding-top:.2em}
 .pg.mm-alb{background:#FBF6F0}.mm-pad{position:absolute;inset:0;background:#C49A6C;opacity:.13;-webkit-mask:url("padrao-cvh.svg") center/52em 52em repeat;mask:url("padrao-cvh.svg") center/52em 52em repeat;z-index:0;pointer-events:none}
@@ -1156,7 +1159,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127105347';
+  var VERSAO = '20261127105904';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3659,6 +3662,8 @@ async function guardarFotosMem(ids) {
       await new Promise(ok => { const i = new Image(); i.onload = i.onerror = ok; i.src = E.memBlob[id]; if (i.decode) i.decode().then(ok, ok); }); } catch (_) {}
   }));
 }
+// texto padrão da página Homenagem (o Plínio pode editar em cada memorial)
+const MEM_TEXTO_PADRAO = 'Alguns encontros são capazes de transformar nossas vidas para sempre, e você foi um deles. Com seu jeito único, sua presença doce e seu amor incondicional, você encheu nossos dias de alegria, companheirismo e um afeto que palavras não conseguem medir.\n\nVocê nos ensinou, todos os dias, sobre lealdade, confiança e a beleza das pequenas coisas: um olhar carinhoso, a alegria de nos receber, a companhia silenciosa nos momentos difíceis e a forma leve com que fazia tudo parecer melhor.\n\nSua partida deixa saudade, mas também um coração cheio de gratidão por tudo o que vivemos juntos. As lembranças que construímos seguirão conosco, como um abraço que permanece, mesmo na sua ausência.\n\nObrigado por tanto amor, por tantas alegrias e por ter sido parte da nossa história.\nVocê sempre será lembrado, com muito carinho, respeito e amor.';
 const MEM_FRASE = 'Em vida, suas doações de sangue ajudaram a salvar outras vidas. Sua história de amor e generosidade permanece viva em cada uma delas.';
 // borboleta de traço fino, com as asas levemente preenchidas
 function borb(x, y, s, rot, cor, fundo) {
@@ -3670,6 +3675,8 @@ function borb(x, y, s, rot, cor, fundo) {
     '<path' + v + ' fill="' + (fundo || 'none') + '" d="M0 0C2.6 .4 6.4 2 6.6 4.8C6.8 7.2 3.8 7 2.2 5C1.2 3.6 .4 1.8 0 0Z"/>' +
     '<path' + v + ' fill="none" d="M-2.6 4.6L1.6 -1.6M1.2 -1.2C1.6 -5 3 -7.8 5.2 -9.2"/></g>';
 }
+// borboleta solta, posicionada em % da página (não deforma com o tamanho da página)
+const borbAbs = (l, t, em, rot, cor, fundo) => '<svg class="mm-ba" style="left:' + l + '%;top:' + t + '%;width:' + em + 'em" viewBox="-6 -17 24 26" aria-hidden="true">' + borb(0, 0, .59, rot, cor, fundo) + '</svg>';
 // manguito em volta de uma palavra (capa e título do álbum), com a laçada no alto e a cauda descendo
 const MANG_OVAL = 'M300 116C276 100 252 92 222 90C168 86 112 96 60 90C22 85 6 66 18 46C32 22 104 22 166 30C204 35 236 36 250 28C262 21 266 8 256 5C246 2 240 14 248 22C262 36 300 38 304 60C307 78 290 88 262 90';
 const mangOval = (cor, tl) => '<svg class="mm-oval" viewBox="0 0 320 124" aria-hidden="true"><path d="' + MANG_OVAL + '" fill="none" stroke="' + cor + '" stroke-width="2.2" stroke-linecap="round"/>' +
@@ -3694,15 +3701,20 @@ function paginasMemorial(an, M, regs) {
     '<div class="capa-meio"><p class="capa-sobre">Memorial</p><div class="mm-tit">' + mangOval(ouro, ouroF) + '<span>Em memória</span></div><h1' + capaTam(an.nome) + '>' + esc(an.nome) + '</h1></div>' +
     '<svg class="mm-voo" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + borb(82, 27, .17, 18, ouro, ouroF) + borb(89, 31, .11, -8, ouro, ouroF) + borb(46, 56, .15, -12, ouro, ouroF) + borb(55, 61, .1, 20, ouro, ouroF) + borb(62, 74, .17, 10, ouro, ouroF) + '</svg>' +
     '<i class="capa-tubo"></i><div class="capa-pe"><div></div><i class="selo-neg"></i></div><p class="capa-dica">Arraste para o lado para virar a página</p></section>');
-  // homenagem: foto principal com a moldura, nome, datas, a frase e o texto do CVH
+  // Homenagem: o texto do CVH dentro da moldura de manguito, com borboletas (modelo do Plínio)
   abas.push({ t: 'mm-hom', i: ps.length });
+  const c0 = '#A83D3D', t0 = 'rgba(168,61,61,.06)';
+  const molduraPg = '<svg class="mm-moldpg" viewBox="0 0 100 134" preserveAspectRatio="none" aria-hidden="true"><path d="' + MANG_MOLD + '" fill="none" stroke="' + c0 + '" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>' +
+    borbAbs(69, 1.6, 2.7, 10, c0, t0) + borbAbs(85, 8.5, 1.4, -6, c0, t0) + borbAbs(3.5, 26, 2, -16, c0, t0) + borbAbs(86, 45, 1.8, 8, c0, t0) + borbAbs(4, 81, 1.3, -14, c0, t0) + borbAbs(73, 84, 2.4, 12, c0, t0);
+  const pars = String(M.texto || '').split(/\n\s*\n/).map(t => t.trim()).filter(Boolean), blocos = []; let cur = [];
+  pars.forEach(p => { if (cur.length && (cur.join(' ').length + p.length) > 1000) { blocos.push(cur); cur = []; } cur.push(p); });
+  if (cur.length) blocos.push(cur);
+  if (!blocos.length) blocos.push([]);
+  blocos.forEach((b, k) => ps.push(memoPg(molduraPg + '<div class="mm-txtc">' + (k ? '' : '<h2 class="mm-ht"><span></span>Homenagem<span></span></h2>') + '<div class="mm-txtb">' + b.map(p => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('') + '</div></div>', 'mm-pg-txt')));
+  // foto principal com a moldura, nome, datas e a frase
   const datas = [an.nascimento ? brMem(an.nascimento) : '', M.falecidoEm ? br(M.falecidoEm) : ''].filter(Boolean).join(' <i>•</i> ');
-  const txt = String(M.texto || '').split(/\n\s*\n|\n/).map(t => t.trim()).filter(Boolean);
-  const curto = txt.join(' ').length <= 260;
   ps.push(memoPg((P ? molduraMem(fotoImg(P)) : '') + '<div class="mm-hom"><h2>' + esc(an.nome) + '</h2>' + (datas ? '<p class="mm-datas"><span></span>' + datas + '<span></span></p>' : '') +
-    '<p class="mm-frase">' + MEM_FRASE + '</p>' + (curto && txt.length ? txt.map(t => '<p class="mm-txt">' + esc(t) + '</p>').join('') : '') + '<p class="mm-ass"><span></span>Uma homenagem da equipe CVH<span></span></p></div>', 'mm-pg-hom'));
-  if (!curto) { const blocos = []; let cur = []; txt.forEach(p => { if (cur.length && (cur.join(' ').length + p.length) > 900) { blocos.push(cur); cur = []; } cur.push(p); }); if (cur.length) blocos.push(cur);
-    blocos.forEach(b => ps.push(memoPg(cab + '<div class="mm-txtpg">' + b.map(p => '<p>' + esc(p) + '</p>').join('') + '</div>'))); }
+    '<p class="mm-frase">' + MEM_FRASE + '</p><p class="mm-ass"><span></span>Uma homenagem da equipe CVH<span></span></p></div>', 'mm-pg-hom'));
   // linha do tempo: a mesma da carteira, sem lembretes, terminando na despedida; o manguito sobe com as borboletas
   const ev = (regs ? eventosLinha(an, regs) : []).filter(e => !e.futuro && e.t !== 'agenda').map(e => Object.assign({}, e, { det: String(e.det || '').replace(/\s*·\s*próxim[ao] em \d{2}\/\d{2}\/\d{4}/g, '') }));
   if (M.falecidoEm) ev.unshift({ data: M.falecidoEm, t: 'mm-fim', tit: '', det: '' });
@@ -3737,7 +3749,7 @@ function paginasMemorial(an, M, regs) {
     borb(60, 36, .45, 8, ouro, ouroF) + borb(73, 23, .55, -10, ouro, ouroF) + borb(88, 10, .7, 14, ouro, ouroF) + '</svg>' +
     '<p>Obrigado, ' + esc(an.nome) + ', por cada doação e por fazer parte da história da hemoterapia veterinária.</p><b>Com carinho, equipe CVH</b></div><i class="lg-capa mm-lg-fim" role="img" aria-label="CVH Centro Veterinário de Hemoterapia"></i></section>');
   const tot = ps.length;
-  return { ps: ps.map((h, i) => h.replace('{{PG}}', i ? (i + 1) + ' / ' + tot : '')), abas };
+  return { ps: ps.map((h, i) => h.replace('{{PG}}', i && i < tot - 1 ? String(i) : '')), abas };
 }
 // memorial como livro: carteira do responsável depois de liberado e "ver como o responsável vê" no painel
 async function abrirMemorial(aid, prev) {
@@ -3800,7 +3812,7 @@ function telaMemorial(aid) {
     (fal && adm ? '<section class="cartao"><h3>Memorial</h3>' + (m.criadoEm ?
       '<p class="nota">' + (m.publicado ? 'Liberado para a família' + (m.publicadoEm ? ' em ' + esc(brHora(m.publicadoEm)) : '') + '.' : 'Ainda não liberado. A família só vê depois de liberar.') + '</p>' +
       '<div class="grade"><div class="campo"><label for="memFal">Data do falecimento</label><input id="memFal" type="date" value="' + esc(an.falecidoEm || '') + '"></div></div>' +
-      '<label for="memTxt">Texto de homenagem</label><textarea id="memTxt" rows="8" placeholder="Texto sobre a passagem do animal">' + esc(m.texto || '') + '</textarea>' +
+      '<label for="memTxt">Texto de homenagem</label><textarea id="memTxt" rows="12" placeholder="Texto sobre a passagem do animal">' + esc(m.texto || '') + '</textarea><div class="acoes-form"><button class="btn sec2 peq" data-acao="mem-txt-padrao">Voltar ao texto padrão</button></div>' +
       '<p class="nota">A frase "' + MEM_FRASE + '" já entra na página de homenagem. Marque abaixo as fotos do memorial e escolha a principal.</p>' +
       '<div class="mem-bts"><button class="btn" data-acao="mem-salvar">Salvar o memorial</button><div class="mem-par"><button class="btn sec2" data-acao="mem-ver">Ver como a família vê</button><button class="btn sec2" data-acao="mem-publicar" data-v="' + (m.publicado ? '' : '1') + '">' + (m.publicado ? 'Tirar da carteira da família' : 'Liberar para a família') + '</button></div></div>'
       : '<p class="nota">O memorial ainda não foi criado. Ao criar, todas as fotos do acervo entram em ordem cronológica, num rascunho que só a equipe vê.</p><div class="mem-bts"><button class="btn" data-acao="mem-criar">Criar memorial</button></div>') + '</section>' : '') +
@@ -3828,6 +3840,7 @@ function enquadrarFoto(aid, id) {
 }
 async function memSalvar(o) {
   const aid = E.memAid, an = animalDe(aid); if (!an) return; o = o || {};
+  if (o.criar && !memorialDe(an).texto) o.texto = MEM_TEXTO_PADRAO;
   if ($('#memTxt')) { o.texto = $('#memTxt').value; o.fotos = [...raiz.querySelectorAll('[data-hom-sel]:checked')].map(i => i.dataset.homSel); if ($('#memFal') && $('#memFal').value) o.falecidoEm = $('#memFal').value; }
   try { const m = await api('memorialSalvar', E.sessao, aid, o); an.memorial = JSON.stringify(m); if (o.falecidoEm) an.falecidoEm = o.falecidoEm;
     toast(o.publicar === true ? 'Memorial liberado para a família.' : o.publicar === false ? 'Memorial tirado da carteira da família.' : o.criar ? 'Memorial criado. Revise e libere quando estiver pronto.' : 'Memorial salvo.'); telaMemorial(aid); }
@@ -10083,6 +10096,7 @@ const ACOES = {
   'memo-ampliar': b => ampliarFotoMem(b.dataset.id),
   'memo-arq': b => { E.arquivos = b.dataset.id; abrirCarteira(b.dataset.id); },
   'mem-criar': () => memSalvar({ criar: true }),
+  'mem-txt-padrao': () => { const t = $('#memTxt'); if (t && (!t.value.trim() || confirm('Trocar o texto atual pelo texto padrão?'))) t.value = MEM_TEXTO_PADRAO; },
   'hom-enq': b => enquadrarFoto(E.memAid, b.dataset.id),
   'hom-princ': b => memSalvar({ principal: b.dataset.id }),
   'hom-mover': async b => { const aid = E.memAid, an = animalDe(aid), ids = fotosHom(an).map(f => f.id), i = ids.indexOf(b.dataset.id), j = i + (+b.dataset.v); if (i < 0 || j < 0 || j >= ids.length) return;
