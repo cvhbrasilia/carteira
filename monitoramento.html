@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127082654';
+  var VERSAO = '20261127083048';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -233,7 +233,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127082654">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Monitoramento da transfusão · CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127083048">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ficha de monitoramento da transfusão · CVH</title>
 <style>
@@ -305,7 +305,7 @@ const OPV = (() => { try { const m = location.hash.match(/op=([^&]+)/); return m
 const ufCrmv = (c) => ((String(c || "").match(/CRMV[-\s]*([A-Za-z]{2})\b/) || [])[1] || "DF").toUpperCase();
 const numCrmv = (c) => String(c || "").replace(/^\s*CRMV[-\s]*[A-Za-z]{2}\b/i, "").replace(/\D/g, "");
 const EX = { assinatura: null, fotos: {}, dados: { paciente: { nome: "Thor", especie: "Canina", raca: "Labrador", sexo: "Macho", peso: "28", idade: "6 anos" }, responsavel: "Responsável de exemplo", clinica: "Intensivet", indicacao: "Anemia hemolítica imunomediada", vet: { nome: "", crmv: "" },
-  bolsa: { id: "567-3 CH", componente: "CH", volume: "160", dea: "neg", dal: "" }, prova: "Compatível", htPre: "12", acesso: "Cefálica", taxa1: "2", taxa2: "10",
+  bolsa: { id: "567-3 CH", componente: "CH", volume: "160", dea: "neg", dal: "" }, prova: "Realizada", htPre: "12", acesso: "Cefálica", taxa1: "2", taxa2: "10",
   afericoes: [{ m: "Antes", h: "14:00", t: "38,6", fc: "128", fr: "32", pas: "110", pad: "70", pam: "83", muc: "Hipocorada", tpc: "2 s" }], reacao: {}, htPos: [], fotos: [] } };
 const srv = (fn, ...a) => {
   if (!EXEMPLO) return window.CVH_SERVIDOR.chamar(fn, a);
@@ -393,7 +393,7 @@ function pintar() {
       campo("Clínica", "clinica") + campo("Indicação da transfusão", "indicacao") + "</div>" +
     '<div class="cx"><h2>Hemocomponente</h2><div class="g2">' + campo("Bolsa", "bolsa.id") + campo("Volume da bolsa (mL)", "bolsa.volume", 'inputmode="numeric"') + "</div>" +
       '<label>Componente</label>' + chips("bolsa.componente", comp, { cls: "comp" }) + blocoTipo() +
-      '<label>Prova de compatibilidade</label>' + chips("prova", ["Compatível", "Amostra guardada", "Incompatível"].concat(D.prova === "Não feita" ? ["Não feita"] : [])) +
+      '<label>Prova de compatibilidade</label>' + chips("prova", ["Realizada", "Amostra guardada"].concat(D.prova && !["Realizada", "Amostra guardada"].includes(D.prova) ? [D.prova] : []), { cls: "duas" }) +
       '<p class="dica" id="provaDica"' + (D.prova === "Amostra guardada" ? "" : " hidden") + '>Emergência: amostra do paciente coletada antes da transfusão e guardada para fazer a prova de compatibilidade depois.</p>' +
       '<div class="g2">' + campo("Hematócrito antes (%)", "htPre", 'inputmode="decimal"') + campo("Pré-medicação", "premed") + "</div>" + '<div class="ler-mini so-edicao"><button class="btn sec peq" data-hcx="htPre">Foto do Hemochromax (hematócrito antes)</button></div>' +
       '<label>Acesso</label>' + chips("acesso", ACESSOS) +
