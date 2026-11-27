@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127085055">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127085426">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -920,7 +920,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .item:first-of-type{border-top:0}
 .item .t{flex:1;min-width:0}
 .item .t b{display:block;font-size:16px;color:var(--vinho)}
-.item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci-it .t small{white-space:normal}.ci-doa{display:flex;gap:12px;align-items:baseline;padding:7px 2px;border-bottom:1px solid #F0E8DE}.ci-doa b{color:var(--vinho);min-width:92px}.ci-doa span{font-size:13.5px;color:var(--tinta2)}
 .item .seta{color:var(--dourado);font-size:20px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .chip-an{border:1px solid var(--areia2);background:var(--papel);color:var(--vinho);font-weight:700;font-size:13px;border-radius:999px;padding:5px 11px}
@@ -1125,7 +1125,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127085055';
+  var VERSAO = '20261127085426';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -4623,8 +4623,8 @@ async function telaInteligencia() {
   const maxM = Math.max(1, ...Object.values(mot));
   const tabM = Object.entries(mot).sort((a, b) => b[1] - a[1]).map(([m, n]) => '<button class="ci-g" data-acao="ci-ver" data-v="m:' + esc(m) + '"><span>' + esc(m) + '</span><div class="ci-bar"><i class="m" style="width:' + (n / maxM * 100) + '%"></i></div><em>' + n + ' ›</em></button>').join('');
   const doa12 = Object.entries(E.hpRes.porMes || {}).filter(([m]) => m >= somaMeses(h.slice(0, 7) + '-01', -11).slice(0, 7)).reduce((t, [, n]) => t + n, 0) || st.reduce((t, x) => t + x.ult12, 0);
-  const linhaD = x => '<button class="item" data-acao="ci-doador" data-id="' + x.an.id + '"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc([(respDe(x.an) || {}).nome, canilTxt(respDe(x.an))].filter(Boolean).join(' · ')) +
-    (x.ult ? ' · última doação ' + br(x.ult) : ' · sem doação registrada') + (x.sit === 'intervalo' ? ' · liberado em ' + br(x.libera) + (x.emerg ? ' (em emergência já pode)' : '') : '') + (x.pend.length ? ' · pendência: ' + esc(x.pend.slice(0, 2).join(', ')) : '') + (x.imp.length ? ' · ' + esc(x.imp.slice(0, 2).join(', ')) : '') + '</small></div><span class="ci-st" style="--c:' + SIT_INT[x.sit][1] + '">' + SIT_INT[x.sit][0].replace(/s para doar$/, '').replace(/^Aguardando /, '') + '</span></button>';
+  const linhaD = x => '<button class="item ci-it" data-acao="ci-doador" data-id="' + x.an.id + '"><div class="t"><b>' + esc(x.an.nome) + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + '</b><small>' + esc([(respDe(x.an) || {}).nome, canilTxt(respDe(x.an))].filter(Boolean).join(' · ')) +
+    '<br>' + (x.ult ? 'Última doação ' + br(x.ult) : 'Sem doação registrada') + (x.sit === 'intervalo' ? ' · liberado em ' + br(x.libera) + (x.emerg ? ' (em emergência já pode)' : '') : '') + (x.pend.length ? ' · pendência: ' + esc(x.pend.slice(0, 2).join(', ')) : '') + (x.imp.length ? ' · ' + esc(x.imp.slice(0, 2).join(', ')) : '') + '</small></div><span class="ci-st" style="--c:' + SIT_INT[x.sit][1] + '">' + SIT_INT[x.sit][0].replace(/s para doar$/, '').replace(/^Aguardando /, '') + '</span></button>';
   E.ciLinha = linhaD;
   const ordem = { apto: 0, intervalo: 1, imp: 2 };
   const nPend = st.filter(x => x.pend.length).length;
@@ -8700,6 +8700,17 @@ function resumoDoacoes(aid) {
   return '<div class="doa-resumo">' + it(col.length, col.length === 1 ? 'doação' : 'doações') +
     it(br(fs[0].data), 'última') + it(br(fs[fs.length - 1].data), 'primeira') + '</div>';
 }
+// últimas doações do doador na triagem da Central: coletas do HemoPlus e fichas do painel juntas
+async function ciDoacoes(aid) {
+  let H = []; try { H = await api('hemoDoacoesAnimal', E.sessao, aid) || []; } catch (_) {}
+  const box = $('#ciDoas'); if (!box) return;
+  const L = H.filter(x => x.coletada).map(x => ({ data: x.data, num: x.numero, vol: x.volume, ficha: !!x.noPainel }));
+  (E.d.registros || []).filter(r => r.animalId === aid && r.tipo === 'doacao' && r.data).forEach(r => { if (!L.some(x => x.data === r.data)) L.push({ data: r.data, num: '', vol: '', ficha: true }); });
+  L.sort((a, b) => b.data.localeCompare(a.data));
+  box.innerHTML = '<h3 class="and-h">Doações · ' + L.length + '</h3>' + (L.length ? L.slice(0, 8).map(x => '<div class="ci-doa"><b>' + esc(br(x.data)) + '</b><span>' + esc([x.num ? 'nº ' + x.num : '', x.vol ? x.vol + ' mL' : '', x.ficha ? '' : 'sem ficha no painel'].filter(Boolean).join(' · ')) + '</span></div>').join('') +
+    (L.length > 8 ? '<p class="nota">Mais ' + (L.length - 8) + ' doações antigas.</p>' : '') : '<p class="nota">Nenhuma doação registrada no painel nem no HemoPlus.</p>') +
+    '';
+}
 // doações registradas no HemoPlus que ainda não têm ficha no painel (doadores do cadastro inicial): completar pela ficha em papel
 async function hpDoacoesAnimal(aid) {
   let L = []; try { L = await api('hemoDoacoesAnimal', E.sessao, aid) || []; } catch (_) { return; }
@@ -9812,7 +9823,7 @@ const ACOES = {
   'ci-graf-p': b => { $$('#ciGP .filtro').forEach(x => x.classList.toggle('on', x === b)); E.ciGP = +b.dataset.v; $('#ciGInfo').textContent = ''; pintarGrafCI(); },
   'ci-graf-cheio': () => grafCICheio(),
   'ci-filtro': b => { $$('#ciF .filtro').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; $('#ciLista').innerHTML = E.ciLinhas.filter(x => v === 'todos' || (v === 'pend' ? x.pend : x.sit === v)).sort((a, c) => a.ord - c.ord || String(a.nome).localeCompare(String(c.nome))).map(x => x.html).join('') || '<p class="vazio-p">Nenhum doador nesta situação.</p>'; },
-  'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div class="acoes-form"><button class="btn sec2" data-acao="ci-situacao" data-id="' + an.id + '">Situação do doador</button><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); },
+  'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div id="ciDoas"><p class="nota">Carregando as doações…</p></div><div class="acoes-form"><button class="btn sec2" data-acao="ci-situacao" data-id="' + an.id + '">Situação do doador</button><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); ciDoacoes(an.id); },
   avisos: () => telaAvisos(E.animal),
   'av-ir': b => { fecharFolha(); abrirCarteira(E.animal, b.dataset.id); },
   'foto-ficha': b => fotoFicha(b.dataset.id, b),
