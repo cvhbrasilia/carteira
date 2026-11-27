@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127200920">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127201459">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -714,6 +714,7 @@ a.btn{text-decoration:none}
 .and-h{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--vermelho);margin:0 0 6px}.and-box{border-left:4px solid #C49A6C}.and-del{display:flex;justify-content:flex-end;margin:-4px 0 8px}.and-del .lnk{background:none;border:0;font:inherit;font-size:13px;padding:4px 2px;cursor:pointer;text-decoration:underline}
 .and-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.and-tg em{font-style:normal;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEE5DB;color:#5F130F}.and-tg em.and-ppt{background:#C49A6C;color:#fff}
 .tri-comp{border-left:4px solid #A83D3D;background:#FBF3F1;border-radius:8px;padding:9px 12px;margin:10px 0}.tri-comp b{display:block;color:#A83D3D;font-size:13.5px;margin-bottom:4px}.tri-comp ul{margin:0;padding-left:18px}.tri-comp li{font-size:13.5px;color:#2b2320;margin:3px 0}.tri-comp li span{color:#7a6a62;font-size:12px}
+.orc-res .tx-vol{padding:10px;font:inherit;background:none;border:0;border-bottom:1px solid var(--linha);border-radius:10px;cursor:pointer;color:inherit}.orc-res .tx-vol:hover{background:#F6EFE7}.orc-res .tx-vol.on{background:#EEE5DB;box-shadow:inset 0 0 0 1.5px #C49A6C}.orc-res .tx-vol small{min-height:2.8em;display:flex;align-items:flex-end;justify-content:center;line-height:1.3}
 .tx-vol{text-align:center;padding:6px 0 14px;border-bottom:1px solid var(--linha);margin-bottom:12px}.tx-vol small{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7a6a62;font-weight:700}.tx-vol b{display:block;font-size:40px;color:#5F130F;line-height:1.15}.tx-vol b i{font-style:normal;font-size:18px;color:#A83D3D}.tx-vol span{font-size:13px;color:#7a6a62}
 .tx-esp .filtro{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;font-size:15px}.tx-esp .ic-esp{width:20px;height:20px;color:#C49A6C}.tx-esp .filtro.on .ic-esp{color:#EEE5DB}
 .tx-int{margin:0 0 14px}.tx-int small{margin-top:6px}.tx-int details{margin-top:6px}.tx-int summary{cursor:pointer;color:#8A5A2B;font-weight:700;font-size:13px}.tx-av{margin-top:10px}.tx-av summary{cursor:pointer;color:#8A5A2B;font-weight:700;font-size:13px}#txMsg{width:100%;font:inherit;border:1px solid var(--linha);border-radius:12px;padding:10px 12px;line-height:1.45;background:#fff}
@@ -1198,7 +1199,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127200920';
+  var VERSAO = '20261127201459';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -5206,13 +5207,15 @@ function dadosRelatorio(ini, fim) {
   const dentro = d => d >= ini && d <= fim, doadores = E.d.animais.filter(a => a.doador === '1');
   const doa = [], vistos = new Set();
   E.d.registros.filter(r => r.tipo === 'doacao' && animalDe(r.animalId)).sort(porData).forEach(r => { const k = r.animalId + r.data; if (vistos.has(k)) return; vistos.add(k); doa.push(r); });
-  const per = doa.filter(r => dentro(r.data)), col = per.filter(r => !(r.dados && (r.dados.naoColetado || (r.dados.ficha && r.dados.ficha.tempo === 'NC')))), nc = per.length - col.length;
+  // atendimento clínico (sem coleta) não é coleta não concluída: aparece com essa situação
+  const ehClin = r => !!(r.dados && (r.dados.clinico || (r.dados.ficha && r.dados.ficha.clinico)));
+  const per = doa.filter(r => dentro(r.data)), col = per.filter(r => !ehClin(r) && !(r.dados && (r.dados.naoColetado || (r.dados.ficha && r.dados.ficha.tempo === 'NC')))), nc = per.filter(r => !ehClin(r)).length - col.length;
   const prim = {}; doa.forEach(r => { if (!prim[r.animalId]) prim[r.animalId] = r.data; });
   const ativosFim = doadores.filter(a => prim[a.id] && prim[a.id] <= fim && !(a.aposentadoEm && a.aposentadoEm <= fim));
   const novos = doadores.filter(a => prim[a.id] && dentro(prim[a.id])), apos = doadores.filter(a => a.aposentadoEm && dentro(a.aposentadoEm));
   const porTipo = {}; ativosFim.forEach(a => { const k = (ehGato(a) ? 'Gatos' : 'Cães') + ' · ' + (tipoSang(a) || 'sem tipagem'); porTipo[k] = porTipo[k] || { ativos: 0, doacoes: 0 }; porTipo[k].ativos++; });
   col.forEach(r => { const a = animalDe(r.animalId); const k = (ehGato(a) ? 'Gatos' : 'Cães') + ' · ' + (tipoSang(a) || 'sem tipagem'); porTipo[k] = porTipo[k] || { ativos: 0, doacoes: 0 }; porTipo[k].doacoes++; });
-  const meses = {}; per.forEach(r => { const m = r.data.slice(0, 7); meses[m] = meses[m] || { col: 0, nc: 0 }; if (col.includes(r)) meses[m].col++; else meses[m].nc++; });
+  const meses = {}; per.forEach(r => { const m = r.data.slice(0, 7); meses[m] = meses[m] || { col: 0, nc: 0 }; if (col.includes(r)) meses[m].col++; else if (!ehClin(r)) meses[m].nc++; });
   const vol = col.reduce((t, r) => t + (parseFloat(String(((r.dados || {}).ficha || {}).volume || '').replace(',', '.')) || 0), 0);
   return { ini, fim, per, col, nc, ativosFim, novos, apos, porTipo, meses, vol };
 }
@@ -5222,7 +5225,7 @@ function htmlRelatorio(R) {
     lin('Novos doadores (primeira doação)', R.novos.length) + lin('Doadores aposentados', R.apos.length) + '</tbody></table>' +
     '<h4>Distribuição por espécie e tipo sanguíneo</h4><table class="rel-t"><thead><tr><th>Grupo</th><th>Doadores ativos</th><th>Doações</th></tr></thead><tbody>' + Object.entries(R.porTipo).sort().map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + v.ativos + '</td><td>' + v.doacoes + '</td></tr>').join('') + '</tbody></table>' +
     (Object.keys(R.meses).length > 1 ? '<h4>Por mês</h4><table class="rel-t"><thead><tr><th>Mês</th><th>Com coleta</th><th>Não concluídas</th></tr></thead><tbody>' + Object.entries(R.meses).sort().map(([m, v]) => '<tr><td>' + MESES_PT[+m.slice(5) - 1] + ' de ' + m.slice(0, 4) + '</td><td>' + v.col + '</td><td>' + v.nc + '</td></tr>').join('') + '</tbody></table>' : '') +
-    '<h4>Doações do período</h4><table class="rel-t"><thead><tr><th>Data</th><th>Doador</th><th>Tipo</th><th>Nº</th><th>Situação</th></tr></thead><tbody>' + R.per.map(r => { const a = animalDe(r.animalId) || {}, d = r.dados || {}; return '<tr><td>' + br(r.data) + '</td><td>' + esc(a.nome || '') + '</td><td>' + esc(tipoTxt(a)) + '</td><td>' + esc(d.numero || '') + '</td><td>' + (R.col.includes(r) ? 'coletada' : 'não concluída') + '</td></tr>'; }).join('') + '</tbody></table>' +
+    '<h4>Doações do período</h4><table class="rel-t"><thead><tr><th>Data</th><th>Doador</th><th>Tipo</th><th>Nº</th><th>Situação</th></tr></thead><tbody>' + R.per.map(r => { const a = animalDe(r.animalId) || {}, d = r.dados || {}; return '<tr><td>' + br(r.data) + '</td><td>' + esc(a.nome || '') + '</td><td>' + esc(tipoTxt(a)) + '</td><td>' + esc(d.numero || '') + '</td><td>' + (R.col.includes(r) ? 'coletada' : (d.clinico || (d.ficha || {}).clinico) ? 'atendimento clínico' : 'não concluída') + '</td></tr>'; }).join('') + '</tbody></table>' +
     '<p class="nota">Descartes e produção de hemocomponentes ainda não são registrados no painel, por isso não entram no relatório.</p></div>';
 }
 function periodoRel() {
@@ -5232,7 +5235,7 @@ function periodoRel() {
   return [m + '-01', m + '-' + String(fimM).padStart(2, '0'), MESES_PT[+m.slice(5) - 1] + ' de ' + m.slice(0, 4)];
 }
 function telaRelatorios() {
-  E.livro = null; E.orcRel = null; const h = hoje(), anos = [...new Set(E.d.registros.map(r => r.data.slice(0, 4)).concat(h.slice(0, 4)))].sort().reverse();
+  E.livro = null; E.orcRel = null; E.orcVolta = null; const h = hoje(), anos = [...new Set(E.d.registros.map(r => r.data.slice(0, 4)).concat(h.slice(0, 4)))].sort().reverse();
   raiz.innerHTML = '<main class="tela"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Clube do Doador</span><b>Relatórios</b></div></header>' +
     '<section class="cartao"><div class="grade"><div class="campo"><label for="relTipo">Período</label><select id="relTipo"><option value="mes">Mensal</option><option value="ano">Anual</option></select></div>' +
@@ -5240,7 +5243,8 @@ function telaRelatorios() {
     '<div class="acoes"><button class="btn sec2 peq" data-acao="rel-csv">Planilha (Excel e Numbers)</button><button class="btn sec2 peq" data-acao="rel-pdf">PDF A4</button></div></section>' +
     '<section class="cartao" id="relCorpo"></section>' + (pode('calculadora') || pode('estoque') || pode('admin') ? '<section class="cartao" id="relOrc"><h3>Orçamentos da HemoCalculadora</h3><p class="nota">Carregando…</p></section>' : '') + '</div></main>';
   const pinta = () => { $('#cMes').hidden = $('#relTipo').value === 'ano'; $('#cAno').hidden = $('#relTipo').value !== 'ano'; const [i, f, rot] = periodoRel(); $('#relCorpo').innerHTML = '<h3>' + rot + '</h3>' + htmlRelatorio(dadosRelatorio(i, f)); pintarRelOrc(i, f); };
-  ['relTipo', 'relMes', 'relAno'].forEach(k => $('#' + k).onchange = pinta); pinta();
+  const RS = E.relSel; if (RS) { $('#relTipo').value = RS.tipo; $('#relMes').value = RS.mes; if ([...$('#relAno').options].some(o => o.value === RS.ano)) $('#relAno').value = RS.ano; }
+  ['relTipo', 'relMes', 'relAno'].forEach(k => $('#' + k).onchange = () => { E.relSel = { tipo: $('#relTipo').value, mes: $('#relMes').value, ano: $('#relAno').value }; pinta(); }); pinta();
   telaClasse('tela-media');
 }
 // orçamentos do período: quantos viraram transfusão e por que os outros não seguiram
@@ -5248,7 +5252,8 @@ async function pintarRelOrc(i, f) {
   const box = $('#relOrc'); if (!box) return;
   try { if (!E.orcRel) E.orcRel = await api('estOrcamentos', E.sessao, 400); } catch (e) { box.innerHTML = '<h3>Orçamentos da HemoCalculadora</h3><p class="nota">' + esc(e.message) + '</p>'; return; }
   const L = E.orcRel.filter(o => { const d = String(o.criado).slice(0, 10); return d >= i && d <= f; });
-  if ($('#relOrc')) $('#relOrc').innerHTML = '<h3>Orçamentos da HemoCalculadora</h3>' + htmlResumoOrc(resumoOrc(L)) + '<div class="acoes"><button class="btn sec2 peq" data-acao="orc-lista">Ver os orçamentos</button></div>';
+  E.orcRelPer = { L, rot: [i, f] }; E.orcFiltroAtivo = false;
+  if ($('#relOrc')) $('#relOrc').innerHTML = '<h3>Orçamentos da HemoCalculadora</h3>' + htmlResumoOrc(resumoOrc(L)) + '<div class="acoes"><button class="btn sec2 peq" data-acao="orc-filtro" data-v="">Ver os orçamentos</button></div>';
 }
 function relCsv() {
   const [i, f, rot] = periodoRel(), R = dadosRelatorio(i, f), q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"', L = [];
@@ -5256,7 +5261,7 @@ function relCsv() {
   [['Doações com coleta', R.col.length], ['Coletas não concluídas', R.nc], ['Doadores ativos no fim do período', R.ativosFim.length], ['Novos doadores', R.novos.length], ['Doadores aposentados', R.apos.length]].forEach(x => L.push(x.map(q).join(';')));
   L.push(''); L.push(['Grupo', 'Doadores ativos', 'Doações'].map(q).join(';')); Object.entries(R.porTipo).sort().forEach(([k, v]) => L.push([k, v.ativos, v.doacoes].map(q).join(';')));
   L.push(''); L.push(['Data', 'Doador', 'Tipo sanguíneo', 'Nº da doação', 'Lote', 'Volume (mL)', 'Situação', 'Responsável'].map(q).join(';'));
-  R.per.forEach(r => { const a = animalDe(r.animalId) || {}, d = r.dados || {}, fi = d.ficha || {}; L.push([br(r.data), a.nome, tipoTxt(a), d.numero, fi.lote, fi.volume, R.col.includes(r) ? 'coletada' : 'não concluída', (respDe(a) || {}).nome].map(q).join(';')); });
+  R.per.forEach(r => { const a = animalDe(r.animalId) || {}, d = r.dados || {}, fi = d.ficha || {}; L.push([br(r.data), a.nome, tipoTxt(a), d.numero, fi.lote, fi.volume, R.col.includes(r) ? 'coletada' : (d.clinico || fi.clinico) ? 'atendimento clínico' : 'não concluída', (respDe(a) || {}).nome].map(q).join(';')); });
   entregarBlob(new Blob(['﻿' + L.join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'Relatório CVH ' + rot + '.csv');
 }
 async function relPdf(b) {
@@ -7287,7 +7292,7 @@ function situOrc(o) {
 }
 function resumoOrc(L) { const c = { total: L.length, virou: 0, aberto: 0, perdido: 0, sem_bolsa: 0, nao_quiseram: 0, outro: 0 }; L.forEach(o => { const x = situOrc(o); c[x.s]++; if (x.s === 'perdido') c[ORC_MOT[x.m] ? x.m : 'outro']++; }); return c; }
 function htmlResumoOrc(c) {
-  return '<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">' + [['Orçamentos', c.total], ['Viraram transfusão', c.virou], ['Em aberto', c.aberto], ['Sem bolsa', c.sem_bolsa], ['Não quiseram', c.nao_quiseram], ['Outro motivo', c.outro]].map(([t, n]) => '<div class="tx-vol" style="padding:10px"><small>' + t + '</small><b>' + n + '</b>' + (c.total && t !== 'Orçamentos' ? '<span>' + Math.round(n * 100 / c.total) + '%</span>' : '') + '</div>').join('') + '</div>';
+  return '<div class="grade orc-res" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">' + [['Orçamentos', c.total, ''], ['Viraram transfusão', c.virou, 'virou'], ['Em aberto', c.aberto, 'aberto'], ['Sem bolsa', c.sem_bolsa, 'sem_bolsa'], ['Não quiseram', c.nao_quiseram, 'nao_quiseram'], ['Outro motivo', c.outro, 'outro']].map(([t, n, k]) => '<button type="button" class="tx-vol' + ((E.orcFiltro || '') === k && E.orcFiltroAtivo ? ' on' : '') + '" data-acao="orc-filtro" data-v="' + k + '"><small>' + t + '</small><b>' + n + '</b>' + (c.total && t !== 'Orçamentos' ? '<span>' + Math.round(n * 100 / c.total) + '%</span>' : '<span>&nbsp;</span>') + '</button>').join('') + '</div>';
 }
 async function telaOrcamentos(dias) {
   E.livro = null; fecharFolha(); E.orcDias = dias || E.orcDias || 30; carregando('Carregando os orçamentos');
@@ -7304,10 +7309,12 @@ function pintarOrcamentos() {
       '<div class="mini-bts">' + (x.s === 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="virou">Virou transfusão</button>' + Object.entries(ORC_MOT).map(([k, t]) => '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="' + k + '">' + t + '</button>').join('') : '') +
       '<button class="mini" data-acao="orc-retomar" data-id="' + o.id + '">' + (o.atendimento && o.at_etapa ? 'Abrir o cálculo e o atendimento' : 'Retomar o cálculo') + '</button>' +
       (x.s === 'virou' && !o.receptor ? '<button class="mini" data-acao="orc-receptor" data-id="' + o.id + '">Cadastrar o receptor</button>' : '') + (x.s !== 'aberto' && !(o.atendimento && o.at_etapa) ? '<button class="mini" data-acao="orc-fim" data-id="' + o.id + '" data-v="aberto">Voltar para em aberto</button>' : '') + (E.u && E.u.permissoes.includes('admin') ? '<button class="mini" data-acao="orc-excluir" data-id="' + o.id + '">Excluir</button>' : '') + '</div></div>'; };
-  const bq = semAc(E.orcBusca || '').trim(), vis = bq ? L.filter(o => { const d = o.dados || {}; return semAc([d.paciente, o.at_paciente, o.atendimento, o.at_destino, d.clinica, d.por, o.id, d.esp].join(' ')).includes(bq); }) : L;
-  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="modulo" data-k="transfusao">‹ HemoCalculadora</button></div>' +
+  const fk = E.orcFiltroAtivo ? (E.orcFiltro || '') : '', L0 = fk ? L.filter(o => { const x = situOrc(o); return fk === 'virou' || fk === 'aberto' ? x.s === fk : x.s === 'perdido' && (ORC_MOT[x.m] ? x.m : 'outro') === fk; }) : L;
+  const bq = semAc(E.orcBusca || '').trim(), vis = bq ? L0.filter(o => { const d = o.dados || {}; return semAc([d.paciente, o.at_paciente, o.atendimento, o.at_destino, d.clinica, d.por, o.id, d.esp].join(' ')).includes(bq); }) : L0;
+  const doRel = E.orcVolta === 'rel';
+  raiz.innerHTML = '<main class="tela tela-media"><div class="tela-c"><div class="barra" style="padding:0">' + (doRel ? '<button class="pill" data-acao="orc-voltar-rel">‹ Relatórios</button>' : '<button class="pill" data-acao="modulo" data-k="transfusao">‹ HemoCalculadora</button>') + '</div>' +
     '<header class="topo"><div class="t"><span>HemoCalculadora</span><b>Orçamentos</b></div></header>' +
-    '<section class="cartao"><p class="nota">Todo cálculo completo da HemoCalculadora vira um orçamento, mesmo o que só foi calculado (aparece como só calculado), para acompanhar o fluxo. Copiar a mensagem, enviar por WhatsApp ou ligar a um atendimento fica marcado no mesmo orçamento. Quando o atendimento é pago, conta como transfusão. Quando é cancelado, conta como não seguiu, com o motivo do cancelamento.</p><div class="filtros">' + [7, 30, 90, 365].map(n => '<button class="filtro' + (n === d0 ? ' on' : '') + '" data-acao="orc-dias" data-v="' + n + '">' + (n === 365 ? '1 ano' : n + ' dias') + '</button>').join('') + '</div>' + htmlResumoOrc(c) + '</section>' +
+    '<section class="cartao"><p class="nota">Todo cálculo completo da HemoCalculadora vira um orçamento, mesmo o que só foi calculado (aparece como só calculado), para acompanhar o fluxo. Copiar a mensagem, enviar por WhatsApp ou ligar a um atendimento fica marcado no mesmo orçamento. Quando o atendimento é pago, conta como transfusão. Quando é cancelado, conta como não seguiu, com o motivo do cancelamento.</p>' + (doRel ? '<p><b>Período do relatório: ' + br(E.orcRelPer.rot[0]) + ' a ' + br(E.orcRelPer.rot[1]) + '</b></p>' : '<div class="filtros">' + [7, 30, 90, 365].map(n => '<button class="filtro' + (n === d0 ? ' on' : '') + '" data-acao="orc-dias" data-v="' + n + '">' + (n === 365 ? '1 ano' : n + ' dias') + '</button>').join('') + '</div>') + htmlResumoOrc(c) + '</section>' +
     '<section class="cartao"><div class="orc-busca"><input type="search" id="orcBusca" placeholder="Pesquisar por paciente, clínica ou atendimento" value="' + esc(E.orcBusca || '') + '" autocomplete="off"></div><h3>' + vis.length + (vis.length === 1 ? ' orçamento' : ' orçamentos') + (bq ? ' encontrados' : '') + '</h3>' + (vis.length ? vis.map(item).join('') : '<p class="vazio-p">' + (bq ? 'Nada encontrado com essa busca no período. Tente um período maior.' : 'Nenhum orçamento no período.') + '</p>') + '</section></div></main>';
   const ib = $('#orcBusca'); if (ib) { ib.oninput = () => { E.orcBusca = ib.value; const p0 = ib.selectionStart; pintarOrcamentos(); const n = $('#orcBusca'); if (n) { n.focus(); n.setSelectionRange(p0, p0); } }; }
 }
@@ -9926,8 +9933,13 @@ const ACOES = {
     E.recNovoCb = r => { usarRecTx(E.tx, r, true); if (E.modulo === 'transfusao') telaTransfusao(); };
     formReceptor(null, { nome: T.paciente, especie: T.esp === 'Gato' ? 'Felina' : 'Canina', raca: T.raca, sexo: /^f/i.test(T.sexo || '') ? 'Fêmea' : /^m/i.test(T.sexo || '') ? 'Macho' : '', idade: T.idade, peso: T.peso, responsavel: T.responsavel, veterinario: T.veterinario, crmv: T.crmv, clinica: T.clinica }); },
   'tx-rec-tirar': () => { E.tx.receptor = ''; E.tx.paciente = ''; E.tx.pacLaudo = null; E.tx.orcId = ''; telaTransfusao(); },
-  'orc-lista': () => telaOrcamentos(),
-  'orc-dias': b => telaOrcamentos(+b.dataset.v),
+  'orc-lista': () => { E.orcVolta = null; E.orcFiltroAtivo = false; telaOrcamentos(); },
+  'orc-dias': b => { E.orcVolta = null; E.orcFiltroAtivo = false; telaOrcamentos(+b.dataset.v); },
+  'orc-filtro': b => { const k = b.dataset.v || '';
+    if ($('#relOrc') && E.orcRelPer) { E.orcVolta = 'rel'; E.orc = E.orcRelPer.L; E.orcBusca = ''; }
+    E.orcFiltro = k; E.orcFiltroAtivo = !!k && !(E.orcFiltroAtivo && E.orcFiltro === k && b.classList.contains('on')); if (b.classList.contains('on')) E.orcFiltroAtivo = false;
+    pintarOrcamentos(); window.scrollTo(0, 0); },
+  'orc-voltar-rel': () => { E.orcFiltroAtivo = false; telaRelatorios(); },
   'orc-fim': b => desfechoOrc(b.dataset.id, b.dataset.v),
   'orc-retomar': b => retomarOrc(b.dataset.id),
   'orc-excluir': async b => { if (!confirm('Excluir este orçamento? Ele some da lista e dos relatórios.')) return; try { await api('estOrcamentoExcluir', E.sessao, b.dataset.id); E.orc = (E.orc || []).filter(x => x.id !== b.dataset.id); E.orcRel = null; pintarOrcamentos(); toast('Orçamento excluído.'); } catch (e) { toast(e.message, 6000); } },

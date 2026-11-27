@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127201459">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127202504">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -896,11 +896,21 @@ button.pdf{font-family:inherit;cursor:pointer}
 .tela-ci .tela-c,.tela-ag .tela-c{max-width:1240px;padding-left:28px;padding-right:28px}
 .tela-ci .ci-ks{grid-template-columns:repeat(8,minmax(0,1fr))}
 .tela-ci .tela-c{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.tela-ci .tela-c>*{grid-column:1/-1}.tela-ci .ci-ks+.cartao,.tela-ci .ci-ks+.cartao+.cartao{grid-column:auto;margin:0}.tela-ci .cartao svg{max-height:300px}
-.tela-ag #agLista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.tela-ag .ag-corpo{display:grid;grid-template-columns:minmax(0,1fr) 520px;gap:0 24px;align-items:start}.tela-ag .ag-corpo>*{grid-column:1}.tela-ag .ag-corpo>.ag-mes{grid-column:2;grid-row:1/span 20;position:sticky;top:12px}
+.tela-ag .ag-mes .agm-c{min-height:84px}.tela-ag .ag-mes .agm-l{display:block}.tela-ag .ag-mes .agm-pts{display:none}
+.tela-ag #agLista{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
 .tela-ag #agLista>.vazio-p{grid-column:1/-1}
-.tela-ag .ag-fut{columns:2;column-gap:28px}.tela-ag .ag-fut>h3,.tela-ag .ag-fut>.nota{column-span:all}
+.tela-ag .ag-fut{columns:1}.tela-ag .ag-fut>h3,.tela-ag .ag-fut>.nota{column-span:all}
 .tela-media .tela-c{max-width:960px;padding-left:28px;padding-right:28px}
 }
+.ag-corpo{display:flex;flex-direction:column;gap:16px}.ag-mes{background:#fff;border:1px solid var(--linha,#E9DCD3);border-radius:16px;padding:12px}
+.agm-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.agm-cab b{font-size:16px;color:var(--vinho)}
+.agm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.agm-s{font-size:10px;font-weight:700;letter-spacing:.08em;color:#8B7B70;text-align:center;text-transform:uppercase;padding:2px 0}
+.agm-c{min-height:52px;border:0;border-radius:9px;background:#FBF7F3;padding:4px 3px;text-align:left;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:2px;overflow:hidden;min-width:0}
+.agm-c.fora{background:transparent;color:#C6B8AE}.agm-c.hoje{box-shadow:inset 0 0 0 1.5px #C49A6C}.agm-c.on{background:#EEE5DB;box-shadow:inset 0 0 0 2px var(--verm-bt,#A83D3D)}
+.agm-c>i{font-style:normal;font-size:12px;font-weight:700;color:#5F130F;padding-left:2px}.agm-c.fora>i{color:#C6B8AE}
+.agm-l{display:none;font-size:10.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--c);padding-left:3px;color:#3B2622}.agm-l.prev{border-left-style:dotted;color:#8B7B70}.agm-l.st-faltou,.agm-l.st-realizado{opacity:.6}.agm-l.mais{border:0;color:#8B7B70}
+.agm-pts{display:flex;flex-wrap:wrap;gap:2px;padding-left:2px}.agm-pts u{width:6px;height:6px;border-radius:50%;background:var(--c)}.agm-pts u.prev{background:transparent;box-shadow:inset 0 0 0 1.5px var(--c)}
 .tela-c{max-width:560px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px}
 .topo{display:flex;align-items:center;gap:12px;padding:4px 0 6px}
 .topo .lg-res{width:96px}
@@ -1200,7 +1210,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127201459';
+  var VERSAO = '20261127202504';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6325,7 +6335,8 @@ async function carregarAgenda(ini) {
 async function telaAgenda(dia) {
   E.livro = null; E.diaAg = dia || E.diaAg || hoje();
   const d0 = E.diaAg, sem = inicioSemana(d0);
-  if (!E.agenda || E.agenda.de > sem || E.agenda.ate < somaDiasIso(sem, 6)) { carregando('Abrindo a agenda'); try { await carregarAgenda(sem); } catch (e) { toast(e.message, 6000); return telaHome(); } }
+  const mIni = d0.slice(0, 8) + '01', mFim = somaDiasIso(somaDiasIso(mIni, 40).slice(0, 8) + '01', -1);
+  if (!E.agenda || E.agenda.de > [sem, inicioSemana(mIni)].sort()[0] || E.agenda.ate < [somaDiasIso(sem, 6), somaDiasIso(inicioSemana(mFim), 6)].sort()[1]) { carregando('Abrindo a agenda'); try { E.agenda = null; await carregarAgenda(inicioSemana(mIni) < sem ? inicioSemana(mIni) : sem); } catch (e) { toast(e.message, 6000); return telaHome(); } }
   if (pode('admin') && !E.alertas && !E.carregandoAl) { E.carregandoAl = true; carregarAlertas().then(() => { E.carregandoAl = false; if ($('.ag-tira') && E.diaAg === d0) telaAgenda(d0); }).catch(() => { E.carregandoAl = false; }); }
   const itens = E.agenda.itens, h = hoje(), prev = previsoesDoacao();
   const doDia = itens.filter(a => a.data === d0 && a.status !== 'contato' && !(a.status === 'cancelado' && /^Previsão cancelada/.test(a.titulo || ''))).sort((a, b) => a.hora.localeCompare(b.hora));
@@ -6341,12 +6352,29 @@ async function telaAgenda(dia) {
     '<div class="ag-topo">' + (d0 !== h ? '<button class="btn sec2 peq" data-acao="ag-dia" data-v="' + h + '">Hoje</button>' : '') + '<input type="date" class="ag-ir" value="' + d0 + '" aria-label="Ir para a data">' + (pode('agenda') ? '<button class="btn peq" data-acao="ag-novo" data-v="' + d0 + '">+ Agendar</button>' : '') + '</div>' +
     (resumo ? '<div class="ag-resumo">' + resumo + '</div>' : '') +
     (chamar.length && d0 === h ? '<section class="ag-chamar"><h3>Chamar para doar (' + chamar.length + ')</h3><p class="nota">Doadores que completam 3 meses da última doação nos próximos ' + AVISO_DIAS + ' dias ou que já estão liberados. Quem tem pendência aparece primeiro.</p>' + chamar.map(cartaoPrevisao).join('') + '</section>' : '') +
+    '<div class="ag-corpo">' +
     '<section id="agLista">' + (doDia.length || prevDia.length ? doDia.map(cartaoAgenda).join('') + prevDia.filter(p => !(d0 === h && chamar.includes(p))).map(cartaoPrevisao).join('') : '<p class="vazio-p">Nada agendado para este dia.</p>') + '</section>' +
+    calendarioMes(d0, itens, prev) +
     listaPrevistas(prev.filter(p => !(d0 === h && chamar.includes(p)))) +
     (d0 === h && prev.some(p => p.contato) ? '<section class="ag-chamar"><h3>Convites enviados</h3>' + prev.filter(p => p.contato).map(cartaoPrevisao).join('') + '</section>' : '') +
-    '</div></main>';
+    '</div></div></main>';
   const ir = raiz.querySelector('.ag-ir'); ir.onchange = () => { if (ir.value) telaAgenda(ir.value); };
   telaClasse('tela-ag');  camarasNaAgenda(d0, sem);
+}
+// calendário do mês inteiro: no computador ao lado, com os agendamentos de cada dia; no celular embaixo, com pontinhos
+function calendarioMes(d0, itens, prev) {
+  const h = hoje(), mIni = d0.slice(0, 8) + '01', dt = new Date(mIni + 'T12:00'), ini = inicioSemana(mIni);
+  const prox = somaDiasIso(mIni, 40).slice(0, 8) + '01', ant = somaDiasIso(mIni, -1).slice(0, 8) + '01';
+  const fimM = somaDiasIso(prox, -1), nSem = Math.ceil((Math.round((Date.parse(fimM) - Date.parse(ini)) / 864e5) + 1) / 7);
+  const cel = [...Array(nSem * 7).keys()].map(i => {
+    const d = somaDiasIso(ini, i), L = itens.filter(a => a.data === d && a.status !== 'cancelado' && a.status !== 'contato').sort((a, b) => a.hora.localeCompare(b.hora)), P = prev.filter(p => p.data === d);
+    const nome = a => { const an = a.animalId ? animalDe(a.animalId) : null; return an ? an.nome : (a.titulo || ''); };
+    const lin = L.map(a => '<span class="agm-l st-' + a.status + '" style="--c:' + (AG_TIPO[a.tipo] || AG_TIPO.outro)[1] + '">' + esc(a.hora + ' ' + nome(a)) + '</span>').concat(P.map(p => '<span class="agm-l prev" style="--c:#A83D3D">' + esc('prev. ' + ((animalDe(p.animalId) || {}).nome || '')) + '</span>'));
+    const pts = L.map(a => '<u style="--c:' + (AG_TIPO[a.tipo] || AG_TIPO.outro)[1] + '"></u>').concat(P.map(() => '<u class="prev" style="--c:#A83D3D"></u>')).slice(0, 8).join('');
+    return '<button class="agm-c' + (d.slice(0, 7) !== mIni.slice(0, 7) ? ' fora' : '') + (d === h ? ' hoje' : '') + (d === d0 ? ' on' : '') + '" data-acao="ag-dia" data-v="' + d + '"><i>' + +d.slice(8) + '</i>' + (lin.length > 4 ? lin.slice(0, 3).join('') + '<span class="agm-l mais">+' + (lin.length - 3) + '</span>' : lin.join('')) + '<span class="agm-pts">' + pts + '</span></button>';
+  }).join('');
+  return '<aside class="ag-mes"><div class="agm-cab"><button class="pill" data-acao="ag-dia" data-v="' + ant + '" aria-label="Mês anterior">‹</button><b>' + MESES_PT[dt.getMonth()].replace(/^./, c => c.toUpperCase()) + ' de ' + dt.getFullYear() + '</b><button class="pill" data-acao="ag-dia" data-v="' + prox + '" aria-label="Próximo mês">›</button></div>' +
+    '<div class="agm-g">' + [1, 2, 3, 4, 5, 6, 0].map(i => '<span class="agm-s">' + DIAS_S[i] + '</span>').join('') + cel + '</div></aside>';
 }
 // câmaras portáteis do dia (entregas e buscas) na agenda, para quem cuida do estoque ou do transporte
 async function camarasNaAgenda(d0, sem) {
@@ -6386,6 +6414,7 @@ function cartaoAgenda(a) {
       (rp && rp.telefone && a.status === 'agendado' ? '<a class="btn sec2 peq" href="' + esc(whatsAgenda(a, an, rp)) + '" target="_blank" rel="noopener">Confirmar pelo WhatsApp</a>' : '') +
       (a.status === 'agendado' ? '<button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="confirmado">Confirmado</button>' : '') +
       (a.status === 'agendado' || a.status === 'confirmado' ? '<button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="realizado">Realizado</button><button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="faltou">Faltou</button>' : '') +
+      (a.status === 'faltou' || a.status === 'cancelado' ? '<button class="btn peq" data-acao="ag-reagendar" data-id="' + a.id + '">Reagendar</button>' : '') +
       (a.tipo === 'doacao' && an && pode('fichas') && a.status !== 'cancelado' ? '<button class="btn sec2 peq" data-acao="ag-ficha" data-id="' + an.id + '">Ficha de doação</button>' : '') +
       '<button class="btn sec2 peq" data-acao="ag-editar" data-id="' + a.id + '">Editar</button></div>' : '') +
     '</div></article>';
@@ -10202,6 +10231,9 @@ const ACOES = {
   },
   'ag-editar': b => formAgenda(E.agenda.itens.find(x => x.id === b.dataset.id)),
   'ag-ficha': b => { E.modulo = 'fichas'; E.voltarFichas = null; telaFichas(b.dataset.id); },
+  // faltou: novo agendamento com o mesmo animal, tipo, horário e duração (o que faltou fica registrado)
+  'ag-reagendar': b => { const a = E.agenda.itens.find(x => x.id === b.dataset.id); if (!a) return;
+    formAgenda({ animalId: a.animalId, responsavelId: a.responsavelId, tipo: a.tipo, hora: a.hora, duracao: a.duracao, titulo: a.titulo, obs: a.obs, data: somaDiasIso(a.data > hoje() ? a.data : hoje(), 7) }); },
   'ag-status': async b => {
     const a = E.agenda.itens.find(x => x.id === b.dataset.id); if (!a) return; b.disabled = true;
     try { Object.assign(a, await api('agendaSalvar', E.sessao, Object.assign({}, a, { status: b.dataset.v }))); toast(AG_ST[a.status] + '.'); telaAgenda(a.data); } catch (e) { toast(e.message, 5000); b.disabled = false; }
