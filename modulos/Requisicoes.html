@@ -748,8 +748,8 @@ function telaEditor() {
       <label style="margin-top:10px">Observações (outros exames ou recados para o laboratório)<textarea data-c="obs" rows="2" maxlength="600">${esc(r.obs)}</textarea></label>
     </div>`}
     <div class="cx acoes-fim">
-      <button type="button" class="btn" data-a="imprimir">${ehProt(r) ? "Imprimir no papel azul" : "Imprimir no papel timbrado"}</button>
-      ${ehProt(r) ? "" : `<button type="button" class="btn sec" data-a="a5">Imprimir no papel timbrado A5</button><button type="button" class="btn sec" data-a="digital">PDF digital (com o timbrado)</button>`}
+      <button type="button" class="btn" data-a="imprimir">${ehProt(r) ? "Imprimir no papel azul" : "Imprimir"}</button>
+      ${ehProt(r) ? "" : `<button type="button" class="btn sec" data-a="a5">Imprimir A5</button><button type="button" class="btn sec" data-a="digital">PDF digital</button>`}
       <button type="button" class="btn sec" data-a="salvar">Salvar sem imprimir</button>
       ${r.id ? `<button type="button" class="lnk" data-a="apagar">Apagar esta requisição</button>` : ""}
       <p class="st" id="st"></p>
