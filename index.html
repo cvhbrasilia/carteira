@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127133754">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261127134534">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1183,7 +1183,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127133754';
+  var VERSAO = '20261127134534';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3994,7 +3994,7 @@ function pintarAbas() {
   let cx = $('#abas'); if (!E.abas || !E.abas.length) { if (cx) cx.remove(); return; }
   if (!cx) { cx = document.createElement('div'); cx.id = 'abas'; cx.className = 'abas'; palco.appendChild(cx); }
   const pr = palco.getBoundingClientRect(), dr = lv.getBoundingClientRect(), es = $('#livroEsq');
-  const esqR = E.duplo && es && !es.hidden ? es.getBoundingClientRect() : dr;
+  const esqR = E.duplo && es && !es.hidden && es.style.visibility !== 'hidden' ? es.getBoundingClientRect() : dr;   // capa sozinha: a aba da esquerda encosta na própria capa
   const atual = L ? L.i : 0, n = E.abas.length, alto = dr.height - 36, y0 = dr.top - pr.top + 18;
   const ativa = E.abas.reduce((a, b, k) => b.i <= atual ? k : a, -1);
   // cada aba tem a altura do próprio nome; quando não cabem todas, ficam uma por cima da outra e a da página aberta vem para a frente
