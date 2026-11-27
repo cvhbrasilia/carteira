@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127134720">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127135051">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1184,7 +1184,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127134720';
+  var VERSAO = '20261127135051';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3597,15 +3597,15 @@ class Livro {
     };
     this.raf = requestAnimationFrame(passo);
   }
-  fim(ok) { if (ok && this.alvo != null) this.i = this.alvo; this.alvo = null; this.mostrar(); }
+  fim(ok) { if (ok && this.alvo != null) this.i = this.alvo; this.alvo = null; this.mostrar(); if (this.pendente != null) { const t = this.pendente; this.pendente = null; setTimeout(() => this.irPara(t), 30); } }
   // pula direto para uma página (abas), virando uma folha só
   irPara(t) {
-    if (this.ocupado) return;
+    if (this.ocupado) { this.pendente = t; return; }   // toque na aba durante a virada: vai para lá assim que terminar
     const max = this.esq ? this.max : this.p.length - 1;
     t = Math.max(0, Math.min(t, max)); if (this.esq && t % 2) t = Math.min(t + 1, max);
     if (t === this.i) return;
     const dir = t > this.i ? 1 : -1; this.alvo = t; this.iniciar(dir, this.h * 0.5);
-    this.animar(dir > 0 ? { x: -this.w, y: this.C.y } : { x: this.C.x, y: this.C.y }, 950, () => this.fim(true));
+    this.animar(dir > 0 ? { x: -this.w, y: this.C.y } : { x: this.C.x, y: this.C.y }, 620, () => this.fim(true));
   }
   proxima(y) { if (this.ocupado || !this.pode(1)) return; this.iniciar(1, y); this.animar({ x: -this.w, y: this.C.y }, 950, () => this.fim(true)); }
   anterior(y) { if (this.ocupado || !this.pode(-1)) return; this.iniciar(-1, y); this.animar({ x: this.C.x, y: this.C.y }, 950, () => this.fim(true)); }
@@ -4008,7 +4008,7 @@ function pintarAbas() {
   const tops = []; let yAc = y0; alt.forEach(x => { tops.push(yAc); yAc += (x + 3) * f; });
   if (cabe) { const sobra = (alto - soma) / n; if (sobra > 0) { yAc = y0; alt.forEach((x, k) => { tops[k] = yAc; alt[k] = x + sobra; yAc += x + sobra + 3; }); } }
   cx.innerHTML = E.abas.map((a, k) => {
-    const lado = (E.duplo ? a.i < atual : a.i <= atual) ? 'e' : 'd';
+    const lado = a.i < 0 ? 'd' : (E.duplo ? a.i < atual : a.i <= atual) ? 'e' : 'd';   // Arquivos fica sempre à direita, depois das outras abas
     const x = lado === 'e' ? esqR.left - pr.left - 21 : dr.right - pr.left - 1;
     const rot = ROT_ABA[a.t] || a.t, h = alt[k] + 3, top = tops[k], ref = ativa < 0 ? 0 : ativa;
     const z = 40 - Math.abs(k - ref), pos = cabe || k === ref ? 'center' : k < ref ? 'flex-start' : 'flex-end';
