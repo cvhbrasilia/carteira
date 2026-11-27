@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127121159">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127121645">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -961,6 +961,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .enq{display:flex;flex-direction:column;gap:10px}.enq-q{width:min(78vw,320px);aspect-ratio:4/4.4;margin:0 auto;overflow:hidden;border-radius:10px;background:#F4ECE2;touch-action:none;cursor:grab}.enq-q img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .mem-bts{display:flex;flex-direction:column;gap:22px;margin-top:14px}.mem-bts>.btn{align-self:flex-start}.mem-par{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mem-par .btn{width:100%;white-space:normal;line-height:1.25}
 .mem-op{display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid #DCCDBB;border-radius:12px;background:#F7F1EA;font-weight:600;color:var(--vinho);cursor:pointer}.mem-op:has(input:checked){background:#C6B098;border-color:#C49A6C}#aMemBox .mem-op{color:#5F130F;opacity:1;text-transform:none;letter-spacing:0;font-size:15px;justify-content:center;margin:0}#aMemBox .mem-op input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:none;accent-color:#A83D3D}
+.ud-g{padding:8px 0 4px;border-bottom:1px solid #EFE6DB}.ud-g h3{font-size:15px;color:var(--vinho);margin:4px 2px 6px}.ud-g h3 small{font-weight:400;color:var(--tinta2);font-size:12.5px}.ud-a{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;font:inherit;background:#FBF7F2;border:1px solid #EADFD2;border-radius:10px;padding:8px 10px;margin:0 0 6px;cursor:pointer;color:var(--tinta)}.ud-a em{font-style:normal;font-size:11.5px;color:#fff;background:#C49A6C;border-radius:99px;padding:1px 7px;margin-left:4px}.ud-a small{color:var(--tinta2);font-size:13px}.ud-l{margin:-2px 0 8px 10px}
 .hom-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:10px}.hom-f{border:1px solid #EADFD2;border-radius:12px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:6px}.hom-f img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#F4ECE2}.hom-sel{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--vinho)}.hom-leg{font:inherit;font-size:13px;padding:6px 8px;border:1px solid #E3D7C8;border-radius:8px}.hom-pe{display:flex;justify-content:space-between;align-items:center;gap:6px}.hom-pe small{color:var(--tinta2);font-size:11.5px}.ci-doa{display:flex;gap:12px;align-items:baseline;padding:7px 2px;border-bottom:1px solid #F0E8DE}.ci-doa b{color:var(--vinho);min-width:92px}.ci-doa span{font-size:13.5px;color:var(--tinta2)}
 .item .seta{color:var(--dourado);font-size:20px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -1166,7 +1167,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127121159';
+  var VERSAO = '20261127121645';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -4868,6 +4869,7 @@ async function telaInteligencia() {
     '<section class="cartao"><h3>Motivos mais frequentes de inaptidão</h3>' + (tabM || '<p class="vazio-p">Nenhum doador inapto agora.</p>') + '</section>' +
     '<section class="cartao"><h3>Evolução</h3><div class="filtros" id="ciGP">' + [[6, '6 meses'], [12, '12 meses'], [24, '2 anos'], [0, 'Tudo']].map(([n, t]) => '<button class="filtro' + (n === 12 ? ' on' : '') + '" data-acao="ci-graf-p" data-v="' + n + '">' + t + '</button>').join('') + '<button class="filtro" data-acao="ci-graf-cheio">Tela cheia ⤢</button></div>' +
       '<p class="nota"><i class="ci-lg l"></i>doadores ativos · <i class="ci-lg b"></i>doações no mês · toque num mês para ver os números</p><div class="ci-gw" id="ciGW"></div><p class="nota" id="ciGInfo"></p></section>' +
+    '<section class="cartao"><h3>Últimas doações por responsável</h3><p class="nota">Busque pelo responsável, pelo canil ou pelo doador e veja a última doação de cada doador dele. Toque no doador para ver todas as datas.</p><button class="btn sec2" data-acao="ud-abrir">Buscar por responsável</button></section>' +
     '<section class="cartao"><h3>Situação de cada doador</h3><div class="filtros" id="ciF">' + [['todos', 'Todos', st.length], ['apto', 'Aptos', cnt('apto')], ['intervalo', 'Aguardando intervalo', cnt('intervalo')], ['pend', 'Com pendências', nPend], ['imp', 'Possível impedimento', cnt('imp')]].map(([k, t, n], i) => '<button class="filtro' + (!i ? ' on' : '') + '" data-acao="ci-filtro" data-v="' + k + '">' + t + ' <b>' + n + '</b></button>').join('') + '</div>' +
       '<div id="ciLista">' + st.slice().sort((a, b) => ordem[a.sit] - ordem[b.sit] || String(a.an.nome).localeCompare(String(b.an.nome))).map(linhaD).join('') + '</div></section>' +
     '<p class="nota">A aptidão vem da última doação (fichas do painel e coletas do HemoPlus) com intervalo de ' + INTERVALO_DOACAO_MESES + ' meses; com o estoque abaixo do mínimo, quem está a menos de 1 semana dos 3 meses entra como exceção. Pendências aparecem para conferir, sem tirar a aptidão. A liberação final é sempre do médico veterinário.</p></div></main>';
@@ -5070,7 +5072,7 @@ const MODS = [
   { k: 'tcle', t: 'Termos', d: 'TCLE do Clube de Doadores, entrega de hemocomponentes e responsabilidade', ic: svgIc('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 16.5c1.2-2.2 2-2.2 2.6-.6.5 1.3 1.200 1.300 2-.2.5-.9 1.200-.9 2.400.800"/>') },
   { k: 'certificados', perm: 'certificados', t: 'Certificados', d: 'Certificado de cada doação, para imprimir e postar', ic: svgIc('<circle cx="12" cy="9" r="5.5"/><path d="M12 6.300l.9 1.800 2 .3-1.450 1.400.35 2-1.800-.95-1.800.95.35-2L9.100 8.400l2-.3z"/><path d="M8.700 13.600 7.500 21l4.500-2.400L16.500 21l-1.200-7.400"/>') },
   { k: 'camaras', perm: ['transporte', 'estoque'], t: 'Câmaras portáteis', d: 'Agenda das câmaras 1 e 2 com bolsa de CH, transporte, texto e termo assinado', ic: svgIc('<rect x="4" y="7" width="16" height="12" rx="2"/><path d="M8 7V5h8v2M4 11h16M10 15h4"/>') },
-  { k: 'clinicas', perm: ['transporte', 'estoque', 'receptores', 'laudos'], t: 'Clínicas', d: 'Cadastro único das clínicas: endereço, contatos e médicos veterinários', ic: svgIc('<g stroke-width="1.3"><path d="M3.4 20.6V6.9M13.4 20.6V6.2"/><path d="M2 7.4C5.3 4.3 10.6 3.6 14.6 5.4"/><path d="M2.6 12.3c3.7-1.1 8.4-1.1 11.6 0"/><path d="M5.5 20.6v-6.4h5.9v6.4M8.45 14.2v6.4"/><path d="M13.4 10.4c3-1 6.4-.8 8.9.9M21.6 11v9.6"/><rect x="14.9" y="14.6" width="5.3" height="3.6" rx=".4"/><path d="M1.6 20.8h21"/><path d="M8.45 6.9v3.2M6.85 8.5h3.2" stroke-width="1.6"/></g>') },
+  { k: 'clinicas', perm: ['transporte', 'estoque', 'receptores', 'laudos'], t: 'Cadastro de clínicas', d: 'Cadastro único das clínicas: endereço, contatos e médicos veterinários', ic: svgIc('<path d="M20.6 1.6v4.6M18.3 3.9h4.6" stroke-width="2.1"/><g stroke-width="1.3"><path d="M3.4 20.6V6.9M13.4 20.6V6.2"/><path d="M2 7.4C5.3 4.3 10.6 3.6 14.6 5.4"/><path d="M2.6 12.3c3.7-1.1 8.4-1.1 11.6 0"/><path d="M5.5 20.6v-6.4h5.9v6.4M8.45 14.2v6.4"/><path d="M13.4 10.4c3-1 6.4-.8 8.9.9M21.6 11v9.6"/><rect x="14.9" y="14.6" width="5.3" height="3.6" rx=".4"/><path d="M1.6 20.8h21"/><path d="M8.45 6.9v3.2M6.85 8.5h3.2" stroke-width="1.6"/></g>') },
   { k: 'transporte', perm: 'transporte', t: 'Motoboy', d: 'Rotas do dia, pedidos, clínicas e destinos, quilometragem e combustível', ic: svgIc('<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-7h4l2 4M12 10H9"/>') },
   { k: 'inteligencia', perm: 'inteligencia', t: 'Central de inteligência', d: 'Aptos, pendências, tipos sanguíneos e evolução do clube', ic: svgIc('<path d="M4 20V10M9.500 20V4M15 20v-7M20.500 20v-4"/><path d="M3 20.500h18"/>') },
   { k: 'pendencias', perm: 'pendencias', t: 'Pendências e Pra hoje', d: 'Tarefas da equipe e o roteiro dos doadores do dia', ic: svgIc('<path d="M9 5h10M9 12h10M9 19h10"/><path d="M3.500 5l1.300 1.300L7 4M3.500 12l1.300 1.300L7 11M3.500 19l1.300 1.300L7 18"/>') },
@@ -7837,6 +7839,7 @@ function telaInicio(busca) {
       '<section class="cartao"><h3>Doador</h3><p class="nota">Hemograma e bioquímica, TECSA, FIV e FeLV e tipagem. O doador é escolhido no próprio laudo. Para ver os laudos de um doador, toque nele na lista abaixo.</p><button class="btn" data-acao="ld-doador">Exames do doador</button></section><button class="btn sec2" data-acao="laudos-todos">Ver e buscar laudos salvos (' + laudosTodos().length + ')</button><section class="cartao lab-rec" id="labRec"><h3>Laudos dos laboratórios</h3><p class="nota">Carregando…</p></section>' : '') +
     (mod === 'receitas' ? '<p class="nota">Toque no animal para fazer a receita. A receita simples entra sozinha na carteira, na aba Receitas.</p><button class="btn sec2" data-acao="receitas-todas">Ver e buscar receitas salvas (' + receitasTodas().length + ')</button>' : '') +
     (mod === 'fichas' ? '<button class="btn" data-acao="etq-coleta" style="margin-bottom:10px">Etiqueta de coleta</button>' : '') +
+    (mod === 'fichas' ? '<button class="btn sec2" data-acao="ud-abrir" style="margin-bottom:10px">Últimas doações por responsável</button>' : '') +
     (mod === 'fichas' ? '<p class="nota">Toque no doador para fazer a ficha. Ela abre com os dados do cadastro e, ao salvar, entra sozinha na carteira dele.</p><button class="btn sec2" data-acao="fichas-todas">Ver e buscar fichas salvas (' + fichasSalvas().length + ')</button>' : '') +
     (mod === 'tcle' ? termosTipos() + '<p class="nota">Toque no responsável para preparar o TCLE com os dados do cadastro. Para ver os termos em andamento e os que aguardam a assinatura do CVH, use o botão abaixo.</p><button class="btn sec2" data-acao="tcle-todos">Ver todos os termos</button>' : '') +
     (cart ? cartaoVerm() : '') + (cart ? '<section class="cartao"><h3>Próximos 30 dias</h3>' + (venc.length ? venc.map(v => '<button class="venc" data-acao="abrir-animal" data-id="' + v.an.id + '"><div class="t"><b>' + esc(v.an.nome) + '</b> · ' + esc(v.rot) + '<small>' + esc(v.det) + ' · ' + br(v.data) + '</small></div>' + chip(v.data) + '</button>').join('') : '<p class="vazio-p">Nada vencendo nos próximos 30 dias.</p>') + '</section>' : '') +
@@ -8942,15 +8945,37 @@ function resumoDoacoes(aid) {
     it(br(fs[0].data), 'última') + it(br(fs[fs.length - 1].data), 'primeira') + '</div>';
 }
 // últimas doações do doador na triagem da Central: coletas do HemoPlus e fichas do painel juntas
-async function ciDoacoes(aid) {
+// doações de um doador: coletas do HemoPlus e fichas do painel, da mais recente para a mais antiga
+async function doacoesDe(aid) {
   let H = []; try { H = await api('hemoDoacoesAnimal', E.sessao, aid) || []; } catch (_) {}
-  const box = $('#ciDoas'); if (!box) return;
   const L = H.filter(x => x.coletada).map(x => ({ data: x.data, num: x.numero, vol: x.volume, ficha: !!x.noPainel }));
-  (E.d.registros || []).filter(r => r.animalId === aid && r.tipo === 'doacao' && r.data).forEach(r => { if (!L.some(x => x.data === r.data)) L.push({ data: r.data, num: '', vol: '', ficha: true }); });
-  L.sort((a, b) => b.data.localeCompare(a.data));
-  box.innerHTML = '<h3 class="and-h">Doações · ' + L.length + '</h3>' + (L.length ? L.slice(0, 8).map(x => '<div class="ci-doa"><b>' + esc(br(x.data)) + '</b><span>' + esc([x.num ? 'nº ' + x.num : '', x.vol ? x.vol + ' mL' : '', x.ficha ? '' : 'sem ficha no painel'].filter(Boolean).join(' · ')) + '</span></div>').join('') +
-    (L.length > 8 ? '<p class="nota">Mais ' + (L.length - 8) + ' doações antigas.</p>' : '') : '<p class="nota">Nenhuma doação registrada no painel nem no HemoPlus.</p>') +
-    '';
+  (E.d.registros || []).filter(r => r.animalId === aid && r.tipo === 'doacao' && r.data && !(r.dados && r.dados.naoColetado)).forEach(r => { if (!L.some(x => x.data === r.data)) L.push({ data: r.data, num: '', vol: '', ficha: true }); });
+  return L.sort((a, b) => b.data.localeCompare(a.data));
+}
+const doacoesHtml = L => (L.length ? L.slice(0, 8).map(x => '<div class="ci-doa"><b>' + esc(br(x.data)) + '</b><span>' + esc([x.num ? 'nº ' + x.num : '', x.vol ? x.vol + ' mL' : '', x.ficha ? 'ficha no painel' : 'só no HemoPlus'].filter(Boolean).join(' · ')) + '</span></div>').join('') +
+  (L.length > 8 ? '<p class="nota">Mais ' + (L.length - 8) + ' doações antigas.</p>' : '') : '<p class="nota">Nenhuma doação registrada no painel nem no HemoPlus.</p>');
+async function ciDoacoes(aid) {
+  const L = await doacoesDe(aid), box = $('#ciDoas'); if (!box) return;
+  box.innerHTML = '<h3 class="and-h">Doações · ' + L.length + '</h3>' + doacoesHtml(L);
+}
+// últimas doações dos doadores de cada responsável (Central de inteligência e Fichas de doação)
+const ultDoacaoDe = an => { const p = (E.d.registros || []).filter(r => r.animalId === an.id && r.tipo === 'doacao' && r.data && !(r.dados && r.dados.naoColetado)).map(r => r.data).sort().pop() || '', h = ((E.hpRes || {}).ult || {})[an.id] || ''; return h > p ? h : p; };
+const haQuanto = d => { const n = dias(d, hoje()); return n < 1 ? 'hoje' : n < 60 ? 'há ' + n + (n === 1 ? ' dia' : ' dias') : 'há ' + Math.round(n / 30.4) + ' meses'; };
+const sitDoador = an => an.falecidoEm ? 'Em memória' : an.aposentadoEm ? 'Aposentado' : an.inativoMotivo ? 'Inativo' : an.ativo === '0' ? 'Inativo' : '';
+async function folhaUltDoacoes() {
+  if (!E.hpRes) { try { E.hpRes = await api('hemoResumoDoadores', E.sessao); } catch (_) { E.hpRes = { ult: {}, prim: {}, porMes: {} }; } }
+  const grupos = (E.d.responsaveis || []).map(r => ({ r, an: E.d.animais.filter(a => a.doador === '1' && a.responsavelId === r.id).map(an => ({ an, ult: ultDoacaoDe(an) })).sort((a, b) => b.ult.localeCompare(a.ult) || String(a.an.nome).localeCompare(String(b.an.nome))) }))
+    .filter(g => g.an.length).sort((a, b) => String(a.r.nome).localeCompare(String(b.r.nome)));
+  const sem = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const pinta = () => {
+    const q = sem(($('#udBusca') || {}).value), box = $('#udLista'); if (!box) return;
+    const G = q ? grupos.filter(g => sem(g.r.nome + ' ' + canilTxt(g.r)).includes(q) || g.an.some(x => sem(x.an.nome).includes(q))) : grupos;
+    box.innerHTML = G.length ? G.slice(0, 80).map(g => '<div class="ud-g"><h3>' + esc(g.r.nome || 'Sem nome') + (canilTxt(g.r) ? ' <small>' + esc(canilTxt(g.r)) + '</small>' : '') + '</h3>' +
+      g.an.map(x => { const st = sitDoador(x.an); return '<button class="ud-a" data-acao="ud-doa" data-id="' + x.an.id + '"><span><b>' + esc(x.an.nome) + '</b>' + (tipoTxt(x.an) ? ' <small class="tp">' + esc(tipoTxt(x.an)) + '</small>' : '') + (st ? ' <em>' + st + '</em>' : '') + '</span>' +
+        '<small>' + (x.ult ? 'Última doação ' + br(x.ult) + ' · ' + haQuanto(x.ult) : 'Sem doação registrada') + '</small></button><div class="ud-l" id="ud_' + x.an.id + '" hidden></div>'; }).join('') + '</div>').join('') +
+      (G.length > 80 ? '<p class="nota">Mostrando 80 de ' + G.length + ' responsáveis. Digite para filtrar.</p>' : '') : '<p class="vazio-p">Nenhum responsável encontrado.</p>';
+  };
+  abrirFolha('Últimas doações por responsável', '<div class="busca"><input id="udBusca" type="search" placeholder="Buscar responsável, canil ou doador" aria-label="Buscar responsável"></div><div id="udLista"></div>', c => { pinta(); $('#udBusca').addEventListener('input', pinta); });
 }
 // doações registradas no HemoPlus que ainda não têm ficha no painel (doadores do cadastro inicial): completar pela ficha em papel
 async function hpDoacoesAnimal(aid) {
@@ -10091,6 +10116,8 @@ const ACOES = {
   'ci-graf-p': b => { $$('#ciGP .filtro').forEach(x => x.classList.toggle('on', x === b)); E.ciGP = +b.dataset.v; $('#ciGInfo').textContent = ''; pintarGrafCI(); },
   'ci-graf-cheio': () => grafCICheio(),
   'ci-filtro': b => { $$('#ciF .filtro').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; $('#ciLista').innerHTML = E.ciLinhas.filter(x => v === 'todos' || (v === 'pend' ? x.pend : x.sit === v)).sort((a, c) => a.ord - c.ord || String(a.nome).localeCompare(String(c.nome))).map(x => x.html).join('') || '<p class="vazio-p">Nenhum doador nesta situação.</p>'; },
+  'ud-abrir': () => folhaUltDoacoes(),
+  'ud-doa': async b => { const box = $('#ud_' + b.dataset.id); if (!box) return; if (!box.hidden) { box.hidden = true; return; } box.hidden = false; box.innerHTML = '<p class="nota">Carregando as doações…</p>'; box.innerHTML = doacoesHtml(await doacoesDe(b.dataset.id)); },
   'ci-doador': b => { const an = animalDe(b.dataset.id); if (!an) return; abrirFolha('Triagem · ' + an.nome, triagemDoador(an.id) + '<div id="ciDoas"><p class="nota">Carregando as doações…</p></div><div class="acoes-form"><button class="btn sec2" data-acao="ci-situacao" data-id="' + an.id + '">Situação do doador</button><button class="btn sec2" data-acao="cert-animal" data-id="' + an.id + '">Certificados</button><button class="btn sec2" data-acao="ag-marcar" data-id="' + an.id + '" data-v="' + hoje() + '">Agendar</button></div>'); ciDoacoes(an.id); },
   avisos: () => telaAvisos(E.animal),
   'av-ir': b => { fecharFolha(); abrirCarteira(E.animal, b.dataset.id); },
