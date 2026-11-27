@@ -4161,9 +4161,14 @@ async function pintarProvasRes() {
   const ref = document.querySelector("#form [data-comxm], #form [data-tb]"), antes = ref ? ref.closest(".cx") : alvo, sub = antes.parentElement && antes.parentElement.closest('[data-sub="tip"]');
   (sub || antes).insertAdjacentElement("beforebegin", box);
   try { if (!PROVAS_RES) PROVAS_RES = await ponte("provasReservadas"); } catch (_) { PROVAS_RES = []; }
-  const em = (estado.t.provas || []).map((p) => p.doador);
-  box.innerHTML = PROVAS_RES.length ? '<h3>Bolsas separadas para a prova</h3><p class="nota">Toque para usar na prova. Se a bolsa é de um pedido, o paciente, o solicitante e a clínica vêm junto.</p><div class="mini-bts" style="flex-wrap:wrap">' +
-    PROVAS_RES.map((x, i) => '<button type="button" class="btn sec mini" data-a="usarProva" data-v="' + i + '"' + (em.includes(x.doacao) ? " disabled" : "") + ">" + esc(x.unidade + (x.volume ? " · " + x.volume + " mL" : "") + (x.paciente ? " · " + x.paciente : "") + (em.includes(x.doacao) ? " ✓" : "")) + "</button>").join("") + "</div>" + trocaHtml(em) : '<h3>Bolsas separadas para a prova</h3><p class="nota">Nenhuma bolsa reservada para prova no estoque. Digite o número da doação ou leia a etiqueta.</p>';
+  const em = (estado.t.provas || []).map((p) => p.doador), emU = (estado.t.provas || []).map((p) => p.unidade).filter(Boolean);
+  const usada = (x) => emU.length ? emU.includes(x.unidade) : em.includes(x.doacao);
+  // só as bolsas deste paciente (ou deste pedido); sem paciente preenchido, aparecem todas as separadas
+  const pn = String((estado.paciente || {}).nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().split(/\s+/)[0];
+  const doPac = (x) => (estado.pedidoId && x.atendimento === estado.pedidoId) || (pn && String(x.paciente || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().split(/\s+/)[0] === pn);
+  const LST = PROVAS_RES.map((x, i) => Object.assign({ i }, x)).filter((x) => !pn && !estado.pedidoId ? true : doPac(x));
+  box.innerHTML = LST.length ? '<h3>Bolsas separadas para a prova</h3><p class="nota">Toque para usar na prova. Se a bolsa é de um pedido, o paciente, o solicitante e a clínica vêm junto.</p><div class="mini-bts" style="flex-wrap:wrap">' +
+    LST.map((x) => '<button type="button" class="btn sec mini" data-a="usarProva" data-v="' + x.i + '"' + (usada(x) ? " disabled" : "") + ">" + esc(x.unidade + (x.volume ? " · " + x.volume + " mL" : "") + (x.paciente ? " · " + x.paciente : "") + (usada(x) ? " ✓" : "")) + "</button>").join("") + "</div>" + trocaHtml(em) : '<h3>Bolsas separadas para a prova</h3><p class="nota">Nenhuma bolsa reservada para este paciente no estoque. Digite o número da doação ou leia a etiqueta.</p>';
 }
 // a prova deste pedido usa outra bolsa: trocar a reserva no estoque (libera a separada antes e reserva a testada)
 function trocaHtml(em) {
@@ -4174,7 +4179,7 @@ function trocaHtml(em) {
 }
 async function usarProva(i) {
   sairSub(); const x = (PROVAS_RES || [])[i]; if (!x || !estado.t || !Array.isArray(estado.t.provas)) return; const L = estado.t.provas;
-  let p = L.find((y) => !String(y.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); } p.doador = x.doacao;
+  let p = L.find((y) => !String(y.doador || "").trim()); if (!p) { p = { bolsa: "", doador: "", maior: "Compatível", menor: "Compatível", acDoador: "Negativo" }; L.push(p); } p.doador = x.doacao; p.unidade = x.unidade;
   if (x.atendimento && (!String(estado.paciente.nome || "").trim() || !estado.paciente.tipo)) { const vazio = !String(estado.paciente.nome || "").trim(); try { const o = await ponte("pedidoParaLaudo", { id: x.atendimento, tipo: "compat" }); if (o && o.htReceptor && estado.tipo === "compat" && !String(estado.t.htReceptor || "").trim()) estado.t.htReceptor = o.htReceptor; if (o && !vazio) { if (!estado.paciente.tipo && (o.paciente || {}).tipo) estado.paciente.tipo = o.paciente.tipo; } else if (o) { estado.receptor = true; estado.pedidoId = o.id; Object.assign(estado.paciente, o.paciente || {}); estado.resp.nome = o.resp || estado.resp.nome; if (!estado.exame.solicitante) { estado.exame.solicitante = o.solNome || o.solicitante || ""; if (o.solNome && !estado.exame.solicitanteCrmv) estado.exame.solicitanteCrmv = o.solCrmv || ""; } if (!estado.exame.clinica) estado.exame.clinica = o.clinica || ""; } } catch (_) {} }
   mudou(true); const st = $("#st"); if (st) { st.className = "st"; st.textContent = "Doação " + x.doacao + " na prova" + (x.paciente ? ", paciente " + x.paciente : "") + ". Confira."; }
 }

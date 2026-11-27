@@ -502,7 +502,15 @@ async function acaoUnidade(acao, o) {
   if (acao === "crioConcluir") { $("#uForm").innerHTML = formCrio(u); return; }
   if (acao === "transf" || acao === "recUso") { $("#uForm").innerHTML = formTransfundida(u, acao === "recUso"); carregarReceptores(); return; }
   if (acao === "etq") { $("#uForm").innerHTML = escolherEtiqueta([u.id]); previaEtiqueta(u.id); return; }
-  if (acao === "etqEnt") { const r = { id: u.id, unidades: [u.id], destino: dadosReserva(u).clinica, soBolsa: true }; $("#uForm").innerHTML = blocoEntrega(r).replace("da caixa " + esc(u.id), "da bolsa " + esc(u.id)); S.entBolsa = r; previaEntrega(r); return; }
+  if (acao === "etqEnt") {
+    const dest = dadosReserva(u).clinica || "";
+    // Intensivet confirma o recebimento lendo o código da caixa: usa a caixa da bolsa ou cria uma com ela, para a etiqueta sair com o código de barras
+    let cx = (S.rem || []).find((r) => ["preparo", "transito"].includes(r.situacao) && (r.unidades || []).includes(u.id));
+    if (!cx && /intensivet/i.test(dest) && u.local === "CVH") {
+      try { await est("estRemessaCriar", { unidades: [u.id], destino: "Intensivet", finalidade: "Transfusão" + (u.reserva ? " · " + u.reserva : ""), modalidade: "" }); await recarregar(); cx = (S.rem || []).find((r) => ["preparo", "transito"].includes(r.situacao) && (r.unidades || []).includes(u.id)); } catch (e) { toast(e.message, 6000); }
+    }
+    if (cx) { $("#uForm").innerHTML = blocoEntrega(cx); S.entBolsa = null; previaEntrega(cx); return; }
+    const r = { id: u.id, unidades: [u.id], destino: dest, soBolsa: true }; $("#uForm").innerHTML = blocoEntrega(r).replace("da caixa " + esc(u.id), "da bolsa " + esc(u.id)); S.entBolsa = r; previaEntrega(r); return; }
   if (acao === "laudoCompat" || acao === "laudoTip") {
     const ri = (u.dados || {}).reservaInfo || {};
     if (ri.atendimento) { try { await ponte("laudoPedido", { id: ri.atendimento, tipo: acao === "laudoTip" ? "tipagem" : "compat" }); } catch (e) { toast(e.message, 6000); } return; }

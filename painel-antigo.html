@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127175353">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261127175807">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1192,7 +1192,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127175353';
+  var VERSAO = '20261127175807';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -7142,11 +7142,18 @@ async function trocarProva(id, doacoes) {
   if (novas.length) await api('estAtendimentoCalculo', E.sessao, id, { prova: novas, substituirProva: true });
   E.txEst = null; return { novas, liberadas, faltam };
 }
+// reserva feita no HemoPlus: o paciente da reserva liga a bolsa ao pedido aberto do mesmo paciente (Intensivet ou clínica)
+function pedidoDaReservaHp(u, ats) {
+  const ri = (u.dados || {}).reservaInfo || {}, hp = ri.hp; if (!hp) return null;
+  const nm = semAc(String(((hp.paciente || {}).nome) || String(u.reserva || '').split('(')[0]).trim()).split(/\s+/)[0]; if (!nm) return null;
+  return ats.filter(a => !['concluido', 'cancelado'].includes(a.etapa) && semAc(String(a.paciente || ((((a.dados || {}).pedido || {}).paciente) || {}).nome || '')).split(/\s+/)[0] === nm).sort((x, y) => String(y.criado).localeCompare(String(x.criado)))[0] || null;
+}
 async function provasReservadas() {
   const d = await estoqueTx(true), ats = d.atendimentos || [];
-  return (d.unidades || []).filter(u => u.situacao === 'reservada' && u.componente === 'CH' && (/^Prova de compatibilidade|^Atendimento /.test(u.reserva || '') || ((u.dados || {}).reservaInfo || {}).atendimento)).map(u => {
-    const ri = (u.dados || {}).reservaInfo || {}, at = ri.atendimento || (String(u.reserva || '').match(/atendimento (\w+)/i) || [])[1] || (String(u.reserva || '').match(/^Atendimento (\w+)/) || [])[1] || '', a = ats.find(x => x.id === at) || {};
-    return { unidade: u.id, doacao: String(u.coleta || u.id).split(' ')[0], volume: u.volume_ml, doador: (animalDe(u.animal_id) || {}).nome || (u.dados || {}).doador || '', atendimento: at, paciente: a.paciente || (String(u.reserva || '').split(' · ')[1] || '') };
+  return (d.unidades || []).filter(u => u.situacao === 'reservada' && u.componente === 'CH' && (/^Prova de compatibilidade|^Atendimento /.test(u.reserva || '') || ((u.dados || {}).reservaInfo || {}).atendimento || ((u.dados || {}).reservaInfo || {}).hp)).map(u => {
+    const ri = (u.dados || {}).reservaInfo || {}, ph = !ri.atendimento ? pedidoDaReservaHp(u, ats) : null;
+    const at = ri.atendimento || (String(u.reserva || '').match(/atendimento (\w+)/i) || [])[1] || (String(u.reserva || '').match(/^Atendimento (\w+)/) || [])[1] || (ph ? ph.id : ''), a = ats.find(x => x.id === at) || {};
+    return { unidade: u.id, doacao: String(u.coleta || u.id).split(' ')[0], volume: u.volume_ml, doador: (animalDe(u.animal_id) || {}).nome || (u.dados || {}).doador || '', atendimento: at, paciente: a.paciente || (ri.hp ? String(u.reserva || '').split(' (')[0] : '') || (String(u.reserva || '').split(' · ')[1] || '') };
   });
 }
 // tipagem informada pela Intensivet no pedido ("DEA 1 negativo · DAL positivo", "Tipo A"); "não tipado" fica de fora
@@ -7159,7 +7166,7 @@ async function montarPedidoLaudo(id, tipo, bolsas) {
   const d = await estoqueTx(true);
   const a = (d.atendimentos || []).find(x => x.id === id); if (!a) throw new Error('Atendimento não encontrado.');
   const ped = (a.dados || {}).pedido || {}, P = ped.paciente || {}, c = (a.dados || {}).calculo || {}, V = ped.vet || {};
-  const ids = [...new Set([].concat(c.prova || [], (d.unidades || []).filter(u => u.situacao === 'reservada' && ((u.dados || {}).reservaInfo || {}).atendimento === id).map(u => u.id)))];
+  const ids = [...new Set([].concat(c.prova || [], (d.unidades || []).filter(u => u.situacao === 'reservada' && (((u.dados || {}).reservaInfo || {}).atendimento === id || (u.componente === 'CH' && (pedidoDaReservaHp(u, d.atendimentos || []) || {}).id === id))).map(u => u.id)))];
   let provas = ids.map(uid => { const u = (d.unidades || []).find(x => x.id === uid) || {}; return { bolsa: '', doador: String(u.coleta || uid).split(' ')[0], unidade: uid }; });
   // escolha feita na ficha do atendimento (marcadas e digitadas à mão) substitui a lista automática
   if (Array.isArray(bolsas)) provas = bolsas.map(String).filter(Boolean).map(b => { const u = (d.unidades || []).find(x => x.id === b || String(x.coleta || '').split(' ')[0] === b || x.id.split(' ')[0] === b) || {}; return { bolsa: '', doador: String(u.coleta || b).split(' ')[0], unidade: u.id || '' }; });
