@@ -368,9 +368,9 @@ function htmlPedidoReq(a) {
 function htmlCalculo(a) {
   const c = (a.dados || {}).calculo; if (!c) return "";
   const f = (v) => String(Math.round(+v)).replace(".", ",");
-  return '<div class="cx" style="margin:8px 0"><h2>HemoCalculadora</h2><p>CH ' + f(c.vol) + " mL" + (c.peso ? " · " + esc(String(c.peso).replace(".", ",")) + " kg" : "") + (c.modo === "cirurgia" ? " · reserva para cirurgia, " + esc(String(c.mlkgReserva || "").replace(".", ",")) + " mL/kg" + (c.htAtual != null ? " (Ht de " + f(c.htAtual) + "%)" : "") : c.htAtual != null ? " · Ht de " + f(c.htAtual) + "% para " + f(c.htDesejado) + "%" : "") + " · margem " + f(c.margem) + " mL, busca " + f(c.alvo) + " mL</p>" +
+  return '<div class="cx" style="margin:8px 0"><h2>HemoCalculadora</h2>' + (c.vol == null || !isFinite(+c.vol) ? "" : '<p>CH ' + f(c.vol) + " mL" + (c.peso ? " · " + esc(String(c.peso).replace(".", ",")) + " kg" : "") + (c.modo === "cirurgia" ? " · reserva para cirurgia, " + esc(String(c.mlkgReserva || "").replace(".", ",")) + " mL/kg" + (c.htAtual != null ? " (Ht de " + f(c.htAtual) + "%)" : "") : c.htAtual != null ? " · Ht de " + f(c.htAtual) + "% para " + f(c.htDesejado) + "%" : "") + (c.margem != null && isFinite(+c.margem) ? " · margem " + f(c.margem) + " mL, busca " + f(c.alvo) + " mL" : "") + "</p>") +
     (c.prova && c.prova.length ? "<p><small>Reservada para a prova de compatibilidade: " + esc(c.prova.join(", ")) + "</small></p>" : "") +
-    (c.escolhida ? "<p><small>Bolsa escolhida no preparo: " + esc(c.escolhida.id) + (c.escolhida.modo === "embalar" ? ", direto para a embalagem" : ", fracionamento") + (c.escolhida.testada ? "" : " (compatibilidade confirmada na troca)") + "</small></p>" : "") +
+    (c.escolhida ? "<p><small>Bolsa escolhida no preparo: " + esc(c.escolhida.id) + (c.escolhida.volume ? " · " + esc(String(c.escolhida.volume)) + " mL" : "") + (c.escolhida.modo === "embalar" ? ", direto para a embalagem" : c.escolhida.modo ? ", fracionamento" : "") + (c.escolhida.modo && !c.escolhida.testada ? " (compatibilidade confirmada na troca)" : "") + "</small></p>" : "") +
     (c.fracao ? "<p><small>Fração " + esc(c.fracao.id) + " com " + f(c.fracao.volume) + " mL separada para este atendimento</small></p>" : "") + "<p><small>Salvo " + esc(hora(c.em)) + " por " + esc(c.por || "") + "</small></p></div>";
 }
 function abrirAtendimento(id) {
@@ -430,6 +430,20 @@ function abrirAtendimento(id) {
   ligarClinica(); tiqueRelogios(); if (blocoProva && !blocoFeita && !blocoEmb) pintarProvaCx(a.id);
   // prova feita com a bolsa reservada no HemoPlus (sem passar pela HemoCalculadora): liga a bolsa ao atendimento para seguir com a caixa e as etiquetas
   if (provaFeita && !escU && !["entregue", "concluido", "cancelado", "retirada"].includes(a.etapa) && !(S.ligaBolsa || {})[a.id]) { (S.ligaBolsa = S.ligaBolsa || {})[a.id] = 1; ligarBolsaAt(a.id); }
+  if ((a.dados || {}).pedido && !(((a.dados || {}).calculo || {}).vol > 0) && !["concluido", "cancelado"].includes(a.etapa) && !(S.ligaOrc || {})[a.id]) { (S.ligaOrc = S.ligaOrc || {})[a.id] = 1; ligarOrcAt(a.id); }
+}
+// cálculo feito na HemoCalculadora antes do pedido (orçamento com o mesmo paciente): entra no atendimento
+async function ligarOrcAt(id) {
+  try {
+    const a = S.at.find((y) => y.id === id) || {}, nm = (s0) => String(s0 || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/^\d+\s*-\s*/, "").trim().split(/\s+/)[0];
+    const p = nm(a.paciente || ((((a.dados || {}).pedido || {}).paciente) || {}).nome); if (!p) return;
+    const O = (await est("estOrcamentos", 3)) || [], o = O.find((x) => !x.atendimento && (x.dados || {}).comp === "CH" && nm((x.dados || {}).paciente || ((x.dados || {}).calc || {}).paciente) === p && +(x.dados || {}).vol > 0); if (!o) return;
+    const d = o.dados, k = d.calc || {}, n = (v) => { const x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(x) ? x : null; };
+    const margem = n(k.margem), c = { comp: "CH", modo: d.modo === "cirurgia" ? "cirurgia" : "transfusao", mlkgReserva: d.modo === "cirurgia" ? n(k.resMlkg) : undefined, esp: d.esp, peso: d.peso, htAtual: d.htAtual, htDesejado: d.modo === "cirurgia" ? null : d.htDesejado, vol: d.vol, orcamento: o.id };
+    if (margem != null) { c.margem = margem; c.alvo = Math.round(+d.vol + margem); }
+    const r = await est("estAtendimentoCalculo", id, c); const i = S.at.findIndex((y) => y.id === id); if (r && i >= 0) S.at[i] = Object.assign({}, S.at[i], r);
+    if (S.atAberto === id && $("#gaveta").classList.contains("on")) abrirAtendimento(id);
+  } catch (e) { /* sem o orçamento, segue como está */ }
 }
 async function ligarBolsaAt(id) {
   try {

@@ -392,6 +392,9 @@ function gruposUnidade(u) {
     if (["CP", "PFC"].includes(u.componente) && cvh && D.qcPedido !== "novaFoto") P.push(["cor", "Avaliar coloração por foto", "Controle de qualidade da cor do plasma ou do CP."]);
     if (P.length) G.push({ k: "proc", t: "Processamento", d: "Fracionar, desleucocitar, congelar, CRIO, coloração", o: P });
     const S2 = [];
+    { const cx = (S.rem || []).find((r) => r.situacao === "preparo" && (r.unidades || []).includes(u.id));
+      if (cx) S2.push(["saidaCx", "Confirmar a saída da caixa " + cx.id, "A caixa com esta bolsa sai agora para " + cx.destino + ". Escolha quem leva; a " + cx.destino + " é avisada no app."]);
+      else if (u.situacao === "reservada" && u.local === "CVH") S2.push(["saidaCx", "Criar a caixa e dar a saída", "Cria a caixa de isopor com esta bolsa (com o QR e o código de barras de recebimento) e registra a saída."]); }
     if (!["bloqueada", "producao_crio"].includes(u.situacao)) S2.push(["transf", "Transfundida (saída manual)", "Dá saída de bolsa já transfundida que não passou pelo HemoPlusVet nem pela Mini Estação."]);
     S2.push(["mover", "Mudar de local", "Corrige onde a bolsa está guardada (CVH, Intensivet, refrigerador ou freezer) sem fazer remessa."]);
     if (u.situacao !== "bloqueada" && u.situacao !== "retirada") S2.push(["bloquear", "Bloquear", "Tira a bolsa de uso por um tempo, com motivo (ex.: aguardando conferência). Não aparece como disponível nem na HemoCalculadora. Desbloquear volta à situação de antes."]);
@@ -502,6 +505,13 @@ async function acaoUnidade(acao, o) {
   if (acao === "crioConcluir") { $("#uForm").innerHTML = formCrio(u); return; }
   if (acao === "transf" || acao === "recUso") { $("#uForm").innerHTML = formTransfundida(u, acao === "recUso"); carregarReceptores(); return; }
   if (acao === "etq") { $("#uForm").innerHTML = escolherEtiqueta([u.id]); previaEtiqueta(u.id); return; }
+  if (acao === "saidaCx") {
+    let cx = (S.rem || []).find((r) => r.situacao === "preparo" && (r.unidades || []).includes(u.id));
+    if (!cx) { const dest = dadosReserva(u).clinica || "Intensivet", at = ((u.dados || {}).reservaInfo || {}).atendimento || "";
+      await est("estRemessaCriar", { unidades: [u.id], destino: /intensivet/i.test(dest) ? "Intensivet" : dest, finalidade: at ? "Atendimento " + at + (u.reserva ? " · " + u.reserva : "") : "Transfusão" + (u.reserva ? " · " + u.reserva : ""), atendimento: at });
+      await recarregar(); cx = (S.rem || []).find((r) => r.situacao === "preparo" && (r.unidades || []).includes(u.id)); if (!cx) return toast("Não consegui criar a caixa.", 6000); }
+    $("#uForm").innerHTML = '<div class="cx" style="margin-top:12px"><h2>Saída da caixa ' + esc(cx.id) + " · " + esc(cx.destino) + '</h2><label>Quem leva</label><div class="filtros" style="margin:0"><button class="on" data-a="remMod" data-v="uber">Uber</button><button data-a="remMod" data-v="motoboy">Motoboy</button><button data-a="remMod" data-v="retirada">Retirada pela ' + esc(cx.destino) + '</button></div><label>Link do Uber (opcional)</label><input type="text" id="rUber"><div class="bts" style="margin-top:10px"><button class="btn" data-a="remSaidaOk" data-v="' + esc(cx.id) + '">A caixa saiu agora</button><button class="btn sec" data-a="etqEntCx" data-v="' + esc(cx.id) + '">Etiqueta de entrega da caixa</button></div></div>';
+    return; }
   if (acao === "etqEnt") {
     const dest = dadosReserva(u).clinica || "";
     // Intensivet confirma o recebimento lendo o código da caixa: usa a caixa da bolsa ou cria uma com ela, para a etiqueta sair com o código de barras
@@ -1643,7 +1653,12 @@ document.addEventListener("click", async (ev) => {
       if (a === "remInformar") { const m = prompt("A caixa " + v + " chegou e as bolsas já estão no lugar certo?\n\nEscreva quem informou e o motivo (por exemplo: Dra. Ana avisou por telefone, celular não abriu). Fica registrado no histórico de cada bolsa."); if (!m) return; await est("estRemessaInformarRecebida", v, m); toast("Registrado: caixa recebida e bolsas guardadas, informado por você.", 6000); fecharGaveta && fecharGaveta(); await recarregar(); return; }
       if (a === "remNovoQR") { if (!confirm("Emitir um QR novo? A etiqueta antiga deixa de valer.")) return; const r = await est("estRemessaNovoQR", v); const i = S.rem.findIndex((x) => x.id === v); if (i >= 0) S.rem[i] = r; toast("QR novo emitido. Imprima e cole na caixa.", 6000); $("#rForm").innerHTML = escolherQr("caixa", v); return; }
       if (a === "remSaida") { $("#rForm").innerHTML = '<label>Quem leva</label><div class="filtros" style="margin:0"><button class="on" data-a="remMod" data-v="motoboy">Motoboy</button><button data-a="remMod" data-v="uber">Uber</button><button data-a="remMod" data-v="retirada">Retirada pela Intensivet</button></div><label>Link do Uber (se for o caso)</label><input type="text" id="rUber"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remSaidaOk" data-v="' + esc(v) + '">A caixa saiu agora</button></div>'; return; }
-      if (a === "remSaidaOk") { const m = (document.querySelector('[data-a="remMod"].on') || {}).dataset || {}; await est("estRemessaAcao", v, "saida", { modalidade: m.v || "motoboy", linkUber: ($("#rUber") || {}).value || "" }); toast("Saída registrada. A Intensivet foi avisada no app.", 5000); }
+      if (a === "remSaidaOk") { const m = (document.querySelector('[data-a="remMod"].on') || {}).dataset || {}, link = ($("#rUber") || {}).value || ""; await est("estRemessaAcao", v, "saida", { modalidade: m.v || "motoboy", linkUber: link });
+        // atendimento da caixa: segue para "retirada · em entrega"
+        await recarregar(); const at = (S.at || []).find((x) => x.remessa_id === v && !["retirada", "entregue", "concluido", "cancelado"].includes(x.etapa));
+        if (at) { if (m.v === "uber" && link) await est("estAtendimentoEtapa", at.id, "uber", { link }).catch(() => null); await est("estAtendimentoEtapa", at.id, "retirada", {}).catch(() => null); }
+        toast("Saída registrada. A Intensivet foi avisada no app.", 5000);
+        if ($("#uForm") && S.uniAberta) { abrirUnidade(S.uniAberta); return; } }
       if (a === "remEntrega") await est("estRemessaAcao", v, "entrega", {});
       if (a === "remUber") { $("#rForm").innerHTML = '<label>Link do Uber</label><input type="text" id="rUber" value="' + esc((r && r.link_uber) || "") + '"><div class="bts" style="margin-top:10px"><button class="btn peq" data-a="remUberOk" data-v="' + esc(v) + '">Salvar</button></div>'; return; }
       if (a === "remUberOk") await est("estRemessaAcao", v, "uber", { link: $("#rUber").value.trim() });
@@ -1655,6 +1670,7 @@ document.addEventListener("click", async (ev) => {
     } catch (e) { toast(e.message || String(e), 6000); } finally { b.disabled = false; }
     return;
   }
+  if (a === "etqEntCx") { const r = S.rem.find((x) => x.id === v); if (r && $("#uForm")) { $("#uForm").insertAdjacentHTML("beforeend", blocoEntrega(r)); previaEntrega(r); } return; }
   if (a === "remMod") { b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "enviarLink") return enviarLink(v, b.dataset.q || "");
   if (a === "agTab") { S.agTab = v; pintar(); return; }
