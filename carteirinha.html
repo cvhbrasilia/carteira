@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127095757">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127101442">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -921,6 +921,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .item .t{flex:1;min-width:0}
 .item .t b{display:block;font-size:16px;color:var(--vinho)}
 .item .t small{display:block;font-size:13px;color:var(--tinta2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci-it .t small{white-space:normal}.memo-capa .capa-meio{display:flex;flex-direction:column;align-items:center;text-align:center}.memo-cf{width:9.5em;height:9.5em;border-radius:50%;background:#C6B098 center/cover no-repeat;border:.25em solid #EEE5DB;margin:.3em auto .6em;box-shadow:0 .4em 1.2em rgba(0,0,0,.25)}.memo-datas{font-size:1.1em;letter-spacing:.12em;color:#EEE5DB}.pg.memo{background:#FFFDF9}.memo-txt{flex:1;display:flex;flex-direction:column;justify-content:center;gap:.8em;padding:.6em .3em}.memo-txt p{font-size:.98em;line-height:1.55;color:var(--tinta);text-wrap:pretty}.memo-foto{flex:1;display:flex;flex-direction:column;gap:.55em;margin:0;min-height:0}.memo-foto img{flex:1;min-height:0;width:100%;object-fit:contain;border-radius:.5em;background:#F4ECE2}.memo-foto figcaption{text-align:center;color:var(--vinho);font-size:.95em;font-weight:600}.memo-foto figcaption small{display:block;color:var(--tinta2);font-weight:400;font-size:.75em;margin-top:.2em}.memo-fim{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;text-align:center}.memo-fim b{font-size:2em;color:var(--vinho)}.memo-fim span{color:var(--tinta2);letter-spacing:.08em}.pill.memo-bt{background:#EEE5DB;color:var(--vinho)}.mem-bts{display:flex;flex-direction:column;gap:22px;margin-top:14px}.mem-bts>.btn{align-self:flex-start}.mem-par{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mem-par .btn{width:100%;white-space:normal;line-height:1.25}
+.mem-op{display:flex;align-items:center;gap:8px;padding:12px 14px;border:1px solid #DCCDBB;border-radius:12px;background:#F7F1EA;font-weight:600;color:var(--vinho);cursor:pointer}.mem-op:has(input:checked){background:#C6B098;border-color:#C49A6C}#aMemBox .mem-op{color:#5F130F;opacity:1;text-transform:none;letter-spacing:0;font-size:15px;justify-content:center;margin:0}#aMemBox .mem-op input{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:none;accent-color:#A83D3D}
 .hom-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:10px}.hom-f{border:1px solid #EADFD2;border-radius:12px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:6px}.hom-f img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#F4ECE2}.hom-sel{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--vinho)}.hom-leg{font:inherit;font-size:13px;padding:6px 8px;border:1px solid #E3D7C8;border-radius:8px}.hom-pe{display:flex;justify-content:space-between;align-items:center;gap:6px}.hom-pe small{color:var(--tinta2);font-size:11.5px}.ci-doa{display:flex;gap:12px;align-items:baseline;padding:7px 2px;border-bottom:1px solid #F0E8DE}.ci-doa b{color:var(--vinho);min-width:92px}.ci-doa span{font-size:13.5px;color:var(--tinta2)}
 .item .seta{color:var(--dourado);font-size:20px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -1126,7 +1127,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127095757';
+  var VERSAO = '20261127101442';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -8716,20 +8717,23 @@ function abrirFormAnimal(a) {
       (!a.aposentadoMotivo && a.inativoMotivo && !MOTIVOS_INA.includes(a.inativoMotivo) ? '<option selected value="ina:' + esc(a.inativoMotivo) + '">Inativo: ' + esc(a.inativoMotivo) + '</option>' : '') +
       MOTIVOS_APO.map(m => '<option value="' + esc(m) + '"' + (m === a.aposentadoMotivo ? ' selected' : '') + '>Aposentado: ' + esc(m.toLowerCase()) + '</option>').join('') +
       (a.aposentadoMotivo && !MOTIVOS_APO.includes(a.aposentadoMotivo) ? '<option selected value="' + esc(a.aposentadoMotivo) + '">Aposentado: ' + esc(a.aposentadoMotivo) + '</option>' : '') + '<option value="fal:">Falecido</option></select>', 'larga') +
-    '<div class="campo" data-apo>' + '<label for="aApoEm" id="aApoEmR">Aposentado em</label>' + inp('aApoEm', a.aposentadoEm || a.inativoEm || a.afastadoEm || hoje(), 'type="date"') + '</div>' +
-    '<div class="campo larga" data-apo>' + '<label for="aApoObs">Observação (só aparece no painel)</label>' + inp('aApoObs', a.aposentadoObs || a.inativoObs || a.afastadoObs, 'autocomplete="off"') + '</div>' +
+    '<div class="campo" data-apo>' + '<label for="aApoEm" id="aApoEmR">Aposentado em</label>' + inp('aApoEm', a.falecidoEm || a.aposentadoEm || a.inativoEm || a.afastadoEm || hoje(), 'type="date"') + '</div>' +
+    '<div class="campo larga" data-apo>' + '<label for="aApoObs">Observação (só aparece no painel)</label>' + inp('aApoObs', a.falecidoObs || a.aposentadoObs || a.inativoObs || a.afastadoObs, 'autocomplete="off"') + '</div>' +
+    // falecido agora: a pergunta do memorial já aparece aqui
+    (pode('admin') && !memorialDe(a).criadoEm ? '<div class="campo larga" id="aMemBox" hidden><label>Criar o memorial agora?</label><div class="mem-par"><label class="mem-op"><input type="radio" name="aMem" value="nao"> Agora não</label><label class="mem-op"><input type="radio" name="aMem" value="sim"> Criar o memorial</label></div></div>' : '') +
     '</div></div>' +
     (a.id ? '<label class="check larga"><input type="checkbox" id="aArq"' + (a.ativo === '0' ? ' checked' : '') + '> Arquivar (some do link do responsável)</label>' : '') + '</div>' +
     '<button class="btn" id="bSalvar">Salvar</button>' + (a.id && pode('admin') ? '<button class="btn perigo" id="bExcluirAn">Excluir animal</button>' : ''), () => {
       const tipos = () => { const e = vl('aEsp'); $('#aTipo').innerHTML = TIPOS[e].map(t => '<option' + (t === (a.tipoSanguineo || '') ? ' selected' : '') + '>' + t + '</option>').join(''); };
       $('#aEsp').onchange = () => { tipos(); $('#aDalBox').hidden = vl('aEsp') !== 'Canina'; }; tipos(); $('#aDalBox').hidden = vl('aEsp') !== 'Canina';
-      const apo = () => { $('#aApoBox').hidden = !$('#aDoador').checked; const afa = /^afa:/.test(vl('aApo')), ina = /^ina:/.test(vl('aApo')), fal = /^fal:/.test(vl('aApo')); $$('[data-apo]').forEach(x => x.hidden = !vl('aApo')); $('#aApoEmR').textContent = fal ? 'Data do falecimento' : afa ? 'Afastado desde' : ina ? 'Inativo desde' : 'Aposentado em'; };
+      const apo = () => { $('#aApoBox').hidden = !$('#aDoador').checked; const afa = /^afa:/.test(vl('aApo')), ina = /^ina:/.test(vl('aApo')), fal = /^fal:/.test(vl('aApo')); $$('[data-apo]').forEach(x => x.hidden = !vl('aApo')); if ($('#aMemBox')) $('#aMemBox').hidden = !fal || !!a.falecidoEm || !$('#aDoador').checked; $('#aApoEmR').textContent = fal ? 'Data do falecimento' : afa ? 'Afastado desde' : ina ? 'Inativo desde' : 'Aposentado em'; };
       if (a.falecidoEm) $('#aApo').value = 'fal:';
       $('#aDoador').onchange = apo; $('#aApo').onchange = apo; apo();
       const bx = $('#bExcluirAn');
       if (bx) bx.onclick = () => excluirCadastro('animal', a);
       $('#bSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
-        const tipo = vl('aTipo'), nasc = nascISO(vl('aNasc'));
+        const tipo = vl('aTipo'), nasc = nascISO(vl('aNasc')), mb = $('#aMemBox'), memEsc = mb && !mb.hidden ? (($('input[name=aMem]:checked') || {}).value || '') : '-';
+        if (!memEsc) throw new Error('Escolha se cria o memorial agora.');
         if (nasc === null) throw new Error('Confira o nascimento. Use dd/mm/aaaa, mm/aaaa ou só o ano com 4 dígitos.');
         const salvo = await api('salvarAnimal', E.sessao, { id: a.id, responsavelId: a.responsavelId, nome: vl('aNome'), especie: vl('aEsp'), sexo: vl('aSexo'), raca: vl('aRaca'), nascimento: nasc, tipoSanguineo: tipo === 'Não tipado' ? '' : tipo, dal: vl('aEsp') === 'Canina' && vl('aDal') !== 'Não tipado' ? vl('aDal') : '', microchip: vl('aChip'), doador: $('#aDoador').checked,
           aposentadoMotivo: $('#aDoador').checked && !/^(afa|ina|fal):/.test(vl('aApo')) ? vl('aApo') : '', aposentadoEm: vl('aApoEm'), aposentadoObs: vl('aApoObs'),
@@ -8740,9 +8744,10 @@ function abrirFormAnimal(a) {
         fecharFolha();
         E.previa = false;
         const seguir = () => { if (E.modulo === 'carteiras' && pode('carteiras')) abrirCarteira(salvo.id, 0); else telaResp(salvo.responsavelId); };
+        if (memEsc === 'sim' && salvo.falecidoEm) { toast('Animal salvo.'); return telaMemorial(salvo.id); }
         seguir(); toast('Animal salvo.');
-        // falecido agora: sempre pergunta antes de criar o memorial
-        if (salvo.falecidoEm && !a.falecidoEm && pode('admin') && !memorialDe(salvo).criadoEm) abrirFolha('Memorial de ' + salvo.nome, '<p class="nota">Criar agora o memorial de ' + esc(salvo.nome) + '? Ele fica no painel até você publicar para o responsável.</p><div class="mem-par"><button class="btn sec2" id="memDepois">Agora não</button><button class="btn" data-acao="mem-abrir" data-id="' + salvo.id + '">Criar o memorial</button></div>',
+        // falecido agora sem a pergunta no formulário: pergunta depois de salvar
+        if (memEsc === '-' && salvo.falecidoEm && !a.falecidoEm && pode('admin') && !memorialDe(salvo).criadoEm) abrirFolha('Memorial de ' + salvo.nome, '<p class="nota">Criar agora o memorial de ' + esc(salvo.nome) + '? Ele fica no painel até você publicar para o responsável.</p><div class="mem-par"><button class="btn sec2" id="memDepois">Agora não</button><button class="btn" data-acao="mem-abrir" data-id="' + salvo.id + '">Criar o memorial</button></div>',
           () => { $('#memDepois').onclick = fecharFolha; });
       });
     });
