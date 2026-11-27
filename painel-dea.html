@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127183939">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261127190519">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -950,7 +950,7 @@ button.pdf{font-family:inherit;cursor:pointer}
 .mm-t-tit{left:0;right:0;top:calc(var(--u)*6.35);transform:translateY(-50%);text-align:center;font-family:Lora,Georgia,serif;font-weight:700;font-size:1.72em;line-height:1;color:#5F130F}
 .mm-t-l{top:calc(var(--u)*6.9);width:calc(var(--u)*2.6);height:calc(var(--u)*.06);background:#C6B098}.mm-t-l.a{left:calc(var(--u)*3.4)}.mm-t-l.b{right:calc(var(--u)*3.4)}
 .mm-t-txt{left:calc(var(--u)*3.7);top:calc(var(--u)*8.8);width:calc(var(--u)*16.6);bottom:calc(var(--u)*6.4);display:flex;flex-direction:column;gap:.75em;overflow:hidden}.mm-t-txt.seg{top:calc(var(--u)*5.2)}
-.mm-t-txt p{font-family:Lora,Georgia,serif;font-style:italic;font-size:1.02em;line-height:1.45;color:#2E241E;margin:0;overflow-wrap:break-word}
+.mm-t-txt p{font-family:Lora,Georgia,serif;font-style:italic;font-size:1.02em;line-height:1.45;color:#2E241E;margin:0;overflow-wrap:break-word}.mm-t-txt p{text-align:center}.mm-t-txt p.cred{font-size:.78em;color:#8B7B70;margin-top:.4em}.mm-t-tit.longo{font-size:1.45em}
 .mm-lam>.mm-a-f,.mm-lam>.mm-f-foto{z-index:0;overflow:hidden;background:#F1E8DD}.mm-a-f img,.mm-f-foto img{width:100%;height:100%;object-fit:cover;display:block}
 .mm-a-f,.mm-a-toque{transform:translate(-50%,-50%) rotate(var(--r))}
 .mm-a-f.a,.mm-a-toque.a{left:calc(var(--u)*7.77);top:calc(var(--u)*21.09);width:calc(var(--u)*11.6);height:calc(var(--u)*12.45);--r:-6.54deg}
@@ -1192,7 +1192,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127183939';
+  var VERSAO = '20261127190519';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -3703,7 +3703,15 @@ async function guardarFotosMem(ids) {
   }));
 }
 // texto padrão da página Homenagem (o Plínio pode editar em cada memorial)
-const MEM_TEXTO_PADRAO = 'Alguns encontros são capazes de transformar nossas vidas para sempre, e você foi um deles. Com seu jeito único, sua presença doce e seu amor incondicional, você encheu nossos dias de alegria, companheirismo e um afeto que palavras não conseguem medir.\n\nVocê nos ensinou, todos os dias, sobre lealdade, confiança e a beleza das pequenas coisas: um olhar carinhoso, a alegria de nos receber, a companhia silenciosa nos momentos difíceis e a forma leve com que fazia tudo parecer melhor.\n\nSua partida deixa saudade, mas também um coração cheio de gratidão por tudo o que vivemos juntos. As lembranças que construímos seguirão conosco, como um abraço que permanece, mesmo na sua ausência.\n\nObrigado por tanto amor, por tantas alegrias e por ter sido parte da nossa história.\nVocê sempre será lembrado, com muito carinho, respeito e amor.';
+const MEM_TEXTO_PADRAO = "A Ponte do Arco-Íris\n\nBem do lado do paraíso existe um lugar chamado Ponte do Arco-Íris. Quando um animal morre, é lá que ele encontra descanso, companhia e todo o carinho que sempre mereceu.\n\nLá existem campos e colinas onde todos podem correr e brincar juntos. Há abundância de comida, água e raios de sol, e todos estão sempre aquecidos e confortáveis. Os animais que já foram doentes e velhinhos estão renovados com saúde e vigor. Aqueles que foram machucados ou mutilados estão perfeitos e fortes novamente, exatamente como nós nos lembramos deles nos nossos sonhos, dos dias que já se foram.\n\nOs animais estão felizes e alegres. Alguns sentem saudade de alguém muito especial que ficou por aqui. Todos eles correm e brincam juntos, mas chega um dia em que um deles para de repente e olha fixo na distância. Seus olhos brilhantes estão atentos. Seu corpo impaciente começa a tremer levemente. De repente, ele se separa do grupo, voando por sobre a grama verde, mais e mais rápido.\n\nVocê foi visto. E quando você e seu amigo especial finalmente se encontrarem, ficarão unidos num reencontro de alegria para nunca mais se separarem. Os beijos de felicidade vão chover na sua face. Suas mãos vão novamente acariciar a tão amada cabecinha e você vai olhar mais uma vez dentro daqueles olhos cheios de confiança, que há muito tempo haviam partido da sua vida, mas que nunca haviam se ausentado do seu coração.\n\nAdaptado de “Rainbow Bridge”, de Edna Clyne-Rekhy (1959).";
+// texto padrão anterior: memoriais que ficaram com ele passam a mostrar o novo
+const MEM_TEXTO_ANTIGO = 'Alguns encontros são capazes de transformar nossas vidas para sempre, e você foi um deles. Com seu jeito único, sua presença doce e seu amor incondicional, você encheu nossos dias de alegria, companheirismo e um afeto que palavras não conseguem medir.\n\nVocê nos ensinou, todos os dias, sobre lealdade, confiança e a beleza das pequenas coisas: um olhar carinhoso, a alegria de nos receber, a companhia silenciosa nos momentos difíceis e a forma leve com que fazia tudo parecer melhor.\n\nSua partida deixa saudade, mas também um coração cheio de gratidão por tudo o que vivemos juntos. As lembranças que construímos seguirão conosco, como um abraço que permanece, mesmo na sua ausência.\n\nObrigado por tanto amor, por tantas alegrias e por ter sido parte da nossa história.\nVocê sempre será lembrado, com muito carinho, respeito e amor.';
+// título da página: a primeira linha curta do texto (como "A Ponte do Arco-Íris"); sem ela, Homenagem. Crédito ("Adaptado de...") no fim, menor
+function textoMem(t) {
+  let x = String(t || '').trim(); if (!x || x === MEM_TEXTO_ANTIGO.trim()) x = MEM_TEXTO_PADRAO;
+  const P = x.split(/\n\s*\n/), tit = P.length > 1 && P[0].length <= 60 && !/[.!?:]$/.test(P[0].trim()) && !/\n/.test(P[0].trim()) ? P.shift().trim() : 'Homenagem';
+  return { titulo: tit, texto: P.join('\n\n') };
+}
 const fotoImg = (f, cls) => { const c = f.crop || {}, z = c.z || 1, vid = f.tipo === 'video'; if (vid && !f.poster) return '<i class="mm-play"></i>'; return (vid ? '<i class="mm-play"></i>' : '') + '<img class="' + (cls || '') + '" src="' + urlFoto(vid ? f.poster : f.id) + '" alt="" decoding="sync" draggable="false" style="object-position:' + (c.x != null ? c.x : 50) + '% ' + (c.y != null ? c.y : 50) + '%;' + (z > 1 ? 'transform:scale(' + z + ');transform-origin:' + (c.x != null ? c.x : 50) + '% ' + (c.y != null ? c.y : 50) + '%' : '') + '">'; };
 const brMem = d => /^\d{4}$/.test(String(d || '')) ? d : br(d);
 // páginas do memorial: as páginas-modelo do Plínio (memorial-*.webp) com o nome, as fotos, as datas, o texto e a linha do tempo por cima.
@@ -3719,7 +3727,7 @@ function paginarTextoMem(texto) {
   if (!pars.length) return [''];
   const caixa = document.createElement('section'); caixa.className = 'pg mm mm-texto' + (memLarga() ? ' lg' : ''); caixa.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + (memLarga() ? 545 : 390) + 'px;height:818px;visibility:hidden';
   caixa.innerHTML = '<div class="mm-lam"><div class="mm-t-txt"></div></div>'; document.body.appendChild(caixa);
-  const box = caixa.querySelector('.mm-t-txt'), html = L => L.map(p => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
+  const box = caixa.querySelector('.mm-t-txt'), html = L => L.map(p => '<p' + (/^(adaptado de|fonte:|autor)/i.test(p) ? ' class="cred"' : '') + '>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('');
   const cabe = L => { box.innerHTML = html(L); return box.scrollHeight <= box.clientHeight + 1; };
   const pags = []; let cur = [], fila = pars.slice();
   try {
@@ -3759,7 +3767,8 @@ function paginasMemorial(an, M, regs) {
   }
   // homenagem: o texto editável; continua em outra página quando não couber
   abas.push({ t: 'mm-hom', i: ps.length });
-  paginarTextoMem(M.texto).forEach((b, k) => ps.push(pg('texto', '', (k ? '' : '<h2 class="mm-t-tit">Homenagem</h2><i class="mm-t-l a"></i><i class="mm-t-l b"></i>') +
+  const TM = textoMem(M.texto), titLongo = TM.titulo.length > 12;
+  paginarTextoMem(TM.texto).forEach((b, k) => ps.push(pg('texto', '', (k ? '' : '<h2 class="mm-t-tit' + (titLongo ? ' longo' : '') + '">' + esc(TM.titulo) + '</h2>' + (titLongo ? '' : '<i class="mm-t-l a"></i><i class="mm-t-l b"></i>')) +
     '<div class="mm-t-txt' + (k ? ' seg' : '') + '">' + b + '</div>' + bt('memed-texto', 'Editar o texto'))));
   // recordações: duas fotos por página nas Polaroides do modelo, com a data embaixo
   if (F.length || ed) {
