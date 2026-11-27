@@ -1645,7 +1645,7 @@ document.addEventListener("click", async (ev) => {
   if (a === "qrFmt") { try { localStorage.setItem("cvh_etq3", v); } catch (e) {} b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); return; }
   if (a === "qrPdf") return gerarPdfQr(b.dataset.t, v);
   if (a === "qrDireto") return b.dataset.t === "caixa" ? imprimirQRRem(S.rem.find((x) => x.id === v)) : imprimirQREq(S.eq.filter((e) => e.ativo));
-  if (["remCriar", "remSaida", "remSaidaOk", "remEntrega", "remCancelar", "remUber", "remUberOk", "remQR", "apNovo", "apDesativar"].includes(a)) {
+  if (["remCriar", "remSaida", "remSaidaOk", "remEntrega", "remCancelar", "remDesfazer", "remUber", "remUberOk", "remQR", "apNovo", "apDesativar"].includes(a)) {
     try {
       b.disabled = true; const r = S.rem.find((x) => x.id === v);
       if (a === "remCriar") { const ids = [...document.querySelectorAll("[data-sel]:checked")].map((x) => x.dataset.sel); if (!ids.length) throw new Error("Marque as bolsas da remessa."); const n = await est("estRemessaCriar", { unidades: ids, destino: $("#rDest").value.trim() || "Intensivet", finalidade: $("#rFin").value.trim() }); await recarregar(); S.aba = "rem"; pintar(); await abrirRem(n.id); toast("Remessa " + n.id + " preparada. Imprima o QR e cole do lado de fora da caixa.", 6000); return; }
