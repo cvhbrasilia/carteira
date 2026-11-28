@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128010944">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128012718">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -439,7 +439,7 @@ button{cursor:pointer}
 .cortica{position:relative;margin:14px 0;padding:16px 16px 20px;border-radius:14px;border:12px solid #8a5f3c;box-shadow:inset 0 0 0 2px #6f4a2d,inset 0 2px 14px rgba(0,0,0,.35),0 6px 18px rgba(60,30,10,.25);background-color:#C49A6C;background-image:radial-gradient(rgba(95,19,15,.18) .9px,transparent 1.4px),radial-gradient(rgba(255,245,230,.22) .8px,transparent 1.3px),radial-gradient(rgba(80,45,20,.14) 1.6px,transparent 2.2px);background-size:6px 6px,9px 9px,17px 17px;background-position:0 0,3px 4px,7px 2px}
 .cortica-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.cortica-cab h3{margin:0;color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.55);font-size:19px}
 .cortica-vazio{color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.5);margin:18px 0 6px;text-align:center}
-.postits{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:22px 18px;padding:14px 4px 4px}
+.postits{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:22px 18px;padding:14px 4px 4px}
 .postit{position:relative;padding:22px 14px 14px;min-height:150px;transform:rotate(var(--rot,0deg));box-shadow:0 10px 14px -8px rgba(40,15,5,.55),0 1px 2px rgba(0,0,0,.12);border-radius:2px 2px 14px 2px;color:#3a2a26;font-size:14px;line-height:1.35;transition:transform .15s}
 .postit:hover{transform:rotate(0) scale(1.02)}
 .postit.pi-areia{background:linear-gradient(180deg,#f6efe6,#EEE5DB)}.postit.pi-caramelo{background:linear-gradient(180deg,#f6e3c8,#ecd2ad)}.postit.pi-rosa{background:linear-gradient(180deg,#f7e3df,#efcfc9)}.postit.pi-creme{background:linear-gradient(180deg,#efe6d6,#ddcdb4)}
@@ -452,6 +452,15 @@ button{cursor:pointer}
 .pino::after{content:'';position:absolute;left:5px;top:4px;width:5px;height:4px;border-radius:50%;background:rgba(255,255,255,.75)}
 .pino.p0{background:#A83D3D}.pino.p1{background:#5F130F}.pino.p2{background:#C49A6C}.pino.p3{background:#C6B098}
 .cortica-ant{margin-top:12px}.cortica-ant summary{cursor:pointer;color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.5);font-size:14px}
+.tela-es .tela-c{max-width:1240px}
+.es-topo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;margin:14px 0}
+.es-topo .cortica{margin:0;aspect-ratio:1/1;display:flex;flex-direction:column}.es-topo .cortica .postits{align-content:start}
+.es-lado .es-meu{margin-top:0}.es-mesatual h3{margin-top:0}
+.es-linha{display:flex;align-items:center;gap:14px;width:100%;background:#EEE5DB;border:1px solid #C6B098;border-radius:12px;padding:12px 14px;margin:0 0 8px;font:inherit;text-align:left;cursor:pointer;color:#3a2a26}
+.es-linha>b{font-size:26px;color:#5F130F;min-width:38px}.es-ln{display:flex;flex-direction:column;flex:1}.es-ln strong{font-size:16px}.es-ln small{font-size:13px;color:#7a6a62}
+.es-linha.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-linha.meu>b,.es-linha.meu small{color:#fff}.es-linha.passou{opacity:.55}.es-linha.falta{border:2px dashed #A83D3D}.es-linha.falta small{color:#A83D3D;font-weight:700}
+.es-inf{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-bottom:1px solid #EEE5DB}.es-inf span{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-inf b{font-weight:600;color:#3a2a26}.es-inf small{display:block;font-weight:400;color:#7a6a62;font-size:13px;margin-top:2px}
+@media (max-width:900px){.es-topo{grid-template-columns:1fr}.es-topo .cortica{aspect-ratio:auto;min-height:320px}}
 .es-rasc{background:#EEE5DB;border-left:4px solid #C49A6C;padding:8px 12px;border-radius:8px;font-size:14px}
 .es-meu{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;background:#fff;border:1px solid #C6B098;border-left:6px solid #A83D3D;border-radius:12px;padding:12px 14px;margin:10px 0}
 .es-meu span{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-meu b{font-size:24px;color:#5F130F}.es-meu small{color:#7a6a62}.es-meu .btn{grid-row:1/4;grid-column:2}
@@ -1240,7 +1249,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128010944';
+  var VERSAO = '20261128012718';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6609,20 +6618,28 @@ function pintarEscala() {
   const R = E.es, c = R.cfg, h = R.hoje, meus = R.eu ? esMeusSab() : [];
   const ab = R.avisos.filter(a => a.situacao === 'aberto' && a.sabado >= h), outros = R.avisos.filter(a => !(a.situacao === 'aberto' && a.sabado >= h)).sort((a, b) => String(b.resolvidoEm).localeCompare(String(a.resolvidoEm))).slice(0, 6);
   const meses = {}; R.sabados.filter(x => x.data >= h.slice(0, 8) + '01').forEach(x => (meses[x.data.slice(0, 7)] = meses[x.data.slice(0, 7)] || []).push(x));
+  const mesAt = meses[h.slice(0, 7)] ? h.slice(0, 7) : Object.keys(meses)[0], outrosMeses = Object.keys(meses).filter(k => k > (mesAt || ''));
   const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
   const chipSab = x => '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
     (x.ausente ? '<em>' + esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura</em>' : x.ajuste ? '<em>' + esc(/troca/.test(x.ajuste.motivo) ? 'trocado' : 'ajustado') + '</em>' : '') + '</button>';
   raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div>' + (R.admin ? '<button class="pill escura" data-acao="es-config">Ajustar a escala</button>' : '') + '</header>' +
     (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até tocar em "Publicar" em Ajustar a escala.</p>' : '') +
-    (R.eu && meus.length ? '<section class="es-meu"><span>Seu próximo sábado</span><b>' + br(meus[0].data) + '</b><small>' + esHr(esPessoa(R.eu).sabado) + (meus[1] ? ' · depois, ' + br(meus[1].data).slice(0, 5) : '') + '</small>' +
-      '<button class="btn peq" data-acao="es-pedir" data-v="' + meus[0].data + '">Pedir troca</button></section>' : '') +
+    '<div class="es-topo">' +
     '<section class="cortica"><div class="cortica-cab"><h3>Quadro de avisos</h3>' + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
       (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum pedido de troca aberto.</p>') +
       (outros.length ? '<details class="cortica-ant"><summary>Pedidos resolvidos nos últimos 15 dias (' + outros.length + ')</summary><div class="postits">' + outros.map(postitEscala).join('') + '</div></details>' : '') +
     '</section>' +
-    '<section class="cartao es-cal"><h3>Sábados</h3><p class="nota">' + (c.ordem.length ? 'Rodízio: ' + esc(c.ordem.map(esNome1).join(', ')) + '.' : 'Rodízio ainda não definido.') + (R.eu ? ' Toque num sábado seu para pedir troca.' : '') + (R.admin ? ' Toque num sábado para trocar quem trabalha.' : '') + '</p>' +
-      Object.keys(meses).map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</section>' +
+    '<aside class="es-lado">' +
+      (R.eu && meus.length ? '<section class="es-meu"><span>Seu próximo sábado</span><b>' + br(meus[0].data) + '</b><small>' + esHr(esPessoa(R.eu).sabado) + (meus[1] ? ' · depois, ' + br(meus[1].data).slice(0, 5) : '') + '</small>' +
+        '<button class="btn peq" data-acao="es-pedir" data-v="' + meus[0].data + '">Pedir troca</button></section>' : '') +
+      '<section class="cartao es-mesatual"><h3>' + (mesAt ? nomeMes(mesAt) : 'Este mês') + '</h3>' +
+        (mesAt ? meses[mesAt].map(x => '<button class="es-linha' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span class="es-ln"><strong>' + esc(esPessoa(x.pessoaId).nome) + '</strong><small>' +
+          (x.ausente ? esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura' : x.ajuste ? esc(x.ajuste.motivo) : esHr(esPessoa(x.pessoaId).sabado)) + '</small></span><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Sem sábados definidos.</p>') +
+        '<p class="nota">' + (c.ordem.length ? 'Rodízio: ' + esc(c.ordem.map(esNome1).join(', ')) + '. ' : '') + 'Toque num sábado para ver os detalhes.</p></section>' +
+    '</aside></div>' +
+    (outrosMeses.length ? '<section class="cartao es-cal"><h3>Próximos meses</h3>' +
+      outrosMeses.map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</section>' : '') +
     '<section class="cartao"><h3>Horários da semana</h3><div class="es-hor"><table><thead><tr><th></th>' + [1, 2, 3, 4, 5].map(d => '<th>' + ES_DIAS[d] + '</th>').join('') + '<th>Sábado</th></tr></thead><tbody>' +
       c.pessoas.map(p => '<tr' + (p.id === R.eu ? ' class="meu"' : '') + '><th>' + esc(p.nome.split(' ')[0]) + '</th>' + [1, 2, 3, 4, 5].map(d => '<td>' + (p.semana[d] ? p.semana[d][0] + 'h–' + p.semana[d][1] + 'h' : '') + '</td>').join('') + '<td>' + (p.sabado ? p.sabado[0] + 'h–' + p.sabado[1] + 'h' : '') + '</td></tr>').join('') +
       '</tbody></table></div>' + (c.ausencias.filter(x => !x.ate || x.ate >= h).length ? '<p class="nota">' + c.ausencias.filter(x => !x.ate || x.ate >= h).map(x => esc(esNome1(x.pessoaId)) + ' de ' + esc(ES_AUS[x.motivo] || 'afastamento') + ' desde ' + br(x.de).slice(0, 5) + (x.ate ? ' até ' + br(x.ate).slice(0, 5) : '')).join(' · ') + '</p>' : '') + '</section>' +
@@ -6676,6 +6693,20 @@ function lerConfigEscala() {
   const ordem = pessoas.filter(p => p.pos !== '').sort((a, b) => +a.pos - +b.pos).map(p => p.id);
   const ausencias = [...document.querySelectorAll('.es-aus')].map(el => { const i = el.dataset.i; return { pessoaId: vl('esAp' + i), motivo: vl('esAm' + i), de: vl('esAd' + i), ate: vl('esAa' + i) }; }).filter(x => x.de);
   return { publicada: $('#esPub').checked, base: vl('esBase'), ordem, pessoas: pessoas.map(({ pos, ...p }) => p), ausencias };
+}
+// detalhes de um sábado: quem trabalha, horário, troca ou ajuste (motivo, quem fez e quando), afastamento
+function infoSabado(d) {
+  const x = E.es.sabados.find(s => s.data === d); if (!x) return;
+  const p = esPessoa(x.pessoaId), a = x.ajuste, aus = E.es.cfg.ausencias.find(z => z.pessoaId === x.pessoaId && z.de <= d && (!z.ate || z.ate >= d));
+  const av = E.es.avisos.filter(z => z.sabado === d || z.sabadoDevolve === d);
+  const lin = (t, v) => v ? '<div class="es-inf"><span>' + t + '</span><b>' + v + '</b></div>' : '';
+  abrirFolha('Sábado ' + br(d),
+    lin('Quem trabalha', esc(p.nome)) + lin('Horário', esHr(p.sabado || [9, 18])) +
+    (a ? lin(/troca/.test(a.motivo) ? 'Troca' : 'Ajuste', esc(a.motivo) + '<small>Pelo rodízio seria ' + esc(esPessoa(x.rodizio).nome) + '. ' + (a.quem ? 'Feito por ' + esc(a.quem) + (a.quando ? ' em ' + br(a.quando.slice(0, 10)) + ' às ' + a.quando.slice(11, 16) : '') + '.' : '') + '</small>') : '') +
+    (aus ? lin('Afastamento', esc(ES_AUS[aus.motivo] || 'afastamento') + ' desde ' + br(aus.de) + (aus.ate ? ' até ' + br(aus.ate) : ', sem data de volta') + '<small>Este sábado precisa de cobertura.</small>') : '') +
+    av.map(z => lin('Pedido de troca', esc(String(z.autorNome).split(' ')[0]) + ' pediu em ' + br(String(z.criadoEm).slice(0, 10)) + (z.texto ? '. ' + esc(z.texto) : '') + '<small>' + ({ aberto: 'Aberto', trocado: 'Trocado com ' + esc(String(z.respNome).split(' ')[0]), recusado: 'Não aceito', retirado: 'Retirado' }[z.situacao] || '') + '</small>')).join('') +
+    '<div class="acoes-form">' + (x.pessoaId === E.es.eu && d >= E.es.hoje && E.es.cfg.publicada ? '<button class="btn" data-acao="es-pedir" data-v="' + d + '">Pedir troca</button>' : '') +
+    (E.es.admin ? '<button class="btn sec2" data-acao="es-sab-editar" data-v="' + d + '">Trocar quem trabalha</button>' : '') + '</div>');
 }
 function formSabadoAdmin(d) {
   const x = E.es.sabados.find(s => s.data === d); if (!x) return;
@@ -10309,7 +10340,8 @@ const ACOES = {
   'es-aceitar-ok': async b => { b.disabled = true; try { E.es = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); fecharFolha(); toast('Troca feita.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-retirar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaAvisoRetirar', E.sessao, b.dataset.id); toast('Pedido retirado.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-sab': b => { const d = b.dataset.v, x = E.es.sabados.find(s => s.data === d); if (!x) return; if (E.es.admin) return formSabadoAdmin(d); if (x.pessoaId === E.es.eu && d >= E.es.hoje) return formPedidoTroca(d); toast(esPessoa(x.pessoaId).nome + ' trabalha neste sábado.'); },
+  'es-sab': b => infoSabado(b.dataset.v),
+  'es-sab-editar': b => formSabadoAdmin(b.dataset.v),
   'es-sab-ok': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('esSP'), vl('esSM')); fecharFolha(); toast('Sábado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-sab-rod': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, '', ''); fecharFolha(); toast('Voltou ao rodízio.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-config': () => formConfigEscala(),
