@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128181810">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128202759">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -472,7 +472,7 @@ main.tela-es .tela-c{max-width:1280px}
 .es-linha.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-linha.meu>b,.es-linha.meu small{color:#fff}.es-linha.passou{opacity:.55}.es-linha.falta{border:2px dashed #A83D3D}.es-linha.falta small{color:#A83D3D;font-weight:700}
 .es-inf{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-bottom:1px solid #EEE5DB}.es-inf span{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-inf b{font-weight:600;color:#3a2a26}.es-inf small{display:block;font-weight:400;color:#7a6a62;font-size:13px;margin-top:2px}
 @media (max-width:900px){.es-topo{grid-template-columns:1fr}.es-topo .cortica{aspect-ratio:auto;height:50vh;height:50dvh;min-height:300px}}
-.es-abas{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.es-abas{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.pt-bt{width:100%;margin-top:12px;padding:16px;font-size:17px}.pt-ok{margin:12px 0 0;font-weight:700;color:var(--vinho,#5F130F)}.pt-mes{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px}.pt-tot{margin:4px 0 8px}.pt-dia,.pt-pes{display:flex;width:100%;align-items:center;gap:10px;padding:10px 2px;border:0;border-bottom:1px solid var(--linha);background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}.pt-dia b,.pt-pes b{min-width:84px}.pt-dia span,.pt-pes span{flex:1;font-size:13.5px;color:var(--tinta2)}.pt-dia em,.pt-pes em{font-style:normal;font-weight:700;color:#A83D3D;white-space:nowrap}.pt-pes span{display:block}.pt-pes em.zero{color:var(--tinta2);font-weight:400}
 .fer-per,.fer-reg,.fer-oc{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--linha)}.fer-per>div,.fer-reg>div:first-child{display:flex;flex-direction:column;gap:3px}.fer-per>div{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}.fer-per span,.fer-reg span,.fer-oc span{font-size:13.5px;color:var(--tinta2)}.fer-per{flex-direction:column;align-items:flex-start}
 .fer-st{font-style:normal;font-size:12px;font-weight:700;color:#fff;background:var(--c);border-radius:999px;padding:3px 10px}
 .fer-pes{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;width:100%;text-align:left;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:12px 14px;margin:0 0 8px;font:inherit;color:inherit;cursor:pointer}.fer-pes b{color:#5F130F;font-size:16px}.fer-pes span{font-size:13px;color:var(--tinta2);flex:1}
@@ -1277,7 +1277,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128181810';
+  var VERSAO = '20261128202759';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6732,7 +6732,7 @@ const esNome1 = id => String(esPessoa(id).nome || '?').split(' ')[0];
 const esHr = h => h ? h[0] + 'h às ' + h[1] + 'h' : '';
 const esMeusSab = () => (E.es.sabados || []).filter(x => x.pessoaId === E.es.eu && x.data >= E.es.hoje);
 async function telaEscala() {
-  E.livro = null; fecharFolha(); carregando('Carregando a escala'); if (!E.es && !E.esAbaVolta) E.esAba = 'escala'; E.esAbaVolta = false;
+  E.livro = null; fecharFolha(); carregando('Carregando a escala'); if (!E.es && !E.esAbaVolta) E.esAba = 'escala'; E.esAbaVolta = false; if (E.abrirAba) { E.esAba = E.abrirAba; E.abrirAba = ''; } E.pt = null;
   try { E.es = await api('escalaDados', E.sessao); } catch (e) { toast(e.message, 6000); return telaHome(); }
   pintarEscala();
 }
@@ -6791,13 +6791,13 @@ function pintarEscala() {
   const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
   const chipSab = x => x.feriado && !x.pessoaId ? '<button class="es-sab fer" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>Feriado</span><em>CVH fechado</em></button>' : '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
     (x.ausente ? '<em>' + esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura</em>' : x.ajuste ? '<em>' + esc(/troca/.test(x.ajuste.motivo) ? 'trocado' : 'ajustado') + '</em>' : '') + '</button>';
-  const so = (R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio')) || E.esAba === 'ferias', conv = conversasEscala();
+  const so = (R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio')) || E.esAba === 'ferias' || E.esAba === 'ponto', conv = conversasEscala();
   E.esCores = coresEscala(ab);
   raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div></header>' +
-    (R.admin || R.eu ? '<div class="es-abas">' + (R.admin ? [['escala', 'Escala'], ['ferias', 'Férias'], ['relatorio', 'Relatório'], ['ajustes', 'Ajustes da escala']] : [['escala', 'Escala'], ['ferias', 'Férias']]).map(([k, t]) => '<button class="filtro' + ((E.esAba || 'escala') === k ? ' on' : '') + '" data-acao="es-aba" data-v="' + k + '">' + t + '</button>').join('') + '</div>' : '') +
+    (R.admin || R.eu ? '<div class="es-abas">' + (R.admin ? [['escala', 'Escala'], ['ponto', 'Ponto'], ['ferias', 'Férias'], ['relatorio', 'Relatório'], ['ajustes', 'Ajustes da escala']] : [['escala', 'Escala'], ['ponto', 'Ponto'], ['ferias', 'Férias']]).map(([k, t]) => '<button class="filtro' + ((E.esAba || 'escala') === k ? ' on' : '') + '" data-acao="es-aba" data-v="' + k + '">' + t + '</button>').join('') + '</div>' : '') +
     (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até marcar "Publicar" em Ajustes da escala.</p>' : '') +
-    (E.esAba === 'ferias' ? '<div id="esFer"></div></div></main>' : R.admin && E.esAba === 'ajustes' ? '<section class="cartao" id="esAj"></section></div></main>' : R.admin && E.esAba === 'relatorio' ? '<section id="esRel"><p class="vazio-p">Carregando o relatório…</p></section></div></main>' : '') +
+    (E.esAba === 'ferias' ? '<div id="esFer"></div></div></main>' : E.esAba === 'ponto' ? '<div id="esPonto"><p class="vazio-p">Carregando o ponto…</p></div></div></main>' : R.admin && E.esAba === 'ajustes' ? '<section class="cartao" id="esAj"></section></div></main>' : R.admin && E.esAba === 'relatorio' ? '<section id="esRel"><p class="vazio-p">Carregando o relatório…</p></section></div></main>' : '') +
     (so ? '' : '<div class="es-topo">' +
     '<section class="cortica"><i class="cq a"></i><i class="cq b"></i><i class="cq c"></i><i class="cq d"></i><i class="cortica-marca" aria-hidden="true"></i><b class="placa">Quadro de trocas e avisos</b><div class="cortica-in"><div class="cortica-cab">' + (R.admin ? '<button class="btn sec2 peq" data-acao="es-aviso">+ Aviso</button>' : '') + (R.eu && c.publicada && (R.feriados || []).some(f => !f.pessoaId) ? '<button class="btn sec2 peq" data-acao="es-fer-pedir">+ Trabalhar num feriado</button>' : '') + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
       (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum aviso ou pedido de troca no quadro.</p>') +
@@ -6821,6 +6821,7 @@ function pintarEscala() {
     '';
   telaClasse('tela-es');
   if (E.esAba === 'ferias') pintarFerias();
+  if (E.esAba === 'ponto') pintarPonto();
   if (so && E.esAba === 'ajustes') formConfigEscala();
   if (so && E.esAba === 'relatorio') relatorioEscala();
 }
@@ -6947,6 +6948,69 @@ async function feriasEnviarPdf(D, reenviar) {
   return await api('escalaFeriasEnviar', E.sessao, D.id, btoa(t), !!reenviar);
 }
 // aba Férias: funcionário vê os seus períodos e escolhe; o administrador vê a equipe toda
+// ponto: iniciar e encerrar a jornada com a localização; pedidos retroativos; hora extra do mês (administrador vê todos)
+const PT_TIPO = { inicio: 'Início da jornada', saida_cvh: 'Saí do CVH', fim: 'Fim da jornada' };
+const ptHm = h => Math.floor(h) + 'h' + (h % 1 ? p2(Math.round((h % 1) * 60)) : '');
+const ptFx = F => (F || []).map(f => ptHm(f[0]) + ' às ' + ptHm(f[1])).join(' e ');
+const ptMin = n => n >= 60 ? Math.floor(n / 60) + 'h' + (n % 60 ? p2(n % 60) : '') : n + ' min';
+const ptLocal = m => m.origem === 'retroativo' ? 'lançamento retroativo' + (m.situacao === 'pendente' ? ', aguardando aprovação' : m.aprovadoPor ? ', aprovado por ' + String(m.aprovadoPor).split(' ')[0] : '') : ({ cvh: 'no CVH', impreciso: 'localização imprecisa', fora: 'fora do CVH', semref: 'localização registrada', sem: 'sem localização' }[m.local] || '');
+const ptTipo = (m, pl) => m.tipo === 'fim' && pl ? 'Fim do plantão' : PT_TIPO[m.tipo];
+async function pintarPonto(mes) {
+  const box = $('#esPonto'); if (!box) return;
+  if (mes || !E.pt) { try { E.pt = await api('escalaPontoDados', E.sessao, mes || (E.pt && E.pt.mes) || ''); } catch (e) { box.innerHTML = '<p class="vazio-p">' + esc(e.message) + '</p>'; return; } }
+  const P = E.pt, nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
+  const mesAnt = somaDiasIso(P.mes + '-01', -1).slice(0, 7), mesProx = somaDiasIso(P.mes + '-28', 7).slice(0, 7);
+  const navMes = '<div class="pt-mes"><button class="pill" data-acao="pt-mes" data-v="' + mesAnt + '">‹</button><b>' + nomeMes(P.mes) + '</b>' + (mesProx <= P.hoje.slice(0, 7) ? '<button class="pill" data-acao="pt-mes" data-v="' + mesProx + '">›</button>' : '<span></span>') + '</div>';
+  const linhaDia = d => '<button class="pt-dia" data-acao="pt-dia" data-v="' + d.data + '" data-p="' + (d.pid || '') + '"><b>' + ES_SEM(d.data) + '</b><span>' + (d.marcas.length ? d.marcas.map(m => (m.tipo === 'inicio' ? '' : '→ ') + String(m.em).slice(11, 16) + (m.situacao === 'pendente' ? '*' : '')).join(' ') : (d.faixas.length ? 'horário ' + ptFx(d.faixas) : 'fora da escala')) + (d.obs.length ? ' · ' + esc(d.obs.join(', ')) : '') + '</span>' + (d.extra ? '<em>+' + ptMin(d.extra) + '</em>' : '<i></i>') + '</button>';
+  let html = '';
+  if (P.eu) {
+    const u = P.eu, hd = u.hojeDia, ac = u.acoes[0], pl = u.plantao;
+    const bt = { inicio: 'Iniciar jornada', saida_cvh: 'Saí do CVH', fim: pl ? 'Encerrar o plantão' : 'Encerrar jornada' }[ac];
+    html += '<section class="cartao pt-hoje"><h3>Hoje, ' + ES_SEM(P.hoje) + '</h3><p class="nota">' + (u.faixas.length ? 'Seu horário: ' + ptFx(u.faixas) + (pl ? ' · plantão do celular até ' + ptHm(pl[1]) : '') : 'Hoje você não está na escala.') + '</p>' +
+      (hd.marcas.length ? hd.marcas.map(m => '<div class="es-inf"><span>' + ptTipo(m, pl) + '</span><b>' + String(m.em).slice(11, 16) + '<small>' + esc(ptLocal(m)) + '</small></b></div>').join('') : '') +
+      (ac ? '<button class="btn pt-bt" data-acao="pt-marcar" data-v="' + ac + '">' + bt + '</button>' + (ac === 'inicio' || ac === 'saida_cvh' ? '<p class="nota">Marca só no CVH, pela localização do celular.</p>' : pl ? '<p class="nota">O plantão pode ser encerrado de onde você estiver. O que passar de ' + ptHm(pl[1]) + ' conta como hora extra.</p>' : '') : '<p class="pt-ok">' + (pl ? 'Plantão encerrado' : 'Jornada encerrada') + '.</p>') +
+      '<div class="acoes-form"><button class="btn sec2 peq" data-acao="pt-pedir">Pedir lançamento retroativo</button></div></section>';
+    if (u.pedidos.length) html += '<section class="cartao"><h3>Meus pedidos</h3>' + u.pedidos.map(m => '<div class="fer-reg"><div><b>' + PT_TIPO[m.tipo] + ' · ' + br(m.data).slice(0, 5) + ' às ' + String(m.em).slice(11, 16) + '</b><span>' + esc(m.motivo) + '</span></div><em class="fer-st" style="--c:' + ({ pendente: '#C49A6C', ok: '#5E7D4F', recusado: '#A83D3D' }[m.situacao]) + '">' + ({ pendente: 'aguardando', ok: 'aprovado', recusado: 'não aprovado' }[m.situacao]) + '</em></div>').join('') + '</section>';
+    html += '<section class="cartao"><h3>Meu ponto</h3>' + navMes + '<p class="pt-tot">Hora extra no mês <b>' + (u.mes.extra ? ptMin(u.mes.extra) : 'nenhuma') + '</b></p>' + (u.mes.dias.length ? u.mes.dias.map(linhaDia).join('') : '<p class="vazio-p">Nenhum dia neste mês.</p>') + '<p class="nota">Hora extra só depois do fim do horário do dia, com 5 minutos de tolerância. Chegar antes não conta. * aguardando aprovação.</p></section>';
+  }
+  if (P.admin) {
+    html += '<section class="cartao"><h3>Pedidos para aprovar</h3>' + (P.pendentes.length ? P.pendentes.map(m => '<div class="fer-reg"><div><b>' + esc(String(m.nome).split(' ')[0]) + ' · ' + PT_TIPO[m.tipo] + ' em ' + br(m.data).slice(0, 5) + ' às ' + String(m.em).slice(11, 16) + '</b><span>' + esc(m.motivo) + '</span></div><div class="bts"><button class="btn peq" data-acao="pt-resp" data-id="' + m.id + '" data-v="1">Aprovar</button><button class="btn sec2 peq" data-acao="pt-resp" data-id="' + m.id + '" data-v="">Recusar</button></div></div>').join('') : '<p class="vazio-p">Nenhum pedido aguardando.</p>') + '</section>';
+    html += '<section class="cartao"><h3>Hora extra da equipe</h3>' + navMes + P.relatorio.map(r => '<button class="pt-pes" data-acao="pt-pes" data-id="' + r.pessoaId + '"><b>' + esc(r.nome) + '</b><span>' + r.dias.filter(d => d.marcas.length).length + ' dias com ponto' + (r.dias.some(d => d.obs.length) ? ' · ' + r.dias.filter(d => d.obs.length).length + ' com observação' : '') + '</span>' + (r.extra ? '<em>' + ptMin(r.extra) + '</em>' : '<em class="zero">sem hora extra</em>') + '</button>').join('') +
+      '<div class="acoes-form"><button class="btn sec2 peq" data-acao="pt-pedir">Lançar para alguém</button></div></section>';
+    const L = P.local;
+    html += '<section class="cartao"><h3>Localização do CVH</h3><p class="nota">' + (L ? 'Cadastrada, com raio de ' + L.raio + ' m. O ponto só marca dentro desse raio; com o GPS impreciso, marca e fica registrado.' : 'Ainda não cadastrada. Enquanto isso, o ponto marca e só guarda a localização.') + '</p>' +
+      '<div class="grade">' + campo('ptRaio', 'Raio (metros)', inp('ptRaio', L ? L.raio : 150, 'type="number" min="50" max="1000" step="10"')) + '</div>' +
+      '<div class="acoes-form"><button class="btn sec2 peq" data-acao="pt-local">Usar minha localização atual como o CVH</button></div></section>';
+  }
+  box.innerHTML = html;
+}
+// lê a localização com o GPS (alta precisão); sem ela, segue sem coordenadas e o servidor explica
+function ptGps() {
+  return new Promise(ok => { if (!navigator.geolocation) return ok(null);
+    navigator.geolocation.getCurrentPosition(p => ok({ lat: p.coords.latitude, lng: p.coords.longitude, prec: p.coords.accuracy }), () => ok(null), { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }); });
+}
+function ptFolhaDia(data, pid) {
+  const P = E.pt, R = pid ? (P.relatorio || []).find(r => r.pessoaId === pid) : P.eu && P.eu.mes, d = R && R.dias.find(x => x.data === data); if (!d) return;
+  abrirFolha((pid ? esc(String(R.nome).split(' ')[0]) + ' · ' : '') + ES_SEM(data),
+    '<div class="es-inf"><span>Horário do dia</span><b>' + (d.faixas.length ? ptFx(d.faixas) : 'fora da escala') + (d.plantao ? '<small>plantão do celular até ' + ptHm(d.plantao[1]) + '</small>' : '') + '</b></div>' +
+    (d.marcas.length ? d.marcas.map(m => '<div class="es-inf"><span>' + ptTipo(m, d.plantao) + '</span><b>' + String(m.em).slice(11, 16) + '<small>' + esc(ptLocal(m)) + (m.dist && m.local !== 'cvh' ? ' · ' + m.dist + ' m do CVH' : '') + (m.prec && m.local === 'impreciso' ? ' · precisão de ' + m.prec + ' m' : '') + (m.motivo ? ' · ' + esc(m.motivo) : '') + '</small></b></div>').join('') : '<p class="vazio-p">Sem marcação.</p>') +
+    '<div class="es-inf"><span>Hora extra</span><b>' + (d.extra ? ptMin(d.extra) : 'nenhuma') + '</b></div>' + (d.obs.length ? '<div class="es-inf"><span>Observação</span><b>' + esc(d.obs.join(', ')) + '</b></div>' : ''));
+}
+function ptFolhaPessoa(pid) {
+  const r = (E.pt.relatorio || []).find(x => x.pessoaId === pid); if (!r) return;
+  abrirFolha(esc(r.nome) + ' · ponto', '<p class="pt-tot">Hora extra no mês <b>' + (r.extra ? ptMin(r.extra) : 'nenhuma') + '</b></p>' +
+    (r.dias.length ? r.dias.map(d => '<button class="pt-dia" data-acao="pt-dia" data-v="' + d.data + '" data-p="' + pid + '"><b>' + ES_SEM(d.data) + '</b><span>' + (d.marcas.length ? d.marcas.map(m => (m.tipo === 'inicio' ? '' : '→ ') + String(m.em).slice(11, 16) + (m.situacao === 'pendente' ? '*' : '')).join(' ') : 'sem marcação') + (d.obs.length ? ' · ' + esc(d.obs.join(', ')) : '') + '</span>' + (d.extra ? '<em>+' + ptMin(d.extra) + '</em>' : '<i></i>') + '</button>').join('') : '<p class="vazio-p">Nenhum dia neste mês.</p>') + (r.recusados ? '<p class="nota">' + r.recusados + ' pedido(s) não aprovado(s) neste mês.</p>' : ''));
+}
+function ptFormPedir() {
+  const P = E.pt, adm = P.admin, pes = E.es.cfg.pessoas, eu = P.eu, temPl = adm ? pes.some(p => p.plantao) : eu && pes.some(p => p.id === eu.pessoaId && p.plantao);
+  abrirFolha(adm ? 'Lançar ponto' : 'Pedir lançamento retroativo',
+    '<div class="grade">' + (adm ? campo('ptP', 'Quem', '<select id="ptP">' + pes.map(p => '<option value="' + p.id + '">' + esc(p.nome) + '</option>').join('') + '</select>') : '') +
+    campo('ptD', 'Dia', inp('ptD', P.hoje, 'type="date" max="' + P.hoje + '" min="' + somaDiasIso(P.hoje, -45) + '"')) +
+    campo('ptT', 'O que', '<select id="ptT"><option value="inicio">Início da jornada</option>' + (temPl ? '<option value="saida_cvh">Saí do CVH</option>' : '') + '<option value="fim">' + (temPl && !adm ? 'Fim da jornada ou do plantão' : 'Fim da jornada') + '</option></select>') +
+    campo('ptH', 'Horário', inp('ptH', '', 'type="time"')) + '</div>' +
+    campo('ptM', 'Motivo', '<textarea id="ptM" rows="2" maxlength="300" placeholder="Ex.: esqueci de encerrar; acompanhei o Uber até a clínica"></textarea>', 'larga') +
+    '<p class="nota">' + (adm ? 'Lançado por você, já vale.' : 'Vale depois que o Plínio aprovar.') + '</p><div class="acoes-form"><button class="btn" data-acao="pt-pedir-ok">' + (adm ? 'Lançar' : 'Enviar o pedido') + '</button></div>');
+}
 function pintarFerias() {
   const box = $('#esFer'); if (!box) return;
   const R = E.es, F = R.ferias || { pessoas: [], ocupados: [] }, h = R.hoje, nome = id => esNome1(id);
@@ -10849,7 +10913,29 @@ const ACOES = {
   'es-sab-ok': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('esSP'), vl('esSM')); fecharFolha(); toast('Sábado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-sab-rod': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, '', ''); fecharFolha(); toast('Voltou ao rodízio.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-config': () => { E.esAba = 'ajustes'; pintarEscala(); },
-  'es-aba': b => { E.esAba = b.dataset.v; pintarEscala(); },
+  'es-aba': b => { E.esAba = b.dataset.v; if (E.esAba === 'ponto') E.pt = null; pintarEscala(); },
+  'pt-mes': b => pintarPonto(b.dataset.v),
+  'pt-dia': b => ptFolhaDia(b.dataset.v, b.dataset.p),
+  'pt-pes': b => ptFolhaPessoa(b.dataset.id),
+  'pt-pedir': () => ptFormPedir(),
+  'pt-marcar': async b => {
+    const t = b.dataset.v; b.disabled = true; const txt = b.textContent; b.textContent = 'Lendo a localização…';
+    const g = await ptGps(); b.textContent = 'Marcando…';
+    try { E.pt = await api('escalaPontoMarcar', E.sessao, Object.assign({ tipo: t }, g || {})); toast({ inicio: 'Jornada iniciada.', saida_cvh: 'Saída do CVH marcada.', fim: 'Encerrado.' }[t]); pintarPonto(); }
+    catch (e) { toast(e.message, 8000); b.disabled = false; b.textContent = txt; }
+  },
+  'pt-pedir-ok': async b => {
+    const o = { pessoaId: vl('ptP'), data: vl('ptD'), tipo: vl('ptT'), hora: vl('ptH'), motivo: vl('ptM') }; if (!o.hora) return toast('Informe o horário.');
+    b.disabled = true; try { E.pt = await api('escalaPontoPedir', E.sessao, o); fecharFolha(); toast(E.pt.admin ? 'Ponto lançado.' : 'Pedido enviado ao Plínio.'); pintarPonto(); } catch (e) { toast(e.message, 6000); b.disabled = false; }
+  },
+  'pt-resp': async b => { b.disabled = true; try { E.pt = await api('escalaPontoResponder', E.sessao, b.dataset.id, !!b.dataset.v, E.pt.mes); toast(b.dataset.v ? 'Aprovado.' : 'Recusado.'); pintarPonto(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'pt-local': async b => {
+    if (!confirm('Você está no CVH agora? A sua localização atual passa a ser a referência do ponto.')) return;
+    b.disabled = true; b.textContent = 'Lendo a localização…'; const g = await ptGps();
+    if (!g) { toast('Não consegui a localização. Ligue a localização do aparelho e permita o acesso para o painel.', 7000); b.disabled = false; b.textContent = 'Usar minha localização atual como o CVH'; return; }
+    if (g.prec > 60) toast('A precisão do GPS está em ' + Math.round(g.prec) + ' m. Se puder, tente perto de uma janela.', 6000);
+    try { const raio = Math.round(+vl('ptRaio') || 150); E.es = await api('escalaConfig', E.sessao, Object.assign({}, E.es.cfg, { local: { lat: g.lat, lng: g.lng, raio: raio } })); toast('Localização do CVH salva.'); E.pt = null; pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; }
+  },
   'es-fer-pessoa': b => ferPessoaFolha(b.dataset.id),
   'es-fer-escolher': b => formFerias(b.dataset.id || ''),
   'es-fer-reg': b => formFeriasReg(b.dataset.id),
