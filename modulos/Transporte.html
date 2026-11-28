@@ -80,7 +80,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 #camE{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}
 #camE.on{display:flex}
 #camE video{flex:1;width:100%;object-fit:cover;min-height:0}
-#camE .mira{position:absolute;left:50%;top:38%;width:70vmin;height:42vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:16px;pointer-events:none}
+#camE .mira{position:absolute;left:50%;top:38%;width:86vmin;height:30vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:16px;pointer-events:none}
 #camE .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
 #camE .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
 #camE .flash{position:absolute;inset:0;background:rgba(47,107,69,.35);opacity:0;transition:opacity .25s;pointer-events:none}
@@ -89,6 +89,7 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 #cam.on{display:flex}
 #cam video{flex:1;width:100%;object-fit:cover;min-height:0}
 #cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+#cam.barras .mira{width:86vmin;height:30vmin;border-radius:16px}
 #cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
 #cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
 #cam .linha{display:flex;gap:8px}
@@ -689,7 +690,7 @@ let JSQR = null, CAM_FIM = null;
 function carregarJsQR() { if (JSQR) return JSQR; JSQR = new Promise((ok, erro) => { const tenta = (src, depois) => { const s = document.createElement("script"); s.src = src; s.onload = () => window.jsQR ? ok(window.jsQR) : depois(); s.onerror = depois; document.head.appendChild(s); }; tenta("bibliotecas/jsQR.js", () => tenta("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js", () => { JSQR = null; erro(new Error("leitor")); })); }); return JSQR; }
 function lerQR(titulo) {
   return new Promise(async (resolve) => {
-    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
+    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.toggle("barras", !/\bQR\b/.test(titulo)); cam.classList.add("on");
     let fluxo = null, vivo = true, det = null, jq = null, pai = false; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
     const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bipe(true); cam.classList.remove("on"); if (pai) soltarCamPainel(); else if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
     CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
