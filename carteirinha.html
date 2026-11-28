@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261127210305">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128000056">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1210,7 +1210,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261127210305';
+  var VERSAO = '20261128000056';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6338,7 +6338,7 @@ async function telaAgenda(dia) {
   const mIni = d0.slice(0, 8) + '01', mFim = somaDiasIso(somaDiasIso(mIni, 40).slice(0, 8) + '01', -1);
   if (!E.agenda || E.agenda.de > [sem, inicioSemana(mIni)].sort()[0] || E.agenda.ate < [somaDiasIso(sem, 6), somaDiasIso(inicioSemana(mFim), 6)].sort()[1]) { carregando('Abrindo a agenda'); try { E.agenda = null; await carregarAgenda(inicioSemana(mIni) < sem ? inicioSemana(mIni) : sem); } catch (e) { toast(e.message, 6000); return telaHome(); } }
   if (pode('admin') && !E.alertas && !E.carregandoAl) { E.carregandoAl = true; carregarAlertas().then(() => { E.carregandoAl = false; if ($('.ag-tira') && E.diaAg === d0) telaAgenda(d0); }).catch(() => { E.carregandoAl = false; }); }
-  const itens = E.agenda.itens, h = hoje(), prev = previsoesDoacao();
+  const itens = expandirAgenda(E.agenda.itens, E.agenda.de, E.agenda.ate), h = hoje(), prev = previsoesDoacao();
   const doDia = itens.filter(a => a.data === d0 && a.status !== 'contato' && !(a.status === 'cancelado' && /^Previsão cancelada/.test(a.titulo || ''))).sort((a, b) => a.hora.localeCompare(b.hora));
   // faltou nos últimos 7 dias, sem outro agendamento do mesmo animal depois e sem "não vai remarcar"
   const remarcar = pode('agenda') ? itens.filter(a => a.status === 'faltou' && a.data >= somaDiasIso(h, -7) && a.data <= h && !a.naoRemarcar && !(a.animalId && itens.some(n => n.id !== a.id && n.animalId === a.animalId && !['cancelado', 'faltou', 'contato'].includes(n.status) && n.data >= a.data))).sort((x, y) => x.data.localeCompare(y.data)) : [];
@@ -6364,6 +6364,31 @@ async function telaAgenda(dia) {
     '</div></div></main>';
   const ir = raiz.querySelector('.ag-ir'); ir.onchange = () => { if (ir.value) telaAgenda(ir.value); };
   telaClasse('tela-ag');  camarasNaAgenda(d0, sem);
+}
+// avisos particulares que se repetem: cada data do período vira um item (editar mexe na série)
+// dia útil: segunda a sexta, fora os feriados nacionais, os do DF e o carnaval
+const DU = (() => {
+  const pascoa = (y) => { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1; return Date.UTC(y, mes - 1, dia); };
+  const feriado = (y, m, dd) => { const md = String(m).padStart(2, '0') + '-' + String(dd).padStart(2, '0'); if (['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '11-30', '12-25'].includes(md)) return true; const t = Date.UTC(y, m - 1, dd), p = pascoa(y); return [-48, -47, -2, 60].some((o) => t === p + o * 864e5); };
+  const util = (y, m, dd) => { const w = new Date(Date.UTC(y, m - 1, dd)).getUTCDay(); return w > 0 && w < 6 && !feriado(y, m, dd); };
+  const nUtil = (y, m, dd) => { let n = 0; for (let x = 1; x <= dd; x++) if (util(y, m, x)) n++; return n; };
+  return { util, nUtil };
+})();
+function nDiaUtil(iso) { const [y, m, d] = iso.split('-').map(Number); return DU.nUtil(y, m, d) + (DU.util(y, m, d) ? 0 : 1); }
+function ocorreAg(a, d) {
+  if (d < a.data) return false; if (!a.repetir) return d === a.data;
+  const [y0, m0, d0] = a.data.split('-').map(Number), [y, m, dd] = d.split('-').map(Number), ult = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  if (a.repetir === 'util') return DU.util(y, m, dd) && DU.nUtil(y, m, dd) === nDiaUtil(a.data);
+  if (a.repetir === 'semana') return Math.round((Date.UTC(y, m - 1, dd) - Date.UTC(y0, m0 - 1, d0)) / 864e5) % 7 === 0;
+  if (a.repetir === 'mes') return dd === Math.min(d0, ult);
+  if (a.repetir === 'ano') return m === m0 && dd === Math.min(d0, ult);
+  return false;
+}
+function expandirAgenda(L, de, ate) {
+  const out = [];
+  L.forEach(a => { if (!a.repetir || a.status === 'cancelado') return out.push(a);
+    for (let d = a.data > de ? a.data : de; d <= ate; d = somaDiasIso(d, 1)) if (ocorreAg(a, d)) out.push(Object.assign({}, a, { data: d, serie: a.data })); });
+  return out;
 }
 // calendário do mês inteiro: no computador ao lado, com os agendamentos de cada dia; no celular embaixo, com pontinhos
 function calendarioMes(d0, itens, prev) {
@@ -6410,14 +6435,14 @@ function cartaoAgenda(a) {
   const tri = a.tipo === 'doacao' && an ? '<details class="ag-tri"><summary>Pré-triagem</summary>' + triagemDoador(an.id) + '</details>' : '';
   const ed = pode('agenda');
   return '<article class="ag-c st-' + a.status + '" style="--c:' + t[1] + '"><div class="ag-h"><b>' + a.hora + '</b><small>' + fim + '</small></div><div class="ag-m">' +
-    '<div class="ag-l1"><span class="ag-tipo">' + t[0] + '</span><span class="ag-st">' + AG_ST[a.status] + '</span></div>' +
+    '<div class="ag-l1"><span class="ag-tipo">' + (a.particular ? 'Particular · ' + (({ semana: 'toda semana', mes: 'todo mês', ano: 'todo ano' }[a.repetir] || (a.repetir === 'util' ? 'todo mês no ' + nDiaUtil(a.serie || a.data) + 'º dia útil' : 'aviso'))) : t[0]) + '</span>' + (a.particular ? '' : '<span class="ag-st">' + AG_ST[a.status] + '</span>') + '</div>' +
     '<h4>' + esc(an ? an.nome : a.titulo || 'Sem animal') + (an && tipoTxt(an) ? ' <small>' + esc(tipoTxt(an)) + '</small>' : '') + '</h4>' +
     (rp ? '<p class="ag-rp">' + esc(rp.nome) + (rp.telefone ? ' · ' + esc(rp.telefone) : '') + '</p>' : '') + (a.titulo && an ? '<p class="ag-rp">' + esc(a.titulo) + '</p>' : '') +
     (a.obs ? '<p class="ag-obs">' + esc(a.obs) + '</p>' : '') + tri +
     (ed ? '<div class="ag-bts">' +
       (rp && rp.telefone && a.status === 'agendado' ? '<a class="btn sec2 peq" href="' + esc(whatsAgenda(a, an, rp)) + '" target="_blank" rel="noopener">Confirmar pelo WhatsApp</a>' : '') +
-      (a.status === 'agendado' ? '<button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="confirmado">Confirmado</button>' : '') +
-      (a.status === 'agendado' || a.status === 'confirmado' ? '<button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="realizado">Realizado</button><button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="faltou">Faltou</button>' : '') +
+      (a.status === 'agendado' && !a.particular ? '<button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="confirmado">Confirmado</button>' : '') +
+      ((a.status === 'agendado' || a.status === 'confirmado') && !a.particular ? '<button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="realizado">Realizado</button><button class="btn sec2 peq" data-acao="ag-status" data-id="' + a.id + '" data-v="faltou">Faltou</button>' : '') +
       (a.status === 'faltou' || a.status === 'cancelado' ? '<button class="btn peq" data-acao="ag-reagendar" data-id="' + a.id + '">Reagendar</button>' : '') +
       (a.tipo === 'doacao' && an && pode('fichas') && a.status !== 'cancelado' ? '<button class="btn sec2 peq" data-acao="ag-ficha" data-id="' + an.id + '">Ficha de doação</button>' : '') +
       '<button class="btn sec2 peq" data-acao="ag-editar" data-id="' + a.id + '">Editar</button></div>' : '') +
@@ -6442,7 +6467,11 @@ function formAgenda(a) {
       campo('agAn', 'Animal', inp('agAn', an ? nomeAn(an) : '', 'autocomplete="off" placeholder="Digite o nome do animal ou do responsável"'), 'larga') +
       campo('agTit', 'Descrição (opcional)', inp('agTit', a.titulo || ''), 'larga') +
       (a.id ? campo('agSt', 'Situação', '<select id="agSt">' + Object.entries(AG_ST).map(([k, t]) => '<option value="' + k + '"' + (k === a.status ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>', 'larga') : '') +
-      campo('agObs', 'Observações', '<textarea id="agObs" rows="2">' + esc(a.obs || '') + '</textarea>', 'larga') + '</div>' +
+      campo('agObs', 'Observações', '<textarea id="agObs" rows="2">' + esc(a.obs || '') + '</textarea>', 'larga') +
+      '<label class="larga" style="display:flex;gap:8px;align-items:flex-start;font-weight:600;color:var(--tinta)"><input type="checkbox" id="agPart"' + (a.particular ? ' checked' : '') + '> Particular: só eu vejo, não vai para o Google Agenda e o aviso chega só no meu celular</label>' +
+      '<div class="larga grade" id="agPartOp"' + (a.particular ? '' : ' hidden') + '>' +
+        campo('agRep', 'Repetir', '<select id="agRep">' + [['', 'Não repetir'], ['semana', 'Toda semana'], ['mes', 'Todo mês, no mesmo dia'], ['util', 'Todo mês, no mesmo dia útil'], ['ano', 'Todo ano']].map(([k, t]) => '<option value="' + k + '"' + ((a.repetir || '') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>') +
+        '<p class="nota larga" id="agUtil"></p>' + campo('agAvi', 'Avisar', '<select id="agAvi">' + [['0', 'Na hora'], ['15', '15 minutos antes'], ['60', '1 hora antes'], ['1440', '1 dia antes']].map(([k, t]) => '<option value="' + k + '"' + (String(a.avisar || '0') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>') + '</div></div>' +
     '<p class="nota" id="agConf"></p>' +
     '<div class="acoes-form"><button class="btn" data-acao="ag-salvar" data-id="' + (a.id || '') + '">Salvar</button>' + (a.id ? '<button class="btn sec2" data-acao="ag-excluir" data-id="' + a.id + '">Excluir</button>' : '') + '</div>',
     c => {
@@ -6450,6 +6479,9 @@ function formAgenda(a) {
       // aviso de conflito de horário no mesmo dia
       const conf = () => { const d = $('#agData').value, hh = $('#agHora').value; const m = (E.agenda ? E.agenda.itens : []).filter(x => x.id !== a.id && x.data === d && x.status !== 'cancelado' && x.hora === hh); $('#agConf').textContent = m.length ? 'Já existe ' + m.length + (m.length === 1 ? ' agendamento' : ' agendamentos') + ' neste horário.' : ''; };
       ['agData', 'agHora'].forEach(i => c.querySelector('#' + i).addEventListener('input', conf)); conf();
+      const nu = () => { const v = c.querySelector('#agRep').value, d = c.querySelector('#agData').value; c.querySelector('#agUtil').textContent = v === 'util' && d ? 'Repete todo mês no ' + nDiaUtil(d) + 'º dia útil (a data escolhida é o ' + nDiaUtil(d) + 'º dia útil do mês). Para o 5º dia útil, escolha como data o 5º dia útil de um mês.' : ''; };
+      ['agRep', 'agData'].forEach(i => c.querySelector('#' + i).addEventListener('input', nu)); c.querySelector('#agRep').addEventListener('change', nu); nu();
+      c.querySelector('#agPart').addEventListener('change', e => { c.querySelector('#agPartOp').hidden = !e.target.checked; if (e.target.checked && c.querySelector('#agTipo').value === 'doacao') c.querySelector('#agTipo').value = 'outro'; });
     });
   E.agAnimais = ativos.map(x => [nomeAn(x), x.id]);
 }
@@ -10248,7 +10280,9 @@ const ACOES = {
     const nome = $('#agAn').value.trim(), achou = (E.agAnimais || []).find(x => semAc(x[0]) === semAc(nome)) || (E.agAnimais || []).find(x => semAc(x[0]).split(' · ')[0] === semAc(nome));
     if (nome && !achou) return toast('Escolha o animal na lista que aparece ao digitar.');
     if (!nome && !$('#agTit').value.trim()) return toast('Escolha o animal ou escreva uma descrição.');
-    const o = { id: b.dataset.id, data: $('#agData').value, hora: $('#agHora').value, tipo: $('#agTipo').value, duracao: $('#agDur').value, animalId: achou ? achou[1] : '', titulo: $('#agTit').value, obs: $('#agObs').value, status: $('#agSt') ? $('#agSt').value : 'agendado' };
+    const part = !!($('#agPart') || {}).checked; if (part && !$('#agTit').value.trim()) return toast('Escreva o que é o aviso particular (descrição).');
+    const o = { id: b.dataset.id, data: $('#agData').value, hora: $('#agHora').value, tipo: $('#agTipo').value, duracao: $('#agDur').value, animalId: achou ? achou[1] : '', titulo: $('#agTit').value, obs: $('#agObs').value, status: $('#agSt') ? $('#agSt').value : 'agendado',
+      particular: part, repetir: part ? $('#agRep').value : '', avisar: part ? $('#agAvi').value : '' };
     b.disabled = true;
     try {
       const r = await api('agendaSalvar', E.sessao, o), l = E.agenda.itens, i = l.findIndex(x => x.id === r.id);
