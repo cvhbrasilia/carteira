@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128141134';
+  var VERSAO = '20261128141513';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -235,7 +235,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fiorino"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="fiorino-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="fiorino-escuro-192.png?v=2"><link rel="icon" type="image/png" href="fiorino-192.png?v=2"><link rel="manifest" href="fiorino.webmanifest?v=20261128141134">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fiorino"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="fiorino-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="fiorino-escuro-192.png?v=2"><link rel="icon" type="image/png" href="fiorino-192.png?v=2"><link rel="manifest" href="fiorino.webmanifest?v=20261128141513">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Fiorino</title>
 <style>
@@ -1815,7 +1815,7 @@ function roteiroFotosCarro(fim) {
     await ligar();
     tela.innerHTML = '<div class="cf-cam">' + (stream ? '<video id="cfV" autoplay playsinline muted></video>' : '<div class="cf-sem">A câmera abre ao tocar em "Abrir a câmera".</div>') + '<img id="cfImg" alt="" hidden></div>' +
       '<div class="cf-info"><div class="cf-top"><b>Fotos da Fiorino · ' + (i + 1) + ' de ' + L.length + '</b><button class="btn sec peq" id="cfSair">Cancelar</button></div>' +
-      '<h2>' + esc(nome) + (obrig ? "" : ' <small>(opcional)</small>') + '</h2><img class="cf-des" src="fiorino-foto-' + k + '.webp?v=2" alt="">' +
+      '<h2>' + esc(nome) + (obrig ? "" : ' <small>(opcional)</small>') + '</h2><img class="cf-des" src="fiorino-foto-' + k + '.webp?v=3" alt="">' +
       '<p class="cf-txt">Fique onde está a câmera no desenho, na diagonal do carro, e pegue na mesma foto a parte destacada, com ' + (fr ? "a frente" : "a traseira") + ' e o lado ' + (mot ? "do motorista" : "do passageiro") + '.</p><div id="cfMsg"></div><div class="bts" id="cfBts"></div></div>';
     const v = document.getElementById("cfV"), im = document.getElementById("cfImg"), bts = document.getElementById("cfBts");
     if (v) { v.srcObject = stream; v.play().catch(() => {}); }
