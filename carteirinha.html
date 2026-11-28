@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128125854">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128130909">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1156,6 +1156,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
 /* tela inicial com os módulos */
 .ola{font-size:15px;color:var(--tinta2);margin-top:-6px}
 .mods{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tela-home .mods .mod{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mods.org .mod{animation:modTreme .3s ease-in-out infinite alternate;touch-action:none}.mods.org .mod:nth-child(2n){animation-delay:.15s}
+@keyframes modTreme{from{transform:rotate(-.6deg)}to{transform:rotate(.6deg)}}
+.mods .mod.arrastando{animation:none;z-index:5;box-shadow:0 10px 26px rgba(95,19,15,.25);opacity:.95;pointer-events:none;transition:none}
+.mods-org{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 24px));z-index:50;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#EEE5DB;border:1px solid #C6B098;border-radius:12px;padding:8px 10px 8px 14px;box-shadow:0 6px 18px rgba(95,19,15,.18);color:#5F130F;font-weight:600;font-size:14px}
 /* computador: o início do painel ocupa a tela na horizontal; no celular continua em coluna */
 @media (min-width:980px) and (orientation:landscape){.tela-larga .tela-c{max-width:1120px;padding-left:28px;padding-right:28px}.tela-larga .pf-ks{grid-template-columns:repeat(6,1fr)}#hsTela .pf-ks{grid-template-columns:repeat(4,1fr)}}
 @media (min-width:980px) and (orientation:landscape){.tela-home .tela-c{max-width:1240px;padding-left:32px;padding-right:32px}.tela-home .mods{grid-template-columns:repeat(4,1fr);gap:16px}.tela-home .mod{min-height:150px}}
@@ -1267,7 +1272,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128125854';
+  var VERSAO = '20261128130909';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6650,6 +6655,7 @@ function telaHome() {
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
   const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte') && (m.k !== 'escala' || E.d.naEscala)).map(m => m.k === 'transporte' && marcaDea() ? Object.assign({}, m, { t: 'Logística DEA+', d: 'Motoboy, rotas, destinos e quilometragem' }) : m);
+  ordenarMeusMods(meus);
   E.meusMods = meus;
   if (pode('admin') && temPasskey() && ehCelular() && !navigator.webdriver) setTimeout(async () => { try { if (localStorage.getItem('cvh_faceid_ofertado') || await apiBruto('chaveTem', E.sessao)) return; localStorage.setItem('cvh_faceid_ofertado', '1'); if (confirm('Cadastrar o Face ID ou a digital neste aparelho? Você passa a entrar e confirmar ações graves sem digitar a senha.')) { await cadastrarFaceId(); toast('Face ID cadastrado.'); } } catch (_) {} }, 1500);
   raiz.innerHTML = FUNDO_PADRAO('cheio') + '<main class="tela tela-home com-padrao"><div class="tela-c">' +
@@ -6665,8 +6671,54 @@ function telaHome() {
       : '<section class="cartao"><p class="vazio-p">Seu usuário ainda não tem módulos liberados. Fale com o administrador do painel.</p></section>') +
     '<div class="rodape-home"><button class="btn sec2 peq" data-acao="conta">Minha conta</button>' + (ehCelular() ? '<button class="btn sec2 peq" data-acao="entrar-pc">Entrar no computador</button>' : '') + (pode('admin') ? '<button class="btn sec2 peq" data-acao="compartilhar-painel">Compartilhar o painel com a equipe</button>' : '') + (pode('admin') ? '<button class="btn sec2 peq" data-acao="ajustes">Ajustes e usuários</button>' : '') + '<button class="btn sec2 peq" data-acao="sair">Sair</button></div>' +
     '</div></main>';
+  arrumarMods();
   const bg = $('#buscaG'); if (bg) bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
   if (bg) bg.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; const ms = modulosBusca(bg.value); if (ms.length === 1) { ev.preventDefault(); abrirModPorK(ms[0].k); } });
+}
+/* ── ordem dos módulos na tela inicial: tocar e segurar um módulo libera arrastar; o número acompanha a posição ── */
+function ordenarMeusMods(meus) {
+  const ord = ((E.u && E.u.ordemModulos) || []), pos = k => { const i = ord.indexOf(k); return i < 0 ? 1e3 + MODS.findIndex(m => m.k === k) : i; };
+  meus.sort((a, b) => pos(a.k) - pos(b.k));
+  meus.forEach((m, i) => { meus[i] = Object.assign({}, m, { n: i + 1 }); });
+}
+function arrumarMods() {
+  const g = $('.tela-home .mods'); if (!g) return;
+  let t = null, sx = 0, sy = 0, edit = false, arr = null, ox = 0, oy = 0, aposLongo = false, rolar = null;
+  const numerar = () => g.querySelectorAll('.mod').forEach((b, i) => { const n = b.querySelector('.mod-n'); if (n) { n.textContent = i + 1; n.setAttribute('aria-label', 'módulo ' + (i + 1)); } });
+  const barra = () => { if ($('#modsOrg')) return; g.insertAdjacentHTML('beforebegin', '<div class="mods-org" id="modsOrg"><span>Arraste os módulos para mudar a ordem</span><button type="button" class="btn peq" id="modsOk">Pronto</button></div>'); $('#modsOk').onclick = salvar; };
+  const entrar = () => { edit = true; g.classList.add('org'); barra(); try { navigator.vibrate && navigator.vibrate(15); } catch (_) {} };
+  const salvar = async () => {
+    const ks = [...g.querySelectorAll('.mod')].map(b => b.dataset.k);
+    edit = false; g.classList.remove('org'); const br = $('#modsOrg'); if (br) br.remove();
+    E.meusMods = ks.map((k, i) => Object.assign({}, (E.meusMods || []).find(m => m.k === k), { n: i + 1 }));
+    if (E.u) E.u.ordemModulos = ks; if (E.d && E.d.usuario) E.d.usuario.ordemModulos = ks;
+    try { await api('salvarOrdemModulos', E.sessao, ks); toast('Ordem dos módulos salva.'); } catch (e) { toast('Não salvou a ordem: ' + e.message); }
+  };
+  const mover = ev => {
+    if (!arr) return;
+    const x = ev.clientX, y = ev.clientY;
+    const alvo = document.elementFromPoint(x, y), b = alvo && alvo.closest && alvo.closest('.tela-home .mods .mod');
+    if (b && b !== arr) { const L = [...g.children], i = L.indexOf(arr), j = L.indexOf(b); g.insertBefore(arr, i < j ? b.nextSibling : b); numerar(); }
+    arr.style.transform = ''; const r = arr.getBoundingClientRect();
+    arr.style.transform = 'translate(' + (x - ox - r.left) + 'px,' + (y - oy - r.top) + 'px) scale(1.04)';
+    clearInterval(rolar); rolar = null;
+    const vh = window.innerHeight, d = y < 70 ? -12 : y > vh - 70 ? 12 : 0;
+    if (d) rolar = setInterval(() => { window.scrollBy(0, d); }, 16);
+  };
+  const soltar = () => { clearInterval(rolar); rolar = null; if (!arr) return; arr.style.transform = ''; arr.classList.remove('arrastando'); arr = null; document.removeEventListener('pointermove', mover); };
+  const pegar = (b, ev) => { try { b.releasePointerCapture(ev.pointerId); } catch (_) {} arr = b; const r = b.getBoundingClientRect(); ox = ev.clientX - r.left; oy = ev.clientY - r.top; b.classList.add('arrastando'); document.addEventListener('pointermove', mover); };
+  g.addEventListener('pointerdown', ev => {
+    const b = ev.target.closest('.mod'); if (!b) return;
+    if (edit) { ev.preventDefault(); pegar(b, ev); return; }
+    sx = ev.clientX; sy = ev.clientY; clearTimeout(t);
+    t = setTimeout(() => { t = null; aposLongo = true; entrar(); pegar(b, ev); }, 450);
+  });
+  g.addEventListener('pointermove', ev => { if (t && (Math.abs(ev.clientX - sx) > 8 || Math.abs(ev.clientY - sy) > 8)) { clearTimeout(t); t = null; } });
+  ['pointerup', 'pointercancel'].forEach(n => document.addEventListener(n, () => { clearTimeout(t); t = null; soltar(); }));
+  // enquanto arrasta, a tela não rola com o dedo; tocar num módulo não abre nada no modo de organizar
+  document.addEventListener('touchmove', ev => { if (arr) ev.preventDefault(); }, { passive: false });
+  g.addEventListener('click', ev => { if (edit || aposLongo) { ev.preventDefault(); ev.stopPropagation(); aposLongo = false; } }, true);
+  g.addEventListener('contextmenu', ev => ev.preventDefault());
 }
 /* ── Escala da equipe: sábados em rodízio, horários da semana e o quadro de cortiça com os pedidos de troca ── */
 const ES_DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], ES_AUS = { atestado: 'atestado', ferias: 'férias', folga: 'folga', outro: 'afastamento' };
