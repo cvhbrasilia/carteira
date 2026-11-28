@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128020454">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128020924">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -471,7 +471,8 @@ main.tela-es .tela-c{max-width:1280px}
 .es-rasc{background:#EEE5DB;border-left:4px solid #C49A6C;padding:8px 12px;border-radius:8px;font-size:14px}
 .es-meu{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;background:#fff;border:1px solid #C6B098;border-left:6px solid #A83D3D;border-radius:12px;padding:12px 14px;margin:10px 0}
 .es-meu span{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-meu b{font-size:24px;color:#5F130F}.es-meu small{color:#7a6a62}.es-meu .btn{grid-row:1/4;grid-column:2}
-.es-mes h4{margin:12px 0 6px;color:#5F130F}.es-mes h4 small{text-transform:none;color:#8a6a52;font-weight:400}
+.es-meses{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px 18px}.es-mes{background:#faf6f1;border:1px solid #EEE5DB;border-radius:12px;padding:10px 12px}.es-mes h4{margin:0 0 8px;color:#5F130F}
+.es-mes .es-sabs{grid-template-columns:1fr;gap:6px}.es-mes .es-sab{flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:2px 10px;padding:7px 10px}.es-mes .es-sab b{font-size:17px;min-width:24px}.es-mes .es-sab em{flex-basis:100%;padding-left:34px}.es-mes h4 small{text-transform:none;color:#8a6a52;font-weight:400}
 .es-sabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
 .es-sab{display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:#EEE5DB;border:1px solid #C6B098;border-radius:10px;padding:8px 10px;font:inherit;text-align:left;cursor:pointer;color:#3a2a26}
 .es-sab b{font-size:20px;color:#5F130F;line-height:1}.es-sab span{font-size:14px}.es-sab em{font-style:normal;font-size:11px;color:#8a6a52}
@@ -1257,7 +1258,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128020454';
+  var VERSAO = '20261128020924';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6658,7 +6659,7 @@ function pintarEscala() {
     ((R.feriados || []).length ? '<section class="cartao"><h3>Feriados</h3><p class="nota">Nacionais e do DF. O CVH fecha; abre só para quem pediu para trabalhar e foi confirmado. Sábado de feriado não conta no rodízio.</p><div class="es-fers">' +
       R.feriados.slice(0, 16).map(f => '<button class="es-fer' + (f.pessoaId ? ' com' : '') + '" data-acao="es-fer-ver" data-v="' + f.data + '"><b>' + ES_SEM(f.data) + '</b><span>' + esc(f.nome) + '</span><em>' + (f.pessoaId ? esc(esPessoa(f.pessoaId).nome.split(' ')[0]) + ' trabalha' : 'CVH fechado') + '</em></button>').join('') + '</div></section>' : '') +
     (outrosMeses.length ? '<section class="cartao es-cal"><h3>Próximos meses</h3>' +
-      outrosMeses.map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</section>' : '') +
+      '<div class="es-meses">' + outrosMeses.map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</div></section>' : '') +
     '<section class="cartao"><h3>Horários da semana</h3><div class="es-hor"><table><thead><tr><th></th>' + [1, 2, 3, 4, 5].map(d => '<th>' + ES_DIAS[d] + '</th>').join('') + '<th>Sábado</th></tr></thead><tbody>' +
       c.pessoas.map(p => '<tr' + (p.id === R.eu ? ' class="meu"' : '') + '><th><button class="es-nome" data-acao="es-pessoa" data-id="' + p.id + '">' + esc(p.nome.split(' ')[0]) + (p.obs ? ' <i>obs.</i>' : '') + '</button></th>' + [1, 2, 3, 4, 5].map(d => '<td>' + (p.semana[d] ? p.semana[d][0] + 'h–' + p.semana[d][1] + 'h' : '') + '</td>').join('') + '<td>' + (p.sabado ? p.sabado[0] + 'h–' + p.sabado[1] + 'h' : '') + '</td></tr>').join('') +
       '</tbody></table></div><p class="nota">Toque no nome para ver ' + (R.admin ? 'e ajustar ' : '') + 'os horários e as observações de cada um.</p>' + (c.ausencias.filter(x => !x.ate || x.ate >= h).length ? '<p class="nota">' + c.ausencias.filter(x => !x.ate || x.ate >= h).map(x => esc(esNome1(x.pessoaId)) + ' de ' + esc(ES_AUS[x.motivo] || 'afastamento') + ' desde ' + br(x.de).slice(0, 5) + (x.ate ? ' até ' + br(x.ate).slice(0, 5) : '')).join(' · ') + '</p>' : '') + '</section>' +
