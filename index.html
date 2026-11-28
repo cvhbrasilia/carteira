@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128000056">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128001259">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1209,7 +1209,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128000056';
+  var VERSAO = '20261128001259';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6373,6 +6373,13 @@ const DU = (() => {
   const nUtil = (y, m, dd) => { let n = 0; for (let x = 1; x <= dd; x++) if (util(y, m, x)) n++; return n; };
   return { util, nUtil };
 })();
+// a data do Nº dia útil a partir de uma data (hoje, se não vier): neste mês se ainda não passou, senão no próximo
+function proxDiaUtil(n, de) {
+  de = de || hoje(); let [y, m] = de.split('-').map(Number);
+  for (let k = 0; k < 14; k++) { const ult = new Date(Date.UTC(y, m, 0)).getUTCDate(); for (let d = 1; d <= ult; d++) if (DU.util(y, m, d) && DU.nUtil(y, m, d) === n) { const iso = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'); if (iso >= de) return iso; break; } if (++m > 12) { m = 1; y++; } }
+  return de;
+}
+const AG_AVISOS = [['0', 'Na hora'], ['5', '5 minutos antes'], ['10', '10 minutos antes'], ['15', '15 minutos antes'], ['30', '30 minutos antes'], ['60', '1 hora antes'], ['120', '2 horas antes'], ['180', '3 horas antes'], ['1440', '1 dia antes'], ['2880', '2 dias antes'], ['10080', '1 semana antes']];
 function nDiaUtil(iso) { const [y, m, d] = iso.split('-').map(Number); return DU.nUtil(y, m, d) + (DU.util(y, m, d) ? 0 : 1); }
 function ocorreAg(a, d) {
   if (d < a.data) return false; if (!a.repetir) return d === a.data;
@@ -6470,7 +6477,10 @@ function formAgenda(a) {
       '<label class="larga" style="display:flex;gap:8px;align-items:flex-start;font-weight:600;color:var(--tinta)"><input type="checkbox" id="agPart"' + (a.particular ? ' checked' : '') + '> Particular: só eu vejo, não vai para o Google Agenda e o aviso chega só no meu celular</label>' +
       '<div class="larga grade" id="agPartOp"' + (a.particular ? '' : ' hidden') + '>' +
         campo('agRep', 'Repetir', '<select id="agRep">' + [['', 'Não repetir'], ['semana', 'Toda semana'], ['mes', 'Todo mês, no mesmo dia'], ['util', 'Todo mês, no mesmo dia útil'], ['ano', 'Todo ano']].map(([k, t]) => '<option value="' + k + '"' + ((a.repetir || '') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>') +
-        '<p class="nota larga" id="agUtil"></p>' + campo('agAvi', 'Avisar', '<select id="agAvi">' + [['0', 'Na hora'], ['15', '15 minutos antes'], ['60', '1 hora antes'], ['1440', '1 dia antes']].map(([k, t]) => '<option value="' + k + '"' + (String(a.avisar || '0') === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>') + '</div></div>' +
+        campo('agNu', 'Qual dia útil', '<select id="agNu">' + Array.from({ length: 22 }, (_, i) => '<option value="' + (i + 1) + '"' + (a.data && nDiaUtil(a.data) === i + 1 ? ' selected' : '') + '>' + (i + 1) + 'º dia útil</option>').join('') + '</select>') +
+        '<p class="nota larga" id="agUtil"></p>' +
+        [0, 1, 2].map(i => { const L = String(a.avisar || '0').split(',').filter(x => x !== ''), v = L[i] !== undefined ? L[i] : (i ? '' : '0');
+          return campo('agAvi' + i, i ? 'Outro aviso' : 'Avisar', '<select id="agAvi' + i + '" class="agAvi">' + (i ? [['', 'Nenhum']] : []).concat(AG_AVISOS).map(([k, t]) => '<option value="' + k + '"' + (v === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'); }).join('') + '</div></div>' +
     '<p class="nota" id="agConf"></p>' +
     '<div class="acoes-form"><button class="btn" data-acao="ag-salvar" data-id="' + (a.id || '') + '">Salvar</button>' + (a.id ? '<button class="btn sec2" data-acao="ag-excluir" data-id="' + a.id + '">Excluir</button>' : '') + '</div>',
     c => {
@@ -6478,8 +6488,14 @@ function formAgenda(a) {
       // aviso de conflito de horário no mesmo dia
       const conf = () => { const d = $('#agData').value, hh = $('#agHora').value; const m = (E.agenda ? E.agenda.itens : []).filter(x => x.id !== a.id && x.data === d && x.status !== 'cancelado' && x.hora === hh); $('#agConf').textContent = m.length ? 'Já existe ' + m.length + (m.length === 1 ? ' agendamento' : ' agendamentos') + ' neste horário.' : ''; };
       ['agData', 'agHora'].forEach(i => c.querySelector('#' + i).addEventListener('input', conf)); conf();
-      const nu = () => { const v = c.querySelector('#agRep').value, d = c.querySelector('#agData').value; c.querySelector('#agUtil').textContent = v === 'util' && d ? 'Repete todo mês no ' + nDiaUtil(d) + 'º dia útil (a data escolhida é o ' + nDiaUtil(d) + 'º dia útil do mês). Para o 5º dia útil, escolha como data o 5º dia útil de um mês.' : ''; };
-      ['agRep', 'agData'].forEach(i => c.querySelector('#' + i).addEventListener('input', nu)); c.querySelector('#agRep').addEventListener('change', nu); nu();
+      // todo mês no Nº dia útil: escolher o número já coloca na data a próxima vez que ele cai
+      const nu = (mudouN) => { const v = c.querySelector('#agRep').value, dEl = c.querySelector('#agData'), nEl = c.querySelector('#agNu');
+        c.querySelector('#agNu').closest('.campo').style.display = v === 'util' ? '' : 'none';
+        if (v !== 'util') return (c.querySelector('#agUtil').textContent = '');
+        if (mudouN === true || !dEl.value) dEl.value = proxDiaUtil(+nEl.value); else nEl.value = String(Math.min(22, nDiaUtil(dEl.value)));
+        const [y, m] = dEl.value.split('-').map(Number), dd = proxDiaUtil(+nEl.value, dEl.value.slice(0, 8) + '01');
+        c.querySelector('#agUtil').textContent = 'Todo mês no ' + nEl.value + 'º dia útil. O primeiro aviso é em ' + br(dd) + ' (' + ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][new Date(dd + 'T12:00').getDay()] + ').'; };
+      c.querySelector('#agRep').addEventListener('change', () => nu(true)); c.querySelector('#agNu').addEventListener('change', () => nu(true)); c.querySelector('#agData').addEventListener('input', () => nu(false)); nu(false);
       c.querySelector('#agPart').addEventListener('change', e => { c.querySelector('#agPartOp').hidden = !e.target.checked; if (e.target.checked && c.querySelector('#agTipo').value === 'doacao') c.querySelector('#agTipo').value = 'outro'; });
     });
   E.agAnimais = ativos.map(x => [nomeAn(x), x.id]);
@@ -10281,7 +10297,7 @@ const ACOES = {
     if (!nome && !$('#agTit').value.trim()) return toast('Escolha o animal ou escreva uma descrição.');
     const part = !!($('#agPart') || {}).checked; if (part && !$('#agTit').value.trim()) return toast('Escreva o que é o aviso particular (descrição).');
     const o = { id: b.dataset.id, data: $('#agData').value, hora: $('#agHora').value, tipo: $('#agTipo').value, duracao: $('#agDur').value, animalId: achou ? achou[1] : '', titulo: $('#agTit').value, obs: $('#agObs').value, status: $('#agSt') ? $('#agSt').value : 'agendado',
-      particular: part, repetir: part ? $('#agRep').value : '', avisar: part ? $('#agAvi').value : '' };
+      particular: part, repetir: part ? $('#agRep').value : '', avisar: part ? [...new Set([...document.querySelectorAll('.agAvi')].map(x => x.value).filter(x => x !== ''))].join(',') : '' };
     b.disabled = true;
     try {
       const r = await api('agendaSalvar', E.sessao, o), l = E.agenda.itens, i = l.findIndex(x => x.id === r.id);
