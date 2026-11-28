@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Logística DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128210952">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Logística DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128211551">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1277,7 +1277,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128210952';
+  var VERSAO = '20261128211551';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -5398,7 +5398,7 @@ const MODS = [
   { k: 'cartaovacina', perm: 'carteiras', t: 'Cartão de vacina', d: 'Folhas do cartão físico com o cabeçalho do animal, para imprimir no papel timbrado, e digitalização do cartão por foto', ic: svgIc('<rect x="4" y="3" width="16" height="18" rx="2.2"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M15.500 15.800l1.400 1.400 2.600-2.800"/>') },
   { k: 'requisicoes', perm: 'requisicoes', t: 'Requisição de exames', d: 'Pedidos de exames para a Citopet, prontos com as coletas do dia, para imprimir no papel timbrado', ic: svgIc('<rect x="3.6" y="2.6" width="6.8" height="3" rx=".9"/><path d="M4.700 5.600v12.400a2.300 2.300 0 0 0 4.600 0V5.600M4.700 12.600h4.600"/><rect x="13.6" y="2.6" width="6.8" height="3" rx=".9"/><path d="M14.700 5.600v12.400a2.300 2.300 0 0 0 4.600 0V5.600M14.700 10.400h4.600"/>') },
   { k: 'memoria', perm: 'admin', t: 'Em memória', d: 'Fotos guardadas ao longo das doações e o memorial de cada doador que partiu', ic: svgIc('<path d="M12 20.5c-4.400-2.800-8-6.200-8-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 8 2.700c0 4-3.600 7.400-8 10.200z"/><path d="M9 11.500h6M12 9v5.500"/>') },
-  { k: 'escala', livre: true, t: 'Escala da equipe', d: 'Sábados de cada um, horários da semana e quadro de trocas', ic: svgIc('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="9" cy="14.2" r="1.6"/><circle cx="15" cy="14.2" r="1.6"/><path d="M6.3 18.3c.6-1.300 1.600-1.900 2.700-1.900s2.100.6 2.700 1.900M12.3 18.3c.6-1.300 1.600-1.900 2.700-1.900s2.100.6 2.700 1.900"/>') },
+  { k: 'escala', livre: true, t: 'Equipe CVH', d: 'Escala, ponto e férias', ic: svgIc('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="9" cy="14.2" r="1.6"/><circle cx="15" cy="14.2" r="1.6"/><path d="M6.3 18.3c.6-1.300 1.600-1.900 2.700-1.900s2.100.6 2.700 1.900M12.3 18.3c.6-1.300 1.600-1.900 2.700-1.900s2.100.6 2.700 1.900"/>') },
 ];
 // número fixo de cada módulo (para abrir rápido pelo número); módulo novo entra no fim da lista com o próximo número
 MODS.forEach((m, i) => { m.n = i + 1; });
@@ -5426,7 +5426,7 @@ function modulosBusca(q0) {
 }
 
 const ROT_PERM = { intensivet: 'Mini Estação da Intensivet (médico veterinário entra com o próprio usuário)', admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil hematológico', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Logística CVH (Motoboy)',
-  certificados: 'Certificados', receitas: 'Receituário', requisicoes: 'Requisição de exames', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações', escala: 'Escala da equipe' };
+  certificados: 'Certificados', receitas: 'Receituário', requisicoes: 'Requisição de exames', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações', escala: 'Equipe CVH' };
 
 /* ── calculadora de SAG ── */
 const nS = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : null; };
@@ -6796,7 +6796,7 @@ function pintarEscala() {
   const so = (R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio')) || E.esAba === 'ferias' || E.esAba === 'ponto', conv = conversasEscala();
   E.esCores = coresEscala(ab);
   raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
-    '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div></header>' +
+    '<header class="topo"><div class="t"><span>Escala, ponto e férias</span><b>Equipe CVH</b></div></header>' +
     (R.admin || R.eu ? '<div class="es-abas">' + (R.admin ? [['escala', 'Escala'], ['ponto', 'Ponto'], ['ferias', 'Férias'], ['relatorio', 'Relatório'], ['ajustes', 'Ajustes da escala']] : [['escala', 'Escala'], ['ponto', 'Ponto'], ['ferias', 'Férias']]).map(([k, t]) => '<button class="filtro' + ((E.esAba || 'escala') === k ? ' on' : '') + '" data-acao="es-aba" data-v="' + k + '">' + t + '</button>').join('') + '</div>' : '') +
     (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até marcar "Publicar" em Ajustes da escala.</p>' : '') +
     (E.esAba === 'ferias' ? '<div id="esFer"></div></div></main>' : E.esAba === 'ponto' ? '<div id="esPonto"><p class="vazio-p">Carregando o ponto…</p></div></div></main>' : R.admin && E.esAba === 'ajustes' ? '<section class="cartao" id="esAj"></section></div></main>' : R.admin && E.esAba === 'relatorio' ? '<section id="esRel"><p class="vazio-p">Carregando o relatório…</p></section></div></main>' : '') +
@@ -6966,12 +6966,12 @@ async function pintarPonto(mes) {
   const linhaDia = d => '<button class="pt-dia" data-acao="pt-dia" data-v="' + d.data + '" data-p="' + (d.pid || '') + '"><b>' + ES_SEM(d.data) + '</b><span>' + (d.marcas.length ? d.marcas.map(m => (m.tipo === 'inicio' ? '' : '→ ') + String(m.em).slice(11, 16) + (m.situacao === 'pendente' ? '*' : '')).join(' ') : (d.faixas.length ? 'horário ' + ptFx(d.faixas) : 'fora da escala')) + (d.obs.length ? ' · ' + esc(d.obs.join(', ')) : '') + '</span>' + (d.extra ? '<em>+' + ptMin(d.extra) + '</em>' : '<i></i>') + '</button>';
   let html = '';
   if (P.eu) {
-    const u = P.eu, hd = u.hojeDia, ac = u.acoes[0], pl = u.plantao;
+    const u = P.eu, hd = u.hojeDia, ac = P.desde && P.hoje < P.desde ? null : u.acoes[0], pl = u.plantao, antes = P.desde && P.hoje < P.desde;
     const bt = { inicio: 'Iniciar jornada', saida_cvh: 'Saí do CVH', fim: pl ? 'Encerrar o plantão' : 'Encerrar jornada' }[ac];
     html += '<section class="cartao pt-hoje"><h3>Hoje, ' + ES_SEM(P.hoje) + '</h3><p class="nota">' + (u.faixas.length ? 'Seu horário: ' + ptFx(u.faixas) + (pl ? ' · plantão do celular até ' + ptHm(pl[1]) : '') : 'Hoje você não está na escala.') + '</p>' +
       (hd.marcas.length ? hd.marcas.map(m => '<div class="es-inf"><span>' + ptTipo(m, pl) + '</span><b>' + String(m.em).slice(11, 16) + '<small>' + esc(ptLocal(m)) + '</small></b></div>').join('') : '') +
-      (ac ? '<button class="btn pt-bt" data-acao="pt-marcar" data-v="' + ac + '">' + bt + '</button>' + (ac === 'inicio' || ac === 'saida_cvh' ? '<p class="nota">Marca só no CVH, pela localização do celular.</p>' : pl ? '<p class="nota">O plantão pode ser encerrado de onde você estiver. O que passar de ' + ptHm(pl[1]) + ' conta como hora extra.</p>' : '') : '<p class="pt-ok">' + (pl ? 'Plantão encerrado' : 'Jornada encerrada') + '.</p>') +
-      '<div class="acoes-form"><button class="btn sec2 peq" data-acao="pt-pedir">Pedir lançamento retroativo</button></div></section>';
+      (ac ? '<button class="btn pt-bt" data-acao="pt-marcar" data-v="' + ac + '">' + bt + '</button>' + (ac === 'inicio' || ac === 'saida_cvh' ? '<p class="nota">Marca só no CVH, pela localização do celular.</p>' : pl ? '<p class="nota">O plantão pode ser encerrado de onde você estiver. O que passar de ' + ptHm(pl[1]) + ' conta como hora extra.</p>' : '') : (antes ? '<p class="pt-ok">O ponto começa em ' + br(P.desde) + '.</p>' : '<p class="pt-ok">' + (pl ? 'Plantão encerrado' : 'Jornada encerrada') + '.</p>')) +
+      (antes ? '' : '<div class="acoes-form"><button class="btn sec2 peq" data-acao="pt-pedir">Pedir lançamento retroativo</button></div>') + '</section>';
     if (u.pedidos.length) html += '<section class="cartao"><h3>Meus pedidos</h3>' + u.pedidos.map(m => '<div class="fer-reg"><div><b>' + PT_TIPO[m.tipo] + ' · ' + br(m.data).slice(0, 5) + ' às ' + String(m.em).slice(11, 16) + '</b><span>' + esc(m.motivo) + '</span></div><em class="fer-st" style="--c:' + ({ pendente: '#C49A6C', ok: '#5E7D4F', recusado: '#A83D3D' }[m.situacao]) + '">' + ({ pendente: 'aguardando', ok: 'aprovado', recusado: 'não aprovado' }[m.situacao]) + '</em></div>').join('') + '</section>';
     html += '<section class="cartao"><h3>Meu ponto</h3>' + navMes + '<p class="pt-tot">Hora extra no mês <b>' + (u.mes.extra ? ptMin(u.mes.extra) : 'nenhuma') + '</b></p>' + (u.mes.dias.length ? u.mes.dias.map(linhaDia).join('') : '<p class="vazio-p">Nenhum dia neste mês.</p>') + '<p class="nota">Hora extra só depois do fim do horário do dia, com 5 minutos de tolerância. Chegar antes não conta. * aguardando aprovação.</p></section>';
   }
