@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128031701">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128032326">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1267,7 +1267,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128031701';
+  var VERSAO = '20261128032326';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -5414,7 +5414,7 @@ function modulosBusca(q0) {
 }
 
 const ROT_PERM = { intensivet: 'Mini Estação da Intensivet (médico veterinário entra com o próprio usuário)', admin: 'Administrador', carteiras: 'Carteiras', cadastro: 'Cadastro de doadores', receptores: 'Cadastro de receptores', conta_dea: 'Conta DEA1+ (só o Motoboy, separado do CVH)', fichas: 'Fichas de doação', historico: 'Histórico laboratorial', laudos: 'Laudos de exames', perfil: 'Perfil hematológico', tcle: 'Termos', qualidade: 'Controle de qualidade', estoque: 'Estoque', producao: 'Produção', transporte: 'Motoboy',
-  certificados: 'Certificados', receitas: 'Receituário', requisicoes: 'Requisição de exames', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações' };
+  certificados: 'Certificados', receitas: 'Receituário', requisicoes: 'Requisição de exames', agenda: 'Agenda', pendencias: 'Pendências', calculadora: 'HemoCalculadora', sag: 'Calculadora de SAG', inteligencia: 'Central de inteligência', relatorios: 'Relatórios', auditoria: 'Histórico de alterações', escala: 'Escala da equipe' };
 
 /* ── calculadora de SAG ── */
 const nS = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : null; };
@@ -10397,6 +10397,13 @@ function abrirFormVet(v) {
     });
 }
 
+// permissões por módulo: um item para cada módulo do painel; módulos que dividem a mesma permissão marcam juntos (com aviso)
+const PERM_MOD = { camaras: 'transporte', clinicas: 'receptores', lixeira: 'admin', memoria: 'admin', escala: 'escala' };
+function permsLista() {
+  const L = [['admin', 'Administrador', 'admin'], ['intensivet', ROT_PERM.intensivet, 'intensivet'], ['conta_dea', ROT_PERM.conta_dea, 'conta_dea']];
+  MODS.forEach(m => { const perm = PERM_MOD[m.k] || (Array.isArray(m.perm) ? m.perm[0] : m.perm) || m.k; L.push([perm, m.t + (perm === 'admin' ? ' (só administrador)' : ''), m.k]); });
+  return L;
+}
 function abrirFormUsuario(u) {
   u = u || { permissoes: [], ativo: '1' };
   const eu = u.id && u.id === E.u.id;
@@ -10408,7 +10415,7 @@ function abrirFormUsuario(u) {
     campo('uVet', 'Assinatura (médico veterinário)', '<select id="uVet"><option value="">Não assina (não é médico veterinário)</option>' + (E.d.vets || []).map(x => '<option value="' + x.id + '"' + (x.id === u.vetId ? ' selected' : '') + '>' + esc(x.nome + ' · ' + x.crmv) + '</option>').join('') + '<option value="__novo">+ Cadastrar o CRMV agora</option></select>', 'larga') +
     '<div class="campo larga" id="uNovoVet" hidden><div class="grade">' + campo('uVetNome', 'Nome na assinatura', inp('uVetNome', u.nome || '', 'autocomplete="off"'), 'larga') + campo('uVetCrmv', 'CRMV', inp('uVetCrmv', '', 'placeholder="CRMV-DF 0000" autocomplete="off"'), 'larga') + '</div></div></div>' +
     '<p class="nota">Quem tem CRMV assina sozinho o que salvar. A rubrica é opcional. Ela aparece no carimbo das vacinas e na assinatura dos laudos.</p>' +
-    '<div class="leg">Permissões</div><div class="perms">' + Object.keys(ROT_PERM).map(p => '<label class="check"><input type="checkbox" class="uPerm" value="' + p + '"' + (u.permissoes.includes(p) ? ' checked' : '') + (eu && p === 'admin' ? ' disabled' : '') + '> ' + ROT_PERM[p] + (p === 'admin' ? ' (acessa tudo, inclusive Ajustes e usuários)' : '') + '</label>').join('') + '</div>' +
+    '<div class="leg">Permissões</div><div class="perms">' + permsLista().map(([perm, rot, k]) => '<label class="check"><input type="checkbox" class="uPerm" value="' + perm + '" data-k="' + k + '"' + (u.permissoes.includes(perm) ? ' checked' : '') + (eu && perm === 'admin' ? ' disabled' : '') + '> ' + esc(rot) + (perm === 'admin' ? ' (acessa tudo, inclusive Ajustes e usuários)' : '') + '</label>').join('') + '</div>' +
     (u.id && !eu ? '<label class="check"><input type="checkbox" id="uAtivo"' + (u.ativo === '0' ? '' : ' checked') + '> Usuário ativo (desmarque para bloquear o acesso)</label>' : '') +
     '<button class="btn" id="bSalvar">Salvar</button>' + (u.id && !eu ? ' <button class="btn sec2" id="bLinkSenha">Mandar link de nova senha</button>' : ''), () => {
       const bl = $('#bLinkSenha'); if (bl) bl.onclick = ev => salvando(ev.currentTarget, async () => { const r = await api('usuarioLinkSenha', E.sessao, u.id);
@@ -10416,6 +10423,13 @@ function abrirFormUsuario(u) {
         abrirFolha('Link de nova senha', '<p class="nota">Mande para ' + esc(r.nome) + '. O link vale por 24 horas e só funciona uma vez. Quando a pessoa criar a senha nova, os aparelhos conectados com esse usuário saem e você recebe o aviso.</p><div class="link-box"><input readonly value="' + esc(r.url) + '" aria-label="Link"><button class="btn peq" id="lsCopiar">Copiar</button></div>' +
           '<div class="acoes"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(msg) + '">Mandar pelo WhatsApp</a><button class="btn sec2" id="lsMsg">Copiar a mensagem</button></div>');
         $('#lsCopiar').onclick = async () => toast(await copiar(r.url) ? 'Link copiado.' : 'Selecione e copie.'); $('#lsMsg').onclick = async () => toast(await copiar(msg) ? 'Mensagem copiada.' : 'Não consegui copiar.'); });
+      $$('.uPerm').forEach(cb => cb.addEventListener('change', () => {
+        const juntos = $$('.uPerm').filter(x => x !== cb && x.value === cb.value);
+        if (cb.value === 'admin' && cb.checked && cb.dataset.k !== 'admin' && !confirm('Este módulo é só do administrador. Marcar libera Administrador, com acesso a tudo. Continuar?')) { cb.checked = false; return; }
+        juntos.forEach(x => { x.checked = cb.checked; });
+        const nomes = juntos.map(x => x.parentElement.textContent.replace(/\s*\(.*$/, '').trim()).filter(Boolean);
+        if (nomes.length) toast((cb.checked ? 'Libera também ' : 'Tira também ') + listaPt(nomes) + ', que usa' + (nomes.length > 1 ? 'm' : '') + ' a mesma permissão.', 6000);
+      }));
       const novoVet = () => { $('#uNovoVet').hidden = vl('uVet') !== '__novo'; if (!$('#uNovoVet').hidden && !vl('uVetNome')) $('#uVetNome').value = vl('uNome'); };
       $('#uVet').onchange = novoVet;
       $('#bSalvar').onclick = ev => salvando(ev.currentTarget, async () => {
@@ -10426,7 +10440,7 @@ function abrirFormUsuario(u) {
           const vet = await api('salvarVet', E.sessao, { nome: vl('uVetNome'), crmv: crmv, rubrica: '', padrao: false });
           E.d.vets.push(vet); vetId = vet.id;
         }
-        const salvo = await api('salvarUsuario', E.sessao, { id: u.id || '', nome: vl('uNome'), usuario: vl('uUsuario'), email: vl('uEmail'), crmv: vl('uCrmv'), senha: $('#uSenha').value, vetId: vetId, permissoes: $$('.uPerm').filter(x => x.checked).map(x => x.value), ativo: !$('#uAtivo') || $('#uAtivo').checked });
+        const salvo = await api('salvarUsuario', E.sessao, { id: u.id || '', nome: vl('uNome'), usuario: vl('uUsuario'), email: vl('uEmail'), crmv: vl('uCrmv'), senha: $('#uSenha').value, vetId: vetId, permissoes: [...new Set($$('.uPerm').filter(x => x.checked).map(x => x.value))], ativo: !$('#uAtivo') || $('#uAtivo').checked });
         const i = E.d.usuarios.findIndex(x => x.id === salvo.id); if (i >= 0) E.d.usuarios[i] = salvo; else E.d.usuarios.push(salvo);
         if (salvo.id === E.u.id) E.u = E.d.usuario = salvo;
         toast('Usuário salvo.'); telaAjustes();
