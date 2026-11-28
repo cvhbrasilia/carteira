@@ -1315,6 +1315,8 @@ iniciar();
     if (y0 == null) return; var ok = dy > LIM; y0 = null;
     if (!ok) { esconder(); return; }
     mostrar('Atualizando…', 40);
+    // guarda onde a pessoa estava, para voltar à mesma tela depois de recarregar
+    try { var st = window.__estadoApp && window.__estadoApp(); if (st) { st.t = Date.now(); sessionStorage.setItem('cvh_volta', JSON.stringify(st)); } } catch (_) {}
     var fim = function () { location.reload(); };
     try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {}).then(fim); else fim(); } catch (_) { fim(); }
     setTimeout(fim, 2500);

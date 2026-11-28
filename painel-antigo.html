@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128030645">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128031252">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1126,7 +1126,8 @@ button.pdf{font-family:inherit;cursor:pointer}
 .grade{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .campo{display:flex;flex-direction:column;gap:5px;min-width:0}
 .campo.larga,.grade>.larga{grid-column:1/-1}
-#agPartOp,#agRec{grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}#agPartOp>*,#agRec>*{min-width:0}
+#agPartOp,#agRec{grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}
+.folha-c{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}.folha{overscroll-behavior:contain}html:has(#folha:not([hidden])),body:has(#folha:not([hidden])){overflow:hidden}.folha-c .grade{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.folha-c .grade>*{min-width:0}.folha-c input,.folha-c select,.folha-c textarea{max-width:100%;min-width:0}.folha-c input[type=date],.folha-c input[type=time]{-webkit-appearance:none;appearance:none;display:block}#agPartOp>*,#agRec>*{min-width:0}
 .campo label,.leg{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--tinta2);font-weight:600}
 input,select,textarea{width:100%;border:1.5px solid var(--areia2);background:#fff;border-radius:10px;padding:11px 12px;font-size:16px;min-height:46px}
 textarea{min-height:110px;resize:vertical;line-height:1.45}
@@ -1264,7 +1265,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128030645';
+  var VERSAO = '20261128031252';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }

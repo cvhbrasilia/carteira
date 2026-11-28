@@ -151,6 +151,8 @@
     if (y0 == null) return; var ok = dy > LIM; y0 = null;
     if (!ok) { esconder(); return; }
     mostrar('Atualizando…', 40);
+    // guarda onde a pessoa estava, para voltar à mesma tela depois de recarregar
+    try { var st = window.__estadoApp && window.__estadoApp(); if (st) { st.t = Date.now(); sessionStorage.setItem('cvh_volta', JSON.stringify(st)); } } catch (_) {}
     var fim = function () { location.reload(); };
     try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {}).then(fim); else fim(); } catch (_) { fim(); }
     setTimeout(fim, 2500);
@@ -158,7 +160,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128031252">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128031701">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -463,7 +465,7 @@ button{cursor:pointer}
 main.tela-es .tela-c{max-width:1280px}
 .es-topo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;margin:34px 0 14px}
 .es-topo .cortica{margin:0;aspect-ratio:4/3;display:flex;flex-direction:column;min-height:0}.es-topo .cortica .postits{align-content:start}
-.es-part h3{margin-top:0}.es-pt{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;background:none;border:0;border-bottom:1px solid #EEE5DB;padding:10px 0;font:inherit;font-size:14px;text-align:left;cursor:pointer;color:#3a2a26}.es-conv-msgs{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow:auto;padding:8px 2px;margin:8px 0}.es-msg{max-width:80%;padding:8px 11px;border-radius:12px;background:#EEE5DB;font-size:14px;line-height:1.35}.es-msg.eu{align-self:flex-end;background:#A83D3D;color:#fff}.es-msg small{display:block;font-size:11px;opacity:.75;margin-top:2px}.es-prop{background:#faf6f1;border:1px solid #C6B098;border-radius:12px;padding:10px 12px;font-size:14px}.es-prop b{color:#5F130F}.es-pt b{color:#5F130F}.es-meu2{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid #C6B098;border-left:5px solid #A83D3D;border-radius:10px;padding:8px 10px 8px 12px;margin:0 0 10px;font-size:14px}.es-meu2 b{color:#5F130F;font-size:17px}.es-mesatual h3{margin-top:0}
+.es-part h3{margin-top:0}.es-pt{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;background:none;border:0;border-bottom:1px solid #EEE5DB;padding:10px 0;font:inherit;font-size:14px;text-align:left;cursor:pointer;color:#3a2a26}.es-conv-msgs{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow:auto;padding:8px 2px;margin:8px 0}.es-msg{max-width:80%;padding:8px 11px;border-radius:12px;background:#EEE5DB;font-size:14px;line-height:1.35}.es-msg.eu{align-self:flex-end;background:#A83D3D;color:#fff}.es-msg small{display:block;font-size:11px;opacity:.75;margin-top:2px}.es-conv-acoes{display:flex;flex-direction:column;gap:8px;margin-top:6px}.es-conv-acoes .btn{width:100%}.es-prop{background:#faf6f1;border:1px solid #C6B098;border-radius:12px;padding:10px 12px;font-size:14px}.es-prop b{color:#5F130F}.es-pt b{color:#5F130F}.es-meu2{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid #C6B098;border-left:5px solid #A83D3D;border-radius:10px;padding:8px 10px 8px 12px;margin:0 0 10px;font-size:14px}.es-meu2 b{color:#5F130F;font-size:17px}.es-mesatual h3{margin-top:0}
 .es-linha{display:flex;align-items:center;gap:14px;width:100%;background:#EEE5DB;border:1px solid #C6B098;border-radius:12px;padding:12px 14px;margin:0 0 8px;font:inherit;text-align:left;cursor:pointer;color:#3a2a26}
 .es-linha>b{font-size:26px;color:#5F130F;min-width:38px}.es-ln{display:flex;flex-direction:column;flex:1}.es-ln strong{font-size:16px}.es-ln small{font-size:13px;color:#7a6a62}
 .es-linha.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-linha.meu>b,.es-linha.meu small{color:#fff}.es-linha.passou{opacity:.55}.es-linha.falta{border:2px dashed #A83D3D}.es-linha.falta small{color:#A83D3D;font-weight:700}
@@ -471,7 +473,7 @@ main.tela-es .tela-c{max-width:1280px}
 @media (max-width:900px){.es-topo{grid-template-columns:1fr}.es-topo .cortica{aspect-ratio:auto;height:50vh;height:50dvh;min-height:300px}}
 .es-abas{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.es-abas .filtro{font-size:14px;padding:8px 16px}.es-abas .filtro.on{background:#A83D3D;border-color:#A83D3D;color:#fff}
 .es-rel-p{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.es-rel-p button{display:flex;flex-direction:column;align-items:flex-start;border:1px solid #C6B098;background:#fff;border-radius:12px;padding:8px 14px;font:inherit;cursor:pointer;color:#3a2a26}.es-rel-p button b{color:#5F130F}.es-rel-p button small{font-size:12px;color:#7a6a62}.es-rel-p button.on{background:#EEE5DB;border-color:#A83D3D}
-.es-rl{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;padding:8px 0;border-bottom:1px solid #EEE5DB;font-size:14px}.es-rl b{color:#5F130F}.es-rl small{grid-column:2;color:#7a6a62;font-size:13px}
+.es-rl{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;padding:8px 0;border-bottom:1px solid #EEE5DB;font-size:14px}.es-rl b{color:#5F130F}.es-rl small{grid-column:2;color:#7a6a62;font-size:13px}.es-rl .es-rl-log{padding-left:10px;border-left:2px solid #EEE5DB;font-size:12.5px}
 .es-rasc{background:#EEE5DB;border-left:4px solid #C49A6C;padding:8px 12px;border-radius:8px;font-size:14px}
 .es-meu{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;background:#fff;border:1px solid #C6B098;border-left:6px solid #A83D3D;border-radius:12px;padding:12px 14px;margin:10px 0}
 .es-meu span{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-meu b{font-size:24px;color:#5F130F}.es-meu small{color:#7a6a62}.es-meu .btn{grid-row:1/4;grid-column:2}
@@ -1264,7 +1266,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128031252';
+  var VERSAO = '20261128031701';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -4656,6 +4658,17 @@ async function carregarPainel() {
   // toque numa notificação com o app fechado: abre o módulo do assunto
   { const q = new URLSearchParams(location.search); if (q.get('aprovar')) { const cod = q.get('aprovar'); try { history.replaceState(null, '', location.pathname); } catch (_) {} setTimeout(() => aprovarComputador(cod), 300); } }
   { const q = new URLSearchParams(location.search); if (q.get('abrir')) { const k = q.get('abrir'), aba = q.get('aba') || ''; try { history.replaceState(null, '', location.pathname); } catch (_) {} abrirDestino(k, aba); } }
+  voltarAposAtualizar();
+}
+// puxar para baixo atualiza o app e volta para a mesma tela (módulo, dia da agenda, aba da escala e a altura da rolagem)
+window.__estadoApp = () => { if (!E.u || !E.modulo) return null; const sc = document.scrollingElement || document.documentElement;
+  return { k: E.modulo, dia: E.modulo === 'agenda' ? E.diaAg || '' : '', esAba: E.esAba || '', y: Math.round(window.scrollY || sc.scrollTop || 0) }; };
+function voltarAposAtualizar() {
+  let v = null; try { v = JSON.parse(sessionStorage.getItem('cvh_volta') || 'null'); sessionStorage.removeItem('cvh_volta'); } catch (_) {}
+  if (!v || !v.k || Date.now() - (v.t || 0) > 120000) return;
+  if (v.esAba) { E.esAba = v.esAba; E.esAbaVolta = true; }
+  if (v.k === 'agenda' && v.dia) { E.modulo = 'agenda'; telaAgenda(v.dia); } else abrirDestino(v.k, '');
+  if (v.y) [400, 1200, 2500].forEach(ms => setTimeout(() => { if (E.modulo === v.k && (window.scrollY || 0) < v.y - 40) window.scrollTo(0, v.y); }, ms));
 }
 // leva ao módulo (e à aba) do assunto de um aviso
 function abrirDestino(k, aba) {
@@ -6620,7 +6633,7 @@ function formAgenda(a) {
   E.agAnimais = ativos.map(x => [nomeAn(x), x.id]);
 }
 function telaHome() {
-  E.livro = null; E.animal = null; E.resp = null; E.ponte = null;
+  E.livro = null; E.animal = null; E.resp = null; E.ponte = null; E.modulo = null;
   if (pode('admin')) setTimeout(conferirServidor, 30);
   // uma vez por sessão: troca o cabeçalho dos laudos já salvos (CVH não é clínica veterinária)
   if (pode('laudos') && !E.cvhLaudosFeito) { E.cvhLaudosFeito = true; setTimeout(() => atualizarLaudosCvh(null), 2500); }
@@ -6661,7 +6674,7 @@ const esNome1 = id => String(esPessoa(id).nome || '?').split(' ')[0];
 const esHr = h => h ? h[0] + 'h às ' + h[1] + 'h' : '';
 const esMeusSab = () => (E.es.sabados || []).filter(x => x.pessoaId === E.es.eu && x.data >= E.es.hoje);
 async function telaEscala() {
-  E.livro = null; fecharFolha(); carregando('Carregando a escala'); if (!E.es) E.esAba = 'escala';
+  E.livro = null; fecharFolha(); carregando('Carregando a escala'); if (!E.es && !E.esAbaVolta) E.esAba = 'escala'; E.esAbaVolta = false;
   try { E.es = await api('escalaDados', E.sessao); } catch (e) { toast(e.message, 6000); return telaHome(); }
   pintarEscala();
 }
@@ -6788,36 +6801,45 @@ function conversasEscala() {
   const R = E.es, eu = E.u.id, h = R.hoje, L = [];
   R.avisos.filter(o => o.tipo === 'oferta' && o.situacao === 'aberto' && o.daVez && (o.autorId === eu || o.paraId === eu || R.admin)).forEach(o => {
     const outro = o.autorId === eu ? String(o.paraNome).split(' ')[0] : String(o.autorNome).split(' ')[0];
-    L.push({ id: o.id, sabado: o.sabado, rot: o.paraId === eu ? (o.sabadoDevolve ? outro + ' fez uma proposta' : outro + ' vai fazer uma proposta') : o.autorId === eu ? (o.sabadoDevolve ? 'Sua proposta para ' + outro : 'Faça sua proposta para ' + outro) : String(o.autorNome).split(' ')[0] + ' e ' + String(o.paraNome).split(' ')[0] + ' negociando' });
+    L.push({ id: o.id, sabado: o.sabado, rot: o.paraId === eu ? (o.contra ? 'Aguardando ' + outro + ' responder a contraproposta' : o.sabadoDevolve ? outro + ' fez uma proposta' : outro + ' vai fazer uma proposta') : o.autorId === eu ? (o.contra ? outro + ' fez uma contraproposta' : o.sabadoDevolve ? 'Sua proposta para ' + outro : 'Faça sua proposta para ' + outro) : String(o.autorNome).split(' ')[0] + ' e ' + String(o.paraNome).split(' ')[0] + ' negociando' });
   });
   R.avisos.filter(a => a.tipo === 'troca' && a.paraId && a.situacao === 'aberto' && a.sabado >= h).forEach(a => {
     L.push({ id: a.id, sabado: a.sabado, rot: a.autorId === eu ? 'Você pediu para ' + String(a.paraNome).split(' ')[0] + ' trocar' : a.paraId === eu ? String(a.autorNome).split(' ')[0] + ' pede para trocar com você' : String(a.autorNome).split(' ')[0] + ' pediu para ' + String(a.paraNome).split(' ')[0] + ' trocar' });
   });
   return L;
 }
+// negociação por botões: cada passo vira um registro automático na conversa (e no relatório)
 function abrirConversa(id) {
   const R = E.es, eu = E.u.id, t = R.avisos.find(x => x.id === id); if (!t) return toast('Essa conversa não está mais aberta.');
-  const oferta = t.tipo === 'oferta', ped = oferta ? R.avisos.find(x => x.id === t.pedidoId) || {} : t;
-  const dono = ped.autorId || t.paraId, outroId = oferta ? t.autorId : t.paraId, n1 = x => esc(String(x || '').split(' ')[0]);
-  const nomeDono = n1(ped.autorNome || t.paraNome), nomeOutro = n1(oferta ? t.autorNome : t.paraNome);
+  const oferta = t.tipo === 'oferta', ped = oferta ? R.avisos.find(x => x.id === t.pedidoId) || {} : t, n1 = x => esc(String(x || '').split(' ')[0]);
+  const nomeDono = n1(ped.autorNome || t.paraNome), nomeOutro = n1(oferta ? t.autorNome : t.paraNome), dono = ped.autorId || t.paraId;
   const msgs = R.avisos.filter(m => m.tipo === 'msg' && m.pedidoId === t.id).sort((x, y) => String(x.criadoEm).localeCompare(String(y.criadoEm)));
-  const meus = esMeusSab().filter(x => x.data !== t.sabado);
-  const selSab = (id0, v) => '<select id="' + id0 + '">' + meus.map(x => '<option value="' + x.data + '"' + (x.data === v ? ' selected' : '') + '>' + br(x.data) + '</option>').join('') + '</select>';
-  const prop = oferta ? (t.sabadoDevolve ? nomeOutro + ' fica com o <b>' + ES_SEM(t.sabado) + '</b> de ' + nomeDono + ', e ' + nomeDono + ' fica com o <b>' + ES_SEM(t.sabadoDevolve) + '</b> de ' + nomeOutro + '.' : 'Ainda sem proposta. ' + nomeOutro + ' escolhe qual sábado devolve.')
-    : nomeDono + ' pede para ' + nomeOutro + ' ficar com o <b>' + ES_SEM(t.sabado) + '</b>. ' + nomeOutro + ' escolhe qual sábado devolve ao aceitar.';
-  let acoes = '';
-  if (oferta && t.autorId === eu) acoes = (meus.length ? campo('cvSab', t.sabadoDevolve ? 'Mudar o sábado que você devolve' : 'Sábado que você devolve', selSab('cvSab', t.sabadoDevolve)) + '<button class="btn" data-acao="es-propor" data-id="' + t.id + '">' + (t.sabadoDevolve ? 'Mudar a proposta' : 'Enviar a proposta') + '</button>' : '<p class="nota">Você não tem sábados nos próximos meses para devolver.</p>') + '<button class="btn sec2" data-acao="es-of-sair" data-id="' + t.id + '">Desistir</button>';
-  else if (oferta && dono === eu) acoes = (t.sabadoDevolve ? '<button class="btn" data-acao="es-of-ok" data-id="' + t.id + '">Aceitar a troca</button>' : '') + '<button class="btn sec2" data-acao="es-of-nao" data-id="' + t.id + '">Não aceitar</button>';
-  else if (!oferta && t.paraId === eu) acoes = (meus.length ? campo('esDev', 'Sábado que você devolve', selSab('esDev', '')) + '<button class="btn" data-acao="es-aceitar-ok" data-id="' + t.id + '">Aceitar a troca</button>' : '') + '<button class="btn sec2" data-acao="es-recusar" data-id="' + t.id + '">Não posso</button>';
-  else if (!oferta && t.autorId === eu) acoes = '<button class="btn sec2" data-acao="es-retirar" data-id="' + t.id + '">Retirar o pedido</button>';
-  const participa = t.autorId === eu || t.paraId === eu;
+  const meus = esMeusSab().filter(x => x.data !== t.sabado), pOutro = (R.cfg.pessoas || []).find(p => p.usuarioId && p.usuarioId === t.autorId);
+  const deOutro = pOutro ? R.sabados.filter(x => x.pessoaId === pOutro.id && x.data >= R.hoje && x.data !== t.sabado) : [];
+  const sel = (id0, L, v) => '<select id="' + id0 + '">' + L.map(x => '<option value="' + x.data + '"' + (x.data === v ? ' selected' : '') + '>' + ES_SEM(x.data) + '</option>').join('') + '</select>';
+  const bt = (acao, txt, cls) => '<button class="btn ' + (cls || '') + '" data-acao="' + acao + '" data-id="' + t.id + '">' + txt + '</button>';
+  let sit = '', acoes = '';
+  if (oferta) {
+    sit = !t.sabadoDevolve ? 'Aguardando a proposta de ' + nomeOutro + '.' : t.contra ? nomeDono + ' fez uma contraproposta: ficar com o <b>' + ES_SEM(t.contra) + '</b> de ' + nomeOutro + '.' : 'Proposta: ' + nomeOutro + ' fica com o <b>' + ES_SEM(t.sabado) + '</b> e devolve o <b>' + ES_SEM(t.sabadoDevolve) + '</b>.';
+    if (t.autorId === eu) {
+      if (t.contra) acoes += bt('es-contra-ok', 'Aceitar a contraproposta');
+      acoes += meus.length ? campo('cvSab', !t.sabadoDevolve ? 'Selecione o dia que pode devolver' : 'Outro dia que pode devolver', sel('cvSab', meus, t.contra ? '' : t.sabadoDevolve)) + bt('es-propor', !t.sabadoDevolve ? 'Fazer proposta' : t.contra ? 'Fazer nova proposta' : 'Mudar a proposta', t.contra ? 'sec2' : '') : '<p class="nota">Você não tem sábados nos próximos meses para devolver.</p>';
+      acoes += bt('es-of-sair', 'Desistir de trocar', 'sec2');
+    } else if (dono === eu) {
+      if (t.sabadoDevolve && !t.contra) acoes += bt('es-of-ok', 'Aceitar a proposta') + (deOutro.length ? campo('cvContra', 'Prefere outro sábado de ' + nomeOutro + '?', sel('cvContra', deOutro, '')) + bt('es-contra', 'Fazer contraproposta', 'sec2') : '') + bt('es-of-nao', 'Negar a proposta', 'sec2');
+      else if (t.contra) acoes += '<p class="nota">Aguardando ' + nomeOutro + ' responder a contraproposta.</p>' + bt('es-of-nao', 'Negar a proposta', 'sec2');
+      acoes += '<button class="btn sec2" data-acao="es-retirar" data-id="' + ped.id + '">Desistir de trocar</button>';
+    }
+  } else {
+    sit = nomeDono + ' pede para ' + nomeOutro + ' ficar com o <b>' + ES_SEM(t.sabado) + '</b>.';
+    if (t.paraId === eu) acoes = (meus.length ? campo('esDev', 'Selecione o dia que pode devolver', sel('esDev', meus, '')) + bt('es-aceitar-ok', 'Aceitar a troca') : '') + bt('es-recusar', 'Não posso', 'sec2');
+    else if (t.autorId === eu) acoes = bt('es-retirar', 'Desistir de trocar', 'sec2');
+  }
   abrirFolha('Troca do ' + ES_SEM(t.sabado),
-    '<div class="es-prop">' + prop + '</div>' +
-    '<div class="es-conv-msgs" id="cvMsgs">' + (msgs.length ? msgs.map(m => '<div class="es-msg' + (m.autorId === eu ? ' eu' : '') + '">' + esc(m.texto) + '<small>' + n1(m.autorNome) + ' · ' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + '</small></div>').join('') : '<p class="nota">Nenhuma mensagem ainda.</p>') + '</div>' +
-    (participa ? '<div class="grade">' + campo('cvTx', 'Mensagem para ' + (t.autorId === eu ? (oferta ? nomeDono : nomeOutro) : (oferta ? nomeOutro : nomeDono)), '<textarea id="cvTx" rows="2" maxlength="300" placeholder="Só sobre a troca"></textarea>', 'larga') + '</div><div class="acoes-form"><button class="btn sec2" data-acao="es-msg" data-id="' + t.id + '">Enviar mensagem</button></div>' : '') +
-    (acoes ? '<div class="acoes-form" style="flex-wrap:wrap">' + acoes + '</div>' : ''),
+    '<div class="es-prop">' + sit + '</div>' +
+    '<div class="es-conv-msgs" id="cvMsgs">' + (msgs.length ? msgs.map(m => '<div class="es-msg' + (m.autorId === eu ? ' eu' : '') + '">' + esc(m.texto) + '<small>' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + '</small></div>').join('') : '') + '</div>' +
+    (acoes ? '<div class="es-conv-acoes">' + acoes + '</div>' : ''),
     c => { const m = c.querySelector('#cvMsgs'); if (m) m.scrollTop = m.scrollHeight; });
-  E.esConvAberta = id;
 }
 function formAceitarTroca(id) {
   const a = E.es.avisos.find(x => x.id === id); if (!a) return;
@@ -6919,7 +6941,8 @@ function pintarRelEscala() {
   R.sabados.forEach(x => { if (cont[x.pessoaId]) cont[x.pessoaId].sab++; }); R.feriados.forEach(x => { if (cont[x.pessoaId]) cont[x.pessoaId].fer++; });
   R.avisos.filter(a => a.situacao === 'trocado').forEach(a => { E.es.cfg.pessoas.forEach(p => { if (p.usuarioId && (p.usuarioId === a.autorId || p.usuarioId === a.respId)) cont[p.id].tro++; }); });
   const uid = f ? (esPessoa(f).usuarioId || '#') : '', sabs = R.sabados.filter(x => !f || x.pessoaId === f || (x.ajuste && x.rodizio === f)).slice().reverse(), fers = R.feriados.filter(x => !f || x.pessoaId === f).slice().reverse();
-  const avs = R.avisos.filter(a => !f || a.autorId === uid || a.respId === uid || a.paraId === uid).slice().sort((x, y) => String(y.criadoEm).localeCompare(String(x.criadoEm)));
+  const ofsDe = id => R.avisos.filter(o => o.tipo === 'oferta' && o.pedidoId === id).map(o => o.id), logsDe = a => { const ids = [a.id].concat(ofsDe(a.id)); return R.avisos.filter(m => m.tipo === 'msg' && ids.includes(m.pedidoId)).sort((x, y) => String(x.criadoEm).localeCompare(String(y.criadoEm))); };
+  const avs = R.avisos.filter(a => a.tipo !== 'msg' && a.tipo !== 'oferta' && (!f || a.autorId === uid || a.respId === uid || a.paraId === uid || R.avisos.some(o => o.tipo === 'oferta' && o.pedidoId === a.id && o.autorId === uid))).slice().sort((x, y) => String(y.criadoEm).localeCompare(String(x.criadoEm)));
   const TIPO = { troca: 'Pedido de troca', aviso: 'Aviso', feriado: 'Trabalhar no feriado', oferta: 'Oferta de troca' }, SIT = { aberto: 'aberto', trocado: 'trocado', recusado: 'não aceito', retirado: 'retirado', confirmado: 'confirmado', aceito: 'aceito', encerrado: 'encerrado (já trocado com outra pessoa)' };
   box.innerHTML = '<section class="cartao"><div class="es-abas">' + [['3m', 'Últimos 3 meses'], ['6m', 'Últimos 6 meses'], ['ano', 'Este ano'], ['anoPassado', 'Ano passado']].map(([k, t]) => '<button class="filtro' + (per === k ? ' on' : '') + '" data-acao="es-rel-per" data-v="' + k + '">' + t + '</button>').join('') + '</div>' +
     '<div class="es-rel-p">' + E.es.cfg.pessoas.map(p => '<button class="' + (f === p.id ? 'on' : '') + '" data-acao="es-rel-pes" data-v="' + p.id + '"><b>' + esc(p.nome.split(' ')[0]) + '</b><small>' + cont[p.id].sab + ' sábados · ' + cont[p.id].fer + ' feriados · ' + cont[p.id].tro + ' trocas</small></button>').join('') + '</div>' +
@@ -6928,7 +6951,7 @@ function pintarRelEscala() {
       (x.ajuste ? '<small>' + esc(x.ajuste.motivo) + ' · pelo rodízio seria ' + esc(nomeP(x.rodizio)) + (x.ajuste.quem ? ' · por ' + esc(x.ajuste.quem) : '') + '</small>' : '') + (x.ausente ? '<small>' + esc(ES_AUS[x.ausente] || 'afastado') + '</small>' : '') + '</div>').join('') : '<p class="vazio-p">Nenhum sábado no período.</p>') + '</section>' +
     '<section class="cartao"><h3>Feriados trabalhados (' + fers.length + ')</h3>' + (fers.length ? fers.map(x => '<div class="es-rl"><b>' + br(x.data) + '</b><span>' + esc(nomeP(x.pessoaId)) + ' · ' + esc(x.nome) + '</span>' + (x.motivo ? '<small>' + esc(x.motivo) + '</small>' : '') + '</div>').join('') : '<p class="vazio-p">Nenhum feriado trabalhado no período.</p>') + '</section>' +
     '<section class="cartao"><h3>Quadro de trocas e avisos (' + avs.length + ')</h3>' + (avs.length ? avs.map(a => '<div class="es-rl"><b>' + br(String(a.criadoEm).slice(0, 10)) + '</b><span>' + (TIPO[a.tipo] || 'Pedido') + ' · ' + esc(String(a.autorNome).split(' ')[0]) + (a.sabado ? ' · ' + br(a.sabado) : '') + ' · ' + (SIT[a.situacao] || a.situacao) + '</span>' +
-      '<small>' + [a.texto ? esc(a.texto) : '', a.paraNome ? 'particular para ' + esc(String(a.paraNome).split(' ')[0]) : '', a.respNome && a.situacao !== 'aberto' ? (a.situacao === 'trocado' ? 'trocado com ' : 'respondido por ') + esc(String(a.respNome).split(' ')[0]) + (a.sabadoDevolve ? ', que devolveu ' + br(a.sabadoDevolve) : '') : ''].filter(Boolean).join(' · ') + '</small></div>').join('') : '<p class="vazio-p">Nada no quadro no período.</p>') + '</section>';
+      '<small>' + [a.texto ? esc(a.texto) : '', a.paraNome ? 'particular para ' + esc(String(a.paraNome).split(' ')[0]) : '', a.respNome && a.situacao !== 'aberto' ? (a.situacao === 'trocado' ? 'trocado com ' : 'respondido por ') + esc(String(a.respNome).split(' ')[0]) + (a.sabadoDevolve ? ', que devolveu ' + br(a.sabadoDevolve) : '') : ''].filter(Boolean).join(' · ') + '</small>' + logsDe(a).map(m => '<small class="es-rl-log">' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + ' · ' + esc(m.texto) + '</small>').join('') + '</div>').join('') : '<p class="vazio-p">Nada no quadro no período.</p>') + '</section>';
 }
 function formSabadoAdmin(d) {
   const x = E.es.sabados.find(s => s.data === d); if (!x) return;
@@ -10568,7 +10591,8 @@ const ACOES = {
   'es-aceitar': async b => { const a = E.es.avisos.find(x => x.id === b.dataset.id); if (a && !a.paraId && a.comFila) { b.disabled = true; try { const r = await api('escalaAvisoAceitar', E.sessao, a.id, ''); E.es = r; toast('Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } return; } if (a && a.paraId) return abrirConversa(a.id); formAceitarTroca(b.dataset.id); },
   'es-conv': b => abrirConversa(b.dataset.id),
   'es-propor': async b => { b.disabled = true; try { E.es = await api('escalaOfertaPropor', E.sessao, b.dataset.id, vl('cvSab')); toast('Proposta enviada.'); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-msg': async b => { const tx = ($('#cvTx') || {}).value || ''; if (!tx.trim()) return toast('Escreva a mensagem.'); b.disabled = true; try { E.es = await api('escalaMsgEnviar', E.sessao, b.dataset.id, tx); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-contra': async b => { b.disabled = true; try { E.es = await api('escalaOfertaContra', E.sessao, b.dataset.id, vl('cvContra')); toast('Contraproposta enviada.'); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-contra-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaAceitarContra', E.sessao, b.dataset.id); fecharFolha(); toast('Troca feita. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso': () => formAvisoEscala(),
   'es-fer-pedir': b => { formPedidoFeriado(); if (b.dataset.v && $('#efD')) $('#efD').value = b.dataset.v; },
   'es-fer-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'feriado', sabado: vl('efD') }); fecharFolha(); toast('Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
@@ -10578,7 +10602,7 @@ const ACOES = {
   'es-fer-def': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('efP'), vl('efP') ? 'escalado pelo administrador no feriado' : ''); fecharFolha(); toast('Feriado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'aviso', sabado: vl('eaS'), texto: ($('#eaT') || {}).value || '' }); fecharFolha(); toast('Aviso no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar-ok': async b => { b.disabled = true; try { const r = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); E.es = r; fecharFolha();
-    toast({ trocado: 'Troca feita. Já está no quadro.', oferta: 'Proposta enviada. A negociação fica entre vocês dois.', espera: 'Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.' }[r.resultado] || 'Pronto.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+    toast({ trocado: 'Troca feita. Já está no quadro.', oferta: 'Proposta enviada. A negociação continua só entre vocês dois.', espera: 'Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.' }[r.resultado] || 'Pronto.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-of-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, true); fecharFolha(); toast('Troca confirmada. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-of-nao': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, false); fecharFolha(); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-of-sair': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaOfertaRetirar', E.sessao, b.dataset.id); fecharFolha(); toast('Pronto.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
