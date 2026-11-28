@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128025403">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128025629">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -463,7 +463,7 @@ button{cursor:pointer}
 main.tela-es .tela-c{max-width:1280px}
 .es-topo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start;margin:34px 0 14px}
 .es-topo .cortica{margin:0;aspect-ratio:4/3;display:flex;flex-direction:column;min-height:0}.es-topo .cortica .postits{align-content:start}
-.es-part h3{margin-top:0}.es-pt{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #EEE5DB;font-size:14px}.es-pt b{color:#5F130F}.es-meu2{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid #C6B098;border-left:5px solid #A83D3D;border-radius:10px;padding:8px 10px 8px 12px;margin:0 0 10px;font-size:14px}.es-meu2 b{color:#5F130F;font-size:17px}.es-mesatual h3{margin-top:0}
+.es-part h3{margin-top:0}.es-pt{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;background:none;border:0;border-bottom:1px solid #EEE5DB;padding:10px 0;font:inherit;font-size:14px;text-align:left;cursor:pointer;color:#3a2a26}.es-conv-msgs{display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow:auto;padding:8px 2px;margin:8px 0}.es-msg{max-width:80%;padding:8px 11px;border-radius:12px;background:#EEE5DB;font-size:14px;line-height:1.35}.es-msg.eu{align-self:flex-end;background:#A83D3D;color:#fff}.es-msg small{display:block;font-size:11px;opacity:.75;margin-top:2px}.es-prop{background:#faf6f1;border:1px solid #C6B098;border-radius:12px;padding:10px 12px;font-size:14px}.es-prop b{color:#5F130F}.es-pt b{color:#5F130F}.es-meu2{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid #C6B098;border-left:5px solid #A83D3D;border-radius:10px;padding:8px 10px 8px 12px;margin:0 0 10px;font-size:14px}.es-meu2 b{color:#5F130F;font-size:17px}.es-mesatual h3{margin-top:0}
 .es-linha{display:flex;align-items:center;gap:14px;width:100%;background:#EEE5DB;border:1px solid #C6B098;border-radius:12px;padding:12px 14px;margin:0 0 8px;font:inherit;text-align:left;cursor:pointer;color:#3a2a26}
 .es-linha>b{font-size:26px;color:#5F130F;min-width:38px}.es-ln{display:flex;flex-direction:column;flex:1}.es-ln strong{font-size:16px}.es-ln small{font-size:13px;color:#7a6a62}
 .es-linha.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-linha.meu>b,.es-linha.meu small{color:#fff}.es-linha.passou{opacity:.55}.es-linha.falta{border:2px dashed #A83D3D}.es-linha.falta small{color:#A83D3D;font-weight:700}
@@ -1262,7 +1262,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128025403';
+  var VERSAO = '20261128025629';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6686,15 +6686,15 @@ function postitEscala(a) {
   if (aberto && a.tipo === 'feriado') bts = (E.es.admin ? B('es-fer-ok', 'Confirmar') + B('es-fer-nao', 'Não', 'sec2') : '') + (a.autorId === eu ? B('es-retirar', 'Retirar', 'sec2') : '');
   else if (aberto && a.tipo === 'aviso') bts = a.autorId === eu || E.es.admin ? B('es-retirar', 'Retirar', 'sec2') : '';
   else if (aberto && a.tipo === 'troca') {
-    if (a.autorId === eu) {
-      if (vez) { extra = '<span class="pi-l2 pi-of">' + n1(vez.autorNome) + ' quer trocar e devolve ' + ES_SEM(vez.sabadoDevolve) + '</span>'; bts = '<button class="btn peq" data-acao="es-of-ok" data-id="' + vez.id + '">Confirmar troca</button><button class="btn sec2 peq" data-acao="es-of-nao" data-id="' + vez.id + '">Não</button>'; }
-      else bts = B('es-retirar', 'Retirar', 'sec2');
-    } else if (minha) { extra = '<span class="pi-l2 pi-of">' + (minha.daVez ? 'Você aceitou. Aguardando ' + n1(a.autorNome) + ' confirmar.' : 'Você está na espera, caso a troca combinada não dê certo.') + '</span>'; bts = '<button class="btn sec2 peq" data-acao="es-of-sair" data-id="' + minha.id + '">Desistir</button>'; }
-    else if (E.es.eu && (!a.paraId || a.paraId === eu)) bts = B('es-aceitar', a.comFila ? 'Entrar na espera' : 'Eu troco com você') + (a.paraId === eu ? B('es-recusar', 'Não posso', 'sec2') : '');
+    // no quadro fica só o pedido; a proposta e a conversa ficam entre as duas pessoas
+    if (a.autorId === eu) bts = (vez ? '<button class="btn peq" data-acao="es-conv" data-id="' + vez.id + '">Ver negociação</button>' : '') + B('es-retirar', 'Retirar', 'sec2');
+    else if (minha && minha.daVez) bts = '<button class="btn peq" data-acao="es-conv" data-id="' + minha.id + '">' + (minha.sabadoDevolve ? 'Ver negociação' : 'Faça sua proposta para ' + n1(a.autorNome)) + '</button>';
+    else if (minha) { extra = '<span class="pi-l2 pi-of">Você está na fila</span>'; bts = '<button class="btn sec2 peq" data-acao="es-of-sair" data-id="' + minha.id + '">Sair da fila</button>'; }
+    else if (E.es.eu) bts = B('es-aceitar', a.comFila ? 'Entrar na fila' : 'Fazer proposta');
     if (E.es.admin && a.autorId !== eu) bts += B('es-retirar', 'Retirar', 'sec2');
-    if (a.comFila && a.autorId !== eu && !minha) extra = '<span class="pi-l2">já tem alguém interessado</span>';
   }
   let corpo;
+  if (a.tipo === 'troca' && aberto) extra = extra || (a.comFila && a.autorId !== eu ? '<span class="pi-l2">em negociação</span>' : '');
   if (a.tipo === 'feriado') corpo = '<b class="pi-tit">Feriado</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + (a.situacao === 'confirmado' ? ' trabalha' : ' quer trabalhar') + '</span>' +
     (a.texto ? '<span class="pi-l2">' + esc(a.texto) + '</span>' : '') + (a.situacao === 'confirmado' ? '<span class="pi-l2">confirmado</span>' : a.situacao === 'recusado' ? '<span class="pi-l2">não aceito</span>' : a.situacao === 'retirado' ? '<span class="pi-l2">retirado</span>' : '');
   else if (a.tipo === 'aviso') corpo = '<b class="pi-tit">Aviso</b>' + (a.sabado ? '<span class="pi-l">' + (new Date(a.sabado + 'T12:00:00').getDay() === 6 ? 'Fim de semana ' + br(a.sabado).slice(0, 5) : ES_SEM(a.sabado)) + '</span>' : '') +
@@ -6715,7 +6715,7 @@ function pintarEscala() {
   const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
   const chipSab = x => x.feriado && !x.pessoaId ? '<button class="es-sab fer" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>Feriado</span><em>CVH fechado</em></button>' : '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
     (x.ausente ? '<em>' + esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura</em>' : x.ajuste ? '<em>' + esc(/troca/.test(x.ajuste.motivo) ? 'trocado' : 'ajustado') + '</em>' : '') + '</button>';
-  const so = R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio'), part = R.avisos.filter(a => a.tipo === 'troca' && a.paraId && a.situacao === 'aberto' && a.sabado >= h);
+  const so = R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio'), conv = conversasEscala();
   E.esCores = coresEscala(ab);
   raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div></header>' +
@@ -6727,8 +6727,7 @@ function pintarEscala() {
       (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum aviso ou pedido de troca no quadro.</p>') +
     '</div></section>' +
     '<aside class="es-lado">' +
-      (part.length ? '<section class="cartao es-part"><h3>Pedidos particulares</h3>' + part.map(a => '<div class="es-pt"><span><b>' + ES_SEM(a.sabado) + '</b> ' + (a.autorId === E.u.id ? 'Você pediu para ' + esc(String(a.paraNome).split(' ')[0]) + ' trocar' : esc(String(a.autorNome).split(' ')[0]) + ' pede para trocar com ' + (a.paraId === E.u.id ? 'você' : esc(String(a.paraNome).split(' ')[0]))) + '</span><span class="pi-bts">' +
-        (a.paraId === E.u.id ? '<button class="btn peq" data-acao="es-aceitar" data-id="' + a.id + '">Aceitar a troca</button><button class="btn sec2 peq" data-acao="es-recusar" data-id="' + a.id + '">Não posso</button>' : a.autorId === E.u.id || R.admin ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : '') + '</span></div>').join('') + '<p class="nota">Aceita, a troca vale na hora e vai para o quadro.</p></section>' : '') +
+      (conv.length ? '<section class="cartao es-part"><h3>Negociações e pedidos diretos</h3>' + conv.map(t => '<button class="es-pt" data-acao="es-conv" data-id="' + t.id + '"><span><b>' + ES_SEM(t.sabado) + '</b> ' + esc(t.rot) + '</span><span class="seta">›</span></button>').join('') + '<p class="nota">Só as duas pessoas veem a conversa. Quando as duas aceitam, a troca vai para o quadro.</p></section>' : '') +
       '<section class="cartao es-mesatual"><h3>' + (mesAt ? nomeMes(mesAt) : 'Este mês') + '</h3>' +
         (R.eu && meus.length ? '<div class="es-meu2"><span>Seu próximo sábado <b>' + br(meus[0].data).slice(0, 5) + '</b>' + (meus[1] ? ' · depois, ' + br(meus[1].data).slice(0, 5) : '') + '</span><button class="btn peq" data-acao="es-pedir" data-v="' + meus[0].data + '">Pedir troca</button></div>' : '') +
         (mesAt ? meses[mesAt].map(x => x.feriado && !x.pessoaId ? '<button class="es-linha fer" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span class="es-ln"><strong>Feriado</strong><small>CVH fechado, o rodízio pula este sábado</small></span><span class="seta">›</span></button>' : '<button class="es-linha' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span class="es-ln"><strong>' + esc(esPessoa(x.pessoaId).nome) + '</strong><small>' +
@@ -6780,13 +6779,49 @@ function infoFeriado(d) {
     '<div class="acoes-form">' + (E.es.eu && !f.pessoaId && E.es.cfg.publicada ? '<button class="btn" data-acao="es-fer-pedir" data-v="' + d + '">Quero trabalhar neste feriado</button>' : '') +
     (E.es.admin ? '<div class="grade" style="width:100%">' + campo('efP', 'Quem trabalha', '<select id="efP"><option value="">Ninguém (CVH fechado)</option>' + E.es.cfg.pessoas.map(p => '<option value="' + p.id + '"' + (p.id === f.pessoaId ? ' selected' : '') + '>' + esc(p.nome) + '</option>').join('') + '</select>') + '</div><button class="btn sec2" data-acao="es-fer-def" data-v="' + d + '">Salvar</button>' : '') + '</div>');
 }
+// conversas da escala: a negociação da vez (pedido do quadro) e os pedidos diretos, só entre as duas pessoas
+function conversasEscala() {
+  const R = E.es, eu = E.u.id, h = R.hoje, L = [];
+  R.avisos.filter(o => o.tipo === 'oferta' && o.situacao === 'aberto' && o.daVez && (o.autorId === eu || o.paraId === eu || R.admin)).forEach(o => {
+    const outro = o.autorId === eu ? String(o.paraNome).split(' ')[0] : String(o.autorNome).split(' ')[0];
+    L.push({ id: o.id, sabado: o.sabado, rot: o.paraId === eu ? (o.sabadoDevolve ? outro + ' fez uma proposta' : outro + ' vai fazer uma proposta') : o.autorId === eu ? (o.sabadoDevolve ? 'Sua proposta para ' + outro : 'Faça sua proposta para ' + outro) : String(o.autorNome).split(' ')[0] + ' e ' + String(o.paraNome).split(' ')[0] + ' negociando' });
+  });
+  R.avisos.filter(a => a.tipo === 'troca' && a.paraId && a.situacao === 'aberto' && a.sabado >= h).forEach(a => {
+    L.push({ id: a.id, sabado: a.sabado, rot: a.autorId === eu ? 'Você pediu para ' + String(a.paraNome).split(' ')[0] + ' trocar' : a.paraId === eu ? String(a.autorNome).split(' ')[0] + ' pede para trocar com você' : String(a.autorNome).split(' ')[0] + ' pediu para ' + String(a.paraNome).split(' ')[0] + ' trocar' });
+  });
+  return L;
+}
+function abrirConversa(id) {
+  const R = E.es, eu = E.u.id, t = R.avisos.find(x => x.id === id); if (!t) return toast('Essa conversa não está mais aberta.');
+  const oferta = t.tipo === 'oferta', ped = oferta ? R.avisos.find(x => x.id === t.pedidoId) || {} : t;
+  const dono = ped.autorId || t.paraId, outroId = oferta ? t.autorId : t.paraId, n1 = x => esc(String(x || '').split(' ')[0]);
+  const nomeDono = n1(ped.autorNome || t.paraNome), nomeOutro = n1(oferta ? t.autorNome : t.paraNome);
+  const msgs = R.avisos.filter(m => m.tipo === 'msg' && m.pedidoId === t.id).sort((x, y) => String(x.criadoEm).localeCompare(String(y.criadoEm)));
+  const meus = esMeusSab().filter(x => x.data !== t.sabado);
+  const selSab = (id0, v) => '<select id="' + id0 + '">' + meus.map(x => '<option value="' + x.data + '"' + (x.data === v ? ' selected' : '') + '>' + br(x.data) + '</option>').join('') + '</select>';
+  const prop = oferta ? (t.sabadoDevolve ? nomeOutro + ' fica com o <b>' + ES_SEM(t.sabado) + '</b> de ' + nomeDono + ', e ' + nomeDono + ' fica com o <b>' + ES_SEM(t.sabadoDevolve) + '</b> de ' + nomeOutro + '.' : 'Ainda sem proposta. ' + nomeOutro + ' escolhe qual sábado devolve.')
+    : nomeDono + ' pede para ' + nomeOutro + ' ficar com o <b>' + ES_SEM(t.sabado) + '</b>. ' + nomeOutro + ' escolhe qual sábado devolve ao aceitar.';
+  let acoes = '';
+  if (oferta && t.autorId === eu) acoes = (meus.length ? campo('cvSab', t.sabadoDevolve ? 'Mudar o sábado que você devolve' : 'Sábado que você devolve', selSab('cvSab', t.sabadoDevolve)) + '<button class="btn" data-acao="es-propor" data-id="' + t.id + '">' + (t.sabadoDevolve ? 'Mudar a proposta' : 'Enviar a proposta') + '</button>' : '<p class="nota">Você não tem sábados nos próximos meses para devolver.</p>') + '<button class="btn sec2" data-acao="es-of-sair" data-id="' + t.id + '">Desistir</button>';
+  else if (oferta && dono === eu) acoes = (t.sabadoDevolve ? '<button class="btn" data-acao="es-of-ok" data-id="' + t.id + '">Aceitar a troca</button>' : '') + '<button class="btn sec2" data-acao="es-of-nao" data-id="' + t.id + '">Não aceitar</button>';
+  else if (!oferta && t.paraId === eu) acoes = (meus.length ? campo('esDev', 'Sábado que você devolve', selSab('esDev', '')) + '<button class="btn" data-acao="es-aceitar-ok" data-id="' + t.id + '">Aceitar a troca</button>' : '') + '<button class="btn sec2" data-acao="es-recusar" data-id="' + t.id + '">Não posso</button>';
+  else if (!oferta && t.autorId === eu) acoes = '<button class="btn sec2" data-acao="es-retirar" data-id="' + t.id + '">Retirar o pedido</button>';
+  const participa = t.autorId === eu || t.paraId === eu;
+  abrirFolha('Troca do ' + ES_SEM(t.sabado),
+    '<div class="es-prop">' + prop + '</div>' +
+    '<div class="es-conv-msgs" id="cvMsgs">' + (msgs.length ? msgs.map(m => '<div class="es-msg' + (m.autorId === eu ? ' eu' : '') + '">' + esc(m.texto) + '<small>' + n1(m.autorNome) + ' · ' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + '</small></div>').join('') : '<p class="nota">Nenhuma mensagem ainda.</p>') + '</div>' +
+    (participa ? '<div class="grade">' + campo('cvTx', 'Mensagem para ' + (t.autorId === eu ? (oferta ? nomeDono : nomeOutro) : (oferta ? nomeOutro : nomeDono)), '<textarea id="cvTx" rows="2" maxlength="300" placeholder="Só sobre a troca"></textarea>', 'larga') + '</div><div class="acoes-form"><button class="btn sec2" data-acao="es-msg" data-id="' + t.id + '">Enviar mensagem</button></div>' : '') +
+    (acoes ? '<div class="acoes-form" style="flex-wrap:wrap">' + acoes + '</div>' : ''),
+    c => { const m = c.querySelector('#cvMsgs'); if (m) m.scrollTop = m.scrollHeight; });
+  E.esConvAberta = id;
+}
 function formAceitarTroca(id) {
   const a = E.es.avisos.find(x => x.id === id); if (!a) return;
   const meus = esMeusSab().filter(x => x.data !== a.sabado); if (!meus.length) return toast('Você não tem um sábado seu para devolver nos próximos meses.');
   abrirFolha('Trocar com ' + String(a.autorNome).split(' ')[0],
-    '<p>Você fica com o sábado <b>' + br(a.sabado) + '</b>. ' + esc(String(a.autorNome).split(' ')[0]) + ' fica com qual sábado seu?</p>' + (a.paraId ? '<p class="nota">A troca vale assim que você confirmar.</p>' : '<p class="nota">' + esc(String(a.autorNome).split(' ')[0]) + ' ainda precisa confirmar.' + (a.comFila ? ' Outra pessoa já aceitou antes; você fica na espera, caso essa troca não dê certo.' : '') + '</p>') +
+    '<p>Você fica com o sábado <b>' + br(a.sabado) + '</b>. ' + esc(String(a.autorNome).split(' ')[0]) + ' fica com qual sábado seu?</p>' + (a.paraId ? '<p class="nota">A troca vale assim que você confirmar.</p>' : '<p class="nota">A proposta vai só para ' + esc(String(a.autorNome).split(' ')[0]) + ', que aceita ou não. Vocês podem conversar na negociação.</p>') +
     campo('esDev', 'Sábado que você devolve', '<select id="esDev">' + meus.map(x => '<option value="' + x.data + '">' + br(x.data) + '</option>').join('') + '</select>') +
-    '<div class="acoes-form"><button class="btn" data-acao="es-aceitar-ok" data-id="' + a.id + '">Confirmar a troca</button></div>');
+    '<div class="acoes-form"><button class="btn" data-acao="es-aceitar-ok" data-id="' + a.id + '">' + (a.paraId ? 'Aceitar a troca' : 'Enviar a proposta') + '</button></div>');
 }
 function formConfigEscala(c0) {
   const c = JSON.parse(JSON.stringify(c0 || E.es.cfg)), eq = E.es.equipe;
@@ -6903,12 +6938,13 @@ async function escalaHome() {
   const box = $('#esHome'); if (!box || !R) return;
   const itens = [];
   if (R.paraMim) itens.push('<b>' + R.paraMim + (R.paraMim > 1 ? ' pedidos particulares' : ' pedido particular') + '</b> de troca de sábado para você');
-  if (R.confirmar) itens.push('<b>' + R.confirmar + (R.confirmar > 1 ? ' trocas para você confirmar' : ' troca para você confirmar') + '</b>');
+  if (R.confirmar) itens.push('<b>' + R.confirmar + (R.confirmar > 1 ? ' propostas de troca para você' : ' proposta de troca para você') + '</b>');
+  if (R.propor) itens.push('<b>Sua vez de fazer a proposta de troca</b>');
   if (R.avisos) itens.push(R.avisos + (R.avisos > 1 ? ' avisos' : ' aviso') + ' no quadro');
   if (R.quadro) itens.push(R.quadro + (R.quadro > 1 ? ' pedidos de troca' : ' pedido de troca') + ' no quadro');
   if (R.proximos[0]) itens.push('Seu próximo sábado é ' + br(R.proximos[0]).slice(0, 5));
   if (!itens.length) return;
-  box.hidden = false; box.classList.toggle('urg', !!(R.paraMim || R.confirmar));
+  box.hidden = false; box.classList.toggle('urg', !!(R.paraMim || R.confirmar || R.propor));
   box.innerHTML = '<button class="es-home-b" data-acao="modulo" data-k="escala"><i class="pino p0"></i><span><b>Escala</b>' + itens.map(t => '<em>' + t + '</em>').join('') + '</span><span class="seta">›</span></button>';
 }
 /* ── Pendências da equipe na tela inicial, acima dos pedidos: as minhas primeiro, atrasadas e de hoje em destaque ── */
@@ -10525,7 +10561,10 @@ const ACOES = {
 
   'es-pedir': b => formPedidoTroca(b.dataset.v || ''),
   'es-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { sabado: vl('esSab'), paraId: vl('esPara') }); fecharFolha(); toast(vl('esPara') ? 'Pedido enviado só para essa pessoa.' : 'Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-aceitar': b => formAceitarTroca(b.dataset.id),
+  'es-aceitar': async b => { const a = E.es.avisos.find(x => x.id === b.dataset.id); if (a && !a.paraId && a.comFila) { b.disabled = true; try { const r = await api('escalaAvisoAceitar', E.sessao, a.id, ''); E.es = r; toast('Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } return; } if (a && a.paraId) return abrirConversa(a.id); formAceitarTroca(b.dataset.id); },
+  'es-conv': b => abrirConversa(b.dataset.id),
+  'es-propor': async b => { b.disabled = true; try { E.es = await api('escalaOfertaPropor', E.sessao, b.dataset.id, vl('cvSab')); toast('Proposta enviada.'); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-msg': async b => { const tx = ($('#cvTx') || {}).value || ''; if (!tx.trim()) return toast('Escreva a mensagem.'); b.disabled = true; try { E.es = await api('escalaMsgEnviar', E.sessao, b.dataset.id, tx); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso': () => formAvisoEscala(),
   'es-fer-pedir': b => { formPedidoFeriado(); if (b.dataset.v && $('#efD')) $('#efD').value = b.dataset.v; },
   'es-fer-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'feriado', sabado: vl('efD') }); fecharFolha(); toast('Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
@@ -10535,12 +10574,12 @@ const ACOES = {
   'es-fer-def': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('efP'), vl('efP') ? 'escalado pelo administrador no feriado' : ''); fecharFolha(); toast('Feriado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'aviso', sabado: vl('eaS'), texto: ($('#eaT') || {}).value || '' }); fecharFolha(); toast('Aviso no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar-ok': async b => { b.disabled = true; try { const r = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); E.es = r; fecharFolha();
-    toast({ trocado: 'Troca feita. Já está no quadro.', oferta: 'Pronto. Agora quem pediu precisa confirmar a troca.', espera: 'Outra pessoa já tinha aceitado antes. Você ficou na espera, caso essa troca não dê certo.' }[r.resultado] || 'Pronto.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-of-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, true); toast('Troca confirmada. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-of-nao': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, false); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-of-sair': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaOfertaRetirar', E.sessao, b.dataset.id); toast('Você desistiu da troca.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-retirar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaAvisoRetirar', E.sessao, b.dataset.id); toast('Pedido retirado.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+    toast({ trocado: 'Troca feita. Já está no quadro.', oferta: 'Proposta enviada. A negociação fica entre vocês dois.', espera: 'Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.' }[r.resultado] || 'Pronto.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-of-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, true); fecharFolha(); toast('Troca confirmada. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-of-nao': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, false); fecharFolha(); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-of-sair': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaOfertaRetirar', E.sessao, b.dataset.id); fecharFolha(); toast('Pronto.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); fecharFolha(); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-retirar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaAvisoRetirar', E.sessao, b.dataset.id); fecharFolha(); toast('Pedido retirado.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-sab': b => infoSabado(b.dataset.v),
   'es-sab-editar': b => formSabadoAdmin(b.dataset.v),
   'es-sab-ok': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('esSP'), vl('esSM')); fecharFolha(); toast('Sábado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },

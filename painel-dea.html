@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128025629">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128025905">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1263,7 +1263,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128025629';
+  var VERSAO = '20261128025905';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6532,6 +6532,7 @@ function reciboHtml(R) {
     '<p class="rv-tx">Recebi de <b>' + esc(R.pagador || '________________________') + '</b>' + (R.cpfPagador ? ', CPF ' + esc(R.cpfPagador) : '') + ', a importância de <b>' + moeda(R.total) + '</b> (' + esc(R.extenso) + '), referente a <b>' + R.dias.length + ' diárias</b>' + (R.servico ? ' de ' + esc(R.servico) : '') + ', no valor de ' + moeda(R.diaria) + ' cada, nos dias ' + esc(R.diasTexto) + '.</p>' +
     '<div class="rv-tabs">' + tab(linhas.slice(0, meio)) + tab(linhas.slice(meio)) + '</div>' +
     '<div class="rv-tot"><span>Total de ' + R.dias.length + ' diárias</span><b>' + moeda(R.total) + '</b></div>' +
+    (R.pix ? '<p class="rv-pix">Pagamento por Pix · chave ' + esc(R.pix) + '</p>' : '') +
     '<div class="rv-pe"><p>' + esc(R.cidade) + ', ' + esc(R.dataExtenso) + '.</p><div class="rv-ass"><i></i><b>' + esc(R.recebedor) + '</b>' + (R.cpfRecebedor ? '<span>CPF ' + esc(R.cpfRecebedor) + '</span>' : '') + '</div></div>' +
     '<span class="rv-via">' + n + 'ª via</span></section>';
   return '<div class="recibo"><style>' +
@@ -6542,6 +6543,7 @@ function reciboHtml(R) {
     '.rv-valor{border:1.5px solid #1f1a17;border-radius:10px;padding:8px 16px;text-align:right}.rv-valor small{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5a524c}.rv-valor b{font-size:24px}' +
     '.rv-tx{font-size:14.5px;line-height:1.65;margin:18px 0 12px;text-align:justify}' +
     '.rv-tabs{display:flex;gap:26px}.rv table{flex:1;border-collapse:collapse;font-size:12.5px}.rv th{text-align:left;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5a524c;border-bottom:1px solid #1f1a17;padding:4px 6px}.rv td{padding:4px 6px;border-bottom:1px solid #e3ded9}.rv td:last-child,.rv th:last-child{text-align:right}' +
+    '.rv-pix{margin:8px 0 0;font-size:12.5px;color:#3a332e;text-align:right}' +
     '.rv-tot{display:flex;justify-content:flex-end;gap:18px;align-items:baseline;margin-top:10px;padding-top:8px;border-top:1.5px solid #1f1a17;font-size:13px;letter-spacing:.04em}.rv-tot b{font-size:16px}' +
     '.rv-pe{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:30px}.rv-pe p{margin:0;font-size:13.5px}' +
     '.rv-ass{width:300px;text-align:center;display:flex;flex-direction:column;gap:2px}.rv-ass i{border-top:1px solid #1f1a17;margin-bottom:6px}.rv-ass b{font-size:13.5px}.rv-ass span{font-size:12px;color:#5a524c}' +
@@ -6585,7 +6587,7 @@ function formAgenda(a) {
           return '<div class="larga grade" id="agRec"><p class="nota larga" style="margin:0"><b>Recibo do mês</b> (opcional). Preenchido, o recibo vai pronto, em PDF, junto da primeira pendência da pessoa avisada, com as diárias (sábado e domingo de cada fim de semana) do mês anterior.</p>' +
             campo('agRcN', 'Quem recebe', inp('agRcN', r.recebedor || '', 'placeholder="Nome completo"')) + campo('agRcC', 'CPF de quem recebe', inp('agRcC', r.cpfRecebedor || '', 'inputmode="numeric"')) +
             campo('agRcP', 'Quem paga', inp('agRcP', r.pagador || '', 'placeholder="Nome completo"')) + campo('agRcPC', 'CPF de quem paga', inp('agRcPC', r.cpfPagador || '', 'inputmode="numeric"')) +
-            campo('agRcS', 'Serviço', inp('agRcS', r.servico || '', 'placeholder="Ex.: serviços gerais"')) + campo('agRcCi', 'Cidade', inp('agRcCi', r.cidade || 'Brasília')) +
+            campo('agRcS', 'Serviço', inp('agRcS', r.servico || '', 'placeholder="Ex.: serviços gerais"')) + campo('agRcX', 'Pix de quem recebe (opcional)', inp('agRcX', r.pix || '', 'placeholder="Chave e banco"')) + campo('agRcCi', 'Cidade', inp('agRcCi', r.cidade || 'Brasília')) +
             (a.id && a.recibo ? '<button type="button" class="btn sec2 peq larga" data-acao="ag-recibo-ver" data-id="' + a.id + '" data-v="' + esc(a.data) + '">Ver o recibo deste mês</button>' : '') + '</div>'; })() +
         campo('agOutro', 'Avisar também', '<select id="agOutro"><option value="">Ninguém</option>' + (E.agEquipe || []).filter(u => u.id !== E.u.id).map(u => '<option value="' + u.id + '"' + (u.id === a.outroAviso ? ' selected' : '') + '>' + esc(u.nome) + '</option>').join('') + '</select>', 'larga') +
         campo('agOutroObs', 'Pendências para essa pessoa, uma por linha (ela não recebe o seu aviso, só as pendências, que ficam no quadro até ela concluir)', '<textarea id="agOutroObs" rows="3" placeholder="Emitir e imprimir o recibo da Adriana&#10;Enviar o recibo para a Adriana&#10;Recibo assinado devolvido pela Adriana">' + esc(a.outroObs || '') + '</textarea>', 'larga') + '</div></div>' +
@@ -10753,7 +10755,7 @@ const ACOES = {
     const part = !!($('#agPart') || {}).checked; if (part && !$('#agTit').value.trim()) return toast('Escreva o que é o aviso particular (descrição).');
     const o = { id: b.dataset.id, data: $('#agData').value, hora: $('#agHora').value, tipo: $('#agTipo').value, duracao: $('#agDur').value, animalId: achou ? achou[1] : '', titulo: $('#agTit').value, obs: $('#agObs').value, status: $('#agSt') ? $('#agSt').value : 'agendado',
       particular: part, repetir: part ? $('#agRep').value : '', avisar: part ? [...new Set([...document.querySelectorAll('.agAvi')].map(x => x.value).filter(x => x !== ''))].join(',') : '',
-      recibo: part && $('#agRcN') && $('#agRcN').value.trim() ? { recebedor: vl('agRcN'), cpfRecebedor: vl('agRcC'), pagador: vl('agRcP'), cpfPagador: vl('agRcPC'), servico: vl('agRcS'), cidade: vl('agRcCi') } : null,
+      recibo: part && $('#agRcN') && $('#agRcN').value.trim() ? { recebedor: vl('agRcN'), cpfRecebedor: vl('agRcC'), pagador: vl('agRcP'), cpfPagador: vl('agRcPC'), servico: vl('agRcS'), pix: vl('agRcX'), cidade: vl('agRcCi') } : null,
       valorFds: part ? $('#agVal').value.replace(/\./g, '').replace(',', '.') : '', outroAviso: part ? $('#agOutro').value : '', outroObs: part && $('#agOutro').value ? $('#agOutroObs').value : '' };
     b.disabled = true;
     try {
