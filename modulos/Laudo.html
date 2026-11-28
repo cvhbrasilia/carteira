@@ -3164,7 +3164,10 @@ function lerFitaDea(fonte, inteira) {
     const k = Math.sqrt(1 + m * m), sC = xc * k, sFim = a.x1 * k, sMem = a.x0 * k;
     // fita cortada ao meio no comprimento (metade da espessura): a distância entre as linhas e o comprimento da membrana denunciam
     const rel = ti != null ? ((a.x0 + ti) * k - sC) / h : (sFim - sC) / h;
-    const cortada = ti != null ? rel > 3 : rel > 8.5, U = cortada ? h * 2 : h;
+    const cortada = ti != null ? rel > 3 : rel > 8.5;
+    // com a linha do teste, a escala sai da distância entre o controle e o teste, que é fixa na fita da ALVEDIA (FITA_P.dT);
+    // a espessura medida varia com a foto e com a fita cortada ao meio, e fazia a linha do DEA 1 ficar longe do controle
+    const Ue = cortada ? h * 2 : h, Ud = ti != null ? ((a.x0 + ti) * k - sC) / FITA_P.dT : 0, U = Ud && Ud > h * 0.7 && Ud < h * 6 ? Ud : Ue;
     return { m, b0: b0 + desv, h, U, k, sC, sT: ti != null ? (a.x0 + ti) * k : sC + 2 * U, teste: ti != null, sMem, sFim, cortada, wb };
   }
 }
@@ -3189,6 +3192,10 @@ function desenharFita(r, fonte) {
   };
   let real0 = Math.min(g.sC - 0.6 * g.U, Math.max(iniMem, g.sMem + 0.5 * g.U)), real1 = Math.max(g.sT + 0.6 * g.U, Math.min(fimMem, g.sC + 4.2 * g.U, g.sFim - 0.6 * g.U));
   const cs = 1 / g.k, sn = g.m / g.k, ponto = (sv, v) => { const X0 = sv / g.k, Y0 = g.m * X0 + g.b0; return [X0 - sn * v, Y0 + cs * v]; };
+  // posição no desenho → posição na foto: a linha do DEA 1 fica sempre a FITA_P.dT do controle (padrão da fita);
+  // só o trecho entre as duas linhas estica ou encolhe, as linhas mantêm a largura da foto
+  const sTp = g.sC + P.dT * g.U, folga = 0.25 * g.U, ajusta = g.teste && Math.abs((g.sT - g.sC) - P.dT * g.U) > 0.02 * g.U;
+  const naFoto = (sv) => { if (!ajusta) return sv; if (sv <= g.sC + folga) return sv; if (sv >= sTp - folga) return g.sT + (sv - sTp); return g.sC + folga + (sv - g.sC - folga) * ((g.sT - g.sC - 2 * folga) / (sTp - g.sC - 2 * folga)); };
   const img = x.createImageData(wm, ho), D = img.data, tmp = [0, 0, 0], esp = g.h * 0.84;
   // onde a membrana real termina de verdade: corte em diagonal, ponta desfiada ou a moldura do cartão param a varredura
   const ref = [0, 0, 0]; { let n = 0; for (let sv = g.sC + 0.4 * g.U; sv < g.sT - 0.4 * g.U; sv += s) for (let v = -3; v <= 3; v++) { const [X, Y] = ponto(sv, v * esp / 8); amostra(X, Y, tmp); ref[0] += tmp[0]; ref[1] += tmp[1]; ref[2] += tmp[2]; n++; } if (n) for (let c = 0; c < 3; c++) ref[c] /= n; }
@@ -3204,7 +3211,7 @@ function desenharFita(r, fonte) {
   const perfil = (t) => { const P2 = []; for (let v = 0; v < ho; v++) { const off = (v + 0.5 - ho / 2) * esp / ho, cols = [[], [], []]; for (let sv = t[0]; sv <= t[1]; sv += Math.max(s, (t[1] - t[0]) / 40)) { const [X, Y] = ponto(sv, off); amostra(X, Y, tmp); for (let c = 0; c < 3; c++) cols[c].push(tmp[c]); } P2.push(cols.map((c) => { c.sort((p, q) => p - q); return c[Math.floor(c.length / 2)] || 200; })); } return P2; };
   const pD = perfil(texD), pE = perfil(texE);
   for (let u = 0; u < wm; u++) {
-    const sv = iniMem + u * s; let mist = 0, pf = null;
+    const sv = naFoto(iniMem + u * s); let mist = 0, pf = null;
     if (sv > real1) { pf = pD; mist = Math.min(1, (sv - real1) / (0.35 * g.U)); }
     else if (sv < real0) { pf = pE; mist = Math.min(1, (real0 - sv) / (0.35 * g.U)); }
     for (let v = 0; v < ho; v++) {
@@ -3224,7 +3231,7 @@ function desenharFita(r, fonte) {
   }
   x.drawImage(mem, xF + wc, yF);
   x.fillStyle = "#6b5a52"; x.strokeStyle = "#6b5a52"; x.font = "bold 26px Helvetica, Arial, sans-serif"; x.textAlign = "center";
-  [[g.sC, "C"], [g.sT, "DEA 1"]].forEach(([sv, t2]) => { const cx = xF + wc + (sv - iniMem) / s; x.fillText(t2, cx, 30); x.beginPath(); x.moveTo(cx, 38); x.lineTo(cx, 56); x.lineWidth = 2.4; x.stroke(); x.beginPath(); x.moveTo(cx - 7, 49); x.lineTo(cx, 58); x.lineTo(cx + 7, 49); x.fill(); });
+  [[g.sC, "C"], [g.teste ? sTp : g.sT, "DEA 1"]].forEach(([sv, t2]) => { const cx = xF + wc + (sv - iniMem) / s; x.fillText(t2, cx, 30); x.beginPath(); x.moveTo(cx, 38); x.lineTo(cx, 56); x.lineWidth = 2.4; x.stroke(); x.beginPath(); x.moveTo(cx - 7, 49); x.lineTo(cx, 58); x.lineTo(cx + 7, 49); x.fill(); });
   return { url: cv.toDataURL("image/jpeg", 0.92), w: CW, h: CH };
 }
 function aplicarFitaDea(r, fonte) {
