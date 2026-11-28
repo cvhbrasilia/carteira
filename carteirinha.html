@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128130909">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Cartão doador"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#5F130F"><link rel="apple-touch-icon" href="carteirinha-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="carteirinha-escuro-192.png?v=2"><link rel="icon" type="image/png" href="carteirinha-192.png?v=2"><link rel="manifest" href="carteirinha.webmanifest?v=20261128140943">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -1156,6 +1156,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
 /* tela inicial com os módulos */
 .ola{font-size:15px;color:var(--tinta2);margin-top:-6px}
 .mods{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.es-esp{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.es-esp-d{display:flex;flex-direction:column;gap:2px;background:#EEE5DB;border-radius:12px;padding:10px 12px}.es-esp-d b{color:#5F130F}.es-esp-d span{font-weight:600}.es-esp-d em{font-style:normal;font-size:13px;color:#6b5a4a}
 .tela-home .mods .mod{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .mods.org .mod{animation:modTreme .3s ease-in-out infinite alternate;touch-action:none}.mods.org .mod:nth-child(2n){animation-delay:.15s}
 @keyframes modTreme{from{transform:rotate(-.6deg)}to{transform:rotate(.6deg)}}
@@ -1272,7 +1273,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128130909';
+  var VERSAO = '20261128140943';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6807,6 +6808,7 @@ function pintarEscala() {
     '</aside></div>' +
     ((R.feriados || []).length ? '<section class="cartao"><h3>Feriados</h3><p class="nota">Nacionais e do DF. O CVH fecha; abre só para quem pediu para trabalhar e foi confirmado. Sábado de feriado não conta no rodízio.</p><div class="es-fers">' +
       R.feriados.slice(0, 16).map(f => '<button class="es-fer' + (f.pessoaId ? ' com' : '') + '" data-acao="es-fer-ver" data-v="' + f.data + '"><b>' + ES_SEM(f.data) + '</b><span>' + esc(f.nome) + '</span><em>' + (f.pessoaId ? esc(esPessoa(f.pessoaId).nome.split(' ')[0]) + ' trabalha' : 'CVH fechado') + '</em></button>').join('') + '</div></section>' : '') +
+    ((R.cfg.especiais || []).length ? '<section class="cartao"><h3>Horários especiais</h3><p class="nota">O CVH abre só nestes turnos.</p><div class="es-esp">' + R.cfg.especiais.map(x => '<div class="es-esp-d"><b>' + ES_SEM(x.data) + '</b><span>' + esc(x.nome) + '</span>' + (x.turnos || []).map(t => '<em>' + t.de + 'h às ' + t.ate + 'h · ' + esc((t.pessoas || []).map(esNome1).join(' e ')) + '</em>').join('') + '</div>').join('') + '</div></section>' : '') +
     (outrosMeses.length ? '<section class="cartao es-cal"><h3>Próximos meses</h3>' +
       '<div class="es-meses">' + outrosMeses.map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</div></section>' : '') +
     '<section class="cartao"><h3>Horários da semana</h3><div class="es-hor"><table><thead><tr><th></th>' + [1, 2, 3, 4, 5].map(d => '<th>' + ES_DIAS[d] + '</th>').join('') + '<th>Sábado</th></tr></thead><tbody>' +
