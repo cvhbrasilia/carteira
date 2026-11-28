@@ -1,0 +1,26 @@
+{
+  "name": "Fiorino",
+  "short_name": "Fiorino",
+  "display": "standalone",
+  "background_color": "#5F130F",
+  "theme_color": "#F5EFE7",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "fiorino-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "fiorino-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "fiorino-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
