@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128003647">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128010944">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -437,6 +437,37 @@ button{cursor:pointer}
 .venc.prep{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px;border-radius:12px;margin:8px 0}.venc.prep .t{width:100%}.venc.prep .t small{display:block;white-space:normal;overflow:visible;text-overflow:clip;margin-top:4px;line-height:1.7}.venc.prep .mini-bts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
 .prep-ok{box-shadow:0 0 0 2px #3f8b4a inset;background:#F4FAF4}
 .ped-home{background:#fff;border-radius:14px;padding:12px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(95,19,15,.12);border-left:5px solid var(--vermelho)}.ped-home.vazio{border-left-color:var(--areia2,#C6B098)}.ped-home.vazio .ped-cab{margin:0}
+.cortica{position:relative;margin:14px 0;padding:16px 16px 20px;border-radius:14px;border:12px solid #8a5f3c;box-shadow:inset 0 0 0 2px #6f4a2d,inset 0 2px 14px rgba(0,0,0,.35),0 6px 18px rgba(60,30,10,.25);background-color:#C49A6C;background-image:radial-gradient(rgba(95,19,15,.18) .9px,transparent 1.4px),radial-gradient(rgba(255,245,230,.22) .8px,transparent 1.3px),radial-gradient(rgba(80,45,20,.14) 1.6px,transparent 2.2px);background-size:6px 6px,9px 9px,17px 17px;background-position:0 0,3px 4px,7px 2px}
+.cortica-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.cortica-cab h3{margin:0;color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.55);font-size:19px}
+.cortica-vazio{color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.5);margin:18px 0 6px;text-align:center}
+.postits{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:22px 18px;padding:14px 4px 4px}
+.postit{position:relative;padding:22px 14px 14px;min-height:150px;transform:rotate(var(--rot,0deg));box-shadow:0 10px 14px -8px rgba(40,15,5,.55),0 1px 2px rgba(0,0,0,.12);border-radius:2px 2px 14px 2px;color:#3a2a26;font-size:14px;line-height:1.35;transition:transform .15s}
+.postit:hover{transform:rotate(0) scale(1.02)}
+.postit.pi-areia{background:linear-gradient(180deg,#f6efe6,#EEE5DB)}.postit.pi-caramelo{background:linear-gradient(180deg,#f6e3c8,#ecd2ad)}.postit.pi-rosa{background:linear-gradient(180deg,#f7e3df,#efcfc9)}.postit.pi-creme{background:linear-gradient(180deg,#efe6d6,#ddcdb4)}
+.postit.fechado{opacity:.72;filter:saturate(.7)}
+.postit small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52;font-weight:700}
+.postit .pi-data{display:block;font-size:30px;color:#5F130F;line-height:1.1;margin:2px 0 6px}
+.postit p{margin:0 0 6px}.postit .pi-sit{font-size:13px;color:#7a5a46;font-style:italic}
+.pi-bts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pino{position:absolute;top:-7px;left:50%;width:18px;height:18px;margin-left:-9px;border-radius:50%;box-shadow:0 3px 4px rgba(0,0,0,.4),inset -3px -3px 5px rgba(0,0,0,.25),inset 3px 3px 4px rgba(255,255,255,.55);z-index:2}
+.pino::after{content:'';position:absolute;left:5px;top:4px;width:5px;height:4px;border-radius:50%;background:rgba(255,255,255,.75)}
+.pino.p0{background:#A83D3D}.pino.p1{background:#5F130F}.pino.p2{background:#C49A6C}.pino.p3{background:#C6B098}
+.cortica-ant{margin-top:12px}.cortica-ant summary{cursor:pointer;color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.5);font-size:14px}
+.es-rasc{background:#EEE5DB;border-left:4px solid #C49A6C;padding:8px 12px;border-radius:8px;font-size:14px}
+.es-meu{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;background:#fff;border:1px solid #C6B098;border-left:6px solid #A83D3D;border-radius:12px;padding:12px 14px;margin:10px 0}
+.es-meu span{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-meu b{font-size:24px;color:#5F130F}.es-meu small{color:#7a6a62}.es-meu .btn{grid-row:1/4;grid-column:2}
+.es-mes h4{margin:12px 0 6px;color:#5F130F}.es-mes h4 small{text-transform:none;color:#8a6a52;font-weight:400}
+.es-sabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.es-sab{display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:#EEE5DB;border:1px solid #C6B098;border-radius:10px;padding:8px 10px;font:inherit;text-align:left;cursor:pointer;color:#3a2a26}
+.es-sab b{font-size:20px;color:#5F130F;line-height:1}.es-sab span{font-size:14px}.es-sab em{font-style:normal;font-size:11px;color:#8a6a52}
+.es-sab.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-sab.meu b,.es-sab.meu em{color:#fff}
+.es-sab.passou{opacity:.5}.es-sab.falta{border:2px dashed #A83D3D}.es-sab.falta em{color:#A83D3D;font-weight:700}
+.es-hor{overflow-x:auto}.es-hor table{border-collapse:collapse;width:100%;font-size:14px}.es-hor th,.es-hor td{padding:7px 8px;border-bottom:1px solid #EEE5DB;text-align:center;white-space:nowrap}.es-hor tbody th{text-align:left;color:#5F130F}.es-hor tr.meu{background:#f7efe6}
+.es-pc{border:1px solid #EEE5DB;border-radius:10px;padding:10px;margin:8px 0}.es-hrs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.es-hrs label{font-size:12px;color:#7a6a62;font-weight:700}.es-hrs input{width:100%;margin-top:2px}
+.es-home{margin:10px 0}.es-home-b{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;cursor:pointer;border:0;border-radius:12px;padding:14px 16px 14px 18px;color:#3a2a26;background-color:#C49A6C;background-image:linear-gradient(90deg,rgba(255,250,242,.93),rgba(255,250,242,.86)),radial-gradient(rgba(95,19,15,.25) .9px,transparent 1.4px);background-size:auto,6px 6px;box-shadow:inset 0 0 0 1px #C6B098}
+.es-home-b .pino{top:10px;left:14px;margin:0;width:12px;height:12px}.es-home-b>span:first-of-type{display:flex;flex-direction:column;gap:2px;padding-left:12px;flex:1}.es-home-b b{color:#5F130F;font-size:16px}.es-home-b em{font-style:normal;font-size:14px}
+.es-home.urg .es-home-b{box-shadow:inset 0 0 0 2px #A83D3D}
+@media (max-width:600px){.postits{grid-template-columns:1fr 1fr;gap:18px 12px}.postit{min-height:130px;padding:20px 10px 10px;font-size:13px}.postit .pi-data{font-size:24px}.es-hrs{grid-template-columns:repeat(3,1fr)}.cortica{border-width:9px;padding:12px 10px 16px}}
 .pd-home{border-left-color:#C49A6C}.pd-home .ped-cab{cursor:pointer}.pd-hl{display:flex;justify-content:space-between;gap:10px;width:100%;background:none;border:0;border-top:1px solid #EEE5DB;padding:8px 0;text-align:left;font:inherit;font-size:14px;color:#3a2a26;cursor:pointer}.pd-hl em{font-style:normal;font-size:12px;color:#8a7a72;white-space:nowrap}.pd-hl.atr em{color:#A83D3D;font-weight:700}.pd-hl.hj em{color:#C49A6C;font-weight:700}.pd-hl.mais{color:#8a7a72;font-size:13px}.ped-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}.ped-cab b{color:var(--vinho);font-size:16px}.ped-cab span{font-size:13px;color:#7a6a62}
 .ped-l{width:100%;display:flex;gap:10px;align-items:center;border:0;border-top:1px solid #EEE5DB;background:none;padding:10px 0;font-family:inherit;text-align:left;cursor:pointer;min-height:48px}
 .ped-x{display:flex;flex-direction:column;gap:2px}.ped-rel{font-weight:700;color:#8a5a12}.ped-rel.al{color:#A83D3D}.ped-x b{color:#3a2a26;font-size:15px}.ped-x small{color:#7a6a62;font-size:13px}
@@ -1210,7 +1241,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128003647';
+  var VERSAO = '20261128010944';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -5318,6 +5349,7 @@ const MODS = [
   { k: 'cartaovacina', perm: 'carteiras', t: 'Cartão de vacina', d: 'Folhas do cartão físico com o cabeçalho do animal, para imprimir no papel timbrado, e digitalização do cartão por foto', ic: svgIc('<rect x="4" y="3" width="16" height="18" rx="2.2"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M15.500 15.800l1.400 1.400 2.600-2.800"/>') },
   { k: 'requisicoes', perm: 'requisicoes', t: 'Requisição de exames', d: 'Pedidos de exames para a Citopet, prontos com as coletas do dia, para imprimir no papel timbrado', ic: svgIc('<rect x="3.6" y="2.6" width="6.8" height="3" rx=".9"/><path d="M4.700 5.600v12.400a2.300 2.300 0 0 0 4.600 0V5.600M4.700 12.600h4.600"/><rect x="13.6" y="2.6" width="6.8" height="3" rx=".9"/><path d="M14.700 5.600v12.400a2.300 2.300 0 0 0 4.600 0V5.600M14.700 10.400h4.600"/>') },
   { k: 'memoria', perm: 'admin', t: 'Em memória', d: 'Fotos guardadas ao longo das doações e o memorial de cada doador que partiu', ic: svgIc('<path d="M12 20.5c-4.400-2.800-8-6.200-8-10.200A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 8 2.700c0 4-3.600 7.400-8 10.200z"/><path d="M9 11.500h6M12 9v5.500"/>') },
+  { k: 'escala', livre: true, t: 'Escala da equipe', d: 'Sábados de cada um, horários da semana e quadro de trocas', ic: svgIc('<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="9" cy="14.2" r="1.6"/><circle cx="15" cy="14.2" r="1.6"/><path d="M6.3 18.3c.6-1.300 1.600-1.900 2.700-1.900s2.100.6 2.700 1.900M12.3 18.3c.6-1.300 1.600-1.900 2.700-1.900s2.100.6 2.700 1.900"/>') },
 ];
 // número fixo de cada módulo (para abrir rápido pelo número); módulo novo entra no fim da lista com o próximo número
 MODS.forEach((m, i) => { m.n = i + 1; });
@@ -6528,17 +6560,19 @@ function telaHome() {
   }).catch(e => { const c = $('#alCont'); if (c) c.textContent = /Código\.gs/.test(e.message) ? 'servidor desatualizado' : 'Abrir'; }), 50);
   if (pode('estoque') || pode('producao') || pode('admin')) setTimeout(pedidosHome, 40);
   if (pode('pendencias') && !E.d.externo) setTimeout(pendenciasHome, 30);
+  if (E.d.naEscala) setTimeout(escalaHome, 35);
   clearTimeout(E.recVermT); E.recVermT = setTimeout(() => { try { receitasVermPendentes(); } catch (_) {} }, 2500);
   if (pode('laudos')) setTimeout(novosResultadosHome, 60);
   if (!E.rec && (pode('laudos') || pode('estoque') || pode('receptores'))) api('estReceptores', E.sessao).then(L => { E.rec = L; }).catch(() => {});
   const externo = !!(E.u && /conta_/.test(E.u.permissoes || '') && !E.u.permissoes.includes('admin'));
-  const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte'));
+  const meus = MODS.filter(m => (m.livre || pode(m.perm || m.k)) && (!externo || m.k === 'transporte') && (m.k !== 'escala' || E.d.naEscala));
   E.meusMods = meus;
   if (pode('admin') && temPasskey() && ehCelular() && !navigator.webdriver) setTimeout(async () => { try { if (localStorage.getItem('cvh_faceid_ofertado') || await apiBruto('chaveTem', E.sessao)) return; localStorage.setItem('cvh_faceid_ofertado', '1'); if (confirm('Cadastrar o Face ID ou a digital neste aparelho? Você passa a entrar e confirmar ações graves sem digitar a senha.')) { await cadastrarFaceId(); toast('Face ID cadastrado.'); } } catch (_) {} }, 1500);
   raiz.innerHTML = FUNDO_PADRAO('cheio') + '<main class="tela tela-home com-padrao"><div class="tela-c">' +
     '<header class="topo"><i class="lg-res"></i><div class="t"><span>' + (marcaDea() ? 'DEA+ Hemocentro Animal' : 'Centro Veterinário de Hemoterapia') + '</span><b>' + (marcaDea() ? 'Painel DEA+' : 'Painel CVH') + '</b></div></header>' +
     '<p class="ola">Olá, ' + esc((E.u.nome || '').split(' ')[0]) + '. O que vamos fazer?</p>' +
     '<p class="aviso-srv" id="avisoSrv" hidden></p>' +
+    (E.d.naEscala ? '<section class="es-home" id="esHome" hidden></section>' : '') +
     (pode('pendencias') && !E.d.externo ? '<section class="ped-home pd-home" id="pdHome" hidden></section>' : '') +
     ((pode('estoque') || pode('producao') || pode('admin')) ? '<section class="ped-home" id="pedHome" hidden></section>' : '') +
     (pode('admin') ? '<button class="al-home" data-acao="alertas" id="alHome"><b>Alertas laboratoriais</b><span class="al-dir"><span id="labNovos"></span><span id="alCont">calculando…</span></span></button>' : pode('laudos') ? '<button class="al-home" data-acao="laudos-painel" id="labHome" hidden><b>Laudos dos laboratórios</b><span id="labNovos"></span></button>' : '') +
@@ -6549,6 +6583,118 @@ function telaHome() {
     '</div></main>';
   const bg = $('#buscaG'); if (bg) bg.oninput = () => { const h = buscaGlobal(bg.value); $('#resG').hidden = !h; $('#resG').innerHTML = h; };
   if (bg) bg.addEventListener('keydown', ev => { if (ev.key !== 'Enter') return; const ms = modulosBusca(bg.value); if (ms.length === 1) { ev.preventDefault(); abrirModPorK(ms[0].k); } });
+}
+/* ── Escala da equipe: sábados em rodízio, horários da semana e o quadro de cortiça com os pedidos de troca ── */
+const ES_DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], ES_AUS = { atestado: 'atestado', ferias: 'férias', folga: 'folga', outro: 'afastamento' };
+const esPessoa = id => ((E.es && E.es.cfg.pessoas) || []).find(p => p.id === id) || { nome: '?' };
+const esNome1 = id => String(esPessoa(id).nome || '?').split(' ')[0];
+const esHr = h => h ? h[0] + 'h às ' + h[1] + 'h' : '';
+const esMeusSab = () => (E.es.sabados || []).filter(x => x.pessoaId === E.es.eu && x.data >= E.es.hoje);
+async function telaEscala() {
+  E.livro = null; fecharFolha(); carregando('Carregando a escala');
+  try { E.es = await api('escalaDados', E.sessao); } catch (e) { toast(e.message, 6000); return telaHome(); }
+  pintarEscala();
+}
+function postitEscala(a) {
+  const h = [...String(a.id)].reduce((s, c) => s + c.charCodeAt(0), 0), rot = ((h % 7) - 3) * 0.8, eu = E.u.id, aberto = a.situacao === 'aberto';
+  const sit = { trocado: 'Trocado com ' + String(a.respNome).split(' ')[0] + (a.sabadoDevolve ? ', que devolveu o sábado ' + br(a.sabadoDevolve).slice(0, 5) : ''), recusado: String(a.respNome).split(' ')[0] + ' não pôde trocar', retirado: 'Pedido retirado' }[a.situacao] || '';
+  const bts = !aberto ? '' : (a.autorId === eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>'
+    : (E.es.eu && (!a.paraId || a.paraId === eu) ? '<button class="btn peq" data-acao="es-aceitar" data-id="' + a.id + '">Eu troco com você</button>' + (a.paraId === eu ? '<button class="btn sec2 peq" data-acao="es-recusar" data-id="' + a.id + '">Não posso</button>' : '') : '') + (E.es.admin && a.autorId !== eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : ''));
+  return '<article class="postit pi-' + esc(a.cor || 'areia') + (aberto ? '' : ' fechado') + '" style="--rot:' + rot + 'deg"><i class="pino p' + (h % 4) + '"></i>' +
+    '<small>' + (a.paraId ? 'Particular para ' + esc(String(a.paraNome).split(' ')[0]) : 'Troca de sábado') + '</small>' +
+    '<b class="pi-data">' + br(a.sabado).slice(0, 5) + '</b>' +
+    '<p><strong>' + esc(String(a.autorNome).split(' ')[0]) + '</strong> precisa trocar este sábado.' + (a.texto ? '<br>' + esc(a.texto) : '') + '</p>' +
+    (sit ? '<p class="pi-sit">' + esc(sit) + '</p>' : '') + (bts ? '<div class="pi-bts">' + bts + '</div>' : '') + '</article>';
+}
+function pintarEscala() {
+  const R = E.es, c = R.cfg, h = R.hoje, meus = R.eu ? esMeusSab() : [];
+  const ab = R.avisos.filter(a => a.situacao === 'aberto' && a.sabado >= h), outros = R.avisos.filter(a => !(a.situacao === 'aberto' && a.sabado >= h)).sort((a, b) => String(b.resolvidoEm).localeCompare(String(a.resolvidoEm))).slice(0, 6);
+  const meses = {}; R.sabados.filter(x => x.data >= h.slice(0, 8) + '01').forEach(x => (meses[x.data.slice(0, 7)] = meses[x.data.slice(0, 7)] || []).push(x));
+  const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
+  const chipSab = x => '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
+    (x.ausente ? '<em>' + esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura</em>' : x.ajuste ? '<em>' + esc(/troca/.test(x.ajuste.motivo) ? 'trocado' : 'ajustado') + '</em>' : '') + '</button>';
+  raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
+    '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div>' + (R.admin ? '<button class="pill escura" data-acao="es-config">Ajustar a escala</button>' : '') + '</header>' +
+    (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até tocar em "Publicar" em Ajustar a escala.</p>' : '') +
+    (R.eu && meus.length ? '<section class="es-meu"><span>Seu próximo sábado</span><b>' + br(meus[0].data) + '</b><small>' + esHr(esPessoa(R.eu).sabado) + (meus[1] ? ' · depois, ' + br(meus[1].data).slice(0, 5) : '') + '</small>' +
+      '<button class="btn peq" data-acao="es-pedir" data-v="' + meus[0].data + '">Pedir troca</button></section>' : '') +
+    '<section class="cortica"><div class="cortica-cab"><h3>Quadro de avisos</h3>' + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
+      (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum pedido de troca aberto.</p>') +
+      (outros.length ? '<details class="cortica-ant"><summary>Pedidos resolvidos nos últimos 15 dias (' + outros.length + ')</summary><div class="postits">' + outros.map(postitEscala).join('') + '</div></details>' : '') +
+    '</section>' +
+    '<section class="cartao es-cal"><h3>Sábados</h3><p class="nota">' + (c.ordem.length ? 'Rodízio: ' + esc(c.ordem.map(esNome1).join(', ')) + '.' : 'Rodízio ainda não definido.') + (R.eu ? ' Toque num sábado seu para pedir troca.' : '') + (R.admin ? ' Toque num sábado para trocar quem trabalha.' : '') + '</p>' +
+      Object.keys(meses).map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</section>' +
+    '<section class="cartao"><h3>Horários da semana</h3><div class="es-hor"><table><thead><tr><th></th>' + [1, 2, 3, 4, 5].map(d => '<th>' + ES_DIAS[d] + '</th>').join('') + '<th>Sábado</th></tr></thead><tbody>' +
+      c.pessoas.map(p => '<tr' + (p.id === R.eu ? ' class="meu"' : '') + '><th>' + esc(p.nome.split(' ')[0]) + '</th>' + [1, 2, 3, 4, 5].map(d => '<td>' + (p.semana[d] ? p.semana[d][0] + 'h–' + p.semana[d][1] + 'h' : '') + '</td>').join('') + '<td>' + (p.sabado ? p.sabado[0] + 'h–' + p.sabado[1] + 'h' : '') + '</td></tr>').join('') +
+      '</tbody></table></div>' + (c.ausencias.filter(x => !x.ate || x.ate >= h).length ? '<p class="nota">' + c.ausencias.filter(x => !x.ate || x.ate >= h).map(x => esc(esNome1(x.pessoaId)) + ' de ' + esc(ES_AUS[x.motivo] || 'afastamento') + ' desde ' + br(x.de).slice(0, 5) + (x.ate ? ' até ' + br(x.ate).slice(0, 5) : '')).join(' · ') + '</p>' : '') + '</section>' +
+    '</div></main>';
+  telaClasse('tela-es');
+}
+function formPedidoTroca(sab) {
+  const meus = esMeusSab(); if (!meus.length) return toast('Você não tem sábados nos próximos meses.');
+  const col = E.es.cfg.pessoas.filter(p => p.usuarioId && p.id !== E.es.eu);
+  abrirFolha('Pedir troca de sábado',
+    '<div class="grade">' + campo('esSab', 'Sábado', '<select id="esSab">' + meus.map(x => '<option value="' + x.data + '"' + (x.data === sab ? ' selected' : '') + '>' + br(x.data) + '</option>').join('') + '</select>') +
+    campo('esPara', 'Para quem', '<select id="esPara"><option value="">Quadro de avisos (toda a equipe)</option>' + col.map(p => '<option value="' + p.usuarioId + '">Só ' + esc(p.nome) + ' (particular)</option>').join('') + '</select>') +
+    campo('esTxt', 'Observação (opcional)', inp('esTxt', '', 'maxlength="140" placeholder="Ex.: tenho consulta médica nesse dia"'), 'larga') + '</div>' +
+    '<p class="nota">O quadro é só para assuntos de trabalho. Quem aceitar fica com o seu sábado e você fica com um sábado dessa pessoa; a troca vale na hora.</p>' +
+    '<div class="acoes-form"><button class="btn" data-acao="es-pedir-ok">Colocar no quadro</button></div>',
+    c => { const s = c.querySelector('#esPara'), b = c.querySelector('[data-acao="es-pedir-ok"]'); s.onchange = () => { b.textContent = s.value ? 'Enviar o pedido' : 'Colocar no quadro'; }; });
+}
+function formAceitarTroca(id) {
+  const a = E.es.avisos.find(x => x.id === id); if (!a) return;
+  const meus = esMeusSab().filter(x => x.data !== a.sabado); if (!meus.length) return toast('Você não tem um sábado seu para devolver nos próximos meses.');
+  abrirFolha('Trocar com ' + String(a.autorNome).split(' ')[0],
+    '<p>Você fica com o sábado <b>' + br(a.sabado) + '</b>. ' + esc(String(a.autorNome).split(' ')[0]) + ' fica com qual sábado seu?</p>' +
+    campo('esDev', 'Sábado que você devolve', '<select id="esDev">' + meus.map(x => '<option value="' + x.data + '">' + br(x.data) + '</option>').join('') + '</select>') +
+    '<div class="acoes-form"><button class="btn" data-acao="es-aceitar-ok" data-id="' + a.id + '">Confirmar a troca</button></div>');
+}
+function formConfigEscala(c0) {
+  const c = JSON.parse(JSON.stringify(c0 || E.es.cfg)), eq = E.es.equipe;
+  const linha = (p, i) => '<div class="es-pc" data-i="' + i + '"><div class="grade">' + campo('esN' + i, 'Nome', inp('esN' + i, p.nome)) +
+    campo('esU' + i, 'Login no painel', '<select id="esU' + i + '"><option value="">Sem login</option>' + eq.map(u => '<option value="' + u.id + '"' + (u.id === p.usuarioId ? ' selected' : '') + '>' + esc(u.nome) + '</option>').join('') + '</select>') +
+    campo('esO' + i, 'Posição no rodízio', '<select id="esO' + i + '"><option value="">Fora do rodízio</option>' + c.pessoas.map((_, j) => '<option value="' + j + '"' + (c.ordem.indexOf(p.id) === j ? ' selected' : '') + '>' + (j + 1) + 'º</option>').join('') + '</select>') + '</div>' +
+    '<div class="es-hrs">' + [1, 2, 3, 4, 5].map(d => '<label>' + ES_DIAS[d] + inp('esH' + i + '_' + d, p.semana[d] ? p.semana[d].join('-') : '', 'placeholder="8-16" inputmode="numeric"') + '</label>').join('') +
+    '<label>Sáb' + inp('esH' + i + '_6', (p.sabado || [9, 18]).join('-'), 'placeholder="9-18" inputmode="numeric"') + '</label></div></div>';
+  const ausL = (x, i) => '<div class="grade es-aus" data-i="' + i + '">' + campo('esAp' + i, 'Quem', '<select id="esAp' + i + '">' + c.pessoas.map(p => '<option value="' + p.id + '"' + (p.id === x.pessoaId ? ' selected' : '') + '>' + esc(p.nome) + '</option>').join('') + '</select>') +
+    campo('esAm' + i, 'Motivo', '<select id="esAm' + i + '">' + Object.entries(ES_AUS).map(([k, t]) => '<option value="' + k + '"' + (k === x.motivo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>') +
+    campo('esAd' + i, 'De', inp('esAd' + i, x.de, 'type="date"')) + campo('esAa' + i, 'Até (vazio se ainda não sabe)', inp('esAa' + i, x.ate, 'type="date"')) + '</div>';
+  abrirFolha('Ajustar a escala',
+    '<p class="nota">Horários no formato 8-16 (das 8h às 16h). Dia vazio é folga. O rodízio dos sábados segue a posição de cada pessoa, a partir do sábado de referência, em que trabalha quem é a 1ª.</p>' +
+    c.pessoas.map(linha).join('') + '<button class="btn sec2 peq" data-acao="es-cfg-pessoa">+ Pessoa</button>' +
+    '<div class="grade" style="margin-top:12px">' + campo('esBase', 'Sábado de referência', inp('esBase', c.base, 'type="date"')) + '</div>' +
+    '<h3 style="margin:14px 0 4px">Afastamentos</h3><p class="nota">Atestado, férias ou folga. Os sábados de quem está afastado aparecem como "precisa de cobertura".</p>' +
+    c.ausencias.map(ausL).join('') + '<button class="btn sec2 peq" data-acao="es-cfg-aus">+ Afastamento</button>' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-weight:600"><input type="checkbox" id="esPub"' + (c.publicada ? ' checked' : '') + '> Publicar (a equipe vê a escala e usa o quadro)</label>' +
+    '<div class="acoes-form"><button class="btn" data-acao="es-cfg-ok">Salvar</button></div>');
+  E.esCfgRasc = c;
+}
+function lerConfigEscala() {
+  const c = E.esCfgRasc, hr = v => { const m = String(v || '').match(/^\s*(\d{1,2})\s*[-–a]\s*(\d{1,2})\s*$/); return m && +m[1] < +m[2] ? [+m[1], +m[2]] : null; };
+  const pessoas = [...document.querySelectorAll('.es-pc')].map(el => { const i = el.dataset.i, p = c.pessoas[i] || {}, sem = {}; [1, 2, 3, 4, 5].forEach(d => { const h = hr(vl('esH' + i + '_' + d)); if (h) sem[d] = h; });
+    return { id: p.id || '', nome: vl('esN' + i), usuarioId: vl('esU' + i), semana: sem, sabado: hr(vl('esH' + i + '_6')) || [9, 18], pos: vl('esO' + i) }; });
+  pessoas.forEach(p => { if (!p.id) p.id = 'p' + Math.random().toString(36).slice(2, 9); });
+  const ordem = pessoas.filter(p => p.pos !== '').sort((a, b) => +a.pos - +b.pos).map(p => p.id);
+  const ausencias = [...document.querySelectorAll('.es-aus')].map(el => { const i = el.dataset.i; return { pessoaId: vl('esAp' + i), motivo: vl('esAm' + i), de: vl('esAd' + i), ate: vl('esAa' + i) }; }).filter(x => x.de);
+  return { publicada: $('#esPub').checked, base: vl('esBase'), ordem, pessoas: pessoas.map(({ pos, ...p }) => p), ausencias };
+}
+function formSabadoAdmin(d) {
+  const x = E.es.sabados.find(s => s.data === d); if (!x) return;
+  abrirFolha('Sábado ' + br(d), '<p class="nota">Pelo rodízio: ' + esc(esPessoa(x.rodizio).nome || 'ninguém') + '.' + (x.ajuste ? ' Ajuste atual: ' + esc(x.ajuste.motivo) + ' (' + esc(x.ajuste.quem) + ').' : '') + '</p>' +
+    '<div class="grade">' + campo('esSP', 'Quem trabalha', '<select id="esSP">' + E.es.cfg.pessoas.map(p => '<option value="' + p.id + '"' + (p.id === x.pessoaId ? ' selected' : '') + '>' + esc(p.nome) + '</option>').join('') + '</select>') +
+    campo('esSM', 'Motivo', inp('esSM', x.ajuste ? x.ajuste.motivo : '', 'maxlength="120" placeholder="Ex.: troca entre Jonathan e Vinícius"')) + '</div>' +
+    '<div class="acoes-form"><button class="btn" data-acao="es-sab-ok" data-v="' + d + '">Salvar</button>' + (x.ajuste ? '<button class="btn sec2" data-acao="es-sab-rod" data-v="' + d + '">Voltar ao rodízio</button>' : '') + '</div>');
+}
+async function escalaHome() {
+  let R; try { R = await api('escalaResumo', E.sessao); } catch (_) { return; }
+  const box = $('#esHome'); if (!box || !R) return;
+  const itens = [];
+  if (R.paraMim) itens.push('<b>' + R.paraMim + (R.paraMim > 1 ? ' pedidos particulares' : ' pedido particular') + '</b> de troca de sábado para você');
+  if (R.quadro) itens.push(R.quadro + (R.quadro > 1 ? ' pedidos de troca' : ' pedido de troca') + ' no quadro');
+  if (R.proximos[0]) itens.push('Seu próximo sábado é ' + br(R.proximos[0]).slice(0, 5));
+  if (!itens.length) return;
+  box.hidden = false; box.classList.toggle('urg', !!R.paraMim);
+  box.innerHTML = '<button class="es-home-b" data-acao="modulo" data-k="escala"><i class="pino p0"></i><span><b>Escala</b>' + itens.map(t => '<em>' + t + '</em>').join('') + '</span><span class="seta">›</span></button>';
 }
 /* ── Pendências da equipe na tela inicial, acima dos pedidos: as minhas primeiro, atrasadas e de hoje em destaque ── */
 // pendência prioritária fica na frente de todas (a que virou prioridade por último fica no topo); depois o prazo e a data de criação
@@ -10118,6 +10264,7 @@ const ACOES = {
     const m = MODS.find(x => x.k === b.dataset.k); if (!m || !(m.livre || pode(m.perm || m.k))) return;
     if (m.k === 'transfusao') { E.modulo = m.k; return telaTransfusao(); }
     if (m.k === 'pendencias') { E.modulo = m.k; return telaPendencias(); }
+    if (m.k === 'escala') { E.modulo = m.k; return telaEscala(); }
     if (m.k === 'receptores') { E.modulo = m.k; return telaReceptores(); }
     if (m.k === 'auditoria') { E.modulo = m.k; return telaAuditoria(); }
     if (m.k === 'lixeira') { E.modulo = m.k; return telaLixeira(); }
@@ -10157,6 +10304,20 @@ const ACOES = {
   'hj-pedir': b => salvando(b, async () => { const m = vl('hjMot'); if (m.length < 3) throw new Error('Explique o motivo do pedido.'); const r = await api('estLiberacaoPedir', E.sessao, b.dataset.v, m, b.dataset.id); E.ph.lib = r.lib; E.ph.ped = r.ped; toast('Pedido enviado.'); pintarPendencias(); abrirHojeAnimal(b.dataset.id); }),
   'hj-liberar': b => salvando(b, async () => { const r = await api('estLiberar', E.sessao, b.dataset.v, vl('hjMot')); E.ph.lib = r.lib; E.ph.ped = r.ped; toast('Produção liberada.'); pintarPendencias(); abrirHojeAnimal(b.dataset.id); }),
   'pd-nova': () => formPendencia(),
+  'es-pedir': b => formPedidoTroca(b.dataset.v || ''),
+  'es-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { sabado: vl('esSab'), paraId: vl('esPara'), texto: vl('esTxt') }); fecharFolha(); toast(vl('esPara') ? 'Pedido enviado.' : 'Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-aceitar': b => formAceitarTroca(b.dataset.id),
+  'es-aceitar-ok': async b => { b.disabled = true; try { E.es = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); fecharFolha(); toast('Troca feita.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-retirar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaAvisoRetirar', E.sessao, b.dataset.id); toast('Pedido retirado.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-sab': b => { const d = b.dataset.v, x = E.es.sabados.find(s => s.data === d); if (!x) return; if (E.es.admin) return formSabadoAdmin(d); if (x.pessoaId === E.es.eu && d >= E.es.hoje) return formPedidoTroca(d); toast(esPessoa(x.pessoaId).nome + ' trabalha neste sábado.'); },
+  'es-sab-ok': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('esSP'), vl('esSM')); fecharFolha(); toast('Sábado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-sab-rod': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, '', ''); fecharFolha(); toast('Voltou ao rodízio.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-config': () => formConfigEscala(),
+  'es-cfg-pessoa': () => { const c = lerConfigEscala(); c.pessoas.push({ id: '', nome: '', usuarioId: '', semana: {}, sabado: [9, 18] }); formConfigEscala(c); },
+  'es-cfg-aus': () => { const c = lerConfigEscala(); if (!c.pessoas.length) return toast('Cadastre as pessoas primeiro.'); c.ausencias.push({ pessoaId: c.pessoas[0].id, motivo: 'atestado', de: hoje(), ate: '' }); formConfigEscala(c); },
+  'es-cfg-ok': async b => { b.disabled = true; try { E.es = await api('escalaConfig', E.sessao, lerConfigEscala()); fecharFolha(); toast('Escala salva.'); E.d.naEscala = true; pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+
   'rec-novo': () => formReceptor(null),
   'rec-sug': b => formReceptor(null, juntarRec(E.recSug[+b.dataset.v] || [])),
   'rec-abrir': b => formReceptor((E.rec || []).find(x => x.id === b.dataset.id)),
