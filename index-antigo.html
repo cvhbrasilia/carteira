@@ -158,7 +158,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128015404">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Carteira de saúde"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#C6B098"><link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="icone-escuro-192.png?v=2"><link rel="icon" type="image/png" href="icone-192.png?v=2"><link rel="manifest" href="carteira.webmanifest?v=20261128020454">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -447,7 +447,7 @@ button{cursor:pointer}
   box-shadow:0 12px 14px -10px rgba(40,15,5,.6),0 2px 3px rgba(40,15,5,.15);border-radius:1px 1px 30px 1px/1px 1px 12px 1px;transition:transform .15s}
 .postit::after{content:'';position:absolute;right:0;bottom:0;width:34px;height:20px;border-radius:0 0 30px 0/0 0 12px 0;background:linear-gradient(160deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.55) 62%,rgba(0,0,0,.10) 100%);pointer-events:none}
 .postit:hover{transform:rotate(0) scale(1.03);z-index:1}
-.postit.pi-amarelo{background:linear-gradient(170deg,#fbe68f,#f6d863)}.postit.pi-rosa{background:linear-gradient(170deg,#f9bccb,#f3a3b6)}.postit.pi-azul{background:linear-gradient(170deg,#bfe3f4,#a3d3ec)}
+.postit.pi-amarelo{background:linear-gradient(170deg,#fbe68f,#f6d863)}.postit.pi-rosa{background:linear-gradient(170deg,#f9c7d3,#f3b0c0)}.postit.pi-azul{background:linear-gradient(170deg,#bfe3f4,#a3d3ec)}.postit.pi-verde{background:linear-gradient(170deg,#cdeac0,#b3dda2)}.postit.pi-pessego{background:linear-gradient(170deg,#fdd5b1,#f8c08f)}.postit.pi-lilas{background:linear-gradient(170deg,#dccff0,#c9b8e6)}.postit.pi-cvh{background:linear-gradient(170deg,#efcfcb,#e2b3ae);box-shadow:0 14px 16px -10px rgba(95,19,15,.6),0 0 0 2px rgba(168,61,61,.35),0 2px 3px rgba(40,15,5,.15)}.postit.pi-cvh .pi-tit{color:#5F130F}
 .postit.fechado{opacity:.6;filter:saturate(.6)}
 .pi-tit{font-weight:700;font-size:18px;padding:0 4px 6px;margin-bottom:6px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cpath d='M2 5 Q40 1 80 4 T118 3' fill='none' stroke='%23A83D3D' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") bottom center/100% 7px no-repeat}
 .pi-l{font-size:17px;font-weight:700;margin:1px 0}.pi-l2{font-size:14px;margin-top:3px;color:#4a3a30}
@@ -476,7 +476,8 @@ main.tela-es .tela-c{max-width:1280px}
 .es-sab{display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:#EEE5DB;border:1px solid #C6B098;border-radius:10px;padding:8px 10px;font:inherit;text-align:left;cursor:pointer;color:#3a2a26}
 .es-sab b{font-size:20px;color:#5F130F;line-height:1}.es-sab span{font-size:14px}.es-sab em{font-style:normal;font-size:11px;color:#8a6a52}
 .es-sab.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-sab.meu b,.es-sab.meu em{color:#fff}
-.es-sab.passou{opacity:.5}.es-sab.falta{border:2px dashed #A83D3D}.es-sab.falta em{color:#A83D3D;font-weight:700}
+.es-sab.passou{opacity:.5}.es-sab.fer,.es-linha.fer{background:repeating-linear-gradient(135deg,#f6f0e8 0 6px,#EEE5DB 6px 12px);color:#8a6a52}.es-sab.fer b,.es-linha.fer>b{color:#8a6a52}.es-sab.falta{border:2px dashed #A83D3D}.es-sab.falta em{color:#A83D3D;font-weight:700}
+.es-fers{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}.es-fer{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;font:inherit;cursor:pointer;border:1px solid #C6B098;border-radius:10px;padding:8px 10px;background:repeating-linear-gradient(135deg,#f6f0e8 0 6px,#EEE5DB 6px 12px);color:#3a2a26}.es-fer b{color:#5F130F}.es-fer span{font-size:13px}.es-fer em{font-style:normal;font-size:12px;color:#8a6a52}.es-fer.com{background:#fff;border-color:#C49A6C}.es-fer.com em{color:#A83D3D;font-weight:700}
 .es-hor{overflow-x:auto}.es-hor table{border-collapse:collapse;width:100%;font-size:14px}.es-hor th,.es-hor td{padding:7px 8px;border-bottom:1px solid #EEE5DB;text-align:center;white-space:nowrap}.es-hor tbody th{text-align:left;color:#5F130F}.es-nome{background:none;border:0;padding:0;font:inherit;font-weight:700;color:#5F130F;cursor:pointer;text-decoration:underline;text-decoration-color:#C6B098;text-underline-offset:3px}.es-nome i{font-style:normal;font-size:11px;font-weight:400;color:#8a6a52}.es-paus{border-top:1px solid #EEE5DB;padding-top:8px;margin-top:6px}.es-hor tr.meu{background:#f7efe6}
 .es-pc{border:1px solid #EEE5DB;border-radius:10px;padding:10px;margin:8px 0}.es-hrs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.es-hrs label{font-size:12px;color:#7a6a62;font-weight:700}.es-hrs input{width:100%;margin-top:2px}
 .es-home{margin:10px 0}.es-home-b{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;cursor:pointer;border:0;border-radius:12px;padding:14px 16px 14px 18px;color:#3a2a26;background-color:#C49A6C;background-image:linear-gradient(90deg,rgba(255,250,242,.93),rgba(255,250,242,.86)),radial-gradient(rgba(95,19,15,.25) .9px,transparent 1.4px);background-size:auto,6px 6px;box-shadow:inset 0 0 0 1px #C6B098}
@@ -1256,7 +1257,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128015404';
+  var VERSAO = '20261128020454';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6614,43 +6615,48 @@ const ES_SEM = d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][new Date(
 const ES_TROCA_IC = '<svg class="pi-ic" viewBox="0 0 40 28" aria-hidden="true"><path d="M8 13a12 9 0 0 1 22-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M27 3l4 5-6 1.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 15a12 9 0 0 1-22 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M13 25l-4-5 6-1.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function postitEscala(a) {
   const h = [...String(a.id)].reduce((s, c) => s + c.charCodeAt(0), 0), rot = ((h % 7) - 3) * 1.1, eu = E.u.id, aberto = a.situacao === 'aberto';
-  const cor = ['amarelo', 'rosa', 'azul'][h % 3], n1 = x => esc(String(x || '').split(' ')[0]);
-  const bts = !aberto ? '' : a.tipo === 'aviso' ? (a.autorId === eu || E.es.admin ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : '') : (a.autorId === eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>'
+  const ip = (E.es.cfg.pessoas || []).findIndex(p => p.usuarioId && p.usuarioId === a.autorId);
+  const cor = a.autorAdmin ? 'cvh' : ['amarelo', 'azul', 'verde', 'pessego', 'lilas', 'rosa'][ip >= 0 ? ip % 6 : h % 6], n1 = x => esc(String(x || '').split(' ')[0]);
+  const bts = !aberto ? '' : a.tipo === 'feriado' ? (E.es.admin ? '<button class="btn peq" data-acao="es-fer-ok" data-id="' + a.id + '">Confirmar</button><button class="btn sec2 peq" data-acao="es-fer-nao" data-id="' + a.id + '">Não</button>' : '') + (a.autorId === eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : '') : a.tipo === 'aviso' ? (a.autorId === eu || E.es.admin ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : '') : (a.autorId === eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>'
     : (E.es.eu && (!a.paraId || a.paraId === eu) ? '<button class="btn peq" data-acao="es-aceitar" data-id="' + a.id + '">Eu troco com você</button>' + (a.paraId === eu ? '<button class="btn sec2 peq" data-acao="es-recusar" data-id="' + a.id + '">Não posso</button>' : '') : '') + (E.es.admin && a.autorId !== eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : ''));
   let corpo;
-  if (a.tipo === 'aviso') corpo = '<b class="pi-tit">Aviso</b>' + (a.sabado ? '<span class="pi-l">' + (new Date(a.sabado + 'T12:00:00').getDay() === 6 ? 'Fim de semana ' + br(a.sabado).slice(0, 5) : ES_SEM(a.sabado)) + '</span>' : '') +
+  if (a.tipo === 'feriado') corpo = '<b class="pi-tit">Feriado</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + (a.situacao === 'confirmado' ? ' trabalha' : ' quer trabalhar') + '</span>' +
+    (a.texto ? '<span class="pi-l2">' + esc(a.texto) + '</span>' : '') + (a.situacao === 'confirmado' ? '<span class="pi-l2">confirmado</span>' : a.situacao === 'recusado' ? '<span class="pi-l2">não aceito</span>' : a.situacao === 'retirado' ? '<span class="pi-l2">retirado</span>' : '');
+  else if (a.tipo === 'aviso') corpo = '<b class="pi-tit">Aviso</b>' + (a.sabado ? '<span class="pi-l">' + (new Date(a.sabado + 'T12:00:00').getDay() === 6 ? 'Fim de semana ' + br(a.sabado).slice(0, 5) : ES_SEM(a.sabado)) + '</span>' : '') +
     '<span class="pi-tx">' + esc(a.texto).replace(/\n/g, '<br>') + '</span><span class="pi-ass">' + n1(a.autorNome) + '</span>';
   else if (a.situacao === 'trocado') corpo = '<b class="pi-tit">Troca de sábado</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + ' ↔ ' + n1(a.respNome) + '</span>' +
     (a.sabadoDevolve ? '<span class="pi-l2">e ' + ES_SEM(a.sabadoDevolve) + '</span>' : '') + ES_TROCA_IC;
   else corpo = '<b class="pi-tit">Pedido de troca</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + ' precisa trocar</span>' +
     (a.paraId ? '<span class="pi-l2">só para ' + n1(a.paraNome) + '</span>' : '') + (a.texto ? '<span class="pi-l2">' + esc(a.texto) + '</span>' : '') +
     (a.situacao === 'recusado' ? '<span class="pi-l2">' + n1(a.respNome) + ' não pôde</span>' : a.situacao === 'retirado' ? '<span class="pi-l2">retirado</span>' : '');
-  return '<article class="postit pi-' + cor + (aberto || a.situacao === 'trocado' ? '' : ' fechado') + '" style="--rot:' + rot + 'deg"><i class="pino p' + (h % 3) + '"></i>' + corpo + (bts ? '<div class="pi-bts">' + bts + '</div>' : '') + '</article>';
+  return '<article class="postit pi-' + cor + (aberto || a.situacao === 'trocado' || a.situacao === 'confirmado' ? '' : ' fechado') + '" style="--rot:' + rot + 'deg"><i class="pino p' + (h % 3) + '"></i>' + corpo + (bts ? '<div class="pi-bts">' + bts + '</div>' : '') + '</article>';
 }
 function pintarEscala() {
   const R = E.es, c = R.cfg, h = R.hoje, meus = R.eu ? esMeusSab() : [];
-  const noQuadro = a => (a.tipo === 'aviso' ? a.situacao === 'aberto' && (!a.sabado || a.sabado >= h) : a.situacao === 'aberto' && a.sabado >= h) || (a.situacao === 'trocado' && (a.sabado >= h || (a.sabadoDevolve || '') >= h));
-  const ab = R.avisos.filter(noQuadro).sort((x, y) => (x.tipo === 'aviso' ? 0 : x.situacao === 'aberto' ? 1 : 2) - (y.tipo === 'aviso' ? 0 : y.situacao === 'aberto' ? 1 : 2) || (x.sabado || '').localeCompare(y.sabado || '')), outros = R.avisos.filter(a => !noQuadro(a) && a.situacao !== 'trocado').sort((a, b) => String(b.resolvidoEm).localeCompare(String(a.resolvidoEm))).slice(0, 6);
+  const noQuadro = a => (a.tipo === 'aviso' ? a.situacao === 'aberto' && (!a.sabado || a.sabado >= h) : (a.situacao === 'aberto' || (a.tipo === 'feriado' && a.situacao === 'confirmado')) && a.sabado >= h) || (a.situacao === 'trocado' && (a.sabado >= h || (a.sabadoDevolve || '') >= h));
+  const ab = R.avisos.filter(noQuadro).sort((x, y) => (x.tipo === 'aviso' ? 0 : x.situacao === 'aberto' ? 1 : 2) - (y.tipo === 'aviso' ? 0 : y.situacao === 'aberto' ? 1 : 2) || (x.sabado || '').localeCompare(y.sabado || '')), outros = R.avisos.filter(a => !noQuadro(a) && a.situacao !== 'trocado' && a.situacao !== 'confirmado').sort((a, b) => String(b.resolvidoEm).localeCompare(String(a.resolvidoEm))).slice(0, 6);
   const meses = {}; R.sabados.filter(x => x.data >= h.slice(0, 8) + '01').forEach(x => (meses[x.data.slice(0, 7)] = meses[x.data.slice(0, 7)] || []).push(x));
   const mesAt = meses[h.slice(0, 7)] ? h.slice(0, 7) : Object.keys(meses)[0], outrosMeses = Object.keys(meses).filter(k => k > (mesAt || ''));
   const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
-  const chipSab = x => '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
+  const chipSab = x => x.feriado && !x.pessoaId ? '<button class="es-sab fer" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>Feriado</span><em>CVH fechado</em></button>' : '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
     (x.ausente ? '<em>' + esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura</em>' : x.ajuste ? '<em>' + esc(/troca/.test(x.ajuste.motivo) ? 'trocado' : 'ajustado') + '</em>' : '') + '</button>';
   raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div>' + (R.admin ? '<button class="pill escura" data-acao="es-config">Ajustar a escala</button>' : '') + '</header>' +
     (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até tocar em "Publicar" em Ajustar a escala.</p>' : '') +
     '<div class="es-topo">' +
-    '<section class="cortica"><i class="cq a"></i><i class="cq b"></i><i class="cq c"></i><i class="cq d"></i><i class="cortica-marca" aria-hidden="true"></i><b class="placa">Quadro de trocas e avisos</b><div class="cortica-in"><div class="cortica-cab">' + (R.admin ? '<button class="btn sec2 peq" data-acao="es-aviso">+ Aviso</button>' : '') + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
+    '<section class="cortica"><i class="cq a"></i><i class="cq b"></i><i class="cq c"></i><i class="cq d"></i><i class="cortica-marca" aria-hidden="true"></i><b class="placa">Quadro de trocas e avisos</b><div class="cortica-in"><div class="cortica-cab">' + (R.admin ? '<button class="btn sec2 peq" data-acao="es-aviso">+ Aviso</button>' : '') + (R.eu && c.publicada && (R.feriados || []).some(f => !f.pessoaId) ? '<button class="btn sec2 peq" data-acao="es-fer-pedir">+ Trabalhar num feriado</button>' : '') + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
       (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum aviso ou pedido de troca no quadro.</p>') +
       (outros.length ? '<details class="cortica-ant"><summary>Pedidos encerrados nos últimos 15 dias (' + outros.length + ')</summary><div class="postits">' + outros.map(postitEscala).join('') + '</div></details>' : '') +
     '</div></section>' +
     '<aside class="es-lado">' +
       '<section class="cartao es-mesatual"><h3>' + (mesAt ? nomeMes(mesAt) : 'Este mês') + '</h3>' +
         (R.eu && meus.length ? '<div class="es-meu2"><span>Seu próximo sábado <b>' + br(meus[0].data).slice(0, 5) + '</b>' + (meus[1] ? ' · depois, ' + br(meus[1].data).slice(0, 5) : '') + '</span><button class="btn peq" data-acao="es-pedir" data-v="' + meus[0].data + '">Pedir troca</button></div>' : '') +
-        (mesAt ? meses[mesAt].map(x => '<button class="es-linha' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span class="es-ln"><strong>' + esc(esPessoa(x.pessoaId).nome) + '</strong><small>' +
+        (mesAt ? meses[mesAt].map(x => x.feriado && !x.pessoaId ? '<button class="es-linha fer" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span class="es-ln"><strong>Feriado</strong><small>CVH fechado, o rodízio pula este sábado</small></span><span class="seta">›</span></button>' : '<button class="es-linha' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span class="es-ln"><strong>' + esc(esPessoa(x.pessoaId).nome) + '</strong><small>' +
           (x.ausente ? esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura' : x.ajuste ? esc(x.ajuste.motivo) : esHr(esPessoa(x.pessoaId).sabado)) + '</small></span><span class="seta">›</span></button>').join('') : '<p class="vazio-p">Sem sábados definidos.</p>') +
         '<p class="nota">' + (c.ordem.length ? 'Rodízio: ' + esc(c.ordem.map(esNome1).join(', ')) + '. ' : '') + 'Toque num sábado para ver os detalhes.</p></section>' +
     '</aside></div>' +
+    ((R.feriados || []).length ? '<section class="cartao"><h3>Feriados</h3><p class="nota">Nacionais e do DF. O CVH fecha; abre só para quem pediu para trabalhar e foi confirmado. Sábado de feriado não conta no rodízio.</p><div class="es-fers">' +
+      R.feriados.slice(0, 16).map(f => '<button class="es-fer' + (f.pessoaId ? ' com' : '') + '" data-acao="es-fer-ver" data-v="' + f.data + '"><b>' + ES_SEM(f.data) + '</b><span>' + esc(f.nome) + '</span><em>' + (f.pessoaId ? esc(esPessoa(f.pessoaId).nome.split(' ')[0]) + ' trabalha' : 'CVH fechado') + '</em></button>').join('') + '</div></section>' : '') +
     (outrosMeses.length ? '<section class="cartao es-cal"><h3>Próximos meses</h3>' +
       outrosMeses.map(k => '<div class="es-mes"><h4>' + nomeMes(k) + (meses[k].length > 4 ? ' <small>(5 sábados)</small>' : '') + '</h4><div class="es-sabs">' + meses[k].map(chipSab).join('') + '</div></div>').join('') + '</section>' : '') +
     '<section class="cartao"><h3>Horários da semana</h3><div class="es-hor"><table><thead><tr><th></th>' + [1, 2, 3, 4, 5].map(d => '<th>' + ES_DIAS[d] + '</th>').join('') + '<th>Sábado</th></tr></thead><tbody>' +
@@ -6677,6 +6683,21 @@ function formAvisoEscala() {
     campo('eaT', 'Aviso', '<textarea id="eaT" rows="4" maxlength="300" placeholder="Ex.: neste fim de semana conferir o estoque da Intensivet e deixar pronto o material de domingo."></textarea>', 'larga') +
     '<p class="nota">Com data, o aviso sai do quadro depois desse fim de semana. A equipe recebe a notificação.</p>' +
     '<div class="acoes-form"><button class="btn" data-acao="es-aviso-ok">Colocar no quadro</button></div>');
+}
+function formPedidoFeriado() {
+  const L = (E.es.feriados || []).filter(f => !f.pessoaId && f.data >= E.es.hoje);
+  abrirFolha('Trabalhar num feriado',
+    campo('efD', 'Feriado', '<select id="efD">' + L.map(f => '<option value="' + f.data + '">' + br(f.data) + ' · ' + esc(f.nome) + '</option>').join('') + '</select>') +
+    campo('efT', 'Observação (opcional)', inp('efT', '', 'maxlength="140"'), 'larga') +
+    '<p class="nota">O administrador confirma. Depois de confirmado, o feriado abre para você no seu horário.</p>' +
+    '<div class="acoes-form"><button class="btn" data-acao="es-fer-pedir-ok">Pedir</button></div>');
+}
+function infoFeriado(d) {
+  const f = (E.es.feriados || []).find(x => x.data === d); if (!f) return;
+  const lin = (t, v) => '<div class="es-inf"><span>' + t + '</span><b>' + v + '</b></div>';
+  abrirFolha(ES_SEM(d) + ' · ' + f.nome, lin('Situação', f.pessoaId ? esc(esPessoa(f.pessoaId).nome) + ' trabalha' + (f.motivo ? '<small>' + esc(f.motivo) + '</small>' : '') : 'CVH fechado') +
+    '<div class="acoes-form">' + (E.es.eu && !f.pessoaId && E.es.cfg.publicada ? '<button class="btn" data-acao="es-fer-pedir" data-v="' + d + '">Quero trabalhar neste feriado</button>' : '') +
+    (E.es.admin ? '<div class="grade" style="width:100%">' + campo('efP', 'Quem trabalha', '<select id="efP"><option value="">Ninguém (CVH fechado)</option>' + E.es.cfg.pessoas.map(p => '<option value="' + p.id + '"' + (p.id === f.pessoaId ? ' selected' : '') + '>' + esc(p.nome) + '</option>').join('') + '</select>') + '</div><button class="btn sec2" data-acao="es-fer-def" data-v="' + d + '">Salvar</button>' : '') + '</div>');
 }
 function formAceitarTroca(id) {
   const a = E.es.avisos.find(x => x.id === id); if (!a) return;
@@ -6722,7 +6743,8 @@ function infoSabado(d) {
   const av = E.es.avisos.filter(z => z.sabado === d || z.sabadoDevolve === d);
   const lin = (t, v) => v ? '<div class="es-inf"><span>' + t + '</span><b>' + v + '</b></div>' : '';
   abrirFolha('Sábado ' + br(d),
-    lin('Quem trabalha', esc(p.nome)) + lin('Horário', esHr(p.sabado || [9, 18])) +
+    (x.feriado ? lin('Feriado', 'CVH fechado' + (x.pessoaId ? ', mas com ajuste para este sábado' : '') + '<small>O rodízio pula sábados de feriado: quem seria deste sábado faz o próximo.</small>') : '') +
+    (x.pessoaId ? lin('Quem trabalha', esc(p.nome)) : '') + lin('Horário', esHr(p.sabado || [9, 18])) +
     (a ? lin(/troca/.test(a.motivo) ? 'Troca' : 'Ajuste', esc(a.motivo) + '<small>Pelo rodízio seria ' + esc(esPessoa(x.rodizio).nome) + '. ' + (a.quem ? 'Feito por ' + esc(a.quem) + (a.quando ? ' em ' + br(a.quando.slice(0, 10)) + ' às ' + a.quando.slice(11, 16) : '') + '.' : '') + '</small>') : '') +
     (aus ? lin('Afastamento', esc(ES_AUS[aus.motivo] || 'afastamento') + ' desde ' + br(aus.de) + (aus.ate ? ' até ' + br(aus.ate) : ', sem data de volta') + '<small>Este sábado precisa de cobertura.</small>') : '') +
     av.map(z => z.tipo === 'aviso' ? lin('Aviso', esc(z.texto)) : lin('Pedido de troca', esc(String(z.autorNome).split(' ')[0]) + ' pediu em ' + br(String(z.criadoEm).slice(0, 10)) + (z.texto ? '. ' + esc(z.texto) : '') + '<small>' + ({ aberto: 'Aberto', trocado: 'Trocado com ' + esc(String(z.respNome).split(' ')[0]), recusado: 'Não aceito', retirado: 'Retirado' }[z.situacao] || '') + '</small>')).join('') +
@@ -10393,6 +10415,12 @@ const ACOES = {
   'es-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { sabado: vl('esSab'), paraId: vl('esPara'), texto: vl('esTxt') }); fecharFolha(); toast(vl('esPara') ? 'Pedido enviado.' : 'Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar': b => formAceitarTroca(b.dataset.id),
   'es-aviso': () => formAvisoEscala(),
+  'es-fer-pedir': b => { formPedidoFeriado(); if (b.dataset.v && $('#efD')) $('#efD').value = b.dataset.v; },
+  'es-fer-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'feriado', sabado: vl('efD'), texto: vl('efT') }); fecharFolha(); toast('Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-fer-ok': async b => { b.disabled = true; try { E.es = await api('escalaFeriadoResponder', E.sessao, b.dataset.id, true); toast('Feriado confirmado.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-fer-nao': async b => { b.disabled = true; try { E.es = await api('escalaFeriadoResponder', E.sessao, b.dataset.id, false); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-fer-ver': b => infoFeriado(b.dataset.v),
+  'es-fer-def': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('efP'), vl('efP') ? 'escalado pelo administrador no feriado' : ''); fecharFolha(); toast('Feriado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'aviso', sabado: vl('eaS'), texto: ($('#eaT') || {}).value || '' }); fecharFolha(); toast('Aviso no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar-ok': async b => { b.disabled = true; try { E.es = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); fecharFolha(); toast('Troca feita.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
