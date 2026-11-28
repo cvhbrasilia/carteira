@@ -159,7 +159,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128015030">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128015404">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -443,7 +443,7 @@ button{cursor:pointer}
 .cortica-marca{position:absolute;top:-12px;right:30px;width:60px;height:11px;background:url('cvh-queimado.webp') right center/contain no-repeat;mix-blend-mode:multiply;opacity:.88;z-index:2;pointer-events:none}
 .cortica-in{flex:1;min-height:0;overflow:auto;margin:-4px;padding:4px}.cortica-cab{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:6px}.cortica-cab h3{margin:0;color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.55);font-size:19px}
 .cortica-vazio{color:#fff8ee;text-shadow:0 1px 2px rgba(60,20,10,.5);margin:18px 0 6px;text-align:center}
-.postits{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:22px 14px;padding:12px 4px 6px}
+.postits{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:22px 14px;padding:12px 4px 6px}
 .postit{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 10px 14px;min-height:128px;transform:rotate(var(--rot,0deg));font-family:'Kalam',cursive;color:#2b211c;line-height:1.15;
   box-shadow:0 12px 14px -10px rgba(40,15,5,.6),0 2px 3px rgba(40,15,5,.15);border-radius:1px 1px 30px 1px/1px 1px 12px 1px;transition:transform .15s}
 .postit::after{content:'';position:absolute;right:0;bottom:0;width:34px;height:20px;border-radius:0 0 30px 0/0 0 12px 0;background:linear-gradient(160deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.55) 62%,rgba(0,0,0,.10) 100%);pointer-events:none}
@@ -452,7 +452,7 @@ button{cursor:pointer}
 .postit.fechado{opacity:.6;filter:saturate(.6)}
 .pi-tit{font-weight:700;font-size:18px;padding:0 4px 6px;margin-bottom:6px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8' preserveAspectRatio='none'%3E%3Cpath d='M2 5 Q40 1 80 4 T118 3' fill='none' stroke='%23A83D3D' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") bottom center/100% 7px no-repeat}
 .pi-l{font-size:17px;font-weight:700;margin:1px 0}.pi-l2{font-size:14px;margin-top:3px;color:#4a3a30}
-.pi-ic{width:34px;height:24px;color:#A83D3D;margin-top:6px}
+.pi-tx{font-size:16px;margin:2px 0 4px;white-space:normal;overflow-wrap:anywhere}.pi-ass{align-self:flex-end;font-size:14px;margin-right:6px;color:#4a3a30}.pi-ic{width:34px;height:24px;color:#A83D3D;margin-top:6px}
 .postit .btn{font-family:'Proza Libre',serif}
 .pino{position:absolute;top:-9px;left:50%;width:20px;height:20px;margin-left:-10px;border-radius:50%;z-index:2;box-shadow:0 4px 5px -1px rgba(0,0,0,.45),inset -3px -4px 5px rgba(0,0,0,.28),inset 3px 3px 4px rgba(255,255,255,.5)}
 .pino::before{content:'';position:absolute;left:50%;top:15px;width:8px;height:9px;margin-left:-4px;border-radius:0 0 4px 4px;background:inherit;filter:brightness(.8);box-shadow:inset 0 -2px 3px rgba(0,0,0,.25);z-index:-1}
@@ -1257,7 +1257,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128015030';
+  var VERSAO = '20261128015404';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6616,10 +6616,12 @@ const ES_TROCA_IC = '<svg class="pi-ic" viewBox="0 0 40 28" aria-hidden="true"><
 function postitEscala(a) {
   const h = [...String(a.id)].reduce((s, c) => s + c.charCodeAt(0), 0), rot = ((h % 7) - 3) * 1.1, eu = E.u.id, aberto = a.situacao === 'aberto';
   const cor = ['amarelo', 'rosa', 'azul'][h % 3], n1 = x => esc(String(x || '').split(' ')[0]);
-  const bts = !aberto ? '' : (a.autorId === eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>'
+  const bts = !aberto ? '' : a.tipo === 'aviso' ? (a.autorId === eu || E.es.admin ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : '') : (a.autorId === eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>'
     : (E.es.eu && (!a.paraId || a.paraId === eu) ? '<button class="btn peq" data-acao="es-aceitar" data-id="' + a.id + '">Eu troco com você</button>' + (a.paraId === eu ? '<button class="btn sec2 peq" data-acao="es-recusar" data-id="' + a.id + '">Não posso</button>' : '') : '') + (E.es.admin && a.autorId !== eu ? '<button class="btn sec2 peq" data-acao="es-retirar" data-id="' + a.id + '">Retirar</button>' : ''));
   let corpo;
-  if (a.situacao === 'trocado') corpo = '<b class="pi-tit">Troca de sábado</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + ' ↔ ' + n1(a.respNome) + '</span>' +
+  if (a.tipo === 'aviso') corpo = '<b class="pi-tit">Aviso</b>' + (a.sabado ? '<span class="pi-l">' + (new Date(a.sabado + 'T12:00:00').getDay() === 6 ? 'Fim de semana ' + br(a.sabado).slice(0, 5) : ES_SEM(a.sabado)) + '</span>' : '') +
+    '<span class="pi-tx">' + esc(a.texto).replace(/\n/g, '<br>') + '</span><span class="pi-ass">' + n1(a.autorNome) + '</span>';
+  else if (a.situacao === 'trocado') corpo = '<b class="pi-tit">Troca de sábado</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + ' ↔ ' + n1(a.respNome) + '</span>' +
     (a.sabadoDevolve ? '<span class="pi-l2">e ' + ES_SEM(a.sabadoDevolve) + '</span>' : '') + ES_TROCA_IC;
   else corpo = '<b class="pi-tit">Pedido de troca</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + ' precisa trocar</span>' +
     (a.paraId ? '<span class="pi-l2">só para ' + n1(a.paraNome) + '</span>' : '') + (a.texto ? '<span class="pi-l2">' + esc(a.texto) + '</span>' : '') +
@@ -6628,8 +6630,8 @@ function postitEscala(a) {
 }
 function pintarEscala() {
   const R = E.es, c = R.cfg, h = R.hoje, meus = R.eu ? esMeusSab() : [];
-  const noQuadro = a => (a.situacao === 'aberto' && a.sabado >= h) || (a.situacao === 'trocado' && (a.sabado >= h || (a.sabadoDevolve || '') >= h));
-  const ab = R.avisos.filter(noQuadro).sort((x, y) => (x.situacao === 'aberto' ? 0 : 1) - (y.situacao === 'aberto' ? 0 : 1) || x.sabado.localeCompare(y.sabado)), outros = R.avisos.filter(a => !noQuadro(a) && a.situacao !== 'trocado').sort((a, b) => String(b.resolvidoEm).localeCompare(String(a.resolvidoEm))).slice(0, 6);
+  const noQuadro = a => (a.tipo === 'aviso' ? a.situacao === 'aberto' && (!a.sabado || a.sabado >= h) : a.situacao === 'aberto' && a.sabado >= h) || (a.situacao === 'trocado' && (a.sabado >= h || (a.sabadoDevolve || '') >= h));
+  const ab = R.avisos.filter(noQuadro).sort((x, y) => (x.tipo === 'aviso' ? 0 : x.situacao === 'aberto' ? 1 : 2) - (y.tipo === 'aviso' ? 0 : y.situacao === 'aberto' ? 1 : 2) || (x.sabado || '').localeCompare(y.sabado || '')), outros = R.avisos.filter(a => !noQuadro(a) && a.situacao !== 'trocado').sort((a, b) => String(b.resolvidoEm).localeCompare(String(a.resolvidoEm))).slice(0, 6);
   const meses = {}; R.sabados.filter(x => x.data >= h.slice(0, 8) + '01').forEach(x => (meses[x.data.slice(0, 7)] = meses[x.data.slice(0, 7)] || []).push(x));
   const mesAt = meses[h.slice(0, 7)] ? h.slice(0, 7) : Object.keys(meses)[0], outrosMeses = Object.keys(meses).filter(k => k > (mesAt || ''));
   const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
@@ -6639,8 +6641,8 @@ function pintarEscala() {
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div>' + (R.admin ? '<button class="pill escura" data-acao="es-config">Ajustar a escala</button>' : '') + '</header>' +
     (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até tocar em "Publicar" em Ajustar a escala.</p>' : '') +
     '<div class="es-topo">' +
-    '<section class="cortica"><i class="cq a"></i><i class="cq b"></i><i class="cq c"></i><i class="cq d"></i><i class="cortica-marca" aria-hidden="true"></i><b class="placa">Quadro de trocas</b><div class="cortica-in"><div class="cortica-cab">' + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
-      (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum pedido de troca no quadro.</p>') +
+    '<section class="cortica"><i class="cq a"></i><i class="cq b"></i><i class="cq c"></i><i class="cq d"></i><i class="cortica-marca" aria-hidden="true"></i><b class="placa">Quadro de trocas e avisos</b><div class="cortica-in"><div class="cortica-cab">' + (R.admin ? '<button class="btn sec2 peq" data-acao="es-aviso">+ Aviso</button>' : '') + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
+      (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum aviso ou pedido de troca no quadro.</p>') +
       (outros.length ? '<details class="cortica-ant"><summary>Pedidos encerrados nos últimos 15 dias (' + outros.length + ')</summary><div class="postits">' + outros.map(postitEscala).join('') + '</div></details>' : '') +
     '</div></section>' +
     '<aside class="es-lado">' +
@@ -6668,6 +6670,14 @@ function formPedidoTroca(sab) {
     '<p class="nota">O quadro é só para assuntos de trabalho. Quem aceitar fica com o seu sábado e você fica com um sábado dessa pessoa; a troca vale na hora.</p>' +
     '<div class="acoes-form"><button class="btn" data-acao="es-pedir-ok">Colocar no quadro</button></div>',
     c => { const s = c.querySelector('#esPara'), b = c.querySelector('[data-acao="es-pedir-ok"]'); s.onchange = () => { b.textContent = s.value ? 'Enviar o pedido' : 'Colocar no quadro'; }; });
+}
+function formAvisoEscala() {
+  const sabs = (E.es.sabados || []).filter(x => x.data >= E.es.hoje).slice(0, 12);
+  abrirFolha('Aviso no quadro',
+    '<div class="grade">' + campo('eaS', 'Fim de semana (opcional)', '<select id="eaS"><option value="">Sem data (fica até você retirar)</option>' + sabs.map(x => '<option value="' + x.data + '">' + br(x.data) + ' · ' + esc(esNome1(x.pessoaId)) + '</option>').join('') + '</select>') + '</div>' +
+    campo('eaT', 'Aviso', '<textarea id="eaT" rows="4" maxlength="300" placeholder="Ex.: neste fim de semana conferir o estoque da Intensivet e deixar pronto o material de domingo."></textarea>', 'larga') +
+    '<p class="nota">Com data, o aviso sai do quadro depois desse fim de semana. A equipe recebe a notificação.</p>' +
+    '<div class="acoes-form"><button class="btn" data-acao="es-aviso-ok">Colocar no quadro</button></div>');
 }
 function formAceitarTroca(id) {
   const a = E.es.avisos.find(x => x.id === id); if (!a) return;
@@ -6716,7 +6726,7 @@ function infoSabado(d) {
     lin('Quem trabalha', esc(p.nome)) + lin('Horário', esHr(p.sabado || [9, 18])) +
     (a ? lin(/troca/.test(a.motivo) ? 'Troca' : 'Ajuste', esc(a.motivo) + '<small>Pelo rodízio seria ' + esc(esPessoa(x.rodizio).nome) + '. ' + (a.quem ? 'Feito por ' + esc(a.quem) + (a.quando ? ' em ' + br(a.quando.slice(0, 10)) + ' às ' + a.quando.slice(11, 16) : '') + '.' : '') + '</small>') : '') +
     (aus ? lin('Afastamento', esc(ES_AUS[aus.motivo] || 'afastamento') + ' desde ' + br(aus.de) + (aus.ate ? ' até ' + br(aus.ate) : ', sem data de volta') + '<small>Este sábado precisa de cobertura.</small>') : '') +
-    av.map(z => lin('Pedido de troca', esc(String(z.autorNome).split(' ')[0]) + ' pediu em ' + br(String(z.criadoEm).slice(0, 10)) + (z.texto ? '. ' + esc(z.texto) : '') + '<small>' + ({ aberto: 'Aberto', trocado: 'Trocado com ' + esc(String(z.respNome).split(' ')[0]), recusado: 'Não aceito', retirado: 'Retirado' }[z.situacao] || '') + '</small>')).join('') +
+    av.map(z => z.tipo === 'aviso' ? lin('Aviso', esc(z.texto)) : lin('Pedido de troca', esc(String(z.autorNome).split(' ')[0]) + ' pediu em ' + br(String(z.criadoEm).slice(0, 10)) + (z.texto ? '. ' + esc(z.texto) : '') + '<small>' + ({ aberto: 'Aberto', trocado: 'Trocado com ' + esc(String(z.respNome).split(' ')[0]), recusado: 'Não aceito', retirado: 'Retirado' }[z.situacao] || '') + '</small>')).join('') +
     '<div class="acoes-form">' + (x.pessoaId === E.es.eu && d >= E.es.hoje && E.es.cfg.publicada ? '<button class="btn" data-acao="es-pedir" data-v="' + d + '">Pedir troca</button>' : '') +
     (E.es.admin ? '<button class="btn sec2" data-acao="es-sab-editar" data-v="' + d + '">Trocar quem trabalha</button>' : '') + '</div>');
 }
@@ -6765,6 +6775,7 @@ async function escalaHome() {
   const box = $('#esHome'); if (!box || !R) return;
   const itens = [];
   if (R.paraMim) itens.push('<b>' + R.paraMim + (R.paraMim > 1 ? ' pedidos particulares' : ' pedido particular') + '</b> de troca de sábado para você');
+  if (R.avisos) itens.push(R.avisos + (R.avisos > 1 ? ' avisos' : ' aviso') + ' no quadro');
   if (R.quadro) itens.push(R.quadro + (R.quadro > 1 ? ' pedidos de troca' : ' pedido de troca') + ' no quadro');
   if (R.proximos[0]) itens.push('Seu próximo sábado é ' + br(R.proximos[0]).slice(0, 5));
   if (!itens.length) return;
@@ -10382,6 +10393,8 @@ const ACOES = {
   'es-pedir': b => formPedidoTroca(b.dataset.v || ''),
   'es-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { sabado: vl('esSab'), paraId: vl('esPara'), texto: vl('esTxt') }); fecharFolha(); toast(vl('esPara') ? 'Pedido enviado.' : 'Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar': b => formAceitarTroca(b.dataset.id),
+  'es-aviso': () => formAvisoEscala(),
+  'es-aviso-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'aviso', sabado: vl('eaS'), texto: ($('#eaT') || {}).value || '' }); fecharFolha(); toast('Aviso no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar-ok': async b => { b.disabled = true; try { E.es = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); fecharFolha(); toast('Troca feita.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-retirar': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaAvisoRetirar', E.sessao, b.dataset.id); toast('Pedido retirado.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
