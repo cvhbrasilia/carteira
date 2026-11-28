@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128034858';
+  var VERSAO = '20261128035640';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -235,7 +235,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png?v=2"><link rel="icon" type="image/png" href="motoboy-192.png?v=2"><link rel="manifest" href="motoboy.webmanifest?v=20261128034858">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Motoboy"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="motoboy-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="motoboy-escuro-192.png?v=2"><link rel="icon" type="image/png" href="motoboy-192.png?v=2"><link rel="manifest" href="motoboy.webmanifest?v=20261128035640">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Motoboy</title>
 <style>
@@ -1789,6 +1789,26 @@ function pintar() {
 setInterval(() => { document.querySelectorAll(".timer[data-desde]").forEach((el) => { el.textContent = dur(Date.now() - Date.parse(el.dataset.desde)); }); }, 1000);
 
 /* ── folha da quilometragem (como no app do DEA+) ── */
+// roteiro de fotos da Fiorino por fora (como na vistoria do carro): mostra o ângulo, abre a câmera e segue para o próximo
+const CARRO_SVG = (k) => { const pos = { fm: [36, 40], fp: [124, 40], tm: [36, 150], tp: [124, 150] }[k];
+  return '<svg viewBox="0 0 160 190" style="width:120px;height:142px;display:block;margin:6px auto"><rect x="45" y="20" width="70" height="150" rx="22" fill="#EEE5DB" stroke="#5F130F" stroke-width="3"/><rect x="55" y="42" width="50" height="26" rx="6" fill="#fff" stroke="#5F130F" stroke-width="2"/><rect x="55" y="128" width="50" height="22" rx="6" fill="#fff" stroke="#5F130F" stroke-width="2"/>' +
+    '<text x="80" y="14" text-anchor="middle" font-size="11" fill="#5F130F">frente</text><text x="80" y="186" text-anchor="middle" font-size="11" fill="#5F130F">traseira</text><text x="22" y="98" text-anchor="middle" font-size="10" fill="#5F130F" transform="rotate(-90 22 98)">motorista</text><text x="140" y="98" text-anchor="middle" font-size="10" fill="#5F130F" transform="rotate(90 140 98)">passageiro</text>' +
+    '<circle cx="' + pos[0] + '" cy="' + pos[1] + '" r="14" fill="#A83D3D"/><circle cx="' + pos[0] + '" cy="' + pos[1] + '" r="5" fill="#fff"/></svg>'; };
+function roteiroFotosCarro(fim) {
+  const L = (D.cfg.fotosCarroLista || [["fm", "Frente e lado do motorista"], ["fp", "Frente e lado do passageiro"], ["tm", "Traseira e lado do motorista"], ["tp", "Traseira e lado do passageiro"]]), fc = D.cfg.fotoCarro || {}, got = {};
+  const passo = (i) => {
+    if (i >= L.length) return fim(got);
+    const [k, nome] = L[i], obrig = (fc[k] || "obrig") === "obrig";
+    modal('<h2>Fotos da Fiorino · ' + (i + 1) + ' de ' + L.length + '</h2><p><b>' + esc(nome) + '</b>' + (obrig ? "" : " (opcional)") + '</p>' + CARRO_SVG(k) +
+      '<p><small>Fique no canto marcado e pegue na mesma foto o pedaço da ' + (k[0] === "f" ? "frente" : "traseira") + ' e o lado ' + (k[1] === "m" ? "do motorista" : "do passageiro") + '.</small></p>' +
+      '<label class="foto-bt">Abrir a câmera<input type="file" accept="image/*" capture="environment" id="fcF"></label><div id="fcTh"></div><div id="fcMsg"></div>' +
+      '<div class="bts"><button class="btn" id="fcOk">Próxima</button>' + (obrig ? "" : '<button class="btn sec" id="fcPula">Pular</button>') + '</div>');
+    document.getElementById("fcF").onchange = async (ev) => { const f = ev.target.files[0]; if (!f) return; const b = await lerFoto(f); if (b) { got[k] = b.split(",")[1]; document.getElementById("fcTh").innerHTML = '<img class="mini" src="' + b + '">'; } ev.target.value = ""; };
+    document.getElementById("fcOk").onclick = () => { if (obrig && !got[k]) { document.getElementById("fcMsg").innerHTML = '<div class="errbox">Esta foto é obrigatória.</div>'; return; } passo(i + 1); };
+    const pu = document.getElementById("fcPula"); if (pu) pu.onclick = () => { delete got[k]; passo(i + 1); };
+  };
+  passo(0);
+}
 function folhaKm(o) {
   const ul = ultima(), sug = o.sugestao != null;
   modal("<h2>" + esc(o.titulo) + "</h2>" + (o.sub ? "<p><small>" + o.sub + "</small></p>" : "") + (o.extra || "") +
@@ -1842,8 +1862,11 @@ const A = {
   pausa() { const a = ativa(), ul = ultima(); folhaKm({ titulo: "Pausa para uso pessoal", sub: "O que for rodado durante a pausa não conta como despesa do " + (D.empresa || "CVH") + ".", sugestao: a && a.status === "em_deslocamento" ? null : (ul ? +ul.km : null), foto: fk("pausa"), botao: "Iniciar pausa", extra: '<label>Motivo</label><div class="bts" id="kMot"><button class="btn peq" data-m="Uso pessoal">Uso pessoal</button><button class="btn sec peq" data-m="Intervalo">Intervalo</button><button class="btn sec peq" data-m="Outro">Outro</button></div>' + (a && a.status === "em_deslocamento" ? '<div class="warnbox">O deslocamento para ' + esc(a.nome) + " será interrompido e a parada volta para a fila.</div>" : ""), ok: (x) => srv("motoExpediente", "pausa", Object.assign(x, { motivo: (document.querySelector("#kMot .btn:not(.sec)") || {}).dataset ? document.querySelector("#kMot .btn:not(.sec)").dataset.m : "Uso pessoal" })) });
     document.querySelectorAll("#kMot button").forEach((b) => { b.onclick = () => document.querySelectorAll("#kMot button").forEach((x) => x.classList.toggle("sec", x !== b)); }); },
   retomar() { folhaKm({ titulo: "Retomar serviço", sub: "Informe a quilometragem atual.", foto: fk("retomar"), botao: "Retomar", ok: (x) => srv("motoExpediente", "retomar", x) }); },
-  async finalizar() { const a = ativa(); if (a && a.status === "em_deslocamento") return toast("Registre a chegada ao destino antes de finalizar.", 4000); const n = fila().length;
-    folhaKm({ titulo: fio() ? "Devolver a Fiorino" : "Finalizar expediente", sub: (n ? "Ainda há " + n + " parada(s) pendente(s). " : "") + "Informe a quilometragem final" + (fk("finalizar") === "obrig" ? " e fotografe o hodômetro." : "."), foto: fk("finalizar"), botao: fio() ? "Devolver a Fiorino" : "Finalizar expediente", ok: async (x) => { const e = await srv("motoExpediente", "finalizar", Object.assign(x, { gps: await gps() })); setTimeout(() => { const t = e.resumo || {}; modal('<h2>Expediente finalizado</h2><table class="t"><tr><td>Profissional</td><td><b>' + fKm(t.prof) + " km</b></td></tr><tr><td>Particular</td><td>" + fKm(t.pes) + " km</td></tr><tr><td>Não comprovado</td><td>" + fKm(t.nc) + " km</td></tr></table>"); }, 300); } }); },
+  async finalizar(fotosCarro) { const a = ativa(); if (a && a.status === "em_deslocamento") return toast("Registre a chegada ao destino antes de finalizar.", 4000); const n = fila().length;
+    // Fiorino: antes da quilometragem, o roteiro de fotos do carro por fora, uma por canto
+    if (fotosCarro && typeof fotosCarro !== "object") fotosCarro = null;
+    if (fio() && !fotosCarro) return roteiroFotosCarro((fc) => A.finalizar(fc));
+    folhaKm({ titulo: fio() ? "Devolver a Fiorino" : "Finalizar expediente", sub: (n ? "Ainda há " + n + " parada(s) pendente(s). " : "") + "Informe a quilometragem final" + (fk("finalizar") === "obrig" ? " e fotografe o hodômetro." : "."), foto: fk("finalizar"), botao: fio() ? "Devolver a Fiorino" : "Finalizar expediente", ok: async (x) => { const e = await srv("motoExpediente", "finalizar", Object.assign(x, { gps: await gps(), fotosCarro: fotosCarro || null })); setTimeout(() => { const t = e.resumo || {}; modal('<h2>Expediente finalizado</h2><table class="t"><tr><td>Profissional</td><td><b>' + fKm(t.prof) + " km</b></td></tr><tr><td>Particular</td><td>" + fKm(t.pes) + " km</td></tr><tr><td>Não comprovado</td><td>" + fKm(t.nc) + " km</td></tr></table>"); }, 300); } }); },
   abastecer() {
     const ul = ultima();
     modal('<h2>Registrar abastecimento</h2><label>Litros</label><input type="text" inputmode="decimal" id="aL"><label>Valor pago (R$)</label><input type="text" inputmode="decimal" id="aV"><label>Quem pagou</label><div class="bts" id="aPg"><button class="btn peq" data-p="cvh">' + esc(D.empresa || "CVH") + '</button><button class="btn sec peq" data-p="motoboy">Eu paguei</button></div><label class="op"><input type="checkbox" id="aCheio"> Tanque cheio</label><label>Quilometragem do hodômetro (opcional)</label><input type="text" inputmode="decimal" id="aKm" placeholder="' + (ul ? esc(fKm(ul.km)) : "") + '"><label class="foto-bt">Fotografar o comprovante' + (D.cfg.fotoAbastecimento === false ? " (opcional)" : " (obrigatório)") + '<input type="file" accept="image/*" capture="environment" id="aFoto"></label><div id="aTh"></div><div id="aMsg"></div><div class="bts"><button class="btn" id="aOk">Salvar</button></div>');
