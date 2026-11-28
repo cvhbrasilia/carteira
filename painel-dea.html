@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Logística DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128172034">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Logística DEA+"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel-dea.webmanifest?v=20261128175222">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -472,7 +472,11 @@ main.tela-es .tela-c{max-width:1280px}
 .es-linha.meu{background:#A83D3D;border-color:#A83D3D;color:#fff}.es-linha.meu>b,.es-linha.meu small{color:#fff}.es-linha.passou{opacity:.55}.es-linha.falta{border:2px dashed #A83D3D}.es-linha.falta small{color:#A83D3D;font-weight:700}
 .es-inf{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-bottom:1px solid #EEE5DB}.es-inf span{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-inf b{font-weight:600;color:#3a2a26}.es-inf small{display:block;font-weight:400;color:#7a6a62;font-size:13px;margin-top:2px}
 @media (max-width:900px){.es-topo{grid-template-columns:1fr}.es-topo .cortica{aspect-ratio:auto;height:50vh;height:50dvh;min-height:300px}}
-.es-abas{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.es-abas .filtro{font-size:14px;padding:8px 16px}.es-abas .filtro.on{background:#A83D3D;border-color:#A83D3D;color:#fff}
+.es-abas{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.fer-per,.fer-reg,.fer-oc{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--linha)}.fer-per>div,.fer-reg>div:first-child{display:flex;flex-direction:column;gap:3px}.fer-per>div{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}.fer-per span,.fer-reg span,.fer-oc span{font-size:13.5px;color:var(--tinta2)}.fer-per{flex-direction:column;align-items:flex-start}
+.fer-st{font-style:normal;font-size:12px;font-weight:700;color:#fff;background:var(--c);border-radius:999px;padding:3px 10px}
+.fer-pes{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;width:100%;text-align:left;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:12px 14px;margin:0 0 8px;font:inherit;color:inherit;cursor:pointer}.fer-pes b{color:#5F130F;font-size:16px}.fer-pes span{font-size:13px;color:var(--tinta2);flex:1}
+.fer-sm{grid-column:1/-1;margin:-4px 0 6px;font-size:13px;color:#8a6a52}.fer-tot{font-weight:700;color:#5F130F;margin:6px 0}.fer-regras{margin:10px 0;background:#EEE5DB;border-radius:12px;padding:10px 14px}.fer-regras summary{cursor:pointer;font-weight:700;color:#5F130F}.fer-regras li{font-size:13.5px;margin:4px 0}.es-abas .filtro{font-size:14px;padding:8px 16px}.es-abas .filtro.on{background:#A83D3D;border-color:#A83D3D;color:#fff}
 .es-rel-p{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.es-rel-p button{display:flex;flex-direction:column;align-items:flex-start;border:1px solid #C6B098;background:#fff;border-radius:12px;padding:8px 14px;font:inherit;cursor:pointer;color:#3a2a26}.es-rel-p button b{color:#5F130F}.es-rel-p button small{font-size:12px;color:#7a6a62}.es-rel-p button.on{background:#EEE5DB;border-color:#A83D3D}
 .es-rl{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;padding:8px 0;border-bottom:1px solid #EEE5DB;font-size:14px}.es-rl b{color:#5F130F}.es-rl small{grid-column:2;color:#7a6a62;font-size:13px}.lnk{background:none;border:0;padding:0;font:inherit;color:#A83D3D;text-decoration:underline;cursor:pointer}.es-rl .es-rl-log{padding-left:10px;border-left:2px solid #EEE5DB;font-size:12.5px}
 .es-rasc{background:#EEE5DB;border-left:4px solid #C49A6C;padding:8px 12px;border-radius:8px;font-size:14px}
@@ -1273,7 +1277,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128172034';
+  var VERSAO = '20261128175222';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6787,13 +6791,13 @@ function pintarEscala() {
   const nomeMes = k => ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][+k.slice(5) - 1] + ' de ' + k.slice(0, 4);
   const chipSab = x => x.feriado && !x.pessoaId ? '<button class="es-sab fer" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>Feriado</span><em>CVH fechado</em></button>' : '<button class="es-sab' + (x.pessoaId === R.eu ? ' meu' : '') + (x.data < h ? ' passou' : '') + (x.ausente ? ' falta' : '') + '" data-acao="es-sab" data-v="' + x.data + '"><b>' + x.data.slice(8) + '</b><span>' + esc(esNome1(x.pessoaId)) + '</span>' +
     (x.ausente ? '<em>' + esc(ES_AUS[x.ausente] || 'afastado') + ', precisa de cobertura</em>' : x.ajuste ? '<em>' + esc(/troca/.test(x.ajuste.motivo) ? 'trocado' : 'ajustado') + '</em>' : '') + '</button>';
-  const so = R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio'), conv = conversasEscala();
+  const so = (R.admin && (E.esAba === 'ajustes' || E.esAba === 'relatorio')) || E.esAba === 'ferias', conv = conversasEscala();
   E.esCores = coresEscala(ab);
   raiz.innerHTML = '<main class="tela tela-media tela-es"><div class="tela-c"><div class="barra" style="padding:0"><button class="pill" data-acao="home">‹ Início</button></div>' +
     '<header class="topo"><div class="t"><span>Equipe do CVH</span><b>Escala</b></div></header>' +
-    (R.admin ? '<div class="es-abas">' + [['escala', 'Escala'], ['relatorio', 'Relatório'], ['ajustes', 'Ajustes da escala']].map(([k, t]) => '<button class="filtro' + ((E.esAba || 'escala') === k ? ' on' : '') + '" data-acao="es-aba" data-v="' + k + '">' + t + '</button>').join('') + '</div>' : '') +
+    (R.admin || R.eu ? '<div class="es-abas">' + (R.admin ? [['escala', 'Escala'], ['ferias', 'Férias'], ['relatorio', 'Relatório'], ['ajustes', 'Ajustes da escala']] : [['escala', 'Escala'], ['ferias', 'Férias']]).map(([k, t]) => '<button class="filtro' + ((E.esAba || 'escala') === k ? ' on' : '') + '" data-acao="es-aba" data-v="' + k + '">' + t + '</button>').join('') + '</div>' : '') +
     (R.admin && !c.publicada ? '<p class="es-rasc">Rascunho. Só você vê a escala até marcar "Publicar" em Ajustes da escala.</p>' : '') +
-    (R.admin && E.esAba === 'ajustes' ? '<section class="cartao" id="esAj"></section></div></main>' : R.admin && E.esAba === 'relatorio' ? '<section id="esRel"><p class="vazio-p">Carregando o relatório…</p></section></div></main>' : '') +
+    (E.esAba === 'ferias' ? '<div id="esFer"></div></div></main>' : R.admin && E.esAba === 'ajustes' ? '<section class="cartao" id="esAj"></section></div></main>' : R.admin && E.esAba === 'relatorio' ? '<section id="esRel"><p class="vazio-p">Carregando o relatório…</p></section></div></main>' : '') +
     (so ? '' : '<div class="es-topo">' +
     '<section class="cortica"><i class="cq a"></i><i class="cq b"></i><i class="cq c"></i><i class="cq d"></i><i class="cortica-marca" aria-hidden="true"></i><b class="placa">Quadro de trocas e avisos</b><div class="cortica-in"><div class="cortica-cab">' + (R.admin ? '<button class="btn sec2 peq" data-acao="es-aviso">+ Aviso</button>' : '') + (R.eu && c.publicada && (R.feriados || []).some(f => !f.pessoaId) ? '<button class="btn sec2 peq" data-acao="es-fer-pedir">+ Trabalhar num feriado</button>' : '') + (R.eu && c.publicada ? '<button class="btn peq" data-acao="es-pedir">+ Pedir troca de sábado</button>' : '') + '</div>' +
       (ab.length ? '<div class="postits">' + ab.map(postitEscala).join('') + '</div>' : '<p class="cortica-vazio">Nenhum aviso ou pedido de troca no quadro.</p>') +
@@ -6816,6 +6820,7 @@ function pintarEscala() {
       '</tbody></table></div><p class="nota">Toque no nome para ver ' + (R.admin ? 'e ajustar ' : '') + 'os horários e as observações de cada um.</p>' + (c.ausencias.filter(x => !x.ate || x.ate >= h).length ? '<p class="nota">' + c.ausencias.filter(x => !x.ate || x.ate >= h).map(x => esc(esNome1(x.pessoaId)) + ' de ' + esc(ES_AUS[x.motivo] || 'afastamento') + ' desde ' + br(x.de).slice(0, 5) + (x.ate ? ' até ' + br(x.ate).slice(0, 5) : '')).join(' · ') + '</p>' : '') + '</section>' + '</div></main>') +
     '';
   telaClasse('tela-es');
+  if (E.esAba === 'ferias') pintarFerias();
   if (so && E.esAba === 'ajustes') formConfigEscala();
   if (so && E.esAba === 'relatorio') relatorioEscala();
 }
@@ -6886,6 +6891,128 @@ async function termoTrocaPdf(T) {
     pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 }); pdf.setTitle('Termo de troca de sábado ' + T.codigo);
     entregarBlob(new Blob([await pdf.save()], { type: 'application/pdf' }), 'Termo de troca ' + br(T.sabado).replace(/\//g, '-') + '.pdf');
   } finally { box.remove(); }
+}
+/* ── Escala: férias (cada funcionário escolhe e assina; o requerimento vai direto ao contador) ── */
+const FER_SIT = { quitado: ['Quitado', '#5E7D4F'], aquisitivo: ['Em formação', '#8a7a72'], aberto: ['Em aberto', '#C49A6C'], vencendo: ['Vence em breve', '#D08A2E'], vencido: ['Vencido', '#A83D3D'] };
+const ferPeriodo = per => br(per.ini) + ' a ' + br(per.fim);
+const ferPartesTxt = P => (P || []).map(x => br(x.de) + ' a ' + br(x.ate)).join(' e ');
+const ferDias = x => Math.round((Date.parse(x.ate + 'T12:00:00Z') - Date.parse(x.de + 'T12:00:00Z')) / 864e5) + 1;
+const cpfFmt = c => { c = String(c || '').replace(/\D/g, ''); return c.length === 11 ? c.slice(0, 3) + '.' + c.slice(3, 6) + '.' + c.slice(6, 9) + '-' + c.slice(9) : c; };
+// requerimento no padrão dos laudos: timbrado só no PDF digital (o papel do CVH já vem timbrado, então a impressão sai sem ele)
+function feriasHtml(D, impressao) {
+  const quando = e => br(String(e).slice(0, 10)) + ' às ' + String(e).slice(11, 16), fun = (D.assinaturas || []).find(a => a.papel === 'funcionario') || {}, cvh = (D.assinaturas || []).find(a => a.papel === 'cvh') || {};
+  const dias = D.partes.reduce((a, x) => a + x.dias, 0), inf = (r, v, cls) => '<div class="rf-i' + (cls ? ' ' + cls : '') + '"><span>' + r + '</span><b>' + v + '</b></div>';
+  return '<div class="req-fer"><style>' +
+    '.req-fer{width:794px;height:1123px;position:relative;background:#fff ' + (impressao ? '' : 'url(timbrado-a4.jpg) center/100% 100% no-repeat') + ';color:#2b211c;font-family:"Proza Libre",Georgia,serif;box-sizing:border-box}' +
+    '.rf-c{position:absolute;left:66px;right:66px;top:58px;bottom:150px;display:flex;flex-direction:column}' +
+    '.rf-topo{align-self:flex-end;text-align:right;margin-bottom:58px}.rf-topo small{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#A83D3D;font-weight:700}.rf-topo b{font-size:15px;color:#5F130F}' +
+    '.rf-tit{display:flex;align-items:center;gap:14px;margin:0 0 18px}.rf-tit h1{font-size:30px;color:#5F130F;margin:0;white-space:nowrap}.rf-tit img{flex:1;min-width:0;height:34px;object-fit:fill}' +
+    '.rf-box{background:#F7F1EA;border-radius:12px;padding:14px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px}.rf-i span{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52}.rf-i b{font-size:13.5px;color:#2b211c}.rf-i.l2{grid-column:span 2}' +
+    '.rf-sec{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#A83D3D;font-weight:700;margin:20px 0 6px}' +
+    '.req-fer table{width:100%;border-collapse:collapse;font-size:13.5px}.req-fer th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a52;border-bottom:1.5px solid #5F130F;padding:6px 8px}.req-fer td{padding:8px;border-bottom:1px solid #EEE5DB}' +
+    '.req-fer p{font-size:13.5px;line-height:1.65;margin:0 0 10px;text-align:justify}' +
+    '.rf-ass{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}.rf-as{display:flex;gap:10px;align-items:center;border:1px solid #C6B098;border-radius:10px;padding:10px 12px;background:rgba(255,255,255,.7)}.rf-as i{width:52px;height:52px;flex:none;background:var(--img-selo) center/contain no-repeat}' +
+    '.rf-as small{display:block;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#A83D3D}.rf-as b{display:block;font-size:13.5px;color:#5F130F}.rf-as span{display:block;font-size:11px;color:#6b5a52}.rf-as .rb{display:inline-block;width:86px;height:30px;vertical-align:middle;margin-left:6px}.rf-as .rb svg{width:100%;height:100%}' +
+    '.rf-pe{margin-top:auto;font-size:11px;color:#8a7a72;display:flex;justify-content:space-between;border-top:1px solid #EEE5DB;padding-top:8px}' +
+    '</style><div class="rf-c"><div class="rf-topo"><small>Requerimento de férias</small><b>' + esc(D.nome) + '</b></div>' +
+    '<div class="rf-tit"><h1>Requerimento de férias</h1><img src="manguito-vermelho.png" alt=""></div>' +
+    '<div class="rf-box">' + inf('Funcionário', esc(D.nome), 'l2') + inf('CPF', esc(cpfFmt(D.cpf))) + inf('Cargo', esc(D.cargo || ' ')) +
+      inf('Admissão', D.admissao ? br(D.admissao) : ' ') + inf('Período aquisitivo', br(D.periodoIni) + ' a ' + br(D.periodoFim)) + inf('Prazo para as férias', D.limite ? 'até ' + br(D.limite) : ' ') + inf('Dias', dias + ' de descanso' + (D.abono ? ' + ' + D.abono + ' de abono' : '')) + '</div>' +
+    '<div class="rf-sec">Períodos de descanso</div><table><thead><tr><th>Parte</th><th>Início</th><th>Fim</th><th>Dias</th><th>Retorno ao trabalho</th></tr></thead><tbody>' +
+      D.partes.map((x, i) => '<tr><td>' + (i + 1) + 'ª</td><td>' + br(x.de) + '</td><td>' + br(x.ate) + '</td><td>' + x.dias + '</td><td>' + br(x.retorno) + '</td></tr>').join('') + '</tbody></table>' +
+    '<div class="rf-sec">Requerimento</div>' +
+    '<p>Em conformidade com a Consolidação das Leis do Trabalho, artigos 129 e seguintes, eu, ' + esc(D.nome) + ', CPF ' + esc(cpfFmt(D.cpf)) + ', venho requerer o gozo das minhas férias referentes ao período aquisitivo de ' + br(D.periodoIni) + ' a ' + br(D.periodoFim) + ', nas datas acima, totalizando ' + dias + ' dias de descanso' +
+      (D.partes.length > 1 ? ', divididos em ' + D.partes.length + ' partes, com a minha concordância (art. 134, § 1º)' : '') + (D.abono ? ', e a conversão de ' + D.abono + ' dias em abono pecuniário (art. 143)' : '') + '.</p>' +
+    '<p>O CVH - Centro Veterinário de Hemoterapia está de acordo com as datas solicitadas. A remuneração das férias, acrescida de um terço' + (D.abono ? ', e o abono pecuniário serão pagos' : ', será paga') + ' até dois dias antes do início de cada parte (art. 145).</p>' +
+    '<div class="rf-ass"><div class="rf-as"><i></i><div><small>' + (fun.por ? 'REQUERENTE' : 'ASSINADO ELETRONICAMENTE') + '</small><b>' + esc(fun.nome || D.nome) + '</b><span>Funcionário · requerente</span><span>' + (fun.por ? 'Lançado por ' + esc(fun.por) + ' em ' + (fun.em ? quando(fun.em) : '') : fun.em ? quando(fun.em) : '') + '</span></div></div>' +
+      '<div class="rf-as"><i></i><div><small>ASSINADO ELETRONICAMENTE · DE ACORDO</small><b>' + esc(cvh.nome || D.vet.nome) + '</b><span>Médico veterinário · ' + esc(cvh.crmv || D.vet.crmv) + (D.vet.rubrica ? '<span class="rb">' + rubSvgDir(D.vet.rubrica) + '</span>' : '') + '</span><span>CVH · ' + (cvh.em ? quando(cvh.em) : '') + '</span></div></div></div>' +
+    '<div class="rf-pe"><span>Brasília, ' + dataLonga(String(D.criadoEm).slice(0, 10)) + '</span><span>Painel CVH · código de verificação ' + esc(D.codigo) + '</span></div></div></div>';
+}
+async function feriasPdf(D, impressao) {
+  if (!window.htmlToImage) await carregarScript(LIB_IMG); if (!window.PDFLib) await carregarScript(LIB_PDF);
+  const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-30000px;top:0'; box.innerHTML = feriasHtml(D, impressao); document.body.appendChild(box);
+  try {
+    if (document.fonts) await document.fonts.ready;
+    await Promise.all([...box.querySelectorAll('img')].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
+    const el = box.firstElementChild, op = { width: 794, height: 1123, pixelRatio: 2.6, quality: 0.92, backgroundColor: '#ffffff' };
+    try { await htmlToImage.toJpeg(el, op); } catch (_) {}
+    const url = await htmlToImage.toJpeg(el, op), pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(bytesDeUrl(url));
+    pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 }); pdf.setTitle('Requerimento de férias ' + D.nome);
+    return await pdf.save();
+  } finally { box.remove(); }
+}
+const ferNomeArq = (D, imp) => 'Requerimento de férias ' + String(D.nome).split(' ')[0] + ' ' + br(D.partes[0].de).replace(/\//g, '-') + (imp ? ' (impressão)' : '') + '.pdf';
+async function feriasEnviarPdf(D, reenviar) {
+  const u8 = await feriasPdf(D, false); let t = ''; for (let i = 0; i < u8.length; i += 0x8000) t += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return await api('escalaFeriasEnviar', E.sessao, D.id, btoa(t), !!reenviar);
+}
+// aba Férias: funcionário vê os seus períodos e escolhe; o administrador vê a equipe toda
+function pintarFerias() {
+  const box = $('#esFer'); if (!box) return;
+  const R = E.es, F = R.ferias || { pessoas: [], ocupados: [] }, h = R.hoje, nome = id => esNome1(id);
+  const sit = per => '<em class="fer-st" style="--c:' + (FER_SIT[per.situacao] || FER_SIT.aberto)[1] + '">' + (FER_SIT[per.situacao] || FER_SIT.aberto)[0] + '</em>';
+  const cartaoPer = per => '<div class="fer-per"><div><b>' + ferPeriodo(per) + '</b>' + sit(per) + '</div><span>' + per.usados + ' de 30 dias usados · saldo ' + per.saldo + (per.situacao === 'aquisitivo' ? ' · o período termina em ' + br(per.fim) : per.situacao === 'vencido' ? ' · venceu em ' + br(per.limite) : per.saldo ? ' · tirar até ' + br(per.limite) : '') + '</span></div>';
+  const regLinha = (r, adm) => '<div class="fer-reg"><div><b>' + ferPartesTxt(r.partes) + '</b><span>' + r.partes.reduce((a, x) => a + ferDias(x), 0) + ' dias' + (r.abono ? ' + ' + r.abono + ' vendidos' : '') + ' · ' + (r.tipo === 'historico' ? 'férias registradas' : r.situacao === 'enviado' ? 'enviado ao contador em ' + br(String(r.emailEm).slice(0, 10)) : 'assinado, falta enviar ao contador') + '</span></div><div class="bts">' +
+    (r.tipo === 'pedido' ? '<button class="btn sec peq" data-acao="es-fer-pdf" data-id="' + r.id + '">PDF</button><button class="btn sec peq" data-acao="es-fer-pdf" data-id="' + r.id + '" data-imp="1">Impressão</button>' + (r.situacao !== 'enviado' || adm ? '<button class="btn sec2 peq" data-acao="es-fer-enviar" data-id="' + r.id + '">' + (r.situacao === 'enviado' ? 'Reenviar' : 'Enviar ao contador') + '</button>' : '') : '') +
+    (adm ? '<button class="btn perigo peq" data-acao="es-fer-cancelar" data-id="' + r.id + '">Cancelar</button>' : '') + '</div></div>';
+  const prox = F.ocupados.filter(x => x.ate >= h).sort((a, b) => a.de.localeCompare(b.de));
+  const equipe = '<section class="cartao"><h3>Férias da equipe</h3>' + (prox.length ? prox.map(x => '<div class="fer-oc"><b>' + esc(x.nome) + '</b><span>' + br(x.de) + ' a ' + br(x.ate) + '</span></div>').join('') : '<p class="vazio-p">Nenhum período de férias marcado daqui para a frente.</p>') + '<p class="nota">Duas pessoas não podem tirar férias nos mesmos dias. O sábado de quem está de férias passa para a próxima pessoa do rodízio.</p></section>';
+  const regras = '<details class="fer-regras"><summary>Regras das férias (CLT)</summary><ul><li>Escolha as férias do ano seguinte até 31 de outubro.</li><li>Marque com pelo menos 30 dias de antecedência (art. 135).</li><li>Até 3 partes: uma com 14 dias ou mais e as outras com 5 dias ou mais (art. 134).</li><li>As férias não podem começar nos 2 dias antes de domingo ou feriado (sexta e sábado, por exemplo).</li><li>Pode vender até 10 dias (abono pecuniário, art. 143).</li><li>As férias de cada período precisam terminar até 12 meses depois do fim do período (art. 134); depois disso, o pagamento é em dobro (art. 137).</li><li>Ao assinar, o requerimento vai por e-mail para o contador.</li></ul></details>';
+  if (R.admin) {
+    box.innerHTML = '<section class="cartao"><h3>Férias por pessoa</h3>' + (F.pessoas.length ? F.pessoas.map(P => {
+      const ab = P.periodos.filter(x => x.saldo > 0 && x.situacao !== 'aquisitivo'), pior = ab.find(x => x.situacao === 'vencido') || ab.find(x => x.situacao === 'vencendo') || ab[0];
+      return '<button class="fer-pes" data-acao="es-fer-pessoa" data-id="' + P.pessoaId + '"><b>' + esc(nome(P.pessoaId)) + '</b><span>' + (P.admissao ? 'admissão ' + br(P.admissao) : 'sem data de admissão') + '</span>' +
+        (pior ? '<em class="fer-st" style="--c:' + FER_SIT[pior.situacao][1] + '">' + ab.reduce((a, x) => a + x.saldo, 0) + ' dias em aberto · ' + (pior.situacao === 'vencido' ? 'venceu em ' + br(pior.limite) : 'tirar até ' + br(pior.limite)) + '</em>' : P.admissao ? '<em class="fer-st" style="--c:#5E7D4F">em dia</em>' : '') + '</button>';
+    }).join('') : '<p class="vazio-p">Ninguém na escala.</p>') + '<p class="nota">Requerimentos vão para ' + esc(F.email) + '.</p></section>' + equipe + regras;
+  } else {
+    const P = F.pessoas[0];
+    if (!P) { box.innerHTML = '<section class="cartao"><p class="vazio-p">Seu usuário não está na escala.</p></section>'; return; }
+    box.innerHTML = '<section class="cartao"><h3>Minhas férias</h3>' + (!P.admissao ? '<p class="vazio-p">Falta a sua data de admissão nos ajustes da escala. Peça ao Plínio para cadastrar.</p>' :
+      P.periodos.slice().reverse().map(cartaoPer).join('') + '<div class="acoes-form"><button class="btn" data-acao="es-fer-escolher">Escolher minhas férias</button></div>' +
+      (P.registros.length ? '<h3 style="margin-top:14px">Marcadas e já tiradas</h3>' + P.registros.slice().sort((a, b) => String(b.partes[0] && b.partes[0].de).localeCompare(String(a.partes[0] && a.partes[0].de))).map(r => regLinha(r, false)).join('') : '')) + '</section>' + equipe + regras;
+  }
+}
+function ferPessoaFolha(pid) {
+  const P = E.es.ferias.pessoas.find(x => x.pessoaId === pid); if (!P) return;
+  const sit = per => '<em class="fer-st" style="--c:' + FER_SIT[per.situacao][1] + '">' + FER_SIT[per.situacao][0] + '</em>';
+  abrirFolha('Férias · ' + esNome1(pid), (P.admissao ? '<p class="nota">Admissão ' + br(P.admissao) + (P.feriasDesde && P.feriasDesde !== P.admissao ? ' · períodos controlados desde ' + br(P.feriasDesde) : '') + (P.cargo ? ' · ' + esc(P.cargo) : '') + '</p>' : '<p class="vazio-p">Cadastre a data de admissão em Ajustes da escala.</p>') +
+    P.periodos.slice().reverse().map(per => '<div class="fer-per"><div><b>' + ferPeriodo(per) + '</b>' + sit(per) + '</div><span>' + per.usados + ' de 30 dias usados · saldo ' + per.saldo + (per.situacao === 'vencido' ? ' · venceu em ' + br(per.limite) : per.saldo && per.situacao !== 'aquisitivo' ? ' · tirar até ' + br(per.limite) : '') + '</span></div>').join('') +
+    '<h3 style="margin:14px 0 4px">Marcadas e já tiradas</h3>' + (P.registros.length ? P.registros.slice().sort((a, b) => String(b.partes[0] && b.partes[0].de).localeCompare(String(a.partes[0] && a.partes[0].de))).map(r => '<div class="fer-reg"><div><b>' + ferPartesTxt(r.partes) + '</b><span>' + r.partes.reduce((a, x) => a + ferDias(x), 0) + ' dias' + (r.abono ? ' + ' + r.abono + ' vendidos' : '') + ' · período ' + (r.periodoIni ? br(r.periodoIni) : 'automático') + ' · ' + (r.tipo === 'historico' ? 'registrada' : r.situacao === 'enviado' ? 'enviado ao contador em ' + br(String(r.emailEm).slice(0, 10)) : 'falta enviar ao contador') + '</span></div><div class="bts">' +
+      (r.tipo === 'pedido' ? '<button class="btn sec peq" data-acao="es-fer-pdf" data-id="' + r.id + '">PDF</button><button class="btn sec peq" data-acao="es-fer-pdf" data-id="' + r.id + '" data-imp="1">Impressão</button><button class="btn sec2 peq" data-acao="es-fer-enviar" data-id="' + r.id + '">' + (r.situacao === 'enviado' ? 'Reenviar' : 'Enviar ao contador') + '</button>' : '') + '<button class="btn perigo peq" data-acao="es-fer-cancelar" data-id="' + r.id + '">Cancelar</button></div></div>').join('') : '<p class="vazio-p">Nenhuma.</p>') +
+    '<div class="acoes-form"><button class="btn sec" data-acao="es-fer-reg" data-id="' + pid + '">Registrar férias já tiradas</button><button class="btn" data-acao="es-fer-escolher" data-id="' + pid + '">Marcar férias</button></div>');
+}
+function ferPartesForm(n) {
+  return [0, 1, 2].map(i => '<div class="grade fer-pt" data-i="' + i + '"' + (i >= n ? ' hidden' : '') + '>' + campo('fpD' + i, (i + 1) + 'ª parte · início', inp('fpD' + i, '', 'type="date"')) + campo('fpA' + i, 'Último dia', inp('fpA' + i, '', 'type="date"')) + '<p class="fer-sm" id="fpS' + i + '"></p></div>').join('');
+}
+function ferLerPartes() { return [0, 1, 2].filter(i => !$('.fer-pt[data-i="' + i + '"]').hidden).map(i => ({ de: vl('fpD' + i), ate: vl('fpA' + i) })).filter(x => x.de || x.ate); }
+function ferResumo() {
+  const P = ferLerPartes(), ab = +vl('fpAb') || 0; let tot = 0;
+  [0, 1, 2].forEach(i => { const s = $('#fpS' + i), de = vl('fpD' + i), ate = vl('fpA' + i); if (!s) return; if (de && ate && ate >= de) { const d = ferDias({ de, ate }); tot += d; s.textContent = d + ' dias · volta ao trabalho em ' + br(somaDiasIso(ate, 1)); } else s.textContent = ''; });
+  const r = $('#fpTot'); if (r) r.textContent = P.length ? tot + ' dias de descanso' + (ab ? ' + ' + ab + ' vendidos = ' + (tot + ab) + ' dias' : '') : '';
+}
+function formFerias(pid) {
+  const R = E.es, F = R.ferias, eu = pid || R.eu, P = F.pessoas.find(x => x.pessoaId === eu); if (!P) return toast('Pessoa não encontrada na escala.');
+  const per = P.periodos.find(x => x.saldo > 0); if (!P.admissao) return toast('Falta a data de admissão nos ajustes da escala.', 6000);
+  const oc = F.ocupados.filter(x => x.ate >= R.hoje && x.pessoaId !== eu);
+  abrirFolha(pid && pid !== R.eu ? 'Marcar férias · ' + esNome1(pid) : 'Escolher minhas férias',
+    (per ? '<p class="nota">' + (per.situacao === 'aquisitivo' ? 'Próximo período: ' : 'Período em aberto: ') + ferPeriodo(per) + ' · saldo ' + per.saldo + ' dias' + (per.situacao !== 'aquisitivo' ? ' · tirar até ' + br(per.limite) : ' · pode começar depois de ' + br(per.fim)) + (per.situacao === 'vencido' ? '. Este período já venceu: marque o quanto antes.' : '') + '</p>' : '') +
+    (oc.length ? '<p class="nota">Dias já ocupados: ' + oc.map(x => esc(x.nome) + ' de ' + br(x.de) + ' a ' + br(x.ate)).join('; ') + '.</p>' : '') +
+    ferPartesForm(1) + '<div class="bts" style="margin:4px 0 10px"><button class="btn sec2 peq" data-acao="es-fer-parte">+ Dividir em mais uma parte</button></div>' +
+    '<div class="grade">' + campo('fpAb', 'Vender dias (abono)', '<select id="fpAb">' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => '<option value="' + n + '">' + (n ? n + (n === 1 ? ' dia' : ' dias') : 'Não vender') + '</option>').join('') + '</select>') +
+    campo('fpCpf', 'CPF', inp('fpCpf', cpfFmt(P.cpf), 'inputmode="numeric" placeholder="000.000.000-00"')) + '</div>' +
+    '<p class="fer-tot" id="fpTot"></p><p class="nota">Ao assinar, o requerimento é gerado com a sua assinatura eletrônica e a do CVH e vai por e-mail para o contador. Se precisar mudar depois, fale com o Plínio.</p>' +
+    '<div class="acoes-form"><button class="btn" data-acao="es-fer-assinar" data-id="' + (pid || '') + '">Assinar e enviar ao contador</button></div>');
+  setTimeout(() => { document.querySelectorAll('#folha input, #folha select').forEach(e => { e.addEventListener('input', ferResumo); e.addEventListener('change', ferResumo); }); }, 30);
+}
+function formFeriasReg(pid) {
+  const P = E.es.ferias.pessoas.find(x => x.pessoaId === pid); if (!P) return;
+  abrirFolha('Registrar férias já tiradas · ' + esNome1(pid), '<p class="nota">Para férias tiradas antes do app. Não vai e-mail para o contador. Se ficar em branco, o período aquisitivo é escolhido sozinho (o mais antigo em aberto).</p>' +
+    ferPartesForm(1) + '<div class="bts" style="margin:4px 0 10px"><button class="btn sec2 peq" data-acao="es-fer-parte">+ Mais uma parte</button></div>' +
+    '<div class="grade">' + campo('fpAb', 'Dias vendidos (abono)', '<select id="fpAb">' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => '<option value="' + n + '">' + n + '</option>').join('') + '</select>') +
+    campo('fpPer', 'Período aquisitivo', '<select id="fpPer"><option value="">Automático</option>' + P.periodos.map(x => '<option value="' + x.ini + '">' + ferPeriodo(x) + '</option>').join('') + '</select>') + '</div>' +
+    campo('fpObs', 'Observação', '<textarea id="fpObs" rows="2" maxlength="300"></textarea>', 'larga') +
+    '<p class="fer-tot" id="fpTot"></p><div class="acoes-form"><button class="btn" data-acao="es-fer-reg-ok" data-id="' + pid + '">Registrar</button></div>');
+  setTimeout(() => { document.querySelectorAll('#folha input, #folha select').forEach(e => { e.addEventListener('input', ferResumo); e.addEventListener('change', ferResumo); }); }, 30);
 }
 // conversas da escala: a negociação da vez (pedido do quadro) e os pedidos diretos, só entre as duas pessoas
 function conversasEscala() {
@@ -7002,7 +7129,8 @@ function formPessoaEscala(id) {
     '<p class="nota">Horário de cada dia no formato 8-16 (das 8h às 16h). Dia vazio é folga. Os avisos e as pendências da agenda para essa pessoa só chegam dentro desses horários.</p>' +
     '<div class="es-hrs">' + [1, 2, 3, 4, 5].map(d => '<label>' + ES_DIAS[d] + inp('epH' + d, p.semana[d] ? p.semana[d].join('-') : '', 'placeholder="8-16" inputmode="numeric"') + '</label>').join('') +
     '<label>Sáb' + inp('epH6', (p.sabado || [9, 18]).join('-'), 'placeholder="9-18" inputmode="numeric"') + '</label></div>' +
-    campo('epObs', 'Observação (a equipe vê)', '<textarea id="epObs" rows="2" maxlength="300" placeholder="Ex.: terça e quinta sai às 19h por causa da faculdade">' + esc(p.obs || '') + '</textarea>', 'larga') +
+    '<div class="grade">' + campo('epAdm', 'Data de admissão', inp('epAdm', p.admissao || '', 'type="date"')) + campo('epCg', 'Cargo (vai no requerimento de férias)', inp('epCg', p.cargo || '', 'maxlength="60"')) + campo('epFd', 'Férias controladas desde (início de período)', inp('epFd', p.feriasDesde || '', 'type="date"')) + '</div>' +
+        campo('epObs', 'Observação (a equipe vê)', '<textarea id="epObs" rows="2" maxlength="300" placeholder="Ex.: terça e quinta sai às 19h por causa da faculdade">' + esc(p.obs || '') + '</textarea>', 'larga') +
     '<h3 style="margin:14px 0 4px">Afastamentos</h3>' +
     aus.map(x => '<div class="grade es-paus" data-i="' + x.i + '">' + campo('epAm' + x.i, 'Motivo', '<select id="epAm' + x.i + '">' + Object.entries(ES_AUS).map(([k, t]) => '<option value="' + k + '"' + (k === x.motivo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>') +
       campo('epAd' + x.i, 'De', inp('epAd' + x.i, x.de, 'type="date"')) + campo('epAa' + x.i, 'Até (vazio se ainda não sabe)', inp('epAa' + x.i, x.ate, 'type="date"')) +
@@ -7014,7 +7142,7 @@ function formPessoaEscala(id) {
 function salvarPessoaEscala(id) {
   const c = JSON.parse(JSON.stringify(E.es.cfg)), p = c.pessoas.find(x => x.id === id), hr = v => { const m = String(v || '').match(/^\s*(\d{1,2})\s*[-–a]\s*(\d{1,2})\s*$/); return m && +m[1] < +m[2] ? [+m[1], +m[2]] : null; };
   for (const d of [1, 2, 3, 4, 5, 6]) { const v = vl('epH' + d); if (v && !hr(v)) throw new Error('Horário de ' + ES_DIAS[d] + ' inválido. Use o formato 8-16.'); }
-  p.nome = vl('epN') || p.nome; p.usuarioId = vl('epU'); p.obs = vl('epObs'); p.semana = {}; [1, 2, 3, 4, 5].forEach(d => { const h = hr(vl('epH' + d)); if (h) p.semana[d] = h; }); p.sabado = hr(vl('epH6')) || [9, 18];
+  p.nome = vl('epN') || p.nome; p.usuarioId = vl('epU'); p.obs = vl('epObs'); p.admissao = vl('epAdm'); p.cargo = vl('epCg'); p.feriasDesde = vl('epFd'); p.semana = {}; [1, 2, 3, 4, 5].forEach(d => { const h = hr(vl('epH' + d)); if (h) p.semana[d] = h; }); p.sabado = hr(vl('epH6')) || [9, 18];
   const pos = vl('epO'), ordem = c.ordem.filter(x => x !== id); if (pos !== '') ordem.splice(Math.min(+pos, ordem.length), 0, id); c.ordem = ordem;
   c.ausencias = c.ausencias.map((x, i) => { if (x.pessoaId !== id || !$('#epAm' + i)) return x; if ($('#epAx' + i).checked) return null; return { pessoaId: id, motivo: vl('epAm' + i), de: vl('epAd' + i), ate: vl('epAa' + i) }; }).filter(Boolean);
   if (vl('epNm')) { if (!vl('epNd')) throw new Error('Informe o início do afastamento.'); c.ausencias.push({ pessoaId: id, motivo: vl('epNm'), de: vl('epNd'), ate: vl('epNa') }); }
@@ -10722,6 +10850,29 @@ const ACOES = {
   'es-sab-rod': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, '', ''); fecharFolha(); toast('Voltou ao rodízio.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-config': () => { E.esAba = 'ajustes'; pintarEscala(); },
   'es-aba': b => { E.esAba = b.dataset.v; pintarEscala(); },
+  'es-fer-pessoa': b => ferPessoaFolha(b.dataset.id),
+  'es-fer-escolher': b => formFerias(b.dataset.id || ''),
+  'es-fer-reg': b => formFeriasReg(b.dataset.id),
+  'es-fer-parte': () => { const h = [...document.querySelectorAll('.fer-pt')].find(x => x.hidden); if (h) h.hidden = false; else toast('No máximo 3 partes.'); },
+  'es-fer-assinar': async b => {
+    const pid = b.dataset.id || '', partes = ferLerPartes(); if (!partes.length) return toast('Escolha as datas das férias.');
+    b.disabled = true; const t0 = b.textContent; b.textContent = 'Assinando…'; let D;
+    try { D = await api('escalaFeriasPedir', E.sessao, { pessoaId: pid, partes, abono: +vl('fpAb') || 0, cpf: vl('fpCpf') }); }
+    catch (e) { b.disabled = false; b.textContent = t0; return toast(e.message, 9000); }
+    b.textContent = 'Enviando ao contador…';
+    try { await feriasEnviarPdf(D); toast('Férias marcadas. O requerimento foi enviado ao contador.', 7000); } catch (e) { toast('Férias marcadas, mas o envio ao contador falhou: ' + e.message + '. Use "Enviar ao contador" na aba Férias.', 10000); }
+    fecharFolha(); try { E.es = await api('escalaDados', E.sessao); } catch (_) {} pintarEscala();
+  },
+  'es-fer-reg-ok': async b => {
+    const partes = ferLerPartes(); if (!partes.length) return toast('Informe as datas.');
+    b.disabled = true; try { E.es = await api('escalaFeriasRegistrar', E.sessao, { pessoaId: b.dataset.id, partes, abono: +vl('fpAb') || 0, periodoIni: vl('fpPer'), obs: vl('fpObs') }); fecharFolha(); toast('Férias registradas.'); pintarEscala(); } catch (e) { b.disabled = false; toast(e.message, 8000); }
+  },
+  'es-fer-pdf': async b => { const t0 = b.textContent; b.disabled = true; b.textContent = 'Gerando…'; try { const D = await api('escalaFeriasDoc', E.sessao, b.dataset.id), imp = !!b.dataset.imp; entregarBlob(new Blob([await feriasPdf(D, imp)], { type: 'application/pdf' }), ferNomeArq(D, imp)); } catch (e) { toast(e.message, 6000); } b.disabled = false; b.textContent = t0; },
+  'es-fer-enviar': async b => { const t0 = b.textContent; b.disabled = true; b.textContent = 'Enviando…'; try { const D = await api('escalaFeriasDoc', E.sessao, b.dataset.id); await feriasEnviarPdf(D, D.situacao === 'enviado'); toast('Requerimento enviado ao contador.'); fecharFolha(); E.es = await api('escalaDados', E.sessao); pintarEscala(); } catch (e) { toast(e.message, 7000); b.disabled = false; b.textContent = t0; } },
+  'es-fer-cancelar': async b => {
+    if (!confirm('Cancelar estas férias? Se o requerimento já foi para o contador, ele recebe um e-mail de cancelamento.')) return;
+    b.disabled = true; try { E.es = await api('escalaFeriasCancelar', E.sessao, b.dataset.id, ''); fecharFolha(); toast('Férias canceladas.'); pintarEscala(); } catch (e) { b.disabled = false; toast(e.message, 7000); }
+  },
   'es-rel-per': b => { E.esRelPer = b.dataset.v; relatorioEscala(); },
   'es-rel-pes': b => { E.esRelPes = E.esRelPes === b.dataset.v ? '' : b.dataset.v; pintarRelEscala(); },
   'es-pessoa': b => formPessoaEscala(b.dataset.id),
