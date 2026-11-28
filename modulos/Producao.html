@@ -871,7 +871,7 @@ async function dadosEntrega(r) {
     envio: (r.unidades || []).map((id) => { const u = S.uni.find((x) => x.id === id); if (!u) return id; const t = [etqTipo(doadorDe(u).tipoSanguineo), etqDal(doadorDe(u).dal)].filter(Boolean).join(" · "); return (NOME_ETQ[u.componente] || u.componente) + (u.volume_ml != null ? " " + fmt(u.volume_ml) + " mL" : "") + (t ? " · " + t : ""); }).join(" + "),
     qr: cli && cli.maps ? await qrHtml(cli.maps) : "", qrRot: "Leia para abrir no mapa",
     // código de barras da caixa só para a Intensivet, que lê no app ao receber
-    ...(!r.soBolsa && /intensivet/i.test(String((cli && cli.nome) || at.destino || r.destino || "")) ? { barra: barrasEtq(qrCaixa(r), 26, 2), barraRot: "CAIXA " + r.id } : {}) };
+    ...(!r.soBolsa && /intensivet/i.test(String((cli && cli.nome) || at.destino || r.destino || "")) ? { barra: barrasEtq(qrCaixa(r), 26, 2), barraRot: "CAIXA " + qrCaixa(r) } : {}) };
 }
 function blocoEntrega(r) {
   return '<div class="cx" style="margin-top:12px"><h2>Etiqueta de entrega da caixa ' + esc(r.id) + ' (Brother 62 mm × 120 mm)</h2><div id="entPrev"></div><div class="bts" style="align-items:center;flex-wrap:wrap"><span>Quantidade</span>' + qtdHtml("entQtd", 1) + '<button class="btn peq" data-a="entImp" data-v="' + esc(r.id) + '">Imprimir na Brother</button></div><p><small>Na janela de impressão, escolha a Brother, papel 62mm (contínuo, comprimento 120 mm no driver da Brother), margens Nenhuma. O QR abre o endereço no mapa do motoboy; o código de barras é o da caixa, lido no app da Intensivet ao receber.</small></p></div>';

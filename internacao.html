@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128165228';
+  var VERSAO = '20261128170848';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -300,6 +300,8 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 #cam .mira{position:absolute;left:50%;top:40%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
 #cam .base{background:#fff;padding:12px 14px calc(14px + env(safe-area-inset-bottom))}
 #cam .base p{margin:0 0 8px;font-weight:700;color:var(--vinho)}
+#cam.barras .mira{width:86vmin;height:30vmin;top:38%}
+#camFig{display:flex;align-items:center;gap:12px;background:#EEE5DB;border-radius:12px;padding:8px 12px;margin:0 0 10px}#camFig svg{flex:none;width:150px;height:auto;background:#fff;border-radius:6px}#camFig span{font-size:14px;color:#5F130F;line-height:1.3}
 #cam .linha{display:flex;gap:8px}
 #cam .linha input{flex:1}
 .toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--tinta);color:#fff;padding:8px 14px;border-radius:14px;z-index:40;width:max-content;max-width:min(94vw,620px);font-weight:500;font-size:13px;line-height:1.35;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.22)}
@@ -334,7 +336,7 @@ input.lido,select.lido,textarea.lido{background:#FBF1DD;border-color:#C49A6C}
 <div class="padrao-fundo" aria-hidden="true"><i></i></div>
 <div class="wrap" id="app"><div class="vazio">Abrindo…</div></div>
 <div id="veu"></div><div id="modal" role="dialog" aria-modal="true"></div>
-<div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
+<div id="cam"><video playsinline muted></video><div class="mira"></div><div class="base"><div id="camFig" hidden></div><p id="camT"></p><div class="linha"><input type="text" id="camTxt" placeholder="Ou digite o código" autocapitalize="characters"><button class="btn" id="camOk">OK</button></div><div class="bts"><button class="btn sec" id="camSair" style="width:100%">Cancelar</button></div></div></div>
 <input type="file" id="foto" accept="image/*" capture="environment" hidden>
 <script>
 "use strict";
@@ -433,10 +435,13 @@ function escolherSemLer(titulo) {
   });
 }
 let TESTE_ESC = null;
-function lerQR(titulo) {
+// desenho do código de barras da etiqueta da caixa, para não confundir com o QR Code do celular do motoboy
+const FIG_BARRAS = (() => { let x = 8, b = ""; const L = [2,1,1,3,1,2,2,1,3,1,1,2,1,1,2,3,1,2,1,1,3,2,1,1,2,1,3,1,2,2,1,1,2,1,1,3,1,2,1,2,3,1,1,2,2,1,1,3]; L.forEach((w, i) => { if (i % 2 === 0) b += '<rect x="' + x + '" y="8" width="' + w * 1.6 + '" height="44" fill="#1f1a17"/>'; x += w * 1.6; });
+  return '<svg viewBox="0 0 ' + Math.round(x + 8) + ' 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + b + '<text x="' + Math.round((x + 8) / 2) + '" y="65" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="700" fill="#1f1a17">CAIXA R12345.AB7KQ2</text></svg>'; })();
+function lerQR(titulo, tipo) {
   if (emTeste("semQR")) return escolherSemLer(titulo);
   return new Promise(async (resolve) => {
-    const cam = $("#cam"), v = cam.querySelector("video"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.add("on");
+    const cam = $("#cam"), v = cam.querySelector("video"), fig = $("#camFig"); $("#camT").textContent = titulo; $("#camTxt").value = ""; cam.classList.toggle("barras", tipo === "barras"); fig.hidden = tipo !== "barras"; fig.innerHTML = tipo === "barras" ? FIG_BARRAS + "<span><b>É o código de barras</b> da etiqueta colada na caixa, escrito CAIXA embaixo. Não é o QR Code da etiqueta nem o do celular do motoboy. Se não ler, digite tudo o que está escrito depois de CAIXA, com o ponto.</span>" : ""; cam.classList.add("on");
     let fluxo = null, vivo = true, det = null, jq = null; const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
     const fim = (txt) => { if (!vivo) return; vivo = false; CAM_FIM = null; if (txt) bip(); cam.classList.remove("on"); if (fluxo) fluxo.getTracks().forEach((t) => t.stop()); v.srcObject = null; resolve(txt ? String(txt).trim() : null); };
     CAM_FIM = fim; $("#camSair").onclick = () => fim(null);
@@ -445,9 +450,11 @@ function lerQR(titulo) {
     try { fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); v.srcObject = fluxo; await v.play();
       // foco contínuo e imagem aproximada: o celular pode ficar a uns 20 cm, onde a lente consegue focar
       try { const tr = fluxo.getVideoTracks()[0], cap = tr.getCapabilities ? tr.getCapabilities() : {}, adv = {}; if (cap.focusMode && cap.focusMode.includes("continuous")) adv.focusMode = "continuous"; if (cap.zoom && cap.zoom.max > 1) adv.zoom = Math.min(cap.zoom.max, Math.max(cap.zoom.min || 1, 1.6)); if (Object.keys(adv).length) await tr.applyConstraints({ advanced: [adv] }); } catch (e) {} }
-    catch (e) { if (!vivo) return; toast("Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
-    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes("qr_code")) det = new BarcodeDetector({ formats: ["qr_code", "code_128"].filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
-    let zx = null, n = 0; if (!det) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
+    catch (e) { if (!vivo) return; toast(tipo === "barras" ? "Não consegui abrir a câmera. Digite o código que está embaixo do código de barras." : "Não consegui abrir a câmera. Digite o código que está embaixo do QR.", 6000); $("#camTxt").focus(); return; }
+    // código de barras da caixa: só Code 128 (o QR da etiqueta é o mapa para o motoboy e não pode ser lido no lugar)
+    const barras = tipo === "barras";
+    try { if ("BarcodeDetector" in window) { const f = await BarcodeDetector.getSupportedFormats(); if (barras ? f.includes("code_128") : f.includes("qr_code")) det = new BarcodeDetector({ formats: (barras ? ["code_128"] : ["qr_code", "code_128"]).filter((x) => f.includes(x)) }); } } catch (e) { det = null; }
+    let zx = null, n = 0; if (!det) { if (!barras) { try { jq = await carregarJsQR(); } catch (e) { jq = null; } } try { zx = leitorBarras(await carregarZX()); } catch (e) { zx = null; } if (!jq && !zx) toast("Leitor da câmera indisponível. Digite o código.", 6000); }
     const passo = async () => {
       if (!vivo) return;
       try {
@@ -471,9 +478,13 @@ function carregarZX() {
   return ZXP;
 }
 function leitorBarras(Z) {
-  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); const r = new Z.MultiFormatReader(); r.setHints(h);
+  const h = new Map(); h.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.CODE_128]); h.set(Z.DecodeHintType.TRY_HARDER, true); const r = new Z.MultiFormatReader(); r.setHints(h);
+  let vez = 0;
   const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
-  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null; const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height);
+  return (v) => { const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return null;
+    // alterna entre a imagem quase inteira e o miolo ampliado (onde fica a mira), para pegar o código de barras pequeno
+    if (++vez % 2) { const sx = Math.round(vw * 0.08), sw = vw - 2 * sx, sy = Math.round(vh * 0.22), sh = Math.round(vh * 0.4), w = Math.min(1400, sw); cv.width = w; cv.height = Math.round(sh * w / sw); cx.drawImage(v, sx, sy, sw, sh, 0, 0, cv.width, cv.height); }
+    else { const w = Math.min(960, vw), k = w / vw, fh = Math.round(vh * 0.8); cv.width = w; cv.height = Math.round(fh * k); cx.drawImage(v, 0, Math.round(vh * 0.1), vw, fh, 0, 0, cv.width, cv.height); }
     try { return r.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText(); } catch (e) { return null; } };
 }
 // o QR pode trazer só o código ou um endereço com ?u= / ?c= / ?e=
@@ -588,7 +599,7 @@ function pintar() {
   for (const r of rem.filter((x) => x.situacao === "entregue" || x.situacao === "recebida")) {
     const us = r.unidades.map(uniDe).filter(Boolean).sort((a, b) => (prio[a.componente] ?? 9) - (prio[b.componente] ?? 9)), ini = inicioGuarda(r);
     const pend = us.filter((u) => u.situacao === "transito" || (u.dados && u.dados.guarda && !u.dados.guarda.foto)); if (!pend.length) continue;
-    h += '<div class="cx al"><h2>Guardar agora · caixa ' + esc(r.id) + "</h2>" + (r.recebida_em ? "<small>Recebida por " + esc(r.recebida_por) + " " + esc(hora(r.recebida_em)) + "</small>" : "<p><b>Entrega registrada. Toque em Chegou caixa do CVH e leia o QR da caixa antes de abrir.</b></p>") +
+    h += '<div class="cx al"><h2>Guardar agora · caixa ' + esc(r.id) + "</h2>" + (r.recebida_em ? "<small>Recebida por " + esc(r.recebida_por) + " " + esc(hora(r.recebida_em)) + "</small>" : "<p><b>Entrega registrada. Toque em Chegou caixa do CVH e leia o código de barras da etiqueta da caixa antes de abrir.</b></p>") +
       us.map((u) => { const g = (u.dados || {}).guarda; let st, bt = "";
         if (u.situacao === "transito") { st = ini && D.prazos[u.componente] ? "<small>Tempo para guardar</small>" + relogio(ini + prazo(u) * 6e4) : ""; if (r.recebida_em) bt = '<button class="btn peq" data-a="guardar" data-v="' + esc(u.id) + '">Guardar</button>'; }
         else if (g && !g.foto) { st = '<span class="tag av">No equipamento · foto pendente</span>'; bt = '<button class="btn peq" data-a="pedirFoto" data-v="' + esc(u.id) + '">Foto da bolsa guardada</button>'; }
@@ -664,7 +675,7 @@ setInterval(() => carregar(true), 30000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) carregar(true); });
 
 /* ── ações ── */
-// recebimento (10.2): nome, foto rápida pela câmera frontal (sem prévia), depois o QR externo da caixa
+// recebimento (10.2): nome, foto rápida pela câmera frontal (sem prévia), depois o código de barras da etiqueta da caixa
 async function fotoFrontal() {
   if (emTeste("semFoto")) return null;
   let f = null; const v = document.createElement("video"); v.playsInline = true; v.muted = true; v.setAttribute("playsinline", ""); v.style.cssText = "position:fixed;width:2px;height:2px;opacity:0;left:0;top:0"; document.body.appendChild(v);
@@ -688,16 +699,17 @@ async function nomeOk(b) {
 }
 function receber() {
   pedirNome("Chegou caixa do CVH", async (nome, foto) => {
-    const t = await lerQR("Leia o QR do lado de fora da caixa, antes de abrir"); if (!t) return toast("Recebimento não registrado. A foto foi descartada.", 5000);
+    const t = await lerQR("Leia o código de barras da etiqueta da caixa, antes de abrir", "barras"); if (!t) return toast("Recebimento não registrado. A foto foi descartada.", 5000);
     await confirmarRecebimento(norm(t), nome, foto);
   });
 }
 // o recebimento só vale com o QR da etiqueta da caixa (código próprio da entrega, com prazo)
-function receberCaixa(id) { pedirNome("Caixa " + id, async (nome, foto) => { const t = await lerQR("Leia o QR do lado de fora da caixa " + id); if (!t) return toast("Recebimento não registrado.", 5000); await confirmarRecebimento(norm(t), nome, foto); }); }
+function receberCaixa(id) { pedirNome("Caixa " + id, async (nome, foto) => { const t = await lerQR("Leia o código de barras da etiqueta da caixa " + id, "barras"); if (!t) return toast("Recebimento não registrado.", 5000); await confirmarRecebimento(norm(t), nome, foto); }); }
 async function confirmarRecebimento(cod, nome, foto) {
-  const id = String(cod || "").split(".")[0];
+  cod = String(cod || "").toUpperCase().replace(/^\s*CAIXA\s*/, "").replace(/[^A-Z0-9.]/g, "");
+  const id = cod.split(".")[0];
   const r = (D.remessas || []).find((x) => x.id === id);
-  if (!r) { bip(false); return toast("Esta caixa não está a caminho daqui. Confira o QR ou fale com o CVH.", 7000); }
+  if (!r) { bip(false); return toast("Esta caixa não está a caminho daqui. Confira o código de barras da etiqueta ou fale com o CVH.", 7000); }
   toast("Enviando…", 20000);
   try { await srv("intReceber", cod, nome, foto); somOk(); toast("Recebimento confirmado. Guarde cada bolsa: leia a etiqueta e depois o QR do equipamento.", 8000); await carregar(); }
   catch (e) { bip(false); toast(e.message, 7000); }

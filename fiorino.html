@@ -47,7 +47,7 @@
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128165228';
+  var VERSAO = '20261128170848';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -235,7 +235,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fiorino"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="fiorino-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="fiorino-escuro-192.png?v=2"><link rel="icon" type="image/png" href="fiorino-192.png?v=2"><link rel="manifest" href="fiorino.webmanifest?v=20261128165228">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fiorino"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="fiorino-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="fiorino-escuro-192.png?v=2"><link rel="icon" type="image/png" href="fiorino-192.png?v=2"><link rel="manifest" href="fiorino.webmanifest?v=20261128170848">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Fiorino</title>
 <style>
@@ -1748,6 +1748,9 @@ function bannerRota() {
   const txt = (p) => p.status === "cancelado" ? "Cancelada " + p.nome : p.alteracao === "nova" ? (p.prioridade === "urgente" ? "URGENTE " : "") + "Nova parada " + p.nome : p.alteracao === "ordem" ? "Ordem alterada " + p.nome : "Alterada " + p.nome;
   return '<div class="banner"><b style="font-size:18px">Rota atualizada pela administração</b><ul>' + alt.map((p) => "<li>" + esc(txt(p)) + "</li>").join("") + '</ul><button class="btn" style="background:#fff;color:var(--verm);width:100%" data-a="ciente">Entendi</button></div>';
 }
+// desenho do código de barras da etiqueta da caixa (a recepção lê a etiqueta colada na caixa, não o celular)
+const figBarras = (id) => { let x = 8, b = ""; [2,1,1,3,1,2,2,1,3,1,1,2,1,1,2,3,1,2,1,1,3,2,1,1,2,1,3,1,2,2,1,1,2,1,1,3,1,2,1,2,3,1,1,2,2,1,1,3].forEach((w, i) => { if (i % 2 === 0) b += '<rect x="' + x + '" y="8" width="' + w * 1.6 + '" height="44" fill="#1f1a17"/>'; x += w * 1.6; });
+  return '<div style="display:flex;align-items:center;gap:12px;background:#EEE5DB;border-radius:12px;padding:8px 12px;margin-top:8px"><svg viewBox="0 0 ' + Math.round(x + 8) + ' 70" style="width:150px;flex:none;background:#fff;border-radius:6px" aria-hidden="true">' + b + '<text x="' + Math.round((x + 8) / 2) + '" y="65" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="700" fill="#1f1a17">CAIXA ' + esc(id) + '</text></svg><span style="font-size:14px;color:#5F130F">Etiqueta colada na caixa ' + esc(id) + '. A recepção lê este código, não o celular.</span></div>'; };
 const ROTP = { possivel: "Possível atendimento", autorizado: "Atendimento autorizado", pago: "Venda confirmada", testes: "Laudo em elaboração", fracionamento: "Bolsa em preparo", preparo: "Embalagem em preparação", pronta: "Pronto para retirada", retirada: "Em entrega", entregue: "Entregue · aguardando a leitura do QR" };
 function pedidos() {
   const L = (D.atendimentos || []).filter((a) => a.etapa !== "concluido"); if (!L.length) return "";
@@ -1762,7 +1765,7 @@ function pedidos() {
     if (a.etapa === "pronta") { cls = "al"; t = "PRONTO PARA RETIRADA no CVH. Destino " + a.destino + "."; }
     if (a.etapa === "retirada") { cls = "av"; t = "Em entrega para " + a.destino + "."; }
     let qr = "";
-    if (a.etapa === "entregue") { if (r && r.recebida_em) { cls = "ok"; t = "QR lido pela Intensivet às " + hhmm(r.recebida_em) + ". Obrigado."; } else { cls = "av"; t = "Mostre este QR para a recepção ler antes de abrir a caixa."; if (a.remessa_id) qr = qrSvg(a.remessa_id) + '<p style="text-align:center;font-size:22px;font-weight:800;letter-spacing:.08em">' + esc(a.remessa_id) + "</p>"; } }
+    if (a.etapa === "entregue") { if (r && r.recebida_em) { cls = "ok"; t = "Código de barras lido pela Intensivet às " + hhmm(r.recebida_em) + ". Obrigado."; } else { cls = "av"; t = "Peça para a recepção ler o código de barras da etiqueta da caixa antes de abrir."; if (a.remessa_id) qr = figBarras(a.remessa_id); } }
     return '<div class="cx"><div class="etapa">Pedido do CVH · ' + esc(ROTP[a.etapa] || a.etapa) + "</div><b>" + esc(a.destino) + "</b>" + (a.paciente ? " · " + esc(a.paciente) : "") + '<div class="agora ' + cls + '">' + esc(t) + "</div>" + qr + "</div>";
   }).join("");
 }
@@ -1781,7 +1784,7 @@ function principal() {
     '<a class="btn grande sec" style="display:block;text-align:center;text-decoration:none;margin-top:12px" href="' + maps(p) + '" target="_blank" rel="noopener">Abrir mapa</a><button class="btn grande" data-a="chegada" data-v="' + esc(p.id) + '">Cheguei ao destino</button></div>';
   const fotos = (p.fotos || []).filter((f) => f.tipo === "servico"), precisa = (p.servicos || []).some((s) => tipoFoto(s.tipo)), r = p.remessa_id ? (D.remessas || []).find((x) => x.id === p.remessa_id) : null, entrega = (p.servicos || []).some((s) => s.tipo === "entrega");
   return '<div class="cx ' + (p.prioridade === "urgente" ? "urg" : "") + '"><div class="etapa">No local desde ' + hhmm(p.chegada_em) + '</div><div class="dest">' + esc(p.nome) + "</div>" + (p.obs ? '<div class="obs">' + esc(p.obs) + "</div>" : "") +
-    (entrega && p.remessa_id ? (r && r.recebida_em ? '<div class="agora ok">QR lido pela ' + esc(p.nome) + " às " + hhmm(r.recebida_em) + ".</div>" : '<div class="agora av">Mostre este QR para a recepção ler antes de abrir a caixa.</div>' + qrSvg(p.remessa_id) + '<p style="text-align:center;font-size:22px;font-weight:800;letter-spacing:.08em">' + esc(p.remessa_id) + "</p>") : "") +
+    (entrega && p.remessa_id ? (r && r.recebida_em ? '<div class="agora ok">Código de barras lido pela ' + esc(p.nome) + " às " + hhmm(r.recebida_em) + ".</div>" : '<div class="agora av">Peça para a recepção ler o código de barras da etiqueta da caixa antes de abrir.</div>' + figBarras(p.remessa_id)) : "") +
     "<b>Serviços</b>" + (p.servicos || []).map((s, i) => '<label class="svc ' + (s.feito ? "feito" : "") + '"><input type="checkbox" data-a="svc" data-v="' + esc(p.id) + '" data-i="' + i + '"' + (s.feito ? " checked" : "") + "><span>" + esc(tipoNome(s.tipo)) + (tipoFoto(s.tipo) ? "<br><small>Exige fotografia</small>" : "") + "</span></label>").join("") + (p.detalhe ? "<p><small>" + esc(p.detalhe) + "</small></p>" : "") +
     '<label class="foto-bt">' + (fotos.length ? "Adicionar outra foto" : "Fotografar comprovação") + (precisa ? "" : " (opcional)") + '<input type="file" accept="image/*" capture="environment" data-a="fotoSvc" data-v="' + esc(p.id) + '"></label>' + (fotos.length ? "<div>" + fotos.map((f) => '<img class="mini" src="' + esc(f.url) + '" alt="foto">').join("") + "</div>" : "") +
     '<button class="btn grande" style="margin-top:12px;background:var(--ok)" data-a="confirmar" data-v="' + esc(p.id) + '">Confirmar serviço</button></div>';
@@ -1958,7 +1961,7 @@ async function carregar(silencio) {
     { const pg = /fiorino/.test(location.pathname) ? "fiorino" : /motoboy\.html|motoboy\/?$/.test(location.pathname) ? "motoboy" : ""; const certo = fio() && (D.conta || "cvh") === "cvh" ? "fiorino" : "motoboy"; if (pg && pg !== certo) { location.replace(certo + ".html?k=" + encodeURIComponent(K) + (D.conta && D.conta !== "cvh" ? "&c=" + encodeURIComponent(D.conta) : "")); return; } }
     const novos = (D.avisos || []).filter((x) => x.id > ULT).sort((a, b) => a.id - b.id);
     if (novos.length) { ULT = novos[novos.length - 1].id; lsSet("cvh_moto_ult", ULT); if (antes) { const c = novos.filter((x) => x.nivel === "critico"); if (c.length) alarme(c[c.length - 1].titulo, c[c.length - 1].corpo); else { somAviso(); toast(novos[novos.length - 1].titulo + " · " + novos[novos.length - 1].corpo, 8000); } } }
-    if (antes) for (const r of D.remessas || []) { const r0 = (antes.remessas || []).find((x) => x.id === r.id) || {}; if (r.recebida_em && !r0.recebida_em) { somOk(); toast("QR lido pela Intensivet · caixa " + r.id, 8000); } }
+    if (antes) for (const r of D.remessas || []) { const r0 = (antes.remessas || []).find((x) => x.id === r.id) || {}; if (r.recebida_em && !r0.recebida_em) { somOk(); toast("Código de barras lido pela Intensivet · caixa " + r.id, 8000); } }
     if (!$("#modal").classList.contains("on")) pintar();
   } catch (e) {
     if (/APARELHO/.test(e.message)) { try { localStorage.removeItem("cvh_moto_k"); } catch (_) {} K = ""; return carregar(); }
