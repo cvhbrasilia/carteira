@@ -161,7 +161,7 @@
 })();
 
 </script>
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128032326">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Painel CVH"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#F5EFE7"><link rel="apple-touch-icon" href="painel-180.png"><link rel="icon" type="image/png" media="(prefers-color-scheme: dark)" href="painel-escuro-192.png?v=2"><link rel="icon" type="image/png" href="painel-192.png?v=2"><link rel="manifest" href="painel.webmanifest?v=20261128032954">
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -474,7 +474,7 @@ main.tela-es .tela-c{max-width:1280px}
 @media (max-width:900px){.es-topo{grid-template-columns:1fr}.es-topo .cortica{aspect-ratio:auto;height:50vh;height:50dvh;min-height:300px}}
 .es-abas{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.es-abas .filtro{font-size:14px;padding:8px 16px}.es-abas .filtro.on{background:#A83D3D;border-color:#A83D3D;color:#fff}
 .es-rel-p{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.es-rel-p button{display:flex;flex-direction:column;align-items:flex-start;border:1px solid #C6B098;background:#fff;border-radius:12px;padding:8px 14px;font:inherit;cursor:pointer;color:#3a2a26}.es-rel-p button b{color:#5F130F}.es-rel-p button small{font-size:12px;color:#7a6a62}.es-rel-p button.on{background:#EEE5DB;border-color:#A83D3D}
-.es-rl{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;padding:8px 0;border-bottom:1px solid #EEE5DB;font-size:14px}.es-rl b{color:#5F130F}.es-rl small{grid-column:2;color:#7a6a62;font-size:13px}.es-rl .es-rl-log{padding-left:10px;border-left:2px solid #EEE5DB;font-size:12.5px}
+.es-rl{display:grid;grid-template-columns:110px 1fr;gap:2px 12px;padding:8px 0;border-bottom:1px solid #EEE5DB;font-size:14px}.es-rl b{color:#5F130F}.es-rl small{grid-column:2;color:#7a6a62;font-size:13px}.lnk{background:none;border:0;padding:0;font:inherit;color:#A83D3D;text-decoration:underline;cursor:pointer}.es-rl .es-rl-log{padding-left:10px;border-left:2px solid #EEE5DB;font-size:12.5px}
 .es-rasc{background:#EEE5DB;border-left:4px solid #C49A6C;padding:8px 12px;border-radius:8px;font-size:14px}
 .es-meu{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 12px;background:#fff;border:1px solid #C6B098;border-left:6px solid #A83D3D;border-radius:12px;padding:12px 14px;margin:10px 0}
 .es-meu span{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a6a52;font-weight:700}.es-meu b{font-size:24px;color:#5F130F}.es-meu small{color:#7a6a62}.es-meu .btn{grid-row:1/4;grid-column:2}
@@ -1267,7 +1267,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--dourado);outline:none
   }
   window.CVH_SERVIDOR = { api: API, chamar: chamar, arquivo: arquivo };
   // versão nova publicada: aparece um aviso pequeno, lá em cima, para recarregar (o app aberto não troca sozinho de versão)
-  var VERSAO = '20261128032326';
+  var VERSAO = '20261128032954';
   // o app instalado no iPhone às vezes recarrega a página guardada: abre o endereço com a versão nova no fim, que obriga a buscar de novo
   function recarregar(v) { try { var u = new URL(location.href); u.searchParams.set('atualizado', v); location.replace(u.toString()); } catch (e) { location.reload(); } }
   if (q.get('atualizado')) { try { var u0 = new URL(location.href); u0.searchParams.delete('atualizado'); history.replaceState(history.state, '', u0.toString()); } catch (e) {} }
@@ -6712,6 +6712,7 @@ function postitEscala(a) {
     if (E.es.admin && a.autorId !== eu) bts += B('es-retirar', 'Retirar', 'sec2');
   }
   let corpo;
+  if (a.tipo === 'troca' && a.situacao === 'trocado' && (E.es.admin || a.autorId === eu || a.respId === eu)) bts = '<button class="btn sec2 peq" data-acao="es-termo" data-id="' + a.id + '">Termo assinado</button>';
   if (a.tipo === 'troca' && aberto) extra = extra || (a.comFila && a.autorId !== eu ? '<span class="pi-l2">em negociação</span>' : '');
   if (a.tipo === 'feriado') corpo = '<b class="pi-tit">Feriado</b><span class="pi-l">' + ES_SEM(a.sabado) + '</span><span class="pi-l">' + n1(a.autorNome) + (a.situacao === 'confirmado' ? ' trabalha' : ' quer trabalhar') + '</span>' +
     (a.texto ? '<span class="pi-l2">' + esc(a.texto) + '</span>' : '') + (a.situacao === 'confirmado' ? '<span class="pi-l2">confirmado</span>' : a.situacao === 'recusado' ? '<span class="pi-l2">não aceito</span>' : a.situacao === 'retirado' ? '<span class="pi-l2">retirado</span>' : '');
@@ -6797,6 +6798,41 @@ function infoFeriado(d) {
     '<div class="acoes-form">' + (E.es.eu && !f.pessoaId && E.es.cfg.publicada ? '<button class="btn" data-acao="es-fer-pedir" data-v="' + d + '">Quero trabalhar neste feriado</button>' : '') +
     (E.es.admin ? '<div class="grade" style="width:100%">' + campo('efP', 'Quem trabalha', '<select id="efP"><option value="">Ninguém (CVH fechado)</option>' + E.es.cfg.pessoas.map(p => '<option value="' + p.id + '"' + (p.id === f.pessoaId ? ' selected' : '') + '>' + esc(p.nome) + '</option>').join('') + '</select>') + '</div><button class="btn sec2" data-acao="es-fer-def" data-v="' + d + '">Salvar</button>' : '') + '</div>');
 }
+// termo da troca de sábado, assinado eletronicamente pelas duas pessoas (selo do CVH, data, hora e código de verificação)
+function termoTrocaHtml(T) {
+  const SEM = d => ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'][new Date(d + 'T12:00:00').getDay()];
+  const [A, B] = T.assinaturas, n1 = x => esc(String(x || '').split(' ')[0]), hr = h => h[0] + 'h às ' + h[1] + 'h', quando = e => br(String(e).slice(0, 10)) + ' às ' + String(e).slice(11, 16);
+  const ass = x => '<div class="tt-as"><i></i><div><b>Assinado eletronicamente</b><span>' + esc(x.nome) + '</span><small>' + quando(x.em) + ' · Painel CVH</small></div></div>';
+  return '<div class="termo-troca"><style>' +
+    '.termo-troca{width:794px;height:1123px;background:#fff;color:#2b211c;font-family:"Proza Libre",Georgia,serif;padding:56px 70px;box-sizing:border-box;display:flex;flex-direction:column}' +
+    '.tt-topo{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #A83D3D;padding-bottom:16px}.tt-topo img{height:54px}.tt-topo span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a6a52;text-align:right}' +
+    '.termo-troca h1{font-size:24px;color:#5F130F;margin:34px 0 6px;letter-spacing:.02em}.tt-sub{font-size:13px;color:#7a6a62;margin:0 0 24px}' +
+    '.termo-troca p{font-size:14.5px;line-height:1.7;margin:0 0 14px;text-align:justify}' +
+    '.termo-troca table{width:100%;border-collapse:collapse;margin:10px 0 22px;font-size:14px}.termo-troca th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a6a52;border-bottom:1.5px solid #5F130F;padding:8px}.termo-troca td{padding:10px 8px;border-bottom:1px solid #EEE5DB}' +
+    '.tt-ass{margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:26px}.tt-as{display:flex;gap:12px;align-items:center;border:1px solid #C6B098;border-radius:12px;padding:12px 14px}.tt-as i{width:58px;height:58px;flex:none;background:var(--img-selo) center/contain no-repeat}.tt-as b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#A83D3D}.tt-as span{display:block;font-size:14.5px;font-weight:700;margin:2px 0}.tt-as small{font-size:12px;color:#7a6a62}' +
+    '.tt-pe{margin-top:auto;padding-top:12px;border-top:1px solid #EEE5DB;font-size:11.5px;color:#8a7a72;display:flex;justify-content:space-between}' +
+    '</style><div class="tt-topo"><img src="logo-cvh-horizontal.png" alt=""><span>Escala da equipe<br>Termo de troca</span></div>' +
+    '<h1>Termo de troca de sábado de trabalho</h1><p class="tt-sub">Código de verificação ' + esc(T.codigo) + '</p>' +
+    '<p>' + esc(A.nome) + ' e ' + esc(B.nome) + ', da equipe do CVH - Centro Veterinário de Hemoterapia, concordam com a troca dos sábados de trabalho descrita abaixo. A troca foi combinada pelo quadro de trocas do Painel CVH, concordada e assinada eletronicamente pelas duas pessoas, e vale a partir desta data.</p>' +
+    '<table><thead><tr><th>Sábado</th><th>Era de</th><th>Passa a ser de</th><th>Horário</th></tr></thead><tbody>' +
+    '<tr><td>' + SEM(T.sabado) + ', ' + br(T.sabado) + '</td><td>' + n1(A.nome) + '</td><td><b>' + n1(B.nome) + '</b></td><td>' + hr(T.horarioOutro) + '</td></tr>' +
+    (T.sabadoDevolve ? '<tr><td>' + SEM(T.sabadoDevolve) + ', ' + br(T.sabadoDevolve) + '</td><td>' + n1(B.nome) + '</td><td><b>' + n1(A.nome) + '</b></td><td>' + hr(T.horarioDono) + '</td></tr>' : '') + '</tbody></table>' +
+    '<p>Cada pessoa assume o sábado que recebeu na troca, no horário de trabalho do sábado, com as mesmas responsabilidades do seu dia de escala.</p>' +
+    '<div class="tt-ass">' + ass(A) + ass(B) + '</div>' +
+    '<div class="tt-pe"><span>Brasília, ' + br(String(T.resolvidoEm).slice(0, 10)) + '</span><span>Documento gerado pelo Painel CVH · código ' + esc(T.codigo) + '</span></div></div>';
+}
+async function termoTrocaPdf(T) {
+  if (!window.htmlToImage) await carregarScript(LIB_IMG); if (!window.PDFLib) await carregarScript(LIB_PDF);
+  const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-30000px;top:0'; box.innerHTML = termoTrocaHtml(T); document.body.appendChild(box);
+  try {
+    if (document.fonts) await document.fonts.ready;
+    const el = box.firstElementChild, op = { width: 794, height: 1123, pixelRatio: 3, quality: 0.94, backgroundColor: '#ffffff' };
+    try { await htmlToImage.toJpeg(el, op); } catch (_) {}
+    const url = await htmlToImage.toJpeg(el, op), pdf = await PDFLib.PDFDocument.create(), img = await pdf.embedJpg(bytesDeUrl(url));
+    pdf.addPage([595.28, 841.89]).drawImage(img, { x: 0, y: 0, width: 595.28, height: 841.89 }); pdf.setTitle('Termo de troca de sábado ' + T.codigo);
+    entregarBlob(new Blob([await pdf.save()], { type: 'application/pdf' }), 'Termo de troca ' + br(T.sabado).replace(/\//g, '-') + '.pdf');
+  } finally { box.remove(); }
+}
 // conversas da escala: a negociação da vez (pedido do quadro) e os pedidos diretos, só entre as duas pessoas
 function conversasEscala() {
   const R = E.es, eu = E.u.id, h = R.hoje, L = [];
@@ -6823,21 +6859,22 @@ function abrirConversa(id) {
   if (oferta) {
     sit = !t.sabadoDevolve ? 'Aguardando a proposta de ' + nomeOutro + '.' : t.contra ? nomeDono + ' fez uma contraproposta: ficar com o <b>' + ES_SEM(t.contra) + '</b> de ' + nomeOutro + '.' : 'Proposta: ' + nomeOutro + ' fica com o <b>' + ES_SEM(t.sabado) + '</b> e devolve o <b>' + ES_SEM(t.sabadoDevolve) + '</b>.';
     if (t.autorId === eu) {
-      if (t.contra) acoes += bt('es-contra-ok', 'Aceitar a contraproposta');
+      if (t.contra) acoes += bt('es-contra-ok', 'Concordar e assinar a contraproposta');
       acoes += meus.length ? campo('cvSab', !t.sabadoDevolve ? 'Selecione o dia que pode devolver' : 'Outro dia que pode devolver', sel('cvSab', meus, t.contra ? '' : t.sabadoDevolve)) + bt('es-propor', !t.sabadoDevolve ? 'Fazer proposta' : t.contra ? 'Fazer nova proposta' : 'Mudar a proposta', t.contra ? 'sec2' : '') : '<p class="nota">Você não tem sábados nos próximos meses para devolver.</p>';
       acoes += bt('es-of-sair', 'Desistir de trocar', 'sec2');
     } else if (dono === eu) {
-      if (t.sabadoDevolve && !t.contra) acoes += bt('es-of-ok', 'Aceitar a proposta') + (deOutro.length ? campo('cvContra', 'Prefere outro sábado de ' + nomeOutro + '?', sel('cvContra', deOutro, '')) + bt('es-contra', 'Fazer contraproposta', 'sec2') : '') + bt('es-of-nao', 'Negar a proposta', 'sec2');
+      if (t.sabadoDevolve && !t.contra) acoes += bt('es-of-ok', 'Concordar e assinar') + (deOutro.length ? campo('cvContra', 'Prefere outro sábado de ' + nomeOutro + '?', sel('cvContra', deOutro, '')) + bt('es-contra', 'Fazer contraproposta', 'sec2') : '') + bt('es-of-nao', 'Negar a proposta', 'sec2');
       else if (t.contra) acoes += '<p class="nota">Aguardando ' + nomeOutro + ' responder a contraproposta.</p>' + bt('es-of-nao', 'Negar a proposta', 'sec2');
       acoes += '<button class="btn sec2" data-acao="es-retirar" data-id="' + ped.id + '">Desistir de trocar</button>';
     }
   } else {
     sit = nomeDono + ' pede para ' + nomeOutro + ' ficar com o <b>' + ES_SEM(t.sabado) + '</b>.';
-    if (t.paraId === eu) acoes = (meus.length ? campo('esDev', 'Selecione o dia que pode devolver', sel('esDev', meus, '')) + bt('es-aceitar-ok', 'Aceitar a troca') : '') + bt('es-recusar', 'Não posso', 'sec2');
+    if (t.paraId === eu) acoes = (meus.length ? campo('esDev', 'Selecione o dia que pode devolver', sel('esDev', meus, '')) + bt('es-aceitar-ok', 'Concordar e assinar') : '') + bt('es-recusar', 'Não posso', 'sec2');
     else if (t.autorId === eu) acoes = bt('es-retirar', 'Desistir de trocar', 'sec2');
   }
   abrirFolha('Troca do ' + ES_SEM(t.sabado),
     '<div class="es-prop">' + sit + '</div>' +
+    '<p class="nota">Ao fazer a proposta, a contraproposta ou o pedido direto, você já concorda e assina. A troca vale quando a outra pessoa concordar e assinar, e gera o termo assinado eletronicamente pelas duas.</p>' +
     '<div class="es-conv-msgs" id="cvMsgs">' + (msgs.length ? msgs.map(m => '<div class="es-msg' + (m.autorId === eu ? ' eu' : '') + '">' + esc(m.texto) + '<small>' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + '</small></div>').join('') : '') + '</div>' +
     (acoes ? '<div class="es-conv-acoes">' + acoes + '</div>' : ''),
     c => { const m = c.querySelector('#cvMsgs'); if (m) m.scrollTop = m.scrollHeight; });
@@ -6891,6 +6928,7 @@ function infoSabado(d) {
     (x.pessoaId ? lin('Quem trabalha', esc(p.nome)) : '') + lin('Horário', esHr(p.sabado || [9, 18])) +
     (a ? lin(/troca/.test(a.motivo) ? 'Troca' : 'Ajuste', esc(a.motivo) + '<small>Pelo rodízio seria ' + esc(esPessoa(x.rodizio).nome) + '. ' + (a.quem ? 'Feito por ' + esc(a.quem) + (a.quando ? ' em ' + br(a.quando.slice(0, 10)) + ' às ' + a.quando.slice(11, 16) : '') + '.' : '') + '</small>') : '') +
     (aus ? lin('Afastamento', esc(ES_AUS[aus.motivo] || 'afastamento') + ' desde ' + br(aus.de) + (aus.ate ? ' até ' + br(aus.ate) : ', sem data de volta') + '<small>Este sábado precisa de cobertura.</small>') : '') +
+    av.filter(z => z.tipo === 'troca' && z.situacao === 'trocado' && (E.es.admin || z.autorId === E.u.id || z.respId === E.u.id)).map(z => '<button class="btn sec2 peq" data-acao="es-termo" data-id="' + z.id + '">Termo assinado da troca</button>').join('') +
     av.map(z => z.tipo === 'aviso' ? lin('Aviso', esc(z.texto)) : lin('Pedido de troca', esc(String(z.autorNome).split(' ')[0]) + ' pediu em ' + br(String(z.criadoEm).slice(0, 10)) + (z.texto ? '. ' + esc(z.texto) : '') + '<small>' + ({ aberto: 'Aberto', trocado: 'Trocado com ' + esc(String(z.respNome).split(' ')[0]), recusado: 'Não aceito', retirado: 'Retirado' }[z.situacao] || '') + '</small>')).join('') +
     '<div class="acoes-form">' + (x.pessoaId === E.es.eu && d >= E.es.hoje && E.es.cfg.publicada ? '<button class="btn" data-acao="es-pedir" data-v="' + d + '">Pedir troca</button>' : '') +
     (E.es.admin ? '<button class="btn sec2" data-acao="es-sab-editar" data-v="' + d + '">Trocar quem trabalha</button>' : '') + '</div>');
@@ -6952,7 +6990,7 @@ function pintarRelEscala() {
       (x.ajuste ? '<small>' + esc(x.ajuste.motivo) + ' · pelo rodízio seria ' + esc(nomeP(x.rodizio)) + (x.ajuste.quem ? ' · por ' + esc(x.ajuste.quem) : '') + '</small>' : '') + (x.ausente ? '<small>' + esc(ES_AUS[x.ausente] || 'afastado') + '</small>' : '') + '</div>').join('') : '<p class="vazio-p">Nenhum sábado no período.</p>') + '</section>' +
     '<section class="cartao"><h3>Feriados trabalhados (' + fers.length + ')</h3>' + (fers.length ? fers.map(x => '<div class="es-rl"><b>' + br(x.data) + '</b><span>' + esc(nomeP(x.pessoaId)) + ' · ' + esc(x.nome) + '</span>' + (x.motivo ? '<small>' + esc(x.motivo) + '</small>' : '') + '</div>').join('') : '<p class="vazio-p">Nenhum feriado trabalhado no período.</p>') + '</section>' +
     '<section class="cartao"><h3>Quadro de trocas e avisos (' + avs.length + ')</h3>' + (avs.length ? avs.map(a => '<div class="es-rl"><b>' + br(String(a.criadoEm).slice(0, 10)) + '</b><span>' + (TIPO[a.tipo] || 'Pedido') + ' · ' + esc(String(a.autorNome).split(' ')[0]) + (a.sabado ? ' · ' + br(a.sabado) : '') + ' · ' + (SIT[a.situacao] || a.situacao) + '</span>' +
-      '<small>' + [a.texto ? esc(a.texto) : '', a.paraNome ? 'particular para ' + esc(String(a.paraNome).split(' ')[0]) : '', a.respNome && a.situacao !== 'aberto' ? (a.situacao === 'trocado' ? 'trocado com ' : 'respondido por ') + esc(String(a.respNome).split(' ')[0]) + (a.sabadoDevolve ? ', que devolveu ' + br(a.sabadoDevolve) : '') : ''].filter(Boolean).join(' · ') + '</small>' + logsDe(a).map(m => '<small class="es-rl-log">' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + ' · ' + esc(m.texto) + '</small>').join('') + '</div>').join('') : '<p class="vazio-p">Nada no quadro no período.</p>') + '</section>';
+      (a.situacao === 'trocado' && a.codigo ? '<small><button class="lnk" data-acao="es-termo" data-id="' + a.id + '">Termo assinado · código ' + esc(a.codigo) + '</button></small>' : '') + '<small>' + [a.texto ? esc(a.texto) : '', a.paraNome ? 'particular para ' + esc(String(a.paraNome).split(' ')[0]) : '', a.respNome && a.situacao !== 'aberto' ? (a.situacao === 'trocado' ? 'trocado com ' : 'respondido por ') + esc(String(a.respNome).split(' ')[0]) + (a.sabadoDevolve ? ', que devolveu ' + br(a.sabadoDevolve) : '') : ''].filter(Boolean).join(' · ') + '</small>' + logsDe(a).map(m => '<small class="es-rl-log">' + br(String(m.criadoEm).slice(0, 10)).slice(0, 5) + ' ' + String(m.criadoEm).slice(11, 16) + ' · ' + esc(m.texto) + '</small>').join('') + '</div>').join('') : '<p class="vazio-p">Nada no quadro no período.</p>') + '</section>';
 }
 function formSabadoAdmin(d) {
   const x = E.es.sabados.find(s => s.data === d); if (!x) return;
@@ -10605,9 +10643,10 @@ const ACOES = {
   'es-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { sabado: vl('esSab'), paraId: vl('esPara') }); fecharFolha(); toast(vl('esPara') ? 'Pedido enviado só para essa pessoa.' : 'Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar': async b => { const a = E.es.avisos.find(x => x.id === b.dataset.id); if (a && !a.paraId && a.comFila) { b.disabled = true; try { const r = await api('escalaAvisoAceitar', E.sessao, a.id, ''); E.es = r; toast('Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } return; } if (a && a.paraId) return abrirConversa(a.id); formAceitarTroca(b.dataset.id); },
   'es-conv': b => abrirConversa(b.dataset.id),
+  'es-termo': async b => { const t = b.textContent; b.disabled = true; b.textContent = 'Gerando o termo…'; try { await termoTrocaPdf(await api('escalaTermo', E.sessao, b.dataset.id)); } catch (e) { toast(e.message, 6000); } b.disabled = false; b.textContent = t; },
   'es-propor': async b => { b.disabled = true; try { E.es = await api('escalaOfertaPropor', E.sessao, b.dataset.id, vl('cvSab')); toast('Proposta enviada.'); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-contra': async b => { b.disabled = true; try { E.es = await api('escalaOfertaContra', E.sessao, b.dataset.id, vl('cvContra')); toast('Contraproposta enviada.'); pintarEscala(); abrirConversa(b.dataset.id); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-contra-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaAceitarContra', E.sessao, b.dataset.id); fecharFolha(); toast('Troca feita. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-contra-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaAceitarContra', E.sessao, b.dataset.id); fecharFolha(); toast('Troca feita e assinada pelas duas pessoas. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso': () => formAvisoEscala(),
   'es-fer-pedir': b => { formPedidoFeriado(); if (b.dataset.v && $('#efD')) $('#efD').value = b.dataset.v; },
   'es-fer-pedir-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'feriado', sabado: vl('efD') }); fecharFolha(); toast('Pedido no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
@@ -10617,8 +10656,8 @@ const ACOES = {
   'es-fer-def': async b => { b.disabled = true; try { E.es = await api('escalaSabadoDefinir', E.sessao, b.dataset.v, vl('efP'), vl('efP') ? 'escalado pelo administrador no feriado' : ''); fecharFolha(); toast('Feriado salvo.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aviso-ok': async b => { b.disabled = true; try { await api('escalaAvisoCriar', E.sessao, { tipo: 'aviso', sabado: vl('eaS'), texto: ($('#eaT') || {}).value || '' }); fecharFolha(); toast('Aviso no quadro.'); telaEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-aceitar-ok': async b => { b.disabled = true; try { const r = await api('escalaAvisoAceitar', E.sessao, b.dataset.id, vl('esDev')); E.es = r; fecharFolha();
-    toast({ trocado: 'Troca feita. Já está no quadro.', oferta: 'Proposta enviada. A negociação continua só entre vocês dois.', espera: 'Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.' }[r.resultado] || 'Pronto.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
-  'es-of-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, true); fecharFolha(); toast('Troca confirmada. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+    toast({ trocado: 'Troca feita e assinada pelas duas pessoas. Já está no quadro.', oferta: 'Proposta enviada. A negociação continua só entre vocês dois.', espera: 'Outra pessoa já está negociando. Você entrou na fila, caso essa troca não dê certo.' }[r.resultado] || 'Pronto.', 7000); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
+  'es-of-ok': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, true); fecharFolha(); toast('Troca feita e assinada pelas duas pessoas. Já está no quadro.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-of-nao': async b => { b.disabled = true; try { E.es = await api('escalaOfertaResponder', E.sessao, b.dataset.id, false); fecharFolha(); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-of-sair': async b => { if (!b.dataset.ok) { b.dataset.ok = '1'; b.textContent = 'Confirmar'; return; } b.disabled = true; try { E.es = await api('escalaOfertaRetirar', E.sessao, b.dataset.id); fecharFolha(); toast('Pronto.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
   'es-recusar': async b => { b.disabled = true; try { E.es = await api('escalaAvisoRecusar', E.sessao, b.dataset.id); fecharFolha(); toast('Resposta enviada.'); pintarEscala(); } catch (e) { toast(e.message, 6000); b.disabled = false; } },
